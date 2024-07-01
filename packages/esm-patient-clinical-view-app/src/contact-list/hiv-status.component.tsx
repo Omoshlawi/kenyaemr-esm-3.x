@@ -1,10 +1,7 @@
 import { SkeletonText } from '@carbon/react';
 import React from 'react';
-import {
-  getHivStatusBasedOnEnrollmentAndHTSEncounters,
-  useRelativeHTSEncounter,
-  useRelativeHivEnrollment,
-} from './contact-list.resource';
+import { useRelativeHTSEncounter, useRelativeHivEnrollment } from './contact-list.hooks';
+import { getHivStatusBasedOnEnrollmentAndHTSEncounters } from './contact-list.resource';
 
 interface HIVStatusProps {
   relativeUuid: string;

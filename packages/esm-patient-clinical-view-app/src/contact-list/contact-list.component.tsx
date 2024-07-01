@@ -20,7 +20,7 @@ import { CardHeader, EmptyDataIllustration, usePaginationInfo } from '@openmrs/e
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ContactActions from './contact-actions.component';
-import { useContacts } from './contact-list.resource';
+import { useContacts } from './contact-list.hooks';
 import styles from './contact-list.scss';
 import HIVStatus from './hiv-status.component';
 

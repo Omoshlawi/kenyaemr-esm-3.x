@@ -4,11 +4,8 @@ import { useConfig } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { ConfigObject } from '../config-schema';
-import {
-  getHivStatusBasedOnEnrollmentAndHTSEncounters,
-  useRelativeHTSEncounter,
-  useRelativeHivEnrollment,
-} from './contact-list.resource';
+import { useRelativeHTSEncounter, useRelativeHivEnrollment } from './contact-list.hooks';
+import { getHivStatusBasedOnEnrollmentAndHTSEncounters } from './contact-list.resource';
 
 interface ContactActionsProps {
   relativeUuid: string;

@@ -1,93 +1,9 @@
-import { formatDatetime, openmrsFetch, parseDate, restBaseUrl, useConfig } from '@openmrs/esm-framework';
-import { useMemo } from 'react';
-import useSWR from 'swr';
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { z } from 'zod';
 import { ConfigObject } from '../config-schema';
+import { replaceAll } from '../utils/expression-helper';
+import { Enrollment, HTSEncounter, Patient } from './contact-list.types';
 
-export interface Relationship {
-  display: string;
-  uuid: string;
-  personA: Person;
-  personB: Person;
-  relationshipType: {
-    uuid: string;
-    display: string;
-    aIsToB: string;
-    bIsToA: string;
-  };
-  startDate: string;
-}
-
-interface Contact {
-  uuid: string;
-  name: string;
-  display: string;
-  relativeAge: number;
-  dead: boolean;
-  causeOfDeath: string;
-  relativeUuid: string;
-  relationshipType: string;
-  patientUuid: string;
-  gender: string;
-  contact: string | null;
-  startDate: string | null;
-  baselineHIVStatus: string | null;
-  personContactCreated: string | null;
-  livingWithClient: string | null;
-  pnsAproach: string | null;
-}
-
-interface Person {
-  uuid: string;
-  age: number;
-  dead: boolean;
-  display: string;
-  causeOfDeath: string;
-  gender: string;
-  attributes: {
-    uuid: string;
-    display: string;
-    attributeType: {
-      uuid: string;
-      display: string;
-    };
-  }[];
-}
-
-interface Patient {
-  uuid: string;
-  person: Person;
-  identifiers: {
-    uuid: string;
-  }[];
-}
-
-interface RelationShipType {
-  uuid: string;
-  displayAIsToB: string;
-}
-
-interface Enrollment {
-  uuid: string;
-  program: {
-    name: string;
-    uuid: string;
-  };
-}
-
-interface HTSEncounter {
-  uuid: string;
-  display: string;
-  encounterDatetime: string;
-  obs: {
-    uuid: string;
-    display: string;
-    value: {
-      uuid: string;
-      display: string;
-    };
-  }[];
-}
 export const ContactListFormSchema = z.object({
   listingDate: z.date({ coerce: true }),
   givenName: z.string().min(1, 'Required'),
@@ -103,158 +19,6 @@ export const ContactListFormSchema = z.object({
   baselineStatus: z.string().optional(),
   preferedPNSAproach: z.string().optional(),
 });
-
-function extractName(display: string) {
-  const pattern = /-\s*(.*)$/;
-  const match = display.match(pattern);
-  if (match && match.length > 1) {
-    return match[1].trim();
-  }
-  return display.trim();
-}
-
-function extractTelephone(display: string) {
-  const pattern = /=\s*(.*)$/;
-  const match = display.match(pattern);
-  if (match && match.length > 1) {
-    return match[1].trim();
-  }
-  return display.trim();
-}
-
-function replaceAll(str: string, find: string, replace: string) {
-  return str.replace(new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replace);
-}
-export const useContacts = (patientUuid: string) => {
-  const customeRepresentation =
-    'custom:(display,uuid,personA:(uuid,age,display,dead,causeOfDeath,gender,attributes:(uuid,display,attributeType:(uuid,display))),personB:(uuid,age,display,dead,causeOfDeath,gender,attributes:(uuid,display,attributeType:(uuid,display))),relationshipType:(uuid,display,description,aIsToB,bIsToA),startDate)';
-  const url = `/ws/rest/v1/relationship?v=${customeRepresentation}&person=${patientUuid}`;
-  const config = useConfig<ConfigObject>();
-  const { data, error, isLoading, isValidating } = useSWR<{ data: { results: Relationship[] } }, Error>(
-    url,
-    openmrsFetch,
-  );
-  const relationships = useMemo(() => {
-    return data?.data?.results?.length ? extractContactData(patientUuid, data?.data?.results, config) : [];
-  }, [data?.data?.results, patientUuid, config]);
-  return {
-    contacts: relationships,
-    error,
-    isLoading,
-    isValidating,
-  };
-};
-
-export const useRelationshipTypes = () => {
-  const customeRepresentation = 'custom:(uuid,displayAIsToB)';
-  const url = `/ws/rest/v1/relationshiptype?v=${customeRepresentation}`;
-
-  const { data, error, isLoading } = useSWR<{ data: { results: RelationShipType[] } }>(url, openmrsFetch);
-  return {
-    error,
-    isLoading,
-    relationshipTypes: data?.data?.results ?? [],
-  };
-};
-
-export const useRelativeHivEnrollment = (relativeUuid: string) => {
-  const customeRepresentation = 'custom:(uuid,program:(name,uuid))';
-  const url = `/ws/rest/v1/programenrollment?v=${customeRepresentation}&patient=${relativeUuid}`;
-  const config = useConfig<ConfigObject>();
-  const { data, error, isLoading } = useSWR<{ data: { results: Enrollment[] } }>(url, openmrsFetch);
-  return {
-    error,
-    isLoading,
-    enrollment: (data?.data?.results ?? []).find((en) => en.program.uuid === config.hivProgramUuid) ?? null,
-  };
-};
-
-export const useRelativeHTSEncounter = (relativeUuid: string) => {
-  const customeRepresentation = 'custom:(uuid,display,encounterDatetime,obs:(uuid,display,value:(uuid,display)))';
-  const {
-    encounterTypes: { hivTestingServices },
-  } = useConfig<ConfigObject>();
-  const url = `/ws/rest/v1/encounter?v=${customeRepresentation}&patient=${relativeUuid}&encounterType=${hivTestingServices}`;
-  const { data, error, isLoading } = useSWR<{ data: { results: HTSEncounter[] } }>(url, openmrsFetch);
-  return {
-    error,
-    isLoading,
-    encounters: data?.data?.results ?? [],
-  };
-};
-
-function extractAttributeData(person: Person, config: ConfigObject) {
-  return person.attributes.reduce<{
-    contact: string | null;
-    baselineHIVStatus: string | null;
-    personContactCreated: string | null;
-    pnsAproach: string | null;
-    livingWithClient: string | null;
-  }>(
-    (prev, attr) => {
-      if (attr.attributeType.uuid === config.contactPersonAttributesUuid.telephone) {
-        return { ...prev, contact: attr.display ? extractTelephone(attr.display) : null };
-      } else if (attr.attributeType.uuid === config.contactPersonAttributesUuid.baselineHIVStatus) {
-        return { ...prev, baselineHIVStatus: attr.display ?? null };
-      } else if (attr.attributeType.uuid === config.contactPersonAttributesUuid.contactCreated) {
-        return { ...prev, personContactCreated: attr.display ?? null };
-      } else if (attr.attributeType.uuid === config.contactPersonAttributesUuid.livingWithContact) {
-        return { ...prev, livingWithClient: attr.display ?? null };
-      } else if (attr.attributeType.uuid === config.contactPersonAttributesUuid.preferedPnsAproach) {
-        return { ...prev, pnsAproach: attr.display ?? null };
-      }
-      return prev;
-    },
-    { contact: null, baselineHIVStatus: null, personContactCreated: null, pnsAproach: null, livingWithClient: null },
-  );
-}
-
-function extractContactData(
-  patientIdentifier: string,
-  relationships: Array<Relationship>,
-  config: ConfigObject,
-): Array<Contact> {
-  const relationshipsData: Contact[] = [];
-
-  for (const r of relationships) {
-    if (patientIdentifier === r.personA.uuid) {
-      relationshipsData.push({
-        ...extractAttributeData(r.personB, config),
-        uuid: r.uuid,
-        name: extractName(r.personB.display),
-        display: r.personB.display,
-        relativeAge: r.personB.age,
-        dead: r.personB.dead,
-        causeOfDeath: r.personB.causeOfDeath,
-        relativeUuid: r.personB.uuid,
-        relationshipType: r.relationshipType.bIsToA,
-        patientUuid: r.personB.uuid,
-        gender: r.personB.gender,
-        startDate: !r.startDate
-          ? null
-          : formatDatetime(parseDate(r.startDate), { day: true, mode: 'standard', year: true, noToday: true }),
-      });
-    } else {
-      relationshipsData.push({
-        ...extractAttributeData(r.personA, config),
-        uuid: r.uuid,
-        name: extractName(r.personA.display),
-        display: r.personA.display,
-        relativeAge: r.personA.age,
-        causeOfDeath: r.personA.causeOfDeath,
-        relativeUuid: r.personA.uuid,
-        dead: r.personA.dead,
-        relationshipType: r.relationshipType.aIsToB,
-        patientUuid: r.personA.uuid,
-        gender: r.personB.gender,
-        startDate: !r.startDate
-          ? null
-          : formatDatetime(parseDate(r.startDate), { day: true, mode: 'standard', year: true, noToday: true }),
-      });
-    }
-  }
-  return relationshipsData;
-}
 
 export const getHivStatusBasedOnEnrollmentAndHTSEncounters = (
   encounters: HTSEncounter[],
@@ -326,6 +90,7 @@ export const saveContact = async (
     addresses: address ? [{ preferred: true, address1: address }] : undefined,
     dead: false,
     attributes: [
+      // Add optional baseline hiv status attribute
       ...(baselineStatus
         ? [
             {
@@ -334,6 +99,7 @@ export const saveContact = async (
             },
           ]
         : []),
+      // Add Optional telephone contact attribute
       ...(phoneNumber
         ? [
             {
@@ -346,6 +112,7 @@ export const saveContact = async (
         attributeType: config.contactPersonAttributesUuid.contactCreated,
         value: '1065',
       },
+      // Add Optional Prefered pns  aproach attribute
       ...(preferedPNSAproach
         ? [
             {
@@ -354,6 +121,7 @@ export const saveContact = async (
             },
           ]
         : []),
+      // Add optional living with client attribute
       ...(livingWithClient
         ? [
             {
@@ -392,9 +160,7 @@ export const saveContact = async (
       personB: patientUuid,
       startDate: listingDate.toISOString(),
     };
-
-    const now = new Date().toISOString();
-    // Create encounter with marital status obs
+    // optionally create  encounter with marital status obs
     let demographicsPayload;
     if (maritalStatus) {
       demographicsPayload = {
@@ -404,12 +170,12 @@ export const saveContact = async (
         obs: [{ concept: config.maritalStatusUuid, value: maritalStatus }],
       };
     }
-
+    // Excecute creation tasks
     const asyncTask = await Promise.allSettled([
       fetcher(`/ws/rest/v1/relationship`, relationshipPayload),
       ...(maritalStatus ? [fetcher(`/ws/rest/v1/encounter`, demographicsPayload)] : []),
     ]);
-
+    // Retreive excecusuin status onfinish
     asyncTask.forEach(({ status }, index) => {
       let message: string;
       let step: any;

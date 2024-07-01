@@ -22,7 +22,8 @@ import { z } from 'zod';
 import { ConfigObject } from '../config-schema';
 import { contactListConceptMap } from './contact-list-concept-map';
 import styles from './contact-list-form.scss';
-import { ContactListFormSchema, saveContact, useRelationshipTypes } from './contact-list.resource';
+import { useRelationshipTypes } from './contact-list.hooks';
+import { ContactListFormSchema, saveContact } from './contact-list.resource';
 
 interface ContactListFormProps extends DefaultWorkspaceProps {
   patientUuid: string;
