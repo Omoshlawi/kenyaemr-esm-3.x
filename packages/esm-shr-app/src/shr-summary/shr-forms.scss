@@ -4,6 +4,13 @@
 @use '@carbon/colors';
 @import '~@openmrs/esm-styleguide/src/vars';
 
+form {
+  // background-color: red;
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+}
+
 .heading {
   @include type.type-style('heading-compact-01');
   margin: spacing.$spacing-05 0 spacing.$spacing-05;
