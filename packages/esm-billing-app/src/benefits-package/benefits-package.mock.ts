@@ -1,4 +1,4 @@
-import { CoverageEligibilityResponse, Diagnosis, Package, PatientBenefit, SHAIntervension } from '../types';
+import { Diagnosis, Package, PatientBenefit, SHAIntervension } from '../types';
 
 export const patientBenefits = [
   {

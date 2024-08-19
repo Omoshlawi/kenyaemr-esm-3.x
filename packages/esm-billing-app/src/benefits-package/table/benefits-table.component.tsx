@@ -9,9 +9,9 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { InsurersBenefits, PatientBenefit } from '../../types';
 import styles from './benebfits-table.scss';
 import GenericDataTable from './generic_data_table.component';
+import { InsurersBenefits, PatientBenefit } from '../../types';
 
 const BenefitsTable = () => {
   const { t } = useTranslation();
