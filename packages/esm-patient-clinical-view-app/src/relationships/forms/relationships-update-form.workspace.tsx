@@ -11,7 +11,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { DefaultWorkspaceProps, showSnackbar, usePatient } from '@openmrs/esm-framework';
+import { DefaultWorkspaceProps, showSnackbar } from '@openmrs/esm-framework';
 import React, { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
