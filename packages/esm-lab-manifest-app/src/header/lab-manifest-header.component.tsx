@@ -1,9 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Calendar, Location } from '@carbon/react/icons';
+import { Calendar, ChemistryReference, Location } from '@carbon/react/icons';
 import { useSession, formatDate } from '@openmrs/esm-framework';
 import styles from './lab-manifest-header.scss';
-import LabManifestIllustration from './lab-manifest-illustration.component';
 
 interface LabManifestHeaderProps {
   title: string;
@@ -16,7 +15,7 @@ export const LabManifestHeader: React.FC<LabManifestHeaderProps> = ({ title }) =
   return (
     <div className={styles.header}>
       <div className={styles['leftJustifiedItems']}>
-        <LabManifestIllustration />
+        <ChemistryReference className={styles.illustration} />
         <div className={styles['pageLabels']}>
           <p>{t('labManifest', 'Lab Manifest')}</p>
           <p className={styles['pageName']}>{title}</p>
