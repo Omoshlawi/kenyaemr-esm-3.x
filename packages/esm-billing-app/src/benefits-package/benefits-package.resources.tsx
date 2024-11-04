@@ -56,3 +56,36 @@ export const preAuthenticateBenefit = async (
     },
   });
 };
+
+type Base64FileData = {
+  base64: string;
+  fileName: string;
+  mimeType: string;
+};
+
+export const fileToBase64WithMeta = (file: File): Promise<Base64FileData> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    // Read the file as a data URL
+    reader.readAsDataURL(file);
+
+    reader.onload = () => {
+      const result = reader.result as string;
+      if (result) {
+        const base64String = result.split(',')[1]; // Get the Base64 part
+        resolve({
+          base64: base64String,
+          fileName: file.name,
+          mimeType: file.type,
+        });
+      } else {
+        reject('Could not convert file to Base64.');
+      }
+    };
+
+    reader.onerror = () => {
+      reject('File reading error.');
+    };
+  });
+};

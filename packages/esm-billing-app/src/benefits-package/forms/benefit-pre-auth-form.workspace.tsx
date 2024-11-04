@@ -26,7 +26,7 @@ import usePackages from '../../hooks/usePackages';
 import usePatientDiagnosis from '../../hooks/usePatientDiagnosis';
 import useProvider from '../../hooks/useProvider';
 import { PatientBenefit } from '../../types';
-import { preAuthenticateBenefit, preauthSchema } from '../benefits-package.resources';
+import { fileToBase64WithMeta, preAuthenticateBenefit, preauthSchema } from '../benefits-package.resources';
 import styles from './benefits-pre-auth-form.scss';
 import PackageIntervensions from './package-intervensions.component';
 
@@ -46,7 +46,6 @@ const BenefitPreAuthForm: React.FC<BenefitPreAuthFormProps> = ({ closeWorkspace,
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { mflCodeValue } = useSystemSetting('facility.mflcode');
-
   const {
     currentProvider: { uuid: providerUuid },
     sessionLocation: { uuid: facilityUuid, display: facilityName },
@@ -93,6 +92,10 @@ const BenefitPreAuthForm: React.FC<BenefitPreAuthFormProps> = ({ closeWorkspace,
   const onSubmit = async (values: BenefitsPreAuth) => {
     setIsSubmitting(true);
     try {
+      if (uploadedFile) {
+        let fileMeta = await fileToBase64WithMeta(uploadedFile);
+        // Handle formating base64 file data with its meta data and add to payload before submitting preauth form
+      }
       await preAuthenticateBenefit(values, recentVisit, mflCodeValue);
       showSnackbar({ title: 'Success', kind: 'success', subtitle: 'Preauth Approved succesfully' });
       closeWorkspace();
