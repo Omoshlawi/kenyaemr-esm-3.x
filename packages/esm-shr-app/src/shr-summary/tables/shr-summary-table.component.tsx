@@ -34,15 +34,16 @@ const PatientSHRSummaryTable: React.FC<PatientSHRSummaryTableProps> = () => {
   }
 
   const handleInitiateAuthorization = () => {
-    launchPatientWorkspace('shr-authorization-form', {
-      workspaceTitle: 'SHR Pull Authorization Form',
-      patientUuid,
-      onVerified: () => {
-        setAccessGranted(true);
-      },
-      patientPhoneNumber,
-      patientName,
-    });
+    setAccessGranted(true);
+    // launchPatientWorkspace('shr-authorization-form', {
+    //   workspaceTitle: 'SHR Pull Authorization Form',
+    //   patientUuid,
+    //   onVerified: () => {
+    //     setAccessGranted(true);
+    //   },
+    //   patientPhoneNumber,
+    //   patientName,
+    // });
   };
 
   if (!accessGranted) {

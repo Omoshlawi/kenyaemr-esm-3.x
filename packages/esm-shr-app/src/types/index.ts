@@ -141,15 +141,70 @@ export type PatientSummary = {
   allVlResults: vlResults;
 };
 
+export type Vital = {
+  name: string;
+  value: string;
+  dateRecorded: string;
+};
+
+export type LabResult = {
+  name: string;
+  value: string;
+  dateRecorded: string;
+};
+
+export type Complaint = {
+  name: string;
+  value: string;
+  onsetDate: string;
+  dateRecorded: string;
+};
+
+export type Diagnosis = {
+  name: string;
+  value: string;
+  dateRecorded: string;
+};
+
+export type Allergy = {
+  allergen: string;
+  reaction: string;
+  severity: string;
+  onsetDate: string;
+  dateRecorded: string;
+};
+
+export type Condition = {
+  name: string;
+  onsetDate: string;
+  status: string;
+  dateRecorded: string;
+};
+
+export type Referral = {
+  requesterCode: string;
+  Category: string;
+  priority: string;
+  dateRequested: string;
+};
+
+export type Medication = {
+  name: string;
+  onsetDate: string;
+  value: string;
+  status: string;
+  dateRecorded: string;
+};
+
 export type SHRSummary = {
-  vitals: Array<itemDetails>;
-  labResults: Array<itemDetails>;
-  complaints: Array<itemDetails>;
-  diagnosis: Array<itemDetails>;
-  allergies: Array<itemDetails>;
-  conditions: Array<itemDetails>;
-  medications: Array<itemDetails>;
-  referrals: Array<itemDetails>;
+  vitals: Array<Vital>;
+  labResults: Array<LabResult>;
+  complaints: Array<Complaint>;
+  diagnosis: Array<Diagnosis>;
+  allergies: Array<Allergy>;
+  conditions: Array<Condition>;
+  medications: Array<Medication>;
+  referrals: Array<Referral>;
 };
 
 export type itemDetails = {
