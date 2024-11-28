@@ -1,0 +1,37 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.navLinkItem {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: layout.$spacing-03;
+    color: colors.$blue-70;
+}
+
+.activeNavLinkItem {
+    color: colors.$gray-70;
+}
+
+.navLink {
+    display: flex;
+    flex-direction: column;
+    gap: layout.$spacing-01;
+}
+
+.navContainer {
+    width: fit-content;
+    padding: layout.$spacing-03;
+}
+
+.container {
+    display: flex;
+    flex: 1;
+    gap: layout.$spacing-05;
+}
+
+.navContent {
+    flex: 1;
+    // padding-left: layout.$spacing-05;
+}

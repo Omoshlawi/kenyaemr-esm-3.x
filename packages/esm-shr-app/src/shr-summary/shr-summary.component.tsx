@@ -7,6 +7,8 @@ import styles from './tables/shr-tables.scss';
 import { useConfig } from '@openmrs/esm-framework';
 import { ReferralConfigObject } from '../config-schema';
 import PatientSHRSummaryTable from './tables/shr-summary-table.component';
+import { ExpansionPannel } from '../components/expansion-panel';
+import VisitsNavigation from '../components/visits-navigation/navigation.component';
 const SHRSummaryPanel = () => {
   const patientUuid = getPatientUuidFromUrl();
   const { t } = useTranslation();
@@ -42,7 +44,7 @@ const SHRSummaryPanel = () => {
 
   return (
     <div className={`omrs-main-content`}>
-      <PatientSHRSummaryTable />
+      <VisitsNavigation patientUuid={patientUuid} />
     </div>
   );
 };

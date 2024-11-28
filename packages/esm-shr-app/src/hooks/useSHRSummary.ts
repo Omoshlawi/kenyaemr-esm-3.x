@@ -1,4 +1,4 @@
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { openmrsFetch, parseDate } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import {
   SHRSummary,
@@ -152,20 +152,10 @@ export const useSHRSummary = (patientUuid: string) => {
   const shrSummaryUrl = `/ws/rest/v1/kenyaemril/shrPatientSummary?patientUuid=${patientUuid}`;
   const { data, mutate, error, isLoading } = useSWR<_SHRSummary>(shrSummaryUrl, () => summaryMock);
   return {
-    data: data
-      ? ({
-          allergies: [],
-          complaints: [],
-          conditions: extractCondition(data.visits),
-          diagnosis: [],
-          labResults: extractLabResults(data.visits),
-          medications: [],
-          referrals: [],
-          vitals: extractVitals(data.visits),
-        } as SHRSummary)
-      : null,
+    data: data,
     isError: error,
     isLoading: isLoading,
+    visitDates: data?.visits?.map((visit) => parseDate(visit.startDate)) ?? [],
   };
 };
 

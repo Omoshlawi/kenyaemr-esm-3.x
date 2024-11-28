@@ -1,7 +1,7 @@
 export default {
   visits: [
     {
-      startDate: '',
+      startDate: '2010-08-17',
       endDate: '',
       facility: {
         identifier: '345980',
@@ -151,7 +151,7 @@ export default {
       },
     },
     {
-      startDate: '',
+      startDate: '2010-06-10',
       endDate: '',
       facility: {
         identifier: '345980',

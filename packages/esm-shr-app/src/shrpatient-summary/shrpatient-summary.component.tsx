@@ -1,14 +1,13 @@
-import React, { useRef, useState } from 'react';
-import styles from './shr-summary.scss';
-import { Tab, Tabs, TabList, TabPanel, TabPanels, StructuredListSkeleton, Button } from '@carbon/react';
-import { useTranslation } from 'react-i18next';
+import { StructuredListSkeleton, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import { useLayoutType, useSession } from '@openmrs/esm-framework';
-import { useSHRSummary } from '../hooks/useSHRSummary';
-import { Printer } from '@carbon/react/icons';
-import { useReactToPrint } from 'react-to-print';
-import PrintComponent from '../print-layout/print.component';
-import SHRDataTable from './shrDataTable.component';
 import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useReactToPrint } from 'react-to-print';
+import { useSHRSummary } from '../hooks/useSHRSummary';
+import PrintComponent from '../print-layout/print.component';
+import styles from './shr-summary.scss';
+import SHRDataTable from './shrDataTable.component';
 
 interface SHRSummaryProps {
   patientUuid: string;
@@ -212,7 +211,7 @@ const SharedHealthRecordsSummary: React.FC<SHRSummaryProps> = ({ patientUuid }) 
 
           <hr />
 
-          <div className={styles.summaryContainer}>
+          {/* <div className={styles.summaryContainer}>
             <Tabs className={`${styles.verticalTabs} ${layout === 'tablet' ? styles.tabletTabs : styles.desktopTabs}`}>
               <TabList aria-label="Shared Medical Record tabs" className={styles.tablist}>
                 <Tab
@@ -286,7 +285,7 @@ const SharedHealthRecordsSummary: React.FC<SHRSummaryProps> = ({ patientUuid }) 
                 </TabPanel>
               </TabPanels>
             </Tabs>
-          </div>
+          </div> */}
         </div>
       </div>
     );
