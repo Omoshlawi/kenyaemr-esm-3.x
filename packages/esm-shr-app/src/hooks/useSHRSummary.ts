@@ -96,7 +96,7 @@ export interface ObservationValueComponent {
   observationValue: string;
 }
 
-const extractCondition = (visits: Array<Visit> = []): Array<_Condition> => {
+export const extractCondition = (visits: Array<Visit> = []): Array<_Condition> => {
   return visits?.reduce<Array<_Condition>>((prev, visit) => {
     if (visit?.summary?.conditions) {
       return [
@@ -113,7 +113,7 @@ const extractCondition = (visits: Array<Visit> = []): Array<_Condition> => {
   }, []);
 };
 
-const extractVitals = (visits: Array<Visit> = []): Array<_Vital> => {
+export const extractVitals = (visits: Array<Visit> = []): Array<_Vital> => {
   return visits?.reduce<Array<_Vital>>((prev, visit) => {
     if (visit?.summary?.observations) {
       return [
@@ -130,7 +130,7 @@ const extractVitals = (visits: Array<Visit> = []): Array<_Vital> => {
     return prev;
   }, []);
 };
-const extractLabResults = (visits: Array<Visit> = []): Array<_LabResult> => {
+export const extractLabResults = (visits: Array<Visit> = []): Array<_LabResult> => {
   return visits?.reduce<Array<_Vital>>((prev, visit) => {
     if (visit?.summary?.observations) {
       return [

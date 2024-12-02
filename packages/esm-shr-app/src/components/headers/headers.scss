@@ -1,0 +1,43 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.filterHeader {
+  display: flex;
+  flex-direction: row;
+  justify-content: end;
+  gap: layout.$spacing-03;
+}
+
+.visitHeaderTile {
+  background-color: colors.$white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: layout.$spacing-03;
+
+  & p {
+    display: flex;
+    color: colors.$gray-50;
+    gap: layout.$spacing-03;
+    padding: layout.$spacing-03;
+  }
+}
+
+.sectionHeader {
+  display: flex;
+  background-color: colors.$white;
+  gap: layout.$spacing-03;
+  align-items: center;
+  justify-content: space-between;
+
+  & > div {
+    display: flex;
+    gap: layout.$spacing-05;
+    align-items: center;
+  }
+}
+
+.mutateText {
+  color: colors.$gray-50;
+}

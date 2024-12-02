@@ -1,63 +1,61 @@
 import { Stack } from '@carbon/react';
-import { Hospital, Logout, Medication, Person, UserServiceDesk } from '@carbon/react/icons';
-import React, { PropsWithChildren, useState } from 'react';
+import { Activity, Chemistry, Pills, Stethoscope } from '@carbon/react/icons';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { useSHRSummary, Visit } from '../../hooks/useSHRSummary';
+import SectionHeader from '../headers/section-header.component';
+import VisitHeader from '../headers/visit-header.component';
 import styles from './expansion-pannel.scss';
-import ExpansionTile from './expansion-tile.component';
-import { Visit } from '../../hooks/useSHRSummary';
+import TriageSection from '../sections/triage-component';
+import ConsultationSection from '../sections/consultation.component';
+import LabOrdersection from '../sections/lab-order.component';
+import PrescriptionSection from '../sections/prescription.component';
 
 interface ExpansionPannelProps {
   visit: Visit;
 }
 
 const ExpansionPannel: React.FC<ExpansionPannelProps> = ({ visit }) => {
-  const [expanded, setExpanded] = useState(false);
+  const { t } = useTranslation();
   return (
     <Stack className={styles.expansionPannelContainer}>
-      <ExpansionTile
-        leading={<Person />}
-        title="Check-In"
-        subTitles={['Nathali Kiribi', '10:53 AM']}
-        expanded={expanded}
-        onExpandedChange={(e) => setExpanded(e)}>
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Harum, ratione amet fugiat corporis unde itaque odit
-        odio libero illum. Unde veritatis delectus iure maxime eveniet esse explicabo, repellat incidunt mollitia.
-      </ExpansionTile>
-      <ExpansionTile
-        leading={<Hospital />}
-        title="Triage"
-        subTitles={['Anya Pierce', '11:14 AM']}
-        expanded={expanded}
-        onExpandedChange={(e) => setExpanded(e)}>
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Harum, ratione amet fugiat corporis unde itaque odit
-        odio libero illum. Unde veritatis delectus iure maxime eveniet esse explicabo, repellat incidunt mollitia.
-      </ExpansionTile>
-      <ExpansionTile
-        leading={<UserServiceDesk />}
-        title="Consultation"
-        subTitles={['Dr. Mwangi', '11:28 AM']}
-        expanded={expanded}
-        onExpandedChange={(e) => setExpanded(e)}>
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Harum, ratione amet fugiat corporis unde itaque odit
-        odio libero illum. Unde veritatis delectus iure maxime eveniet esse explicabo, repellat incidunt mollitia.
-      </ExpansionTile>
-      <ExpansionTile
-        leading={<Medication />}
-        title="Pharmacy"
-        subTitles={['Macelo Write', '01:28 PM']}
-        expanded={expanded}
-        onExpandedChange={(e) => setExpanded(e)}>
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Harum, ratione amet fugiat corporis unde itaque odit
-        odio libero illum. Unde veritatis delectus iure maxime eveniet esse explicabo, repellat incidunt mollitia.
-      </ExpansionTile>
-      <ExpansionTile
-        leading={<Logout />}
-        title="Check-Out"
-        subTitles={['Automatically', '01:28 PM']}
-        expanded={expanded}
-        onExpandedChange={(e) => setExpanded(e)}>
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Harum, ratione amet fugiat corporis unde itaque odit
-        odio libero illum. Unde veritatis delectus iure maxime eveniet esse explicabo, repellat incidunt mollitia.
-      </ExpansionTile>
+      <VisitHeader visit={visit} />
+      <SectionHeader
+        icon={Activity}
+        reporter={`Completed by ${visit.professional[0]?.identifier}`}
+        time={'48 minutes ago'}
+        title={t('triage', 'Triage')}
+        type="red"
+      />
+      <TriageSection visit={visit} />
+      <hr />
+      <SectionHeader
+        icon={Stethoscope}
+        reporter={`Completed by ${visit.professional[0]?.identifier}`}
+        time={'48 minutes ago'}
+        title={t('consultation', 'Consultation')}
+        type="red"
+      />
+      <ConsultationSection visit={visit} />
+      <hr />
+      <SectionHeader
+        icon={Chemistry}
+        reporter={`Completed by ${visit.professional[0]?.identifier}`}
+        time={'48 minutes ago'}
+        title={t('labOrder', 'Lab order')}
+        type="red"
+      />
+      <LabOrdersection visit={visit} />
+      <hr />
+      <SectionHeader
+        icon={Pills}
+        reporter={`Completed by ${visit.professional[0]?.identifier}`}
+        time={'48 minutes ago'}
+        title={t('prescriptions', 'Prescriptions')}
+        type="red"
+      />
+      <PrescriptionSection visit={visit} />
+      <hr />
     </Stack>
   );
 };

@@ -1,0 +1,9 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.sectionContent {
+  margin: 0 0 0 2rem;
+  background-color: colors.$white;
+  border-left: dashed colors.$gray-50 1px;
+}

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useSHRSummary } from '../../hooks/useSHRSummary';
 import { ExpansionPannel } from '../expansion-panel';
 import styles from './navigation.scss';
+import FilterHeader from '../headers/filters-header.component';
 
 type VisitsNavigationProps = {
   patientUuid: string;
@@ -50,6 +51,7 @@ const VisitsNavigation: React.FC<VisitsNavigationProps> = ({ patientUuid }) => {
         <br />
       </Layer>
       <Layer className={styles.navContent}>
+        <FilterHeader />
         <ExpansionPannel visit={data.visits[currentVisitIndex]} />
       </Layer>
     </Layer>
