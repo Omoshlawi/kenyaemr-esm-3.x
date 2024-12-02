@@ -6,6 +6,7 @@
   "Category": "Category",
   "clinicalNote": "Clinical Note",
   "completed": "Completed",
+  "consultation": "Consultation",
   "dateRecorded": "Date Recorded",
   "dateReferred": "Date Referred",
   "dateRequested": "Date Requested",
@@ -19,6 +20,7 @@
   "fromFacility": "From Facility",
   "gender": "Gender",
   "jumpToVisit": "Jump to visit",
+  "labOrder": "Lab order",
   "loading": "Loading...",
   "missingNupiIdentiferMessage": "The patient is missing  national patient unique identifier (NUPI). Please register the patient with the client registry to retrieve their referrals.",
   "name": "Name",
@@ -27,6 +29,7 @@
   "noSHRRecords": "SHR Records have not been pulled",
   "nupi": "UPI",
   "onsetDate": "Onset Date",
+  "prescriptions": "Prescriptions",
   "priority": "Priority",
   "processReferral": "Process referral",
   "processReferralError": "Process referral error",
@@ -58,5 +61,6 @@
   "shrRecordSummary": "SHR Records Summary",
   "shrSummary": "SHR Summary",
   "status": "Status",
+  "triage": "Triage",
   "value": "Value"
 }
