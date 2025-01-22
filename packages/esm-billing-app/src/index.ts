@@ -55,7 +55,6 @@ export const billingSummaryDashboardLink = getSyncLifecycle(
   createDashboardLink({ ...dashboardMeta, moduleName }),
   options,
 );
-
 export const billingOverviewLink = getSyncLifecycle(
   createLeftPanelLink({
     name: '',

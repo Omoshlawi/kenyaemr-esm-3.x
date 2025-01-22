@@ -56,7 +56,16 @@ export const claimsManagementSideNavGroup = getSyncLifecycle(
 
 export const diagnosticsRoot = getSyncLifecycle(DiagnosticsRoot, options);
 export const linkageServicesRoot = getSyncLifecycle(LinkageServicesRoot, options);
-export const billingRoot = getSyncLifecycle(LinkageServicesRoot, options);
+
+export const patientChartClinicalConsultationNavGroup = getSyncLifecycle(
+  createDashboardGroup({
+    title: 'Clinical Consultation',
+    slotName: 'patient-chart-clinical-consultation-nav-group',
+    isExpanded: false,
+    icon: Stethoscope,
+  }),
+  options,
+);
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
