@@ -1,4 +1,4 @@
-import { HealthCross, Stethoscope } from '@carbon/react/icons';
+import { HealthCross, Money, Stethoscope } from '@carbon/react/icons';
 import { defineConfigSchema, getSyncLifecycle } from '@openmrs/esm-framework';
 import DiagnosticsRoot from './app-navigation/diagnostics/diagnostics-root.component';
 import { createDashboardGroup } from './app-navigation/nav-utils';
@@ -34,9 +34,19 @@ export const linkageServicesDashboardNavGroup = getSyncLifecycle(
   }),
   options,
 );
+export const billingDashboardNavGroup = getSyncLifecycle(
+  createDashboardGroup({
+    slotName: 'billing-dashboard-link-slot',
+    title: 'Billing Module',
+    icon: Money,
+    isExpanded: false,
+  }),
+  options,
+);
 
 export const diagnosticsRoot = getSyncLifecycle(DiagnosticsRoot, options);
 export const linkageServicesRoot = getSyncLifecycle(LinkageServicesRoot, options);
+export const billingRoot = getSyncLifecycle(LinkageServicesRoot, options);
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);

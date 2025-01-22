@@ -28,6 +28,16 @@
       "slot": "diagnostics-slot"
     },
     {
+      "component": "billingDashboardNavGroup",
+      "name": "billing-dashboard-nav-group",
+      "slot": "homepage-dashboard-slot",
+      "meta": {
+        "name": "billing",
+        "title": "Billing",
+        "slot": "billing-dashboard-slot"
+      }
+    },
+    {
       "component": "linkageServicesDashboardNavGroup",
       "name": "linkage-services-dashboard-nav-group",
       "slot": "homepage-dashboard-slot",
