@@ -1,7 +1,6 @@
-import React, { useMemo } from 'react';
-import last from 'lodash-es/last';
-import { BrowserRouter, useLocation } from 'react-router-dom';
 import { ConfigurableLink } from '@openmrs/esm-framework';
+import React from 'react';
+import { BrowserRouter, useLocation } from 'react-router-dom';
 
 export interface LinkConfig {
   name: string;
@@ -13,21 +12,12 @@ export function LinkExtension({ config }: { config: LinkConfig }) {
   const location = useLocation();
   const spaBasePath = window.getOpenmrsSpaBase() + 'home';
 
-  let urlSegment = useMemo(() => decodeURIComponent(last(location.pathname.split('/'))), [location.pathname]);
-
-  const isUUID = (value) => {
-    const regex = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/;
-    return regex.test(value);
-  };
-
-  if (isUUID(urlSegment)) {
-    urlSegment = location.pathname.split('/').at(-2);
-  }
+  const isActive = location.pathname.includes(name);
 
   return (
     <ConfigurableLink
       to={spaBasePath + '/' + name}
-      className={`cds--side-nav__link ${name === urlSegment && 'active-left-nav-link'}`}>
+      className={`cds--side-nav__link ${isActive && 'active-left-nav-link'}`}>
       {title}
     </ConfigurableLink>
   );

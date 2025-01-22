@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import last from 'lodash-es/last';
 import { BrowserRouter, useLocation } from 'react-router-dom';
 import { ConfigurableLink } from '@openmrs/esm-framework';
@@ -13,23 +13,32 @@ export function LinkExtension({ config }: { config: LinkConfig }) {
   const location = useLocation();
   const spaBasePath = window.getOpenmrsSpaBase() + 'home';
 
-  let urlSegment = useMemo(() => decodeURIComponent(last(location.pathname.split('/'))!), [location.pathname]);
+  const matchUrl = useCallback((pattern: string, actualUrl: string) => {
+    // Regular expression to match UUIDs (e.g., 8-4-4-4-12 hex characters)
+    const uuidRegex = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
 
-  const isUUID = (value) => {
-    const regex = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/;
-    return regex.test(value);
-  };
+    // Replace /:uuid with the UUID regex pattern
+    const regexPattern = pattern.replace(/:\b(uuid)\b/g, uuidRegex);
 
-  if (isUUID(urlSegment)) {
-    urlSegment = location.pathname.split('/').at(-2);
-  } else if (urlSegment === 'overview' && location.pathname.includes('lab-manifest')) {
-    urlSegment = location.pathname.replace(spaBasePath + '/', '');
-  }
+    // Create a regular expression with start and end anchors
+    const regex = new RegExp(`^${regexPattern}$`);
+
+    // Test if the actual URL matches the pattern
+    return regex.test(actualUrl);
+  }, []);
+
+  const isActive = useMemo(
+    () =>
+      matchUrl(`${spaBasePath}/${name}/:uuuid`, location.pathname) ||
+      matchUrl(`${spaBasePath}/${name}/:overview`, location.pathname) ||
+      matchUrl(`${spaBasePath}/${name}`, location.pathname),
+    [location.pathname, matchUrl, name],
+  );
 
   return (
     <ConfigurableLink
       to={spaBasePath + '/' + name}
-      className={`cds--side-nav__link ${name === urlSegment && 'active-left-nav-link'}`}>
+      className={`cds--side-nav__link ${isActive && 'active-left-nav-link'}`}>
       {title}
     </ConfigurableLink>
   );
