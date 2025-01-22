@@ -1,5 +1,5 @@
 import { defineConfigSchema, getSyncLifecycle, registerFeatureFlag } from '@openmrs/esm-framework';
-import { createDashboardGroup, createDashboardLink } from '@openmrs/esm-patient-common-lib';
+import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
 import BenefitsPackage from './benefits-package/benefits-package.component';
 import Benefits from './benefits-package/benefits/benefits.component';
 import BenefitPreAuthForm from './benefits-package/forms/benefit-pre-auth-form.workspace';
@@ -53,15 +53,6 @@ export const importTranslation = require.context('../translations', false, /.jso
 
 export const billingSummaryDashboardLink = getSyncLifecycle(
   createDashboardLink({ ...dashboardMeta, moduleName }),
-  options,
-);
-
-export const billingDashboardLink = getSyncLifecycle(
-  createDashboardGroup({
-    title: 'Billing',
-    slotName: 'billing-dashboard-link-slot',
-    isExpanded: false,
-  }),
   options,
 );
 
@@ -120,14 +111,7 @@ export const chargeableItemsLink = getSyncLifecycle(
   }),
   options,
 );
-export const claimsManagementSideNavGroup = getSyncLifecycle(
-  createDashboardGroup({
-    title: 'Claims Management',
-    slotName: 'claims-management-dashboard-link-slot',
-    isExpanded: false,
-  }),
-  options,
-);
+
 export const claimsManagementOverviewDashboardLink = getSyncLifecycle(
   createLeftPanelLink({
     name: 'claims-overview',

@@ -38,6 +38,17 @@
       }
     },
     {
+      "component": "claimsManagementSideNavGroup",
+      "name": "claims-management-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "meta": {
+        "name": "claims-management",
+        "title": "Claims management Overview",
+        "slot": "case-management-slot"
+      },
+      "featureFlag": "healthInformationExchange"
+    },
+    {
       "component": "linkageServicesDashboardNavGroup",
       "name": "linkage-services-dashboard-nav-group",
       "slot": "homepage-dashboard-slot",
