@@ -8,17 +8,12 @@
     {
       "component": "pharmacyDashboardLink",
       "name": "pharmacy-dashboard-link",
-      "slot": "homepage-dashboard-slot",
-      "meta": {
-        "name": "pharmacy",
-        "title": "pharmacy",
-        "slot": "pharmacy-dashboard-slot"
-      }
+      "slot": "linkage-services-group-nav-slot"
     },
     {
       "component": "root",
       "name": "pharmacy-dashboard-root",
-      "slot": "pharmacy-dashboard-slot"
+      "slot": "linkage-services-community-pharmacy-slot"
     },
     {
       "name": "pharmacy-assignment-form",

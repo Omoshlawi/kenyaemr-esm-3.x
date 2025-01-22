@@ -34,7 +34,7 @@ export const pharmacyDeleteConfirmDialog = getAsyncLifecycle(
 );
 export const pharmacyDashboardLink = getSyncLifecycle(
   createLeftPanelLink({
-    name: 'pharmacy',
+    name: 'linkage-services/community-pharmacy',
     title: 'Community Pharmacy',
   }),
   options,

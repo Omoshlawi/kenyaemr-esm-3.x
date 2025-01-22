@@ -4,7 +4,7 @@ import PharmacyComponent from './pharmacy-component/pharmacy.component';
 import PharmacyDetail from './pharmacy-detail/pharmacy-detail.component';
 
 const Root: React.FC = () => {
-  const baseName = window.getOpenmrsSpaBase() + 'home/pharmacy';
+  const baseName = window.getOpenmrsSpaBase() + 'home/linkage-services/community-pharmacy';
 
   return (
     <BrowserRouter basename={baseName}>

@@ -4,6 +4,7 @@ import DiagnosticsRoot from './app-navigation/diagnostics/diagnostics-root.compo
 import { createDashboardGroup } from './app-navigation/nav-utils';
 import { configSchema } from './config-schema';
 import rootComponent from './root.component';
+import LinkageServicesRoot from './app-navigation/linkage-services/linkage-services-root.component';
 
 const moduleName = '@kenyaemr/esm-version-app';
 
@@ -35,6 +36,7 @@ export const linkageServicesDashboardNavGroup = getSyncLifecycle(
 );
 
 export const diagnosticsRoot = getSyncLifecycle(DiagnosticsRoot, options);
+export const linkageServicesRoot = getSyncLifecycle(LinkageServicesRoot, options);
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
