@@ -7,22 +7,12 @@
     {
       "component": "labManifestSideNavGroup",
       "name": "lab-manifest-dashboard-link",
-      "slot": "homepage-dashboard-slot",
-      "meta": {
-        "name": "lab-manifest",
-        "title": "Lab manifest Overview",
-        "slot": "lab-manifest-slot"     
-      }
+      "slot": "diagnostics-group-nav-slot"
     },
     {
       "component": "root",
       "name": "lab-manifest-dashboard-root",
-      "slot": "lab-manifest-slot"
-    },
-    {
-      "component": "labManifestOverview",
-      "name": "lab-manifest-overview",
-      "slot": "lab-manifest-overview-slot"
+      "slot": "diagnostics-lab-manifest-slot"
     },
     {
       "component": "manifestOverviewDashboardLink",
@@ -51,10 +41,6 @@
     {
       "component": "root",
       "route": "lab-manifest"
-    },
-    {
-      "component": "labManifestOverview",
-      "route": "lab-manifest-overview"
     }
   ]
 }

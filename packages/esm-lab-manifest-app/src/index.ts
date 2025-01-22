@@ -45,20 +45,20 @@ export const labManifestSideNavGroup = getSyncLifecycle(
   createDashboardGroup({
     title: 'Lab Manifest',
     slotName: 'lab-manifest-dashbaord-link-slot',
-    isExpanded: false,
+    isExpanded: true,
   }),
   options,
 );
 export const manifestOverviewDashboardLink = getSyncLifecycle(
   createLeftPanelLink({
-    name: 'lab-manifest/overview',
+    name: 'diagnostics/lab-manifest/overview',
     title: 'Overview',
   }),
   options,
 );
 export const manifestsDashboardLink = getSyncLifecycle(
   createLeftPanelLink({
-    name: 'lab-manifest',
+    name: 'diagnostics/lab-manifest',
     title: 'Manifests',
   }),
   options,

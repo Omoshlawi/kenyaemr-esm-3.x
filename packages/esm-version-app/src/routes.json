@@ -11,5 +11,36 @@
       "offline": true
     }
   ],
-  "extensions": []
+  "extensions": [
+    {
+      "component": "diagnosticsDashboardNavGroup",
+      "name": "diagnostics-dashboard-nav-group",
+      "slot": "homepage-dashboard-slot",
+      "meta": {
+        "name": "diagnostics",
+        "title": "Diagnostics",
+        "slot": "diagnostics-slot"
+      }
+    },
+    {
+      "component": "diagnosticsRoot",
+      "name": "diagnostics-root",
+      "slot": "diagnostics-slot"
+    },
+    {
+      "component": "linkageServicesDashboardNavGroup",
+      "name": "linkage-services-dashboard-nav-group",
+      "slot": "homepage-dashboard-slot",
+      "meta": {
+        "name": "linkage-services",
+        "title": "Linkage Services",
+        "slot": "linkage-services-slot"
+      }
+    },
+    {
+      "component": "linkageServicesRoot",
+      "name": "linkage-services-root",
+      "slot": "linkage-services-slot"
+    }
+  ]
 }

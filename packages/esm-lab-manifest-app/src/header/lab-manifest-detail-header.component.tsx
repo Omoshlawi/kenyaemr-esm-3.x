@@ -16,7 +16,7 @@ const LabManifestDetailHeader: React.FC<LabManifestDetailHeaderProps> = ({ manif
   const { t } = useTranslation();
 
   const handleGoBack = () => {
-    navigate({ to: window.getOpenmrsSpaBase() + `home/lab-manifest` });
+    navigate({ to: window.getOpenmrsSpaBase() + `home/diagnostics/lab-manifest` });
   };
 
   const handleEditManifest = () => {

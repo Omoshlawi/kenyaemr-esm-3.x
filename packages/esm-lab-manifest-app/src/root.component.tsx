@@ -5,7 +5,7 @@ import LabManifestDetail from './component/lab-manifest-detail.component';
 import LabManifestOverview from './component/lab-manifest-overview.component';
 
 const Root: React.FC = () => {
-  const baseName = window.getOpenmrsSpaBase() + 'home/lab-manifest';
+  const baseName = window.getOpenmrsSpaBase() + 'home/diagnostics/lab-manifest';
 
   return (
     <BrowserRouter basename={baseName}>

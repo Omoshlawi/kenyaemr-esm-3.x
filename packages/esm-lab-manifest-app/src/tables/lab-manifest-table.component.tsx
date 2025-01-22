@@ -99,7 +99,7 @@ const LabManifestsTable = () => {
   ];
 
   const handleViewManifestSamples = (manifestUuid: string) => {
-    navigate({ to: window.getOpenmrsSpaBase() + `home/lab-manifest/${manifestUuid}` });
+    navigate({ to: window.getOpenmrsSpaBase() + `home/diagnostics/lab-manifest/${manifestUuid}` });
   };
 
   const handleEditManifest = (manifest: MappedLabManifest) => {
