@@ -84,22 +84,12 @@ export const labourDeliveryDashboardMeta = {
   config: {},
 };
 export const caseManagementDashboardMeta = {
-  name: 'case-management',
-  slot: 'case-management-dashboard-slot',
+  name: 'linkage-services/case-management',
   title: 'Case management',
-  path: 'case-management',
-  columns: 1,
-  moduleName: '@kenyaemr/esm-patient-clinical-view-app',
-  config: {},
 };
 export const peerCalendarDashboardMeta = {
-  name: 'peer-calendar',
-  slot: 'peer-calendar-dashboard-slot',
+  name: 'linkage-services/peer-calendar',
   title: 'Peer Calendar',
-  path: 'peer-calendar',
-  columns: 1,
-  moduleName: '@kenyaemr/esm-patient-clinical-view-app',
-  config: {},
 };
 export const caseEncounterDashboardMeta = {
   slot: 'patient-chart-relationships-slot',

@@ -198,13 +198,7 @@
     {
       "component": "caseManagementDashboardLink",
       "name": "case-management-dashboard-link",
-      "slot": "homepage-dashboard-slot",
-      "meta": {
-        "name": "case-management",
-        "title": "Case Management",
-        "slot": "case-management-dashboard-slot",
-        "path": "/case-management"
-      }
+      "slot": "linkage-services-group-nav-slot"
     },
     {
       "name": "in-patient-dashboard-link",
@@ -229,7 +223,7 @@
     },
     {
       "name": "wrap-component-view",
-      "slot": "case-management-dashboard-slot",
+      "slot": "linkage-services-case-management-slot",
       "component": "wrapComponent",
       "order": 2,
       "online": true,
@@ -259,23 +253,17 @@
     {
       "component": "peerCalendarDashboardLink",
       "name": "peer-calendar-dashboard-link",
-      "slot": "homepage-dashboard-slot",
-      "meta": {
-        "name": "peer-calendar",
-        "title": "Peer Calendar",
-        "slot": "peer-calendar-dashboard-slot",
-        "path": "peer-management"
-      }
+      "slot": "linkage-services-group-nav-slot"
     },
     {
       "name": "peer-calendar",
-      "slot": "peer-calendar-dashboard-slot",
+      "slot": "linkage-services-peer-calendar-slot",
       "component": "peerCalendar",
       "order": 0,
       "online": true,
       "offline": false
     },
-     {
+    {
       "name": "deceased-panel-dashboard-link",
       "component": "deceasedPanelDashboardLink",
       "slot": "patient-chart-dashboard-slot",
@@ -357,7 +345,7 @@
       "title": "Other Relationships Form",
       "type": "form"
     },
-     {
+    {
       "name": "end-relationship-form",
       "component": "endRelationshipWorkspace",
       "title": "Discontinue relationship form",
