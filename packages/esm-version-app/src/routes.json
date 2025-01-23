@@ -87,18 +87,8 @@
       "name": "kenyaemr-referrals-dashboard-link"
     },
     {
-      "component": "homeRoot",
-      "name": "kenyaemr-referrals-root",
-      "slot": "kenyaemr-referrals-dashboard-slot"
-    },
-    {
       "component": "providersDashboardLink",
       "name": "kenyaemr-providers-dashboard-link"
-    },
-    {
-      "component": "homeRoot",
-      "name": "kenyaemr-providers-root",
-      "slot": "kenyaemr-providers-dashboard-slot"
     },
     {
       "component": "patientServicesDashboardNavGroup",
