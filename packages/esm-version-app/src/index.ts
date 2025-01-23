@@ -7,6 +7,7 @@ import {
   Stethoscope,
   TcpIpService,
   UserAdmin,
+  UserMultiple,
 } from '@carbon/react/icons';
 import { defineConfigSchema, getSyncLifecycle } from '@openmrs/esm-framework';
 import DiagnosticsRoot from './app-navigation/diagnostics/diagnostics-root.component';
@@ -15,9 +16,6 @@ import { configSchema } from './config-schema';
 import rootComponent from './root.component';
 import LinkageServicesRoot from './app-navigation/linkage-services/linkage-services-root.component';
 import HomeRoot from './app-navigation/kenya-emr-homepage-links-overrides/home-root.component';
-import ReferralsRoot from './app-navigation/kenya-emr-homepage-links-overrides/referrals-root.component';
-import InpatientRoot from './app-navigation/kenya-emr-homepage-links-overrides/inpatient-root.component';
-import ProvidersRoot from './app-navigation/kenya-emr-homepage-links-overrides/providers-root.component';
 
 const moduleName = '@kenyaemr/esm-version-app';
 
@@ -34,6 +32,16 @@ export const diagnosticsDashboardNavGroup = getSyncLifecycle(
     slotName: 'diagnostics-group-nav-slot',
     title: 'Diagnostics',
     icon: Stethoscope,
+    isExpanded: false,
+  }),
+  options,
+);
+// clinical-appointments-dashboard-link
+export const patientServicesDashboardNavGroup = getSyncLifecycle(
+  createDashboardGroup({
+    slotName: 'patient-services-group-nav-slot',
+    title: 'Patient services',
+    icon: UserMultiple,
     isExpanded: false,
   }),
   options,
@@ -79,30 +87,23 @@ export const patientChartClinicalConsultationNavGroup = getSyncLifecycle(
   options,
 );
 
-// TODO Remove ->home-widget-db-link from homepage-dashboard-slot
 export const homeDashboardLink = getSyncLifecycle(
   createLeftPanelLink({ route: '/home', title: 'Home', icon: Home }),
   options,
 );
 export const homeRoot = getSyncLifecycle(HomeRoot, options);
-// TODO REMOVE -> bed-admission-dashboard-link from homepage-dashboard-slot
 export const inpatientDashboardLink = getSyncLifecycle(
   createLeftPanelLink({ route: '/home/bed-admission', title: 'In Patient View', icon: HospitalBed }),
   options,
 );
-export const inPatientRoot = getSyncLifecycle(InpatientRoot, options);
 export const referralsDashboardLink = getSyncLifecycle(
   createLeftPanelLink({ route: '/home/referrals', title: 'Referrals', icon: TcpIpService }),
   options,
 );
-// TODO Remove ->referrals-link from homepage-dashboard-slot
-export const referralsRoot = getSyncLifecycle(ReferralsRoot, options);
 export const providersDashboardLink = getSyncLifecycle(
   createLeftPanelLink({ route: '/home/providers', title: 'Providers', icon: UserAdmin }),
   options,
 );
-// TODO Remove ->referrals-link from homepage-dashboard-slot
-export const providersRoot = getSyncLifecycle(ProvidersRoot, options);
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);

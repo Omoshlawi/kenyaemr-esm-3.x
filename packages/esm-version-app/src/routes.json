@@ -121,6 +121,17 @@
       "slot": "kenyaemr-providers-dashboard-slot"
     },
     {
+      "component": "patientServicesDashboardNavGroup",
+      "name": "patient-services-dashboard-nav-group",
+      "slot": "homepage-dashboard-slot",
+      "order": 1
+    },
+    {
+      "component": "patientServicesRoot",
+      "name": "patient-services-root",
+      "slot": "kenyaemr-home-page-slot"
+    },
+    {
       "component": "patientChartClinicalConsultationNavGroup",
       "name": "patient-chart-clinical-consultation-nav-group",
       "slot": "patient-chart-dashboard-slot",
