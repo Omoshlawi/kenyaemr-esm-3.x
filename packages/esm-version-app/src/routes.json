@@ -13,6 +13,21 @@
   ],
   "extensions": [
     {
+      "component": "homeDashboardLink",
+      "name": "kenyaemr-home-page-link",
+      "slot": "homepage-dashboard-slot",
+      "meta": {
+        "name": "",
+        "title": "KenyaEMR Home page",
+        "slot": "kenyaemr-home-page-slot"
+      }
+    },
+    {
+      "component": "homeRoot",
+      "name": "kenya-emr-home-root",
+      "slot": "kenyaemr-home-page-slot"
+    },
+    {
       "component": "diagnosticsDashboardNavGroup",
       "name": "diagnostics-dashboard-nav-group",
       "slot": "homepage-dashboard-slot",

@@ -1,10 +1,11 @@
-import { HealthCross, IbmCloudBackupAndRecovery, Money, Stethoscope } from '@carbon/react/icons';
+import { HealthCross, Home, IbmCloudBackupAndRecovery, Money, Stethoscope } from '@carbon/react/icons';
 import { defineConfigSchema, getSyncLifecycle } from '@openmrs/esm-framework';
 import DiagnosticsRoot from './app-navigation/diagnostics/diagnostics-root.component';
-import { createDashboardGroup } from './app-navigation/nav-utils';
+import { createDashboardGroup, createLeftPanelLink } from './app-navigation/nav-utils';
 import { configSchema } from './config-schema';
 import rootComponent from './root.component';
 import LinkageServicesRoot from './app-navigation/linkage-services/linkage-services-root.component';
+import HomeRoot from './app-navigation/kenya-emr-homepage-links-overrides/home-root.component';
 
 const moduleName = '@kenyaemr/esm-version-app';
 
@@ -60,12 +61,18 @@ export const linkageServicesRoot = getSyncLifecycle(LinkageServicesRoot, options
 export const patientChartClinicalConsultationNavGroup = getSyncLifecycle(
   createDashboardGroup({
     title: 'Clinical Consultation',
-    slotName: 'patient-chart-clinical-consultation-nav-group',
+    slotName: 'patient-chart-clinical-consultation-nav-group-slot',
     isExpanded: false,
-    icon: Stethoscope,
   }),
   options,
 );
+
+// TODO Remove ->home-widget-db-link from homepage-dashboard-slot
+export const homeDashboardLink = getSyncLifecycle(
+  createLeftPanelLink({ route: '/home', title: 'Home', icon: Home }),
+  options,
+);
+export const homeRoot = getSyncLifecycle(HomeRoot, options);
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
