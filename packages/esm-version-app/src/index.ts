@@ -10,12 +10,12 @@ import {
   UserMultiple,
 } from '@carbon/react/icons';
 import { defineConfigSchema, getSyncLifecycle } from '@openmrs/esm-framework';
-import DiagnosticsRoot from './app-navigation/diagnostics/diagnostics-root.component';
+import DiagnosticsRoot from './app-navigation/diagnostics-root.component';
 import { createDashboardGroup, createLeftPanelLink } from './app-navigation/nav-utils';
 import { configSchema } from './config-schema';
 import rootComponent from './root.component';
-import LinkageServicesRoot from './app-navigation/linkage-services/linkage-services-root.component';
-import HomeRoot from './app-navigation/kenya-emr-homepage-links-overrides/home-root.component';
+import LinkageServicesRoot from './app-navigation/linkage-services-root.component';
+import HomeRoot from './app-navigation/home-root.component';
 
 const moduleName = '@kenyaemr/esm-version-app';
 

@@ -80,43 +80,23 @@
     },
     {
       "component": "inpatientDashboardLink",
-      "name": "kenya-emr-inpatient-dashboard-link",
-      "meta": {
-        "name": "bed-admission",
-        "title": "In Patient",
-        "slot": "kenyaemr-inpatient-dashboard-slot"
-      }
-    },
-    {
-      "component": "inPatientRoot",
-      "name": "kenyaemr-inpatient-root",
-      "slot": "kenyaemr-inpatient-dashboard-slot"
+      "name": "kenya-emr-inpatient-dashboard-link"
     },
     {
       "component": "referralsDashboardLink",
-      "name": "kenyaemr-referrals-dashboard-link",
-      "meta": {
-        "name": "referrals",
-        "title": "Referrals",
-        "slot": "kenyaemr-referrals-dashboard-slot"
-      }
+      "name": "kenyaemr-referrals-dashboard-link"
     },
     {
-      "component": "referralsRoot",
+      "component": "homeRoot",
       "name": "kenyaemr-referrals-root",
       "slot": "kenyaemr-referrals-dashboard-slot"
     },
     {
       "component": "providersDashboardLink",
-      "name": "kenyaemr-providers-dashboard-link",
-      "meta": {
-        "name": "providers",
-        "title": "Providers",
-        "slot": "kenyaemr-providers-dashboard-slot"
-      }
+      "name": "kenyaemr-providers-dashboard-link"
     },
     {
-      "component": "providersRoot",
+      "component": "homeRoot",
       "name": "kenyaemr-providers-root",
       "slot": "kenyaemr-providers-dashboard-slot"
     },
@@ -125,11 +105,6 @@
       "name": "patient-services-dashboard-nav-group",
       "slot": "homepage-dashboard-slot",
       "order": 1
-    },
-    {
-      "component": "patientServicesRoot",
-      "name": "patient-services-root",
-      "slot": "kenyaemr-home-page-slot"
     },
     {
       "component": "patientChartClinicalConsultationNavGroup",
