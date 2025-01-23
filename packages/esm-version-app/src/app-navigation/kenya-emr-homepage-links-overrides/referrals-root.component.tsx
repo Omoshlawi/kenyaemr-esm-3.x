@@ -1,17 +1,16 @@
 import { ExtensionSlot } from '@openmrs/esm-framework';
 import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-
-const HomeRoot = () => {
-  const baseName = window.getOpenmrsSpaBase() + 'home';
+const ReferralsRoot = () => {
+  const baseName = window.getOpenmrsSpaBase() + 'home/referrals';
 
   return (
     <BrowserRouter basename={baseName}>
       <Routes>
-        <Route path="/" element={<ExtensionSlot name="home-dashboard-slot" />} />
+        <Route path="/" element={<ExtensionSlot name="referrals-slot" />} />
       </Routes>
     </BrowserRouter>
   );
 };
 
-export default HomeRoot;
+export default ReferralsRoot;
