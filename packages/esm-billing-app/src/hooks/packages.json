@@ -1,0 +1,67 @@
+[
+    {
+        "code": "SHA-01",
+        "name": "Ambulance & Emergency services",
+        "description": "Ambulance & Emergency services"
+    },
+    {
+        "code": "SHA-03",
+        "name": "Critical Care Services",
+        "description": "Critical Care Services"
+    },
+    {
+        "code": "SHA-05",
+        "name": "Eye Health",
+        "description": "Eye Health"
+    },
+    {
+        "code": "SHA-06",
+        "name": "Hematology and Oncology",
+        "description": "Hematology and Oncology"
+    },
+    {
+        "code": "SHA-07",
+        "name": "Inpatient Services",
+        "description": "Inpatient Services"
+    },
+    {
+        "code": "SHA-08",
+        "name": "Maternity and New Born Health",
+        "description": "Maternity and New Born Health"
+    },
+    {
+        "code": "SHA-09",
+        "name": "Medical Imaging",
+        "description": "Medical Imaging"
+    },
+    {
+        "code": "SHA-10",
+        "name": "Mental Wellness",
+        "description": "Mental Wellness"
+    },
+    {
+        "code": "SHA-12",
+        "name": "Outpatient Services",
+        "description": "Outpatient Services"
+    },
+    {
+        "code": "SHA-13",
+        "name": "Palliative Care",
+        "description": "Palliative Care"
+    },
+    {
+        "code": "SHA-16",
+        "name": "Renal Care Services",
+        "description": "Renal Care Services"
+    },
+    {
+        "code": "SHA-18",
+        "name": "Specialised Laboratory Services",
+        "description": "Specialised Laboratory Services"
+    },
+    {
+        "code": "SHA-19",
+        "name": "Surgical Services",
+        "description": "Surgical Services"
+    }
+]

@@ -58,6 +58,7 @@ export const useInterventions = (filters: InterventionsFilter) => {
     synchronize: false,
   })}`;
   const { isLoading, error, data } = useSWR<{ data: Data }>(url, async (url: string) => {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     const payload = require('./payload.json');
     return { data: payload };
   });
