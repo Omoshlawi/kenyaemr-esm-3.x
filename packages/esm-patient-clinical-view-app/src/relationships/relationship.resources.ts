@@ -80,7 +80,18 @@ export const relationshipFormSchema = z.object({
       gender: z.enum(['M', 'F']),
       birthdate: z.date({ coerce: true }).max(new Date(), 'Must not be a future date'),
       maritalStatus: z.string().optional(),
-      address: z.string().optional(),
+      address: z
+        .object({
+          countyDistrict: z.string().min(1, 'Conty required'), // county
+          stateProvince: z.string().min(1, 'Subconty required'), // subcounty
+          address4: z.string().min(1, 'Ward required'), // ward
+          address1: z.string().optional(), //postal address
+          address6: z.string().min(1, 'Location required').optional(), //location
+          address5: z.string().min(1, 'Su-location required').optional(), // sublocation
+          cityVillage: z.string().min(1, 'Village required').optional(), // village
+          address2: z.string().min(1, 'Landmark required').optional(), // landmark
+        })
+        .optional(),
       phoneNumber: z.string().optional(),
     })
     .optional(),
@@ -127,7 +138,7 @@ export const saveRelationship = async (
             names: [{ givenName, middleName, familyName }],
             gender,
             birthdate,
-            addresses: address ? [{ preferred: true, address1: address }] : undefined,
+            addresses: address ? [address] : undefined,
             dead: false,
             attributes: [
               ...(phoneNumber
@@ -219,4 +230,12 @@ export const saveRelationship = async (
     showSnackbar({ title: 'Error saving relationship', kind: 'error', subtitle: error?.message });
     throw error;
   }
+};
+
+export const getAddressHierarchyEntries = async (search: string = '') => {
+  const url = `/module/addresshierarchy/ajax/getChildAddressHierarchyEntries.form?searchString=${encodeURIComponent(
+    search,
+  )}`;
+  const res = await openmrsFetch<Array<{ name: string }>>(url);
+  return res?.data?.map(({ name }) => name) ?? [];
 };

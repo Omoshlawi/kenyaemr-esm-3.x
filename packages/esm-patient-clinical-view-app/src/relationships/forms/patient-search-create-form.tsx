@@ -23,6 +23,7 @@ import { fetchPerson, relationshipFormSchema } from '../relationship.resources';
 import styles from './form.scss';
 import { MARITAL_STATUS_CONCEPT_UUID } from '../relationships-constants';
 import PatientSearchInfo from '../../autosuggest/patient-search-info.component';
+import PatientAddressForm from './patient-address-form';
 
 type PatientSearchCreateProps = {};
 
@@ -224,21 +225,6 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
           <Column>
             <Controller
               control={form.control}
-              name="personBInfo.address"
-              render={({ field, fieldState: { error } }) => (
-                <TextInput
-                  invalid={error?.message}
-                  invalidText={error?.message}
-                  {...field}
-                  placeholder="Physical Address/Landmark"
-                  labelText={t('address', 'Address')}
-                />
-              )}
-            />
-          </Column>
-          <Column>
-            <Controller
-              control={form.control}
               name="personBInfo.phoneNumber"
               render={({ field, fieldState: { error } }) => (
                 <TextInput
@@ -251,6 +237,7 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
               )}
             />
           </Column>
+          <PatientAddressForm />
         </>
       )}
     </>
