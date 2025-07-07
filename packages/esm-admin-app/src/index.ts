@@ -1,4 +1,4 @@
-import { defineConfigSchema, getSyncLifecycle } from '@openmrs/esm-framework';
+import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 import { moduleName } from './constants';
 import OperationConfirmation from './components/confirm-modal/confirmation-operation-modal.component';
@@ -9,6 +9,7 @@ import HWRConfirmModal from './components/modal/hwr-confirmation.modal';
 import HWREmptyModal from './components/modal/hwr-empty.modal.component';
 import UserRoleScopeWorkspace from './components/users/manage-users/manage-user-role-scope/user-role-scope-workspace/user-role-scope.workspace';
 import HWRSyncModal from './components/modal/hwr-sync.modal';
+import LocationAddForm from './components/locations/add-locations-form.workspace';
 
 const options = {
   featureName: 'esm-admin-app',
@@ -40,7 +41,12 @@ export const facilitySetupLeftPanelLink = getSyncLifecycle(
   createLeftPanelLink({ title: 'Facility Details', name: 'facility-setup' }),
   options,
 );
+export const locationsLeftPanelLink = getSyncLifecycle(
+  createLeftPanelLink({ title: 'Locations', name: 'locations' }),
+  options,
+);
 
 export const hwrConfirmationModal = getSyncLifecycle(HWRConfirmModal, options);
 export const hwrEmptyModal = getSyncLifecycle(HWREmptyModal, options);
 export const hwrSyncModal = getSyncLifecycle(HWRSyncModal, options);
+export const locationFormWorkspace = getSyncLifecycle(LocationAddForm, options);

@@ -20,6 +20,11 @@
       "slot": "admin-left-panel-slot"
     },
     {
+      "component": "locationsLeftPanelLink",
+      "name": "locations-left-panel-link",
+      "slot": "admin-left-panel-slot"
+    },
+    {
       "component": "facilitySetupLeftPanelLink",
       "name": "facility-setup-left-panel-link",
       "slot": "admin-left-panel-slot"
@@ -33,6 +38,12 @@
       "type": "other-form",
       "canMaximize": true,
       "width": "extra-wide"
+    },
+    {
+      "name": "manage-location-workspace",
+      "component": "locationFormWorkspace",
+      "title": "Manage Location Workspace",
+      "type": "other-form"
     },
     {
       "name": "user-role-scope-workspace",

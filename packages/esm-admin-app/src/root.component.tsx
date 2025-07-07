@@ -6,6 +6,7 @@ import LeftPanel from './components/side-menu/left-pannel.component';
 import UserManagentLandingPage from './components/users/manage-users/manage-user.component';
 import EtlAdminDashboard from './components/dashboard/etl-dashboard.component';
 import FacilitySetup from './components/facility-setup/facility-setup.component';
+import Locations from './components/locations/locations.component';
 
 const Root: React.FC = () => {
   const spaBasePath = window.spaBase;
@@ -20,17 +21,21 @@ const Root: React.FC = () => {
   }, [spaBasePath]);
 
   return (
-    <BrowserRouter basename={adminBasename}>
-      <LeftPanel />
-      <main className={styles.container}>
-        <Routes>
-          <Route path="/" element={<UserManagentLandingPage />} />
-          <Route path="/user-management" element={<UserManagentLandingPage />} />
-          <Route path="/etl-administration" element={<EtlAdminDashboard />} />
-          <Route path="/facility-setup" element={<FacilitySetup />} />
-        </Routes>
-      </main>
-    </BrowserRouter>
+    <>
+      <BrowserRouter basename={adminBasename}>
+        <LeftPanel />
+        <main className={styles.container}>
+          <Routes>
+            <Route path="/" element={<UserManagentLandingPage />} />
+            <Route path="/user-management" element={<UserManagentLandingPage />} />
+            <Route path="/etl-administration" element={<EtlAdminDashboard />} />
+            <Route path="/facility-setup" element={<FacilitySetup />} />
+            <Route path="/locations" element={<Locations />} />
+          </Routes>
+        </main>
+      </BrowserRouter>
+      <WorkspaceContainer overlay contextKey="admin" />
+    </>
   );
 };
 
