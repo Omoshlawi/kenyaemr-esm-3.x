@@ -26,9 +26,11 @@ const Triage: React.FC<TriageProps> = ({ dashboardTitle }) => {
   const {
     error: metricsError,
     isLoading: isLoadingMetrics,
-    finishedEntries,
     waitingEntries,
+    inServiceEntries,
+    finishedEntries,
   } = useTriageQueuesMetrics(currQueue ?? triageQueues[0]);
+
   if (isLoading || isLoadingMetrics) {
     return <InlineLoading description={t('loadingQueues', 'Loading queues...')} />;
   }
@@ -36,6 +38,19 @@ const Triage: React.FC<TriageProps> = ({ dashboardTitle }) => {
   if (error || metricsError) {
     return <ErrorState error={error ?? metricsError} headerTitle={t('errorLoadingQueues', 'Error loading queues')} />;
   }
+
+  const attendedToEntries = [...inServiceEntries, ...finishedEntries];
+
+  const cards = [
+    {
+      title: t('CilentsPatientsWaiting', 'Clients/Patients waiting'),
+      value: waitingEntries.length.toString(),
+    },
+    {
+      title: t('CilentsPatientsAttendedTo', 'Clients/Patients attended to'),
+      value: attendedToEntries.length.toString(),
+    },
+  ];
 
   return (
     <div>
