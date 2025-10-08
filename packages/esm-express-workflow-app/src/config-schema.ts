@@ -41,6 +41,11 @@ export const configSchema = {
       _description: 'The UUID of the priority with the highest sort weight for the queues eg Emergency.',
       _default: '037446f4-adfc-40b3-928c-a39a4826b1bf',
     },
+    urgentPriorityConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'The UUID of urgent priority.',
+      _default: 'ef5718cd-d6d5-4fcf-bb82-cc4afaa90603',
+    },
   },
   visitQueueNumberAttributeUuid: {
     _type: Type.String,
@@ -129,6 +134,7 @@ export type ExpressWorkflowConfig = {
     defaultPriorityConceptUuid: string;
     defaultStatusConceptUuid: string;
     emergencyPriorityConceptUuid: string;
+    urgentPriorityConceptUuid: string;
   };
   patientChartConfig: {
     femaleOnlyExtensions: Array<string>;

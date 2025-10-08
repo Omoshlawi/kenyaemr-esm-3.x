@@ -38,8 +38,8 @@ const MCHTriage: React.FC = () => {
       queues={triageQueues}
       navigatePath="mch"
       cards={[
-        { title: t('patientsAwaiting', 'Patient awaiting'), value: waitingEntries?.length?.toString() },
-        { title: t('patientAttended', 'Patient attended to'), value: finishedEntries?.length?.toString() },
+        { title: t('patientsInWaiting', 'Clients/Patient in Waiting'), value: waitingEntries?.length?.toString() },
+        { title: t('patientAttendedTo', 'Clinets/Patient Attended To'), value: finishedEntries?.length?.toString() },
       ]}
       onTabChanged={setCurrQueue}
       usePatientChart

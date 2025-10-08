@@ -27,6 +27,7 @@ const Triage: React.FC<TriageProps> = ({ dashboardTitle }) => {
     error: metricsError,
     isLoading: isLoadingMetrics,
     finishedEntries,
+    waitingEntries,
   } = useTriageQueuesMetrics(currQueue ?? triageQueues[0]);
   if (isLoading || isLoadingMetrics) {
     return <InlineLoading description={t('loadingQueues', 'Loading queues...')} />;
@@ -46,7 +47,10 @@ const Triage: React.FC<TriageProps> = ({ dashboardTitle }) => {
         queues={triageQueues}
         navigatePath="triage"
         usePatientChart
-        cards={[{ title: t('patientsAttendedTo', 'Patients attended to'), value: finishedEntries.length.toString() }]}
+        cards={[
+          { title: t('patientsInWaiting', 'Patients in Waiting'), value: waitingEntries.length.toString() },
+          { title: t('patientsAttendedTo', 'Patients Attended To'), value: finishedEntries.length.toString() },
+        ]}
         onTabChanged={setCurrQueue}
       />
     </div>

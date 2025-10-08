@@ -17,4 +17,32 @@
     margin-top: layout.$layout-03;
     color: colors.$gray-70;
   }
+
+  .valuesContainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .subMetricscontainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: layout.$spacing-03;
+  }
+
+  .subMetrics {
+    display: flex;
+    flex-direction: column;
+    gap: layout.$spacing-03;
+    justify-content: flex-end
+  }
+
+  .subtitle {
+    color: colors.$gray-40;
+    font-size: small
+  }
+  .subvalue {
+    @include type.type-style('heading-04');
+  }
 }

@@ -20,7 +20,7 @@ export const useQueueEntries = (filters?: QueueEntryFilters) => {
     'custom:(uuid,display,queue,status,patient:(uuid,display,person,identifiers:(uuid,display,identifier,identifierType)),visit:(uuid,display,startDatetime,encounters:(uuid,display,diagnoses,encounterDatetime,encounterType,obs,encounterProviders,voided),attributes:(uuid,display,value,attributeType)),priority,priorityComment,sortWeight,startedAt,endedAt,locationWaitingFor,queueComingFrom,providerWaitingFor,previousQueueEntry)';
 
   // Build query parameters from filters
-  const buildQueryParams = (filters?: QueueEntryFilters): string => {
+  const buildQueryParams = (filters?: QueueEntryFilters & { status: Array<string> }): string => {
     const params = new URLSearchParams();
 
     // Always add custom representation
@@ -47,7 +47,7 @@ export const useQueueEntries = (filters?: QueueEntryFilters) => {
     return params.toString();
   };
 
-  const queryString = buildQueryParams(filters);
+  const queryString = buildQueryParams({ ...filters, status: filters.statuses, statuses: undefined });
   const url = `/ws/rest/v1/queue-entry${queryString ? `?${queryString}` : ''}`;
 
   const { data, isLoading, error } = useSWR<{ data: { results: Array<QueueEntry> } }>(url, openmrsFetch);
