@@ -1,6 +1,7 @@
 import React from 'react';
 import { Select, SelectItem, FormGroup } from '@carbon/react';
 import styles from './time-picker-dropdown.scss';
+import { useTranslation } from 'react-i18next';
 
 interface TimePickerDropdownProps {
   id: string;
@@ -21,6 +22,7 @@ const TimePickerDropdown: React.FC<TimePickerDropdownProps> = ({
   invalidText,
   existingTimeEntries = [],
 }) => {
+  const { t } = useTranslation();
   // Parse current value or default to empty
   const [hours, minutes] = value && value.includes(':') ? value.split(':') : ['', ''];
 
@@ -109,7 +111,7 @@ const TimePickerDropdown: React.FC<TimePickerDropdownProps> = ({
       }
     }
 
-    const displayText = isDisabled ? `${minute} ❌ ${disableReason}` : minute;
+    const displayText = isDisabled ? `${minute} ${disableReason}` : minute;
     return { value: minute, text: displayText, disabled: isDisabled };
   });
 
@@ -236,7 +238,7 @@ const TimePickerDropdown: React.FC<TimePickerDropdownProps> = ({
 
         {existingTimeEntries.length > 0 && (
           <div className={styles.usedTimesIndicator}>
-            <strong>⚠️ Time Restrictions:</strong>
+            <strong>{t('timeRestrictions', 'Time Restrictions')}:</strong>
             <br />
             <strong>Used Times:</strong> {existingTimeEntries.map((entry) => entry.time).join(', ')}
             <br />
@@ -247,7 +249,7 @@ const TimePickerDropdown: React.FC<TimePickerDropdownProps> = ({
               .join(', ')}{' '}
             (grayed out)
             <br />
-            <small>🚫 You can only select times after the latest entry</small>
+            <small>You can only select times after the latest entry</small>
           </div>
         )}
 
