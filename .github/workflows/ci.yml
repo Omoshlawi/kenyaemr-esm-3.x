@@ -125,7 +125,7 @@ jobs:
           uses: actions/checkout@v2
   
         - name: Invoke workflow without inputs. Don't wait for result
-          uses: aurelien-baudet/workflow-dispatch@v2
+          uses: the-actions-org/workflow-dispatch@v4
           with:
             workflow: KenyaEMR CI
             repo: palladiumkenya/openmrs-config-kenyaemr
