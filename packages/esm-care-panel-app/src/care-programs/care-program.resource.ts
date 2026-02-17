@@ -14,7 +14,7 @@ import z from 'zod';
 import { CarePanelConfig } from '../config-schema';
 import { useMemo } from 'react';
 
-export interface Enrollement {
+export interface Enrollment {
   uuid: string;
   display: string;
   program: Program;
@@ -72,7 +72,7 @@ export const usePatientEnrolledPrograms = (patientUuid: string) => {
   const customRepresentation = `custom:(uuid,display,program,dateEnrolled,dateCompleted,location:(uuid,display),states:(startDate,endDate,voided,state:(uuid,concept:(display))))`;
   const { excludedCarePrograms } = useConfig<CarePanelConfig>();
   const url = `${restBaseUrl}/programenrollment?patient=${patientUuid}&v=${customRepresentation}`;
-  const { data, error, isLoading, mutate } = useSWR<FetchResponse<{ results: Array<Enrollement> }>>(url, openmrsFetch);
+  const { data, error, isLoading, mutate } = useSWR<FetchResponse<{ results: Array<Enrollment> }>>(url, openmrsFetch);
   const enrollments = useMemo(() => {
     const allEnrollments = data?.data?.results ?? [];
     return allEnrollments.filter(
@@ -263,7 +263,7 @@ export const launchDeleteProgramDialog = (programEnrollmentId: string, patientUu
 export const launchProgramForm = (
   programUuid: string,
   patientUuid: string,
-  enrollment: Enrollement | undefined,
+  enrollment: Enrollment | undefined,
   onSuccess?: () => void,
 ) => {
   launchWorkspace('mch-program-form-workspace', {

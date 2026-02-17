@@ -4,7 +4,7 @@ import { launchStartVisitPrompt } from '@openmrs/esm-patient-common-lib';
 import React, { FC, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CarePanelConfig } from '../config-schema';
-import { useFormsFilled, usePatientFormEncounter } from './care-program.resource';
+import { type Enrollment, useFormsFilled, usePatientFormEncounter } from './care-program.resource';
 import KvpLinkPatientToPeerEducator from './link-patient-to-peer-action.component';
 
 type ProgramFormOverflowMenuItemProps = {
@@ -12,7 +12,7 @@ type ProgramFormOverflowMenuItemProps = {
   form: CarePanelConfig['careProgramForms'][0]['forms'][0];
   mutate?: () => void;
   visit?: Visit;
-  enrollmentDateTime?: string;
+  enrollment: Enrollment;
 };
 
 const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
@@ -20,7 +20,7 @@ const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
   patientUuid,
   mutate,
   visit: currentVisit,
-  enrollmentDateTime,
+  enrollment,
 }) => {
   const {
     formEncounters,
@@ -46,7 +46,7 @@ const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
   // 2. Form is filled already AND hideFilledProgramForm is configured to false (else launch in edit mode)
   const showForm = useMemo(() => {
     // Handle dicontinuation form
-    if (form.tags.includes('docontinuation')) {
+    if (form.tags.includes('discontinuation')) {
       return true;
     }
     // !latestFormEncounter -> current form is not yet filled
@@ -102,9 +102,11 @@ const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
               mutateFormEncounters();
             },
             formInfo: {
-              encounterUuid: latestFormEncounter?.uuid ?? '',
+              encounterUuid: form.tags.includes('discontinuation') ? '' : latestFormEncounter?.uuid ?? '',
               formUuid: form.formUuId,
-              // additionalProps: { enrollmenrDetails: careProgram.enrollmentDetails ?? {} },
+              additionalProps: {
+                enrollmentDetails: { dateEnrolled: new Date(enrollment.dateEnrolled), uuid: enrollment.uuid },
+              },
             },
           });
         }

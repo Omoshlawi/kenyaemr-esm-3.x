@@ -17,7 +17,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import {
   createProgramEnrollment,
-  Enrollement,
+  Enrollment,
   ProgramFormData,
   ProgramFormSchema,
   updateProgramEnrollment,
@@ -25,7 +25,7 @@ import {
 } from './care-program.resource';
 
 type ProgramFormProps = DefaultWorkspaceProps & {
-  enrollment?: Enrollement;
+  enrollment?: Enrollment;
   patientUuid: string;
   programUuid: string;
   onSubmitSuccess?: () => void;
