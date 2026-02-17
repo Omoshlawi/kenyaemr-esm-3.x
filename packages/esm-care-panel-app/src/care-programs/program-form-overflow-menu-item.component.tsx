@@ -12,6 +12,7 @@ type ProgramFormOverflowMenuItemProps = {
   form: CarePanelConfig['careProgramForms'][0]['forms'][0];
   mutate?: () => void;
   visit?: Visit;
+  enrollmentDateTime?: string;
 };
 
 const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
@@ -19,6 +20,7 @@ const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
   patientUuid,
   mutate,
   visit: currentVisit,
+  enrollmentDateTime,
 }) => {
   const {
     formEncounters,
@@ -38,11 +40,15 @@ const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
     mutate: mutateDependancyStatus,
   } = useFormsFilled(patientUuid, form.dependancies);
 
-  const latestFormEncounter = useMemo(() => formEncounters.at(0)?.encounter?.uuid, [formEncounters]);
+  const latestFormEncounter = useMemo(() => formEncounters.at(0)?.encounter, [formEncounters]);
   // Show form if
   // 1. Form is not yet filled AND (Form Has no dependancies OR Form has dependancies that are all filled)
   // 2. Form is filled already AND hideFilledProgramForm is configured to false (else launch in edit mode)
   const showForm = useMemo(() => {
+    // Handle dicontinuation form
+    if (form.tags.includes('docontinuation')) {
+      return true;
+    }
     // !latestFormEncounter -> current form is not yet filled
     if (!latestFormEncounter && (!form?.dependancies?.length || areAllDependancyFormsFilled)) {
       return true;
@@ -51,7 +57,7 @@ const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
       return true;
     }
     return false;
-  }, [areAllDependancyFormsFilled, form?.dependancies?.length, hideFilledProgramForm, latestFormEncounter]);
+  }, [areAllDependancyFormsFilled, form?.dependancies?.length, form.tags, hideFilledProgramForm, latestFormEncounter]);
 
   useEffect(() => {
     if (error || formFilledError) {
@@ -96,7 +102,7 @@ const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
               mutateFormEncounters();
             },
             formInfo: {
-              encounterUuid: latestFormEncounter ?? '',
+              encounterUuid: latestFormEncounter?.uuid ?? '',
               formUuid: form.formUuId,
               // additionalProps: { enrollmenrDetails: careProgram.enrollmentDetails ?? {} },
             },
