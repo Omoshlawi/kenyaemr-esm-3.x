@@ -76,7 +76,7 @@ export const usePatientEnrolledPrograms = (patientUuid: string) => {
   const enrollments = useMemo(() => {
     const allEnrollments = data?.data?.results ?? [];
     return allEnrollments.filter(
-      (enrollment) => !excludedCarePrograms.includes(enrollment.program.uuid) && !enrollment.dateCompleted,
+      (enrollment) => !excludedCarePrograms?.includes(enrollment.program.uuid) && !enrollment.dateCompleted,
     );
   }, [data, excludedCarePrograms]);
   return {
