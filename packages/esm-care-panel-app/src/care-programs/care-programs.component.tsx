@@ -109,6 +109,7 @@ const CarePrograms: React.FC<CareProgramsProps> = ({ patientUuid }) => {
                       visit={currentVisit}
                       patientUuid={patientUuid}
                       mutate={handleMutations}
+                      enrollmentDateTime={enrollment.dateEnrolled}
                     />
                   );
                 })}
