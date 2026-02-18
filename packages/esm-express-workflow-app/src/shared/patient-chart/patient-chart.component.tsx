@@ -41,13 +41,13 @@ const PatientChart: React.FC<PatientChartProps> = ({ navigationPath }) => {
       <div className={styles.tabsContainer}>
         <Tabs>
           <TabList contained>
-            {patientChartTabsExtensionSlotConfig.map((tabConfig, index) => (
-              <Tab key={index}>{tabConfig.meta.title ?? tabConfig.meta.path}</Tab>
+            {patientChartTabsExtensionSlotConfig.map((tabConfig) => (
+              <Tab key={tabConfig.meta.slot}>{tabConfig.meta.title ?? tabConfig.meta.path}</Tab>
             ))}
           </TabList>
           <TabPanels>
-            {patientChartTabsExtensionSlotConfig.map((tabConfig, index) => (
-              <TabPanel key={index}>
+            {patientChartTabsExtensionSlotConfig.map((tabConfig) => (
+              <TabPanel key={tabConfig.meta.slot}>
                 <ExtensionSlot className={styles.extensionSlot} name={tabConfig.meta.slot} state={state} />
               </TabPanel>
             ))}
