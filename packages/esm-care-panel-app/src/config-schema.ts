@@ -70,6 +70,90 @@ export const configSchema = {
     _description: 'Programs forms mapping with dependancy configuration',
     _default: [
       {
+        programName: 'VMMC',
+        programUuid: '228538f4-cad9-476b-84c3-ab0086150bcc',
+        forms: [
+          {
+            formName: 'VMMC Enrollment',
+            formUuId: 'a74e3e4a-9e2a-41fb-8e64-4ba8a71ff984',
+            dependancies: [],
+            tags: ['enrollment'],
+          },
+          {
+            formName: 'VMMC Initial',
+            formUuId: '8afcaac3-e9db-4501-bff6-b6a41935b46e',
+            dependancies: ['a74e3e4a-9e2a-41fb-8e64-4ba8a71ff984'],
+            tags: ['initial'],
+          },
+          {
+            formName: 'VMMC Client Follow-Up',
+            formUuId: '08873f91-7161-4f90-931d-65b131f2b12b',
+            dependancies: ['a74e3e4a-9e2a-41fb-8e64-4ba8a71ff984'],
+            tags: ['bound-to-current-visit'],
+          },
+          {
+            formName: 'VMMC Circumcision Procedure',
+            formUuId: '5ee93f48-960b-11ec-b909-0242ac120002',
+            dependancies: ['a74e3e4a-9e2a-41fb-8e64-4ba8a71ff984'],
+            tags: [],
+          },
+          {
+            formName: 'VMMC Immediate Post-Operation Assessment',
+            formUuId: '620b3404-9ae5-11ec-b909-0242ac120002',
+            dependancies: ['a74e3e4a-9e2a-41fb-8e64-4ba8a71ff984'],
+            tags: ['bound-to-current-visit'],
+          },
+          {
+            formName: 'VMMC Medical Examination',
+            formUuId: 'd42aeb3d-d5d2-4338-a154-f75ddac78b59',
+            dependancies: ['a74e3e4a-9e2a-41fb-8e64-4ba8a71ff984'],
+            tags: ['bound-to-current-visit'],
+          },
+          {
+            formName: 'VMMC Discontinuation',
+            formUuId: 'bc6a9e7d-58f7-43c0-8334-d8011fef4000',
+            dependancies: ['8afcaac3-e9db-4501-bff6-b6a41935b46e'],
+            tags: ['discontinuation'],
+          },
+        ],
+      },
+      {
+        programName: 'CPM',
+        programUuid: '8cd42506-2ebd-485f-89d6-4bb9ed328ccc',
+        forms: [
+          {
+            formName: 'CPM Enrollment',
+            formUuId: 'f01c67f7-2293-4a6a-b0f6-5db0fb5934dd',
+            dependancies: [],
+            tags: ['enrollment'],
+          },
+          {
+            formName: 'CPM Initial',
+            formUuId: 'bf55e6ad-096d-4223-a2bb-2aa3e3495af2',
+            dependancies: ['f01c67f7-2293-4a6a-b0f6-5db0fb5934dd'],
+            tags: ['initial'],
+          },
+          {
+            formName: 'CPM Referral',
+            formUuId: 'b1e1f6fe-1894-4d06-bd8c-2b87f7cd9577',
+            dependancies: ['bf55e6ad-096d-4223-a2bb-2aa3e3495af2'],
+            tags: ['bound-to-current-visit'],
+          },
+          {
+            formName: 'CPM Screening',
+            formUuId: 'f7dbe6b6-2a5a-46e6-af52-45bf2962f4aa',
+            dependancies: ['bf55e6ad-096d-4223-a2bb-2aa3e3495af2'],
+            tags: ['bound-to-current-visit'],
+          },
+          {
+            formName: 'CPM Discontinuation',
+            formUuId: 'd1e7ebb4-afc0-412b-a98b-6720ab1169cc',
+            dependancies: ['bf55e6ad-096d-4223-a2bb-2aa3e3495af2'],
+            tags: ['discontinuation'],
+          },
+        ],
+      },
+      {
         programName: 'PNC',
         programUuid: '286598d5-1886-4f0d-9e5f-fa5473399cee',
         forms: [
@@ -387,10 +471,16 @@ export const configSchema = {
         programUuid: 'ffee43c4-9ccd-4e55-8a70-93194e7fafc6',
         forms: [
           {
-            formName: 'NCD Initial',
-            formUuId: 'c4994dd7-f2b6-4c28-bdc7-8b1d9d2a6a97',
+            formName: 'NCD Enrollment',
+            formUuId: 'fca1aad8-aa0d-4027-b10d-a26079f1f20e',
             dependancies: [],
             tags: ['enrollment'],
+          },
+          {
+            formName: 'NCD Initial',
+            formUuId: 'c4994dd7-f2b6-4c28-bdc7-8b1d9d2a6a97',
+            dependancies: ['fca1aad8-aa0d-4027-b10d-a26079f1f20e'],
+            tags: ['initial'],
           },
           {
             formName: 'NCD Follow Up',
