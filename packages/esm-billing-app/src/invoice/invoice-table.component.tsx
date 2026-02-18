@@ -7,21 +7,17 @@ import {
   Layer,
   Table,
   TableBody,
-  TableCell,
   TableContainer,
   TableHead,
-  TableHeader,
-  TableRow,
   TableToolbar,
   TableToolbarContent,
   TableToolbarSearch,
-  TableSelectRow,
   Tile,
-  type DataTableHeader,
-  type DataTableRow,
 } from '@carbon/react';
 import { isDesktop, useDebounce, useLayoutType } from '@openmrs/esm-framework';
 import { LineItem, MappedBill, PaymentStatus } from '../types';
+import InvoiceTableHeaderRow from './invoice-table-header-row.component';
+import InvoiceTableRow from './invoice-table-row.component';
 import styles from './invoice-table.scss';
 
 type InvoiceTableProps = {
@@ -69,6 +65,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ bill, isSelectable = true, 
   const tableRows = useMemo(
     () =>
       filteredLineItems?.map((item, index) => {
+        const isPaidOrExempted =
+          item.paymentStatus === PaymentStatus.PAID || item.paymentStatus === PaymentStatus.EXEMPTED;
         return {
           no: `${index + 1}`,
           id: `${item.uuid}`,
@@ -78,6 +76,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ bill, isSelectable = true, 
           quantity: item.quantity,
           price: item.price,
           total: item.price * item.quantity,
+          disabled: isPaidOrExempted,
         };
       }) ?? [],
     [bill.receiptNumber, filteredLineItems],
@@ -130,43 +129,31 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ bill, isSelectable = true, 
             </div>
             <Table {...getTableProps()} aria-label="Invoice line items" className={styles.table}>
               <TableHead>
-                <TableRow>
-                  {rows.length > 1 && isSelectable ? <TableHeader /> : null}
-                  {headers.map((header) => (
-                    <TableHeader key={header.key}>{header.header}</TableHeader>
-                  ))}
-                </TableRow>
+                <InvoiceTableHeaderRow
+                  rows={rows}
+                  headers={headers}
+                  isSelectable={isSelectable}
+                  filteredLineItems={filteredLineItems}
+                  selectedLineItems={selectedLineItems}
+                  onSelectChange={setSelectedLineItems}
+                  onSelectItem={onSelectItem}
+                  getSelectionProps={getSelectionProps}
+                />
               </TableHead>
               <TableBody>
-                {rows.map((row, index) => {
-                  return (
-                    <TableRow
-                      key={row.id}
-                      {...getRowProps({
-                        row,
-                      })}>
-                      {rows.length > 1 && isSelectable && (
-                        <TableSelectRow
-                          aria-label="Select row"
-                          {...getSelectionProps({ row })}
-                          disabled={
-                            tableRows[index].status === PaymentStatus.PAID ||
-                            tableRows[index].status === PaymentStatus.EXEMPTED
-                          }
-                          onChange={(checked: boolean) => handleRowSelection(row, checked)}
-                          checked={
-                            tableRows[index].status === PaymentStatus.PAID ||
-                            tableRows[index].status === PaymentStatus.EXEMPTED ||
-                            Boolean(selectedLineItems?.find((item) => item?.uuid === row?.id))
-                          }
-                        />
-                      )}
-                      {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>{cell.value}</TableCell>
-                      ))}
-                    </TableRow>
-                  );
-                })}
+                {rows.map((row, index) => (
+                  <InvoiceTableRow
+                    key={row.id}
+                    row={row}
+                    rowsCount={rows.length}
+                    isSelectable={isSelectable}
+                    rowStatus={tableRows[index].status}
+                    selectedLineItems={selectedLineItems}
+                    getRowProps={getRowProps}
+                    getSelectionProps={getSelectionProps}
+                    onRowSelection={handleRowSelection}
+                  />
+                ))}
               </TableBody>
             </Table>
           </TableContainer>
