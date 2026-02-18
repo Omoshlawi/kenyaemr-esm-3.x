@@ -176,6 +176,11 @@ export const configSchema = {
     _description: 'The UUID of the outpatient visit type.',
     _default: '3371a4d4-f66f-4454-a86d-92c7b3da990c',
   },
+  inPatientVisitTypeUuid: {
+    _type: Type.String,
+    _description: 'The UUID of the in-patient visit type.',
+    _default: 'a73e2ac6-263b-47fc-99fc-e0f2c09fc914',
+  },
 };
 
 export type ExpressWorkflowConfig = {
@@ -231,4 +236,5 @@ export type ExpressWorkflowConfig = {
     labourWard: string;
   };
   outpatientVisitTypeUuid: string;
+  inPatientVisitTypeUuid: string;
 };

@@ -13,7 +13,6 @@ import {
 import { useTranslation } from 'react-i18next';
 import styles from './patient-summary-dashboard.scss';
 import ExtensionTabs, { ExtensionTabItem } from '../../tabs/extension-tabs.component';
-import { useSearchParams } from 'react-router-dom';
 import { useShowPatography } from '../patient-chart.resources';
 
 type PatientSummaryDashboardProps = {
@@ -24,7 +23,7 @@ type PatientSummaryDashboardProps = {
 const PatientSummaryDashboard: React.FC<PatientSummaryDashboardProps> = ({ patientUuid, patient }) => {
   const { t } = useTranslation();
   const state = useMemo(() => ({ patientUuid, patient }), [patientUuid, patient]);
-  const { showPartography } = useShowPatography(patientUuid);
+  const { showPartography } = useShowPatography(patient);
   const items: Array<ExtensionTabItem> = [
     {
       label: t('patientSummary', 'Patient Summary'),

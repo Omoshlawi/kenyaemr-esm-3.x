@@ -3,17 +3,15 @@ import { useTranslation } from 'react-i18next';
 import {
   AssignedExtension,
   FetchResponse,
-  type Location,
   openmrsFetch,
   restBaseUrl,
   useAssignedExtensions,
   useConfig,
   useEmrConfiguration,
-  usePatient,
   useVisit,
 } from '@openmrs/esm-framework';
 import { ExpressWorkflowConfig } from '../../config-schema';
-import useSWR from 'swr';
+import useSWRImmutable from 'swr/immutable';
 
 export const usePatientChartTabs = (navigationPath: string, patientUuid: string, patient?: fhir.Patient) => {
   const { t } = useTranslation();
@@ -99,11 +97,10 @@ export const usePatientChartTabs = (navigationPath: string, patientUuid: string,
  * }
  */
 export const useCurrentPatientAdmissionEncounter = (patientUuid: string) => {
+  // TODO: use visit context store instead of useVisit. This is happening on every mount of the patient chart dashboard. Which is not efficient.
   const { currentVisit, error: visitError, isLoading: isLoadingVisit, mutate: mutateVisit } = useVisit(patientUuid);
   const { emrConfiguration, isLoadingEmrConfiguration, errorFetchingEmrConfiguration } = useEmrConfiguration();
-  const { inPatientVisitTypeUuid } = useConfig<{ inPatientVisitTypeUuid: string }>({
-    externalModuleName: '@kenyaemr/esm-ward-app',
-  });
+  const { inPatientVisitTypeUuid } = useConfig<ExpressWorkflowConfig>();
   // Admission or Tranfer encounter depending on wether patient was transfered or admitted directly
   const latestAdmisionEncounter = useMemo(() => {
     return currentVisit?.encounters?.find(
@@ -138,8 +135,7 @@ export const useCurrentPatientAdmissionEncounter = (patientUuid: string) => {
  * Show partography component when patient is a female patient, admitted to labour ward
  * @param patientUuid string
  */
-export const useShowPatography = (patientUuid: string) => {
-  const { patient, isLoading: isLoadingPatient, error: patientError } = usePatient(patientUuid);
+export const useShowPatography = (patient: fhir.Patient) => {
   const isFemale = patient?.gender?.toLowerCase() === 'female';
 
   const {
@@ -147,7 +143,7 @@ export const useShowPatography = (patientUuid: string) => {
     error: admissionError,
     isLoading: isloadingAdmission,
     isPatientAdmitted,
-  } = useCurrentPatientAdmissionEncounter(patientUuid);
+  } = useCurrentPatientAdmissionEncounter(patient.id);
   const {
     error: tagsError,
     isLoading: isloadingTags,
@@ -160,8 +156,8 @@ export const useShowPatography = (patientUuid: string) => {
   );
 
   return {
-    isLoading: isLoadingPatient || isLoadingPatient || isloadingAdmission || isloadingTags,
-    error: patientError ?? admissionError ?? tagsError,
+    isLoading: isloadingAdmission || isloadingTags,
+    error: admissionError ?? tagsError,
     showPartography: isFemale && isPatientAdmitted && admissionLocationIsLabourWard,
   };
 };
@@ -171,7 +167,7 @@ type Tag = { uuid: string; display: string; name: string; description: string };
 const useAdmissionLocationTags = (locationUuid?: string) => {
   const rep = 'custom:(tags:(uuid,display,name,description))';
   const url = `${restBaseUrl}/location/${locationUuid}?v=${rep}`;
-  const { data, error, isLoading, mutate } = useSWR<FetchResponse<{ tags: Array<Tag> }>>(
+  const { data, error, isLoading, mutate } = useSWRImmutable<FetchResponse<{ tags: Array<Tag> }>>(
     locationUuid ? url : null,
     openmrsFetch,
   );
