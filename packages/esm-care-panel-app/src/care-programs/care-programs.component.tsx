@@ -187,7 +187,7 @@ const CarePrograms: React.FC<CareProgramsProps> = ({ patientUuid }) => {
     return <ErrorState headerTitle={t('errorCarePrograms', 'Care programs')} error={error} />;
   }
 
-  if (eligibleCarePrograms.length === 0) {
+  if ((eligibleCarePrograms ?? []).length === 0 && (enrollments ?? []).length === 0) {
     return <EmptyState headerTitle={t('careProgram', 'Care program')} displayText={t('careProgram', 'care program')} />;
   }
 
