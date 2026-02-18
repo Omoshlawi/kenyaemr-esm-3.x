@@ -108,4 +108,5 @@ export type QueueEntriesPagination = {
   goTo: (page: number) => void;
   goToNext: () => void;
   goToPrevious: () => void;
+  defaultPageSize: number;
 };

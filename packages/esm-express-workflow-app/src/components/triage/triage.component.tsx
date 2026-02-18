@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import capitalize from 'lodash-es/capitalize';
 import { useTranslation } from 'react-i18next';
 import {
@@ -9,14 +9,14 @@ import {
   ExtensionSlot,
   useConfig,
 } from '@openmrs/esm-framework';
-import { InlineLoading } from '@carbon/react';
+import { TabsSkeleton } from '@carbon/react';
 
 import { useQueues } from '../../hooks/useServiceQueues';
 import QueueTab from '../../shared/queue/queue-tab.component';
 import QueueSummaryCards, { QueueSummaryCard } from '../../shared/queue/queue-summary-cards.component';
+import { QueueWorkflowProvider, useQueueWorkflowContext } from '../../shared/queue/queue-workflow-context';
 import styles from './triage.scss';
-import { Queue, QueueFilter } from '../../types';
-import { useTriageQueuesMetrics } from './triage.resource';
+import { Queue } from '../../types';
 import { ExpressWorkflowConfig } from '../../config-schema';
 
 type TriageProps = {
@@ -43,55 +43,88 @@ const TriageQueueTab: React.FC = () => {
     queueStatusConceptUuids: { finishedStatus, waitingStatus, inServiceStatus },
     queueServiceConceptUuids,
   } = useConfig<ExpressWorkflowConfig>();
-  const [currQueue, setCurrQueue] = useState<Queue>();
-  const [filters, setFilters] = useState<Array<QueueFilter>>([]);
 
-  const {
-    queues,
-    isLoading: isLoadingQueues,
-    error: errorLoadingQueues,
-    isValidating: isValidatingQueues,
-  } = useQueues();
+  const { queues, isLoading: isLoadingQueues, error: errorLoadingQueues } = useQueues();
 
-  const triageQueues = queues
-    .filter(
-      (queue) =>
-        queue.service.uuid === queueServiceConceptUuids.triageService &&
-        !queue.location.display.toLowerCase().includes('mch') &&
-        queue?.queueRooms?.length > 0,
-    )
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const activeQueue = useMemo(() => currQueue ?? triageQueues[0], [currQueue, triageQueues]);
+  const triageQueues = useMemo(
+    () =>
+      queues
+        .filter(
+          (queue) =>
+            queue.service.uuid === queueServiceConceptUuids.triageService &&
+            !queue.location.display.toLowerCase().includes('mch') &&
+            queue?.queueRooms?.length > 0,
+        )
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [queues, queueServiceConceptUuids.triageService],
+  );
 
-  const {
-    error: metricsError,
-    isLoading: isLoadingMetrics,
-    waitingEntries,
-    attendedToEntries,
-    isValidating: isValidatingMetrics,
-  } = useTriageQueuesMetrics(activeQueue);
-
-  const isLoading = (isLoadingQueues || isLoadingMetrics) && !isValidatingQueues && !isValidatingMetrics;
-
-  if (isLoading) {
-    return <InlineLoading description={t('loadingQueues', 'Loading queues...')} />;
-  }
-
-  if (metricsError || errorLoadingQueues) {
+  if (isLoadingQueues) {
     return (
-      <ErrorState
-        error={metricsError ?? errorLoadingQueues}
-        headerTitle={t('errorLoadingQueues', 'Error loading queues')}
-      />
+      <div className={styles.contentArea}>
+        <TabsSkeleton />
+      </div>
     );
   }
+
+  if (errorLoadingQueues) {
+    return (
+      <div className={styles.contentArea}>
+        <ErrorState error={errorLoadingQueues} headerTitle={t('errorLoadingQueues', 'Error loading queues')} />
+      </div>
+    );
+  }
+
+  if (!triageQueues.length) {
+    return <div className={styles.contentArea} />;
+  }
+
+  return (
+    <QueueWorkflowProvider queues={triageQueues}>
+      <TriageContent
+        triageQueues={triageQueues}
+        waitingStatus={waitingStatus}
+        finishedStatus={finishedStatus}
+        inServiceStatus={inServiceStatus}
+      />
+    </QueueWorkflowProvider>
+  );
+};
+
+type TriageContentProps = {
+  triageQueues: Queue[];
+  waitingStatus: string;
+  finishedStatus: string;
+  inServiceStatus: string;
+};
+
+const TriageContent: React.FC<TriageContentProps> = ({
+  triageQueues,
+  waitingStatus,
+  finishedStatus,
+  inServiceStatus,
+}) => {
+  const { t } = useTranslation();
+  const { queueEntries, setFilters, queueEntriesError } = useQueueWorkflowContext();
+
+  const waitingEntries = useMemo(
+    () => queueEntries.filter((entry) => entry?.status?.uuid === waitingStatus),
+    [queueEntries, waitingStatus],
+  );
+
+  const attendedToEntries = useMemo(
+    () =>
+      queueEntries.filter((entry) => entry?.status?.uuid === inServiceStatus || entry?.status?.uuid === finishedStatus),
+    [queueEntries, inServiceStatus, finishedStatus],
+  );
+
   const cards: Array<QueueSummaryCard> = [
     {
       title: t('clientsPatientsWaiting', 'Clients/Patients waiting'),
       value: waitingEntries.length.toString(),
       onClick: () => {
-        setFilters((prevFilters) => [
-          ...prevFilters.filter((f) => f.key !== 'status'),
+        setFilters((prev) => [
+          ...prev.filter((f) => f.key !== 'status'),
           { key: 'status', value: waitingStatus, label: t('waiting', 'Waiting') },
         ]);
       },
@@ -100,8 +133,8 @@ const TriageQueueTab: React.FC = () => {
       title: t('clientsPatientsAttendedTo', 'Clients/Patients attended to'),
       value: attendedToEntries.length.toString(),
       onClick: () => {
-        setFilters((prevFilters) => [
-          ...prevFilters.filter((f) => f.key !== 'status'),
+        setFilters((prev) => [
+          ...prev.filter((f) => f.key !== 'status'),
           { key: 'status', value: `${finishedStatus},${inServiceStatus}`, label: t('attendedTo', 'Attended to') },
         ]);
       },
@@ -109,16 +142,16 @@ const TriageQueueTab: React.FC = () => {
   ];
 
   return (
-    <>
+    <div className={styles.contentArea}>
       <QueueSummaryCards cards={cards} />
-      <QueueTab
-        queues={triageQueues}
-        navigatePath="triage"
-        usePatientChart
-        onTabChanged={setCurrQueue}
-        filters={filters}
-        onFiltersChanged={setFilters}
-      />
-    </>
+      {queueEntriesError ? (
+        <ErrorState
+          error={queueEntriesError}
+          headerTitle={t('errorLoadingQueueEntries', 'Error loading queue entries')}
+        />
+      ) : (
+        <QueueTab queues={triageQueues} navigatePath="triage" usePatientChart />
+      )}
+    </div>
   );
 };

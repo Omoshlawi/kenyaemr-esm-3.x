@@ -2,7 +2,7 @@ import { openmrsFetch, restBaseUrl, useConfig, Visit } from '@openmrs/esm-framew
 import { FulfillerStatus, Order } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import useSWR from 'swr';
-import { useMemo, useCallback, useEffect, useState } from 'react';
+import { useMemo, useCallback } from 'react';
 import { Queue, QueueEntry } from '../../types';
 import { ExpressWorkflowConfig } from '../../config-schema';
 import { useQueueEntries } from '../../hooks/useServiceQueues';
@@ -11,6 +11,39 @@ export interface UseLabOrdersParams {
   status?: FulfillerStatus;
   newOrdersOnly?: boolean;
   excludeCanceled?: boolean;
+}
+
+function categorizeEntriesByPriority(
+  entries: Array<QueueEntry> | undefined | null,
+  priorities:
+    | {
+        emergencyPriorityConceptUuid?: string;
+        urgentPriorityConceptUuid?: string;
+        notUrgentPriorityConceptUuid?: string;
+      }
+    | undefined
+    | null,
+): { emergencyEntries: Array<QueueEntry>; urgentEntries: Array<QueueEntry>; notUrgentEntries: Array<QueueEntry> } {
+  if (!entries?.length || !priorities) {
+    return { emergencyEntries: [], urgentEntries: [], notUrgentEntries: [] };
+  }
+  const emergencyEntries: Array<QueueEntry> = [];
+  const urgentEntries: Array<QueueEntry> = [];
+  const notUrgentEntries: Array<QueueEntry> = [];
+  for (const entry of entries) {
+    const priorityUuid = entry?.priority?.uuid;
+    if (!priorityUuid) {
+      continue;
+    }
+    if (priorityUuid === priorities.emergencyPriorityConceptUuid) {
+      emergencyEntries.push(entry);
+    } else if (priorityUuid === priorities.urgentPriorityConceptUuid) {
+      urgentEntries.push(entry);
+    } else if (priorityUuid === priorities.notUrgentPriorityConceptUuid) {
+      notUrgentEntries.push(entry);
+    }
+  }
+  return { emergencyEntries, urgentEntries, notUrgentEntries };
 }
 
 const getTodayRange = (daysBack: number = 0) => ({
@@ -390,23 +423,32 @@ export const useInvestigationStats = (queue?: Queue) => {
   };
 };
 
-export const useConsultationQueueMetrics = (queue?: Queue) => {
+export const useConsultationQueueMetrics = (queue?: Queue, pageSize?: number) => {
   const { queueServiceConceptUuids, queueStatusConceptUuids, priorities } = useConfig<ExpressWorkflowConfig>();
   const {
     queueEntries: waitingEntries,
     isLoading: isLoadingWaiting,
     isValidating: isValidatingWaiting,
     error: waitingError,
-  } = useQueueEntries({
-    service: [queueServiceConceptUuids.consultationService],
-    statuses: [queueStatusConceptUuids.waitingStatus, queueStatusConceptUuids.inServiceStatus],
-    location: queue?.location?.uuid ? [queue.location.uuid] : undefined,
-    startedOnOrAfter: dayjs().subtract(24, 'hour').format('YYYY-MM-DD HH:mm:ss'),
-  });
+  } = useQueueEntries(
+    {
+      service: [queueServiceConceptUuids.consultationService],
+      statuses: [queueStatusConceptUuids.waitingStatus, queueStatusConceptUuids.inServiceStatus],
+      location: queue?.location?.uuid ? [queue.location.uuid] : undefined,
+      startedOnOrAfter: dayjs().subtract(24, 'hour').format('YYYY-MM-DD HH:mm:ss'),
+      queues: [queue?.uuid],
+    },
+    pageSize,
+  );
 
   const _waitingEntries = useMemo(
     () => waitingEntries.filter((entry) => entry?.queue?.uuid === queue?.uuid),
     [waitingEntries, queue],
+  );
+
+  const { emergencyEntries, urgentEntries, notUrgentEntries } = useMemo(
+    () => categorizeEntriesByPriority(_waitingEntries, priorities),
+    [_waitingEntries, priorities],
   );
 
   return {
@@ -414,17 +456,8 @@ export const useConsultationQueueMetrics = (queue?: Queue) => {
     error: waitingError,
     waitingEntries: _waitingEntries,
     isValidating: isValidatingWaiting,
-    emergencyEntries: useMemo(
-      () => _waitingEntries.filter((entry) => entry.priority.uuid === priorities?.emergencyPriorityConceptUuid),
-      [_waitingEntries, priorities?.emergencyPriorityConceptUuid],
-    ),
-    urgentEntries: useMemo(
-      () => _waitingEntries.filter((entry) => entry.priority.uuid === priorities?.urgentPriorityConceptUuid),
-      [_waitingEntries, priorities?.urgentPriorityConceptUuid],
-    ),
-    notUrgentEntries: useMemo(
-      () => _waitingEntries.filter((entry) => entry.priority.uuid === priorities?.notUrgentPriorityConceptUuid),
-      [_waitingEntries, priorities?.notUrgentPriorityConceptUuid],
-    ),
+    emergencyEntries,
+    urgentEntries,
+    notUrgentEntries,
   };
 };
