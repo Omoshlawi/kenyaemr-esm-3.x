@@ -30,10 +30,10 @@ export const useQueues = () => {
   };
 };
 
-export const useQueueEntries = (filters?: QueueEntryFilters, defaultPageSize: number = 100) => {
+export const useQueueEntries = (filters?: QueueEntryFilters, defaultPageSize: number = 10) => {
   const { outpatientVisitTypeUuid } = useConfig<ExpressWorkflowConfig>();
   const repString =
-    'custom:(uuid,queue:(uuid,display,name,location:(uuid,display)),status:(uuid,display),patient:(uuid,person:(uuid,display),identifiers),visit:(uuid,visitType:(uuid),attributes:(uuid,value,attributeType:(uuid))),priority:(uuid,display),priorityComment,startedAt,previousQueueEntry:(uuid,queue:(uuid,display)))';
+    'custom:(uuid,queue:(uuid,display,name,location:(uuid,display)),status:(uuid,display),patient:(uuid,person:(uuid,display),identifiers:(uuid,display,identifier,identifierType:(uuid,display))),visit:(uuid,visitType:(uuid),attributes:(uuid,value,attributeType:(uuid))),priority:(uuid,display),priorityComment,startedAt,previousQueueEntry:(uuid,queue:(uuid,display)))';
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -45,6 +45,7 @@ export const useQueueEntries = (filters?: QueueEntryFilters, defaultPageSize: nu
       statuses: undefined,
       startedOnOrAfter: filters?.startedOnOrAfter ?? undefined,
       startedOnOrBefore: filters?.startedOnOrBefore ?? undefined,
+      queue: filters?.queues ?? [],
     };
     if (merged) {
       Object.entries(merged).forEach(([key, value]) => {
@@ -76,6 +77,7 @@ export const useQueueEntries = (filters?: QueueEntryFilters, defaultPageSize: nu
     filters?.locationsWaitingFor?.join(','),
     filters?.providersWaitingFor?.join(','),
     filters?.queuesComingFrom?.join(','),
+    filters?.queues?.join(','),
   ]);
 
   const url = queryString ? `/ws/rest/v1/queue-entry?${queryString}` : '/ws/rest/v1/queue-entry';
@@ -97,8 +99,7 @@ export const useQueueEntries = (filters?: QueueEntryFilters, defaultPageSize: nu
     goToPrevious,
   } = useOpenmrsPagination<QueueEntry>(url, defaultPageSize, {
     swrConfig: {
-      dedupingInterval: 2000,
-      revalidateOnFocus: false,
+      revalidateOnFocus: true,
       keepPreviousData: true,
     },
   });
@@ -123,6 +124,7 @@ export const useQueueEntries = (filters?: QueueEntryFilters, defaultPageSize: nu
     goTo,
     goToNext,
     goToPrevious,
+    defaultPageSize,
   };
 
   return {

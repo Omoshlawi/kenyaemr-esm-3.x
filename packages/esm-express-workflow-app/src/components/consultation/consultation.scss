@@ -16,3 +16,8 @@
   display: flex;
   flex-direction: row;
 }
+
+.queueTabPlaceholder {
+  padding: layout.$spacing-05;
+  min-height: 200px;
+}

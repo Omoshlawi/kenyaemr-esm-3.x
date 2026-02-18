@@ -1,5 +1,13 @@
+import React, { useMemo, useState } from 'react';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import capitalize from 'lodash-es/capitalize';
+import lowerCase from 'lodash-es/lowerCase';
+import startCase from 'lodash-es/startCase';
+import { useTranslation } from 'react-i18next';
 import {
   DataTable,
+  InlineLoading,
   OverflowMenu,
   OverflowMenuItem,
   Pagination,
@@ -12,20 +20,13 @@ import {
   TableRow,
 } from '@carbon/react';
 import { ConfigurableLink, showModal, useConfig, useDebounce } from '@openmrs/esm-framework';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import startCase from 'lodash-es/startCase';
-import React, { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { CardHeader, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 
-import capitalize from 'lodash-es/capitalize';
-import lowerCase from 'lodash-es/lowerCase';
 import { type ExpressWorkflowConfig } from '../../../config-schema';
 import { spaBasePath } from '../../../constants';
 import { serveQueueEntry } from '../../../hooks/useServiceQueues';
 import { type QueueEntriesPagination, type QueueEntry } from '../../../types/index';
 import styles from './queue-entry-table.scss';
-import { usePaginationInfo } from '@openmrs/esm-patient-common-lib/src';
 
 // Extend dayjs with the relativeTime plugin
 dayjs.extend(relativeTime);
@@ -36,6 +37,8 @@ type QueueEntryTableProps = {
   usePatientChart?: boolean;
   pagination?: QueueEntriesPagination;
   onPageSizeChange?: (pageSize: number) => void;
+  isLoading?: boolean;
+  isValidating?: boolean;
 };
 
 const QueueEntryTable: React.FC<QueueEntryTableProps> = ({
@@ -44,6 +47,8 @@ const QueueEntryTable: React.FC<QueueEntryTableProps> = ({
   usePatientChart,
   pagination,
   onPageSizeChange,
+  isValidating,
+  isLoading,
 }) => {
   const { visitQueueNumberAttributeUuid } = useConfig<ExpressWorkflowConfig>();
   const [searchString, setSearchString] = useState('');
@@ -56,10 +61,10 @@ const QueueEntryTable: React.FC<QueueEntryTableProps> = ({
   }, [queueEntries, debouncedSearchString]);
 
   const { pageSizes } = usePaginationInfo(
-    pagination.currentPageSize.current,
-    pagination.totalCount,
-    pagination.currentPage,
-    filteredQueueEntries.length,
+    pagination?.defaultPageSize,
+    pagination?.totalCount,
+    pagination?.currentPage,
+    pagination?.currentPageSize.current,
   );
 
   const headers = useMemo(
@@ -127,12 +132,26 @@ const QueueEntryTable: React.FC<QueueEntryTableProps> = ({
     });
   }, [filteredQueueEntries, visitQueueNumberAttributeUuid, navigatePath, usePatientChart, t]);
 
+  if (isLoading && queueEntries.length === 0) {
+    return <InlineLoading status="active" description={t('loading', 'Loading...')} />;
+  }
   if (queueEntries.length === 0) {
     return <div>{t('noPatientsAwaiting', 'No patients awaiting service')}</div>;
   }
 
   return (
     <div className={styles.table}>
+      <CardHeader title={t('queueEntries', 'Queue Entries')}>
+        <div className={styles.loadingContainer}>
+          {isValidating && (
+            <InlineLoading
+              className={styles.loading}
+              status="active"
+              description={t('refreshingData', 'Refreshing data...')}
+            />
+          )}
+        </div>
+      </CardHeader>
       <Search
         labelText={t('search', 'Search')}
         placeholder={t('search', 'Search')}
