@@ -1,10 +1,10 @@
 import { FilterableMultiSelect, InlineLoading, InlineNotification } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { showSnackbar, useConfig, useFeatureFlag, type Visit } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, showSnackbar, useConfig, useFeatureFlag, type Visit } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { createPatientBill, useBillableItems, useCashPoint } from '../billing.resource';
+import { createPatientBill, createVisitAttribute, useBillableItems, useCashPoint } from '../billing.resource';
 import { BillingConfig } from '../config-schema';
 import { EXEMPTED_PAYMENT_STATUS, PENDING_PAYMENT_STATUS, SHA_INSURANCE_SCHEME } from '../constants';
 import styles from './billing-checkin-form.scss';
@@ -22,7 +22,6 @@ type BillingCheckInFormProps = {
   patientUuid: string;
   setVisitFormCallbacks: (callbacks: VisitFormCallbacks) => void;
 };
-
 const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({ patientUuid, setVisitFormCallbacks }) => {
   const { t } = useTranslation();
   const hieFeatureFlags = useFeatureFlag('healthInformationExchange');
@@ -76,7 +75,6 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({ patientUuid, se
             kind: 'error',
             isLowContrast: true,
           });
-          // Re-throw to propagate error up the promise chain
           throw error;
         },
       );
@@ -122,17 +120,35 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({ patientUuid, se
 
   useEffect(() => {
     const onVisitCreatedOrUpdated = async (visit: Visit) => {
+      if (attributes.length > 0) {
+        try {
+          await Promise.all(attributes.map((attr) => createVisitAttribute(visit.uuid, attr.attributeType, attr.value)));
+        } catch (error) {
+          showSnackbar({
+            title: t('visitAttributesError', 'Visit Attributes Error'),
+            subtitle: t(
+              'errorSavingVisitAttributes',
+              'An error occurred while saving billing visit attributes. Please contact your system administrator.',
+            ),
+            kind: 'error',
+            isLowContrast: true,
+          });
+          throw error;
+        }
+      }
+
       if (selectedBillingServices.length > 0) {
         const billPayload = createBillPayload(selectedBillingServices);
         await handleCreateBill(billPayload);
       }
+
       return visit;
     };
 
     setVisitFormCallbacks({
       onVisitCreatedOrUpdated,
     });
-  }, [selectedBillingServices, createBillPayload, handleCreateBill, setVisitFormCallbacks]);
+  }, [selectedBillingServices, attributes, createBillPayload, handleCreateBill, setVisitFormCallbacks, t]);
 
   if (isLoadingLineItems || isLoadingCashPoints) {
     return (

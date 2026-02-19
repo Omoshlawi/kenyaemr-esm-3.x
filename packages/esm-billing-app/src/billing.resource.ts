@@ -264,6 +264,14 @@ export const createPatientBill = (payload) => {
   return openmrsFetch(postUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload });
 };
 
+export function createVisitAttribute(visitUuid: string, attributeType: string, value: string) {
+  return openmrsFetch(`${restBaseUrl}/visit/${visitUuid}/attribute`, {
+    method: 'POST',
+    headers: { 'Content-type': 'application/json' },
+    body: { attributeType, value },
+  });
+}
+
 export const useConceptAnswers = (conceptUuid: string) => {
   const url = `${restBaseUrl}/concept/${conceptUuid}`;
   const { data, isLoading, error } = useSWR<{ data: { answers: Array<OpenmrsResource> } }>(url, openmrsFetch);
