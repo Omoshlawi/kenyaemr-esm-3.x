@@ -435,13 +435,13 @@ export const configSchema = {
         programUuid: '214cad1c-bb62-4d8e-b927-810a046daf62',
         forms: [
           {
-            formName: 'PrEP INITIATION',
+            formName: 'PrEP Enrollment',
             formUuId: 'd63eb2ee-d5e8-4ea4-b5ea-ea3670af03ac',
             dependancies: [],
             tags: ['enrollment'],
           },
           {
-            formName: 'PrEP Initial Enrollment Form',
+            formName: 'PrEP Initiation',
             formUuId: 'd5ca78be-654e-4d23-836e-a934739be555',
             dependancies: ['d63eb2ee-d5e8-4ea4-b5ea-ea3670af03ac'],
             tags: ['initial'],
@@ -455,13 +455,19 @@ export const configSchema = {
           {
             formName: 'PrEP Follow Up',
             formUuId: 'ee3e2017-52c0-4a54-99ab-ebb542fb8984',
-            dependancies: ['d5ca78be-654e-4d23-836e-a934739be555'],
+            dependancies: ['1bfb09fc-56d7-4108-bd59-b2765fd312b8'],
             tags: ['bound-to-current-visit'],
           },
           {
             formName: 'PrEP Monthly Refill Form',
             formUuId: '291c03c8-a216-11e9-a2a3-2a2ae2dbcce4',
-            dependancies: ['d5ca78be-654e-4d23-836e-a934739be555'],
+            dependancies: ['1bfb09fc-56d7-4108-bd59-b2765fd312b8'],
+            tags: ['bound-to-current-visit'],
+          },
+          {
+            formName: 'PrEP Discontinuation',
+            formUuId: '467c4cc3-25eb-4330-9cf6-e41b9b14cc10',
+            dependancies: ['1bfb09fc-56d7-4108-bd59-b2765fd312b8'],
             tags: ['discontinuation'],
           },
         ],
