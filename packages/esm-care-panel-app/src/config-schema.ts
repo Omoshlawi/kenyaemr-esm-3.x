@@ -88,25 +88,25 @@ export const configSchema = {
           {
             formName: 'VMMC Client Follow-Up',
             formUuId: '08873f91-7161-4f90-931d-65b131f2b12b',
-            dependancies: ['a74e3e4a-9e2a-41fb-8e64-4ba8a71ff984'],
+            dependancies: ['8afcaac3-e9db-4501-bff6-b6a41935b46e'],
             tags: ['bound-to-current-visit'],
           },
           {
             formName: 'VMMC Circumcision Procedure',
             formUuId: '5ee93f48-960b-11ec-b909-0242ac120002',
-            dependancies: ['a74e3e4a-9e2a-41fb-8e64-4ba8a71ff984'],
+            dependancies: ['8afcaac3-e9db-4501-bff6-b6a41935b46e'],
             tags: [],
           },
           {
             formName: 'VMMC Immediate Post-Operation Assessment',
             formUuId: '620b3404-9ae5-11ec-b909-0242ac120002',
-            dependancies: ['a74e3e4a-9e2a-41fb-8e64-4ba8a71ff984'],
+            dependancies: ['8afcaac3-e9db-4501-bff6-b6a41935b46e'],
             tags: ['bound-to-current-visit'],
           },
           {
             formName: 'VMMC Medical Examination',
             formUuId: 'd42aeb3d-d5d2-4338-a154-f75ddac78b59',
-            dependancies: ['a74e3e4a-9e2a-41fb-8e64-4ba8a71ff984'],
+            dependancies: ['8afcaac3-e9db-4501-bff6-b6a41935b46e'],
             tags: ['bound-to-current-visit'],
           },
           {
