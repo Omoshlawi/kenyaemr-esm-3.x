@@ -30,18 +30,10 @@ const BillingTabs = () => {
           </TabList>
         </div>
         <TabPanels>
-          <TabPanel>
-            <PatientBillsScreen />
-          </TabPanel>
-          <TabPanel>
-            <BillsTable />
-          </TabPanel>
-          <TabPanel>
-            <ClaimsManagementTable />
-          </TabPanel>
-          <TabPanel>
-            <PreauthTableTemporary />
-          </TabPanel>
+          <TabPanel>{<PatientBillsScreen />}</TabPanel>
+          <TabPanel>{<BillsTable isOnActiveTab={activeTabIndex === 1} />}</TabPanel>
+          <TabPanel>{activeTabIndex === 2 && <ClaimsManagementTable />}</TabPanel>
+          <TabPanel>{activeTabIndex === 3 && <PreauthTableTemporary />}</TabPanel>
         </TabPanels>
       </Tabs>
     </div>

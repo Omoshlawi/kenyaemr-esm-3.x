@@ -5,6 +5,7 @@ import {
   parseDate,
   restBaseUrl,
   useConfig,
+  useOpenmrsPagination,
   useSession,
   useVisit,
 } from '@openmrs/esm-framework';
@@ -68,7 +69,7 @@ export const mapBillProperties = (bill: PatientInvoice): MappedBill => {
 
   return mappedBill;
 };
-
+// TODO: Deprecated hook, use usePaginatedBills instead
 export const useBills = (
   patientUuid: string = '',
   billStatus: PaymentStatus.PENDING | '' | string = '',
@@ -100,6 +101,83 @@ export const useBills = (
     isLoading,
     isValidating,
     mutate,
+  };
+};
+
+const BILLS_REP =
+  'custom:(uuid,display,voided,voidReason,adjustedBy,cashPoint:(uuid,name),cashier:(uuid,display),dateCreated,lineItems,patient:(uuid,display))';
+
+export const usePaginatedBills = (
+  shouldFetchBills: boolean,
+  options: {
+    patientUuid?: string;
+    billStatus?: PaymentStatus.PENDING | '' | string;
+    startingDate?: Date;
+    endDate?: Date;
+    pageSize?: number;
+  } = {},
+) => {
+  const {
+    patientUuid = '',
+    billStatus = '',
+    startingDate = dayjs().startOf('day').toDate(),
+    endDate = dayjs().endOf('day').toDate(),
+    pageSize = 10,
+  } = options;
+
+  const startingDateISO = startingDate.toISOString();
+  const endDateISO = endDate.toISOString();
+
+  const baseParams = `status=${billStatus}&v=${BILLS_REP}&createdOnOrAfter=${startingDateISO}&createdOnOrBefore=${endDateISO}`;
+  const fullUrl = patientUuid
+    ? `${restBaseUrl}/cashier/bill?${baseParams}&patientUuid=${patientUuid}`
+    : `${restBaseUrl}/cashier/bill?${baseParams}`;
+
+  const {
+    data: rawBills,
+    error,
+    isLoading,
+    isValidating,
+    mutate,
+    totalPages,
+    totalCount,
+    currentPage,
+    currentPageSize,
+    paginated,
+    showNextButton,
+    showPreviousButton,
+    goTo,
+    goToNext,
+    goToPrevious,
+  } = useOpenmrsPagination<PatientInvoice>(shouldFetchBills ? fullUrl : null, pageSize, {
+    swrConfig: { errorRetryCount: 2, keepPreviousData: true, revalidateOnFocus: true },
+  });
+
+  const sortBills = sortBy(rawBills ?? [], ['dateCreated']).reverse();
+  const filteredBills = billStatus === '' ? sortBills : sortBills?.filter((bill) => bill?.status === billStatus);
+  const mappedResults = filteredBills?.map((bill) => mapBillProperties(bill));
+  const filteredResults = mappedResults?.filter((res) => res.patientUuid === patientUuid);
+  const bills = isEmpty(patientUuid) ? mappedResults ?? [] : filteredResults ?? [];
+
+  return {
+    bills,
+    error,
+    isLoading,
+    isValidating,
+    mutate,
+    pagination: {
+      totalPages,
+      totalCount,
+      currentPage,
+      currentPageSize,
+      paginated,
+      showNextButton,
+      showPreviousButton,
+      goTo,
+      goToNext,
+      goToPrevious,
+      pageSize,
+    },
   };
 };
 

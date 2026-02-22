@@ -1,4 +1,4 @@
-import React, { useCallback, useId, useMemo, useState } from 'react';
+import React, { useCallback, useId, useMemo, useRef, useState } from 'react';
 import classNames from 'classnames';
 import {
   DataTable,
@@ -18,16 +18,9 @@ import {
   Tile,
 } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
-import {
-  useLayoutType,
-  isDesktop,
-  useConfig,
-  usePagination,
-  ErrorState,
-  ConfigurableLink,
-} from '@openmrs/esm-framework';
-import { EmptyDataIllustration } from '@openmrs/esm-patient-common-lib';
-import { useBills } from '../billing.resource';
+import { useLayoutType, isDesktop, useConfig, ErrorState, ConfigurableLink } from '@openmrs/esm-framework';
+import { EmptyDataIllustration, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
+import { usePaginatedBills } from '../billing.resource';
 import styles from './bills-table.scss';
 
 const filterItems = [
@@ -39,19 +32,29 @@ const filterItems = [
 
 type BillTableProps = {
   defaultBillPaymentStatus?: string;
+  isOnActiveTab?: boolean;
 };
 
-const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' }) => {
+const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '', isOnActiveTab = true }) => {
   const { t } = useTranslation();
   const id = useId();
   const config = useConfig();
   const layout = useLayoutType();
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
   const [billPaymentStatus, setBillPaymentStatus] = useState(defaultBillPaymentStatus);
-  const pageSizes = config?.bills?.pageSizes ?? [10, 20, 30, 40, 50];
   const [pageSize, setPageSize] = useState(config?.bills?.pageSize ?? 10);
-  const { bills, isLoading, isValidating, error } = useBills('', billPaymentStatus);
+  const { bills, isLoading, isValidating, error, pagination } = usePaginatedBills(isOnActiveTab, {
+    billStatus: billPaymentStatus,
+    pageSize: pageSize,
+  });
+  const { goTo, currentPage, totalCount } = pagination;
+  const { pageSizes } = usePaginationInfo(pageSize, totalCount, currentPage, bills.length);
+
   const [searchString, setSearchString] = useState('');
+  const hasLoadedOnce = useRef(false);
+  if (!isLoading) {
+    hasLoadedOnce.current = true;
+  }
 
   const headerData = [
     {
@@ -94,8 +97,6 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
     return bills;
   }, [searchString, bills]);
 
-  const { paginated, goTo, results, currentPage } = usePagination(searchResults, pageSize);
-
   const setBilledItems = (bill) =>
     bill?.lineItems?.reduce(
       (acc, item) => acc + (acc ? ' & ' : '') + (item?.billableService.split(':')[1] || item?.item.split(':')[1] || ''),
@@ -104,7 +105,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
 
   const billingUrl = '${openmrsSpaBase}/home/accounting/patient/${patientUuid}/${uuid}';
 
-  const rowData = results?.map((bill, index) => ({
+  const rowData = searchResults?.map((bill, index) => ({
     id: `${index}`,
     uuid: bill.uuid,
     patientName: (
@@ -133,7 +134,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
 
   const handleFilterChange = ({ selectedItem }) => setBillPaymentStatus(selectedItem.id);
 
-  if (isLoading) {
+  if (isLoading && !hasLoadedOnce.current) {
     return (
       <div className={styles.loaderContainer}>
         <DataTableSkeleton
@@ -189,7 +190,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
             rows={rowData}
             headers={headerData}
             size={responsiveSize}
-            useZebraStyles={rowData?.length > 1 ? true : false}>
+            useZebraStyles={rowData?.length > 1}>
             {({ rows, headers, getRowProps, getTableProps }) => (
               <TableContainer>
                 <Table {...getTableProps()} aria-label="bill list">
@@ -229,26 +230,25 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
               </Layer>
             </div>
           )}
-          {paginated && (
-            <Pagination
-              forwardText="Next page"
-              backwardText="Previous page"
-              page={currentPage}
-              pageSize={pageSize}
-              pageSizes={pageSizes}
-              totalItems={searchResults?.length}
-              className={styles.pagination}
-              size={responsiveSize}
-              onChange={({ pageSize: newPageSize, page: newPage }) => {
-                if (newPageSize !== pageSize) {
-                  setPageSize(newPageSize);
-                }
-                if (newPage !== currentPage) {
-                  goTo(newPage);
-                }
-              }}
-            />
-          )}
+
+          <Pagination
+            forwardText={t('nextPage', 'Next page')}
+            backwardText={t('previousPage', 'Previous page')}
+            page={currentPage ?? 1}
+            pageSize={pageSize}
+            pageSizes={pageSizes}
+            totalItems={totalCount}
+            className={styles.pagination}
+            size={responsiveSize}
+            onChange={({ pageSize: newPageSize, page: newPage }) => {
+              if (newPageSize !== pageSize) {
+                setPageSize(newPageSize);
+              }
+              if (newPage !== currentPage) {
+                goTo(newPage);
+              }
+            }}
+          />
         </div>
       ) : (
         <Layer className={styles.emptyStateContainer}>
@@ -256,7 +256,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '' })
             <div className={styles.illo}>
               <EmptyDataIllustration />
             </div>
-            <p className={styles.content}>There are no bills to display.</p>
+            <p className={styles.content}>{t('noBillsToDisplay', 'There are no bills to display.')}</p>
           </Tile>
         </Layer>
       )}
@@ -276,7 +276,9 @@ function FilterableTableHeader({ layout, handleSearch, isValidating, responsiveS
           <h4>{t('billList', 'Bill list')}</h4>
         </div>
         <div className={styles.backgroundDataFetchingIndicator}>
-          <span>{isValidating ? <InlineLoading /> : null}</span>
+          <span>
+            {isValidating && <InlineLoading status="active" description={t('refreshingData', 'Refreshing data')} />}
+          </span>
         </div>
       </div>
       <Search
