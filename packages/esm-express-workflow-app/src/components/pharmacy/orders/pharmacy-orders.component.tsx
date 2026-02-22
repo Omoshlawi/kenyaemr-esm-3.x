@@ -42,12 +42,7 @@ const PharmacyOrders: React.FC<PharmacyOrdersProps> = ({ patient }) => {
     return medicationRequests.length;
   }, [medicationRequests]);
 
-  const { pageSizes, itemsDisplayed } = usePaginationInfo(
-    currPageSize,
-    totalCount || 0,
-    currentPage || 1,
-    currentItems,
-  );
+  const { pageSizes } = usePaginationInfo(currPageSize, totalCount || 0, currentPage || 1, currentItems);
 
   const header = [
     { key: 'date', header: t('dateAndTime', 'Date and time') },
@@ -58,7 +53,7 @@ const PharmacyOrders: React.FC<PharmacyOrdersProps> = ({ patient }) => {
   ];
 
   const rows = medicationRequests.map((medicationRequest) => {
-    const resource = medicationRequest.resource as fhir.MedicationRequest;
+    const resource = medicationRequest.resource;
     return {
       id: medicationRequest.fullUrl,
       date: formatDatetime(parseDate(resource?.authoredOn), { mode: 'standard', noToday: true }),
@@ -89,8 +84,8 @@ const PharmacyOrders: React.FC<PharmacyOrdersProps> = ({ patient }) => {
     return (
       <div className={styles.pharmacyOrdersContainer}>
         <EmptyState
-          displayText={t('noMedicationOrdersFound', 'No medication orders found')}
-          headerTitle={t('noMedicationOrders', 'No medication orders')}
+          displayText={t('noMedicationOrdersFound', 'medication orders found')}
+          headerTitle={t('medicationOrders', 'Medication Orders')}
           launchForm={launchAddDrugOrder}
         />
       </div>
