@@ -134,7 +134,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '', i
 
   const handleFilterChange = ({ selectedItem }) => setBillPaymentStatus(selectedItem.id);
 
-  if (isLoading && !hasLoadedOnce.current) {
+  if (isLoading) {
     return (
       <div className={styles.loaderContainer}>
         <DataTableSkeleton

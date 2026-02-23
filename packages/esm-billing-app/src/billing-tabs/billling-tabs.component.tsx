@@ -8,8 +8,6 @@ import PatientBillsScreen from '../past-patient-bills/patient-bills-dashboard/pa
 import ClaimsManagementTable from '../claims/claims-management/table/claims-list-table.component';
 import PreauthTableTemporary from '../claims/claims-management/table/preauth-table.tmp.component';
 
-import styles from './billing-tabs.scss';
-
 const BillingTabs = () => {
   const { t } = useTranslation();
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
@@ -19,7 +17,7 @@ const BillingTabs = () => {
   };
 
   return (
-    <div className={styles.tabsContainer} data-testid="BillingsList-list">
+    <div data-testid="BillingsList-list">
       <Tabs selectedIndex={activeTabIndex} onChange={handleTabChange}>
         <div style={{ display: 'flex' }}>
           <TabList style={{ paddingLeft: '1rem' }} aria-label={t('billingTabs', 'Billing tabs')} contained>
