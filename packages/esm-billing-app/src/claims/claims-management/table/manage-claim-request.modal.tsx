@@ -2,31 +2,23 @@ import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader } from '@car
 import { showSnackbar } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { retryClaim, updateClaimStatus } from '../../dashboard/form/claims-form.resource';
+import { retryClaim, updateClaimStatus, updateAllClaimStatuses } from '../../dashboard/form/claims-form.resource';
 import { useFacilityClaims } from './use-facility-claims';
-import { ProgressTracker } from '../../../types';
-import { updateMultipleClaimStatuses } from '../../utils';
 
 export const ManageClaimRequest = ({
   closeModal,
   claimId,
   modalType = 'retry',
-  multipleIds = [],
 }: {
   closeModal: () => void;
-  claimId: string;
+  claimId?: string;
   modalType: 'retry' | 'update' | 'all';
-  multipleIds?: string[];
 }) => {
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { claims, mutate } = useFacilityClaims();
-  const [progress, setProgress] = useState({ completed: 0, total: multipleIds.length });
-  const responseUUIDs = multipleIds
-    .map((claimId) => claims.find((c) => c.responseUUID === claimId)?.responseUUID)
-    .filter((uuid) => uuid);
 
-  const claim = claims.find((claim) => claim.id === claimId);
+  const claim = claimId ? claims.find((claim) => claim.id === claimId) : null;
 
   const handleRetryClaim = () => {
     setIsSubmitting(true);
@@ -80,54 +72,37 @@ export const ManageClaimRequest = ({
       });
   };
 
-  const handleUpdateMultipleStatus = async () => {
+  const handleUpdateAllStatuses = () => {
     setIsSubmitting(true);
-    setProgress({ completed: 0, total: responseUUIDs.length });
-
-    const updateProgressCallback = (progressData: ProgressTracker) => {
-      setProgress({
-        completed: progressData.completed,
-        total: progressData.total,
+    updateAllClaimStatuses()
+      .then(() => {
+        mutate();
+        showSnackbar({
+          kind: 'success',
+          title: t('success', 'Success'),
+          subtitle: t('allClaimsUpdated', 'All unprocessed claim statuses updated successfully'),
+          timeoutInMs: 3000,
+        });
+      })
+      .catch(() => {
+        showSnackbar({
+          kind: 'error',
+          title: t('error', 'Error'),
+          subtitle: t('updateAllError', 'Failed to update claim statuses, please try again'),
+          timeoutInMs: 3000,
+        });
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+        closeModal();
       });
-    };
-
-    const results = await updateMultipleClaimStatuses(responseUUIDs, updateProgressCallback);
-
-    mutate();
-    if (results.failed === 0) {
-      showSnackbar({
-        kind: 'success',
-        title: t('success', 'Success'),
-        subtitle: t('allSuccessfulUpdate', 'Claim status updated successfully'),
-        timeoutInMs: 3000,
-      });
-    } else if (results.success === 0) {
-      showSnackbar({
-        kind: 'error',
-        title: t('error', 'Error'),
-        subtitle: t('updateAllStatusesError', 'Failed to update any claim statuses'),
-        timeoutInMs: 2500,
-      });
-    } else {
-      showSnackbar({
-        kind: 'warning',
-        title: t('partialSuccess', 'Partial Success'),
-        subtitle: t(
-          'updateAllStatusesPartialSuccess',
-          `Claim status updated successfully for ${results.success} claims, failed for ${results.failed} claims`,
-        ),
-        timeoutInMs: 3000,
-      });
-    }
-    setIsSubmitting(false);
-    closeModal();
   };
 
   const handleSubmit = () => {
     if (modalType === 'retry') {
       handleRetryClaim();
     } else if (modalType === 'all') {
-      handleUpdateMultipleStatus();
+      handleUpdateAllStatuses();
     } else {
       handleUpdateStatus();
     }
@@ -144,33 +119,20 @@ export const ManageClaimRequest = ({
       </ModalHeader>
       <ModalBody>
         {modalType === 'retry'
-          ? t('retryClaimMessage', `Are you sure you want to retry making the request for ${claim.claimCode}?`)
+          ? t('retryClaimMessage', `Are you sure you want to retry making the request for ${claim?.claimCode}?`)
           : modalType === 'all'
-          ? t('updateAllStatusesMessage', `You are about to update statuses for ${responseUUIDs.length} claims?`)
-          : t('updateStatusMessage', `You are updating claim status for ${claim.claimCode}:`)}
-
-        {isSubmitting && modalType === 'all' && (
-          <div className="mt-4">
-            <InlineLoading
-              description={t('updatingProgress', `Updating ${progress.completed} of ${progress.total} claims...`)}
-              status="active"
-            />
-          </div>
-        )}
+          ? t('updateAllStatusesMessage', 'Are you sure you want to update all unprocessed claim statuses?')
+          : t('updateStatusMessage', `Are you sure you want to update claim status for ${claim?.claimCode}?`)}
       </ModalBody>
       <ModalFooter>
-        <Button kind="secondary" onClick={closeModal} type="button">
+        <Button kind="secondary" onClick={closeModal} type="button" disabled={isSubmitting}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button type="submit" onClick={handleSubmit}>
+        <Button type="submit" onClick={handleSubmit} disabled={isSubmitting}>
           {isSubmitting ? (
             <>
               <InlineLoading status="active" />
-              {modalType === 'retry'
-                ? t('retrying', 'Retrying')
-                : modalType === 'all'
-                ? t('updatingProgress', `Updating ${progress.completed} of ${progress.total} claims...`)
-                : t('updating', 'Updating')}
+              {modalType === 'retry' ? t('retrying', 'Retrying...') : t('updating', 'Updating...')}
             </>
           ) : modalType === 'retry' ? (
             t('retry', 'Retry')

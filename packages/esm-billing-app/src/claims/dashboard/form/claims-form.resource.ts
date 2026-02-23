@@ -74,6 +74,12 @@ export const retryClaim = (claimUUID: string) => {
   });
 };
 
+export const updateAllClaimStatuses = () => {
+  const url = `${restBaseUrl}/insuranceclaims/claim/update-status-all`;
+  return openmrsFetch(url, {
+    method: 'GET',
+  });
+};
 export const useInterventions = () => {
   const interventions = useMemo(() => mockInterventions, []);
   return {
