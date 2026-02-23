@@ -736,3 +736,7 @@ export const getEligibilityTags = (patient: fhir.Patient, eligibilityData?: Elig
 
   return tags;
 };
+
+export const sanitizeName = (name: string): string => {
+  return name?.trim().replace(/[^\w\s'\-\.]/g, '') || '';
+};

@@ -1,6 +1,6 @@
 import { getSessionLocation, launchWorkspace, openmrsFetch, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
 import { DependentPayload, HIEPatient } from '../type';
-import { generateIdentifier, getIdentifierTypeUUID } from '../helper';
+import { generateIdentifier, getIdentifierTypeUUID, sanitizeName } from '../helper';
 import { openmrsId, openmrsIdSource } from '../constant';
 import { useEffect, useState } from 'react';
 
@@ -145,9 +145,9 @@ export async function createPatient(payload: PatientRegistrationPayload, t: any)
         names: [
           {
             preferred: true,
-            givenName: givenName || 'Unknown',
-            middleName: middleName || '',
-            familyName: familyName || 'Unknown',
+            givenName: sanitizeName(givenName) || 'Unknown',
+            middleName: sanitizeName(middleName) || '',
+            familyName: sanitizeName(familyName) || 'Unknown',
           },
         ],
         gender: patientGender?.charAt(0).toUpperCase() || 'U',
