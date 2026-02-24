@@ -1,6 +1,5 @@
-import { defineConfigSchema, getSyncLifecycle } from '@openmrs/esm-framework';
+import { defineConfigSchema, getAsyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
-import rootComponent from './root.component';
 
 const moduleName = '@kenyaemr/esm-version-app';
 
@@ -11,7 +10,7 @@ const options = {
 
 export const importTranslations = require.context('../translations', false, /.json$/, 'lazy');
 
-export const about = getSyncLifecycle(rootComponent, options);
+export const about = getAsyncLifecycle(() => import('./root.component'), options);
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);

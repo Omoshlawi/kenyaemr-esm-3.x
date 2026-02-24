@@ -1,6 +1,5 @@
-import { getAsyncLifecycle, defineConfigSchema, getSyncLifecycle, registerBreadcrumbs } from '@openmrs/esm-framework';
+import { getAsyncLifecycle, defineConfigSchema, registerBreadcrumbs } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
-import { createLeftPanelLink } from './pharmacy-left-panel/pharmacy-left-panel-link.component';
 const moduleName = '@kenyaemr/esm-pharmacy-app';
 
 const options = {
@@ -32,10 +31,13 @@ export const pharmacyDeleteConfirmDialog = getAsyncLifecycle(
   () => import('./pharamacy-forms/delete-confirm-dialog.modal'),
   options,
 );
-export const pharmacyDashboardLink = getSyncLifecycle(
-  createLeftPanelLink({
-    name: 'pharmacy',
-    title: 'Community Pharmacy',
-  }),
+export const pharmacyDashboardLink = getAsyncLifecycle(
+  () =>
+    import('./pharmacy-left-panel/pharmacy-left-panel-link.component').then((m) => ({
+      default: m.createLeftPanelLink({
+        name: 'pharmacy',
+        title: 'Community Pharmacy',
+      }),
+    })),
   options,
 );

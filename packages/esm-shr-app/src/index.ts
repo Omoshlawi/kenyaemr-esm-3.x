@@ -1,21 +1,11 @@
 import {
   defineConfigSchema,
   getAsyncLifecycle,
-  getSyncLifecycle,
   registerBreadcrumbs,
   registerFeatureFlag,
 } from '@openmrs/esm-framework';
-import { configSchema } from './config-schema';
 import { referralDashboardMeta, shrSummaryDashboardMeta } from './dashboard.meta';
-import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
-import { createHomeDashboardLink } from './create-dashboard-link';
-import ReferralChartView from './referrals/patient-chart/referral-chart-view.component';
-import ReferralReasonsDialogPopup from './referrals/referral-reasons/referral-reasons.component';
-import SHRAuthorizationForm from './shr-summary/shr-authorization-form.workspace';
-import SHRSummaryPanel from './shr-summary/shr-summary.component';
-import shrPatientSummaryComponent from './shrpatient-summary/shrpatient-summary.component';
-import FacilityRefferalForm from './workspace/referrals.workspace.component';
-import ReferralWrap from './referrals-wrap';
+import { configSchema } from './config-schema';
 
 const moduleName = '@kenyaemr/esm-shr-app';
 
@@ -26,7 +16,10 @@ const options = {
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
-export const shrPatientSummary = getSyncLifecycle(shrPatientSummaryComponent, options);
+export const shrPatientSummary = getAsyncLifecycle(
+  () => import('./shrpatient-summary/shrpatient-summary.component'),
+  options,
+);
 
 export function startupApp() {
   registerBreadcrumbs([]);
@@ -34,35 +27,63 @@ export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
 }
 
-export const ReferralsDashboardLink = getSyncLifecycle(
-  createHomeDashboardLink({
-    name: 'referrals',
-    title: 'Referrals',
-  }),
+export const ReferralsDashboardLink = getAsyncLifecycle(
+  () =>
+    import('./create-dashboard-link').then((m) => ({
+      default: m.createHomeDashboardLink({
+        name: 'referrals',
+        title: 'Referrals',
+      }),
+    })),
   options,
 );
 
-export const shrSummaryDashboardLink = getSyncLifecycle(
-  createDashboardLink({ ...shrSummaryDashboardMeta, icon: 'omrs-icon-activity', moduleName }),
+export const shrSummaryDashboardLink = getAsyncLifecycle(
+  () =>
+    import('@openmrs/esm-patient-common-lib').then((m) => ({
+      default: m.createDashboardLink({
+        ...shrSummaryDashboardMeta,
+        icon: 'omrs-icon-activity',
+        moduleName,
+      }),
+    })),
   options,
 );
 
 export const shrHome = getAsyncLifecycle(() => import('./shr-home.component'), options);
 
-export const referralReasonsDialogPopup = getSyncLifecycle(ReferralReasonsDialogPopup, {
-  featureName: 'View Referral Reasons',
-  moduleName,
-});
+export const referralReasonsDialogPopup = getAsyncLifecycle(
+  () => import('./referrals/referral-reasons/referral-reasons.component'),
+  {
+    featureName: 'View Referral Reasons',
+    moduleName,
+  },
+);
 
 // Dashboard links for referrals and the corresponding view in the patient chart
-export const referralWidget = getSyncLifecycle(ReferralChartView, options);
-export const referralLink = getSyncLifecycle(
-  createDashboardLink({ ...referralDashboardMeta, icon: 'omrs-icon-message-queue' }),
+export const referralWidget = getAsyncLifecycle(
+  () => import('./referrals/patient-chart/referral-chart-view.component'),
   options,
 );
-export const facilityRefferalForm = getSyncLifecycle(FacilityRefferalForm, options);
+export const referralLink = getAsyncLifecycle(
+  () =>
+    import('@openmrs/esm-patient-common-lib').then((m) => ({
+      default: m.createDashboardLink({
+        ...referralDashboardMeta,
+        icon: 'omrs-icon-message-queue',
+      }),
+    })),
+  options,
+);
+export const facilityRefferalForm = getAsyncLifecycle(
+  () => import('./workspace/referrals.workspace.component'),
+  options,
+);
 
 // SHR Summary
-export const patientSHRSummary = getSyncLifecycle(SHRSummaryPanel, options);
-export const shrAuthorizationForm = getSyncLifecycle(SHRAuthorizationForm, options);
-export const referralWrap = getSyncLifecycle(ReferralWrap, options);
+export const patientSHRSummary = getAsyncLifecycle(() => import('./shr-summary/shr-summary.component'), options);
+export const shrAuthorizationForm = getAsyncLifecycle(
+  () => import('./shr-summary/shr-authorization-form.workspace'),
+  options,
+);
+export const referralWrap = getAsyncLifecycle(() => import('./referrals-wrap'), options);

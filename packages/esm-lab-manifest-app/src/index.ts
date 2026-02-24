@@ -1,8 +1,6 @@
-import { getAsyncLifecycle, defineConfigSchema, getSyncLifecycle, registerBreadcrumbs } from '@openmrs/esm-framework';
+import { getAsyncLifecycle, defineConfigSchema, registerBreadcrumbs } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
-import SideNav from './side-menu/side-menu.component';
 import { labManifestDashboardMeta, manifestDashboardMeta } from './dashboard.meta';
-import { createDashboardLink } from './nav/left-panel-link.component';
 
 const moduleName = '@kenyaemr/esm-lab-manifest-app';
 
@@ -46,11 +44,23 @@ export const requeueLabManifestConfirmModal = getAsyncLifecycle(
 );
 
 // t('labManifestSideNav', 'Lab ManifestSideNav')
-export const labManifestSideNav = getSyncLifecycle(SideNav, options);
+export const labManifestSideNav = getAsyncLifecycle(() => import('./side-menu/side-menu.component'), options);
 // t('labManifestDashboard', 'Lab Manifest Dashboard')
-export const labsManifestsDashboardLink = getSyncLifecycle(createDashboardLink(labManifestDashboardMeta), options);
+export const labsManifestsDashboardLink = getAsyncLifecycle(
+  () =>
+    import('./nav/left-panel-link.component').then((m) => ({
+      default: m.createDashboardLink(labManifestDashboardMeta),
+    })),
+  options,
+);
 // t('manifestOverviewDashboard', 'Manifest Overview Dashboard')
-export const manifestOverviewDashboardLink = getSyncLifecycle(createDashboardLink(manifestDashboardMeta), options);
+export const manifestOverviewDashboardLink = getAsyncLifecycle(
+  () =>
+    import('./nav/left-panel-link.component').then((m) => ({
+      default: m.createDashboardLink(manifestDashboardMeta),
+    })),
+  options,
+);
 // t('labManifestComponent', 'Lab Manifest Component')
 export const labManifestComponent = getAsyncLifecycle(() => import('./component/lab-manifest.component'), options);
 export const labManifestDetail = getAsyncLifecycle(() => import('./component/lab-manifest-detail.component'), options);

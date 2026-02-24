@@ -3153,7 +3153,6 @@ __metadata:
   resolution: "@kenyaemr/esm-version-app@workspace:packages/esm-version-app"
   dependencies:
     git-describe: "npm:^4.1.1"
-    lodash-es: "npm:^4.17.15"
     webpack: "npm:^5.99.9"
   peerDependencies:
     "@carbon/react": 1.x

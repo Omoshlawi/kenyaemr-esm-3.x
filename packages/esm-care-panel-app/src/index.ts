@@ -1,18 +1,6 @@
-import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle, registerBreadcrumbs } from '@openmrs/esm-framework';
+import { defineConfigSchema, getAsyncLifecycle, registerBreadcrumbs } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
-import { dashboardMeta, hivPatientSummaryDashboardMeta } from './dashboard.meta';
-import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
-import carePanelComponent from './care-panel/care-panel.component';
-import careProgramsComponent from './care-programs/care-programs.component';
-import deleteRegimenConfirmationDialogComponent from './regimen-editor/delete-regimen-modal.component';
-import regimenFormComponent from './regimen-editor/regimen-form.component';
-import CarePanelDashboard from './care-panel-dashboard/care-panel-dashboard.component';
-import PatientSummary from './patient-summary/patient-summary.component';
-import DispensingPatientVitals from './dispensing-patient-details/patient-vitals.component';
-import PatientDischargeSideRailIcon from './patient-discharge/discharge-workspace-siderail.component';
-import PatientDischargeWorkspace from './patient-discharge/patient-discharge.workspace';
-import ProgramForm from './care-programs/program.workspace';
-import KvpPeerLinkageForm from './care-programs/kvp-peer-linkage-form.workspace';
+import { dashboardMeta } from './dashboard.meta';
 
 const moduleName = '@kenyaemr/esm-care-panel-app';
 
@@ -28,31 +16,52 @@ export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
 }
 
-export const carePanelPatientSummary = getSyncLifecycle(CarePanelDashboard, options);
+export const carePanelPatientSummary = getAsyncLifecycle(
+  () => import('./care-panel-dashboard/care-panel-dashboard.component'),
+  options,
+);
 
-export const deleteRegimenConfirmationDialog = getSyncLifecycle(deleteRegimenConfirmationDialogComponent, options);
+export const deleteRegimenConfirmationDialog = getAsyncLifecycle(
+  () => import('./regimen-editor/delete-regimen-modal.component'),
+  options,
+);
 
-export const patientProgramSummary = getSyncLifecycle(carePanelComponent, options);
+export const patientProgramSummary = getAsyncLifecycle(() => import('./care-panel/care-panel.component'), options);
 
-export const patientCareProgram = getSyncLifecycle(careProgramsComponent, {
+export const patientCareProgram = getAsyncLifecycle(() => import('./care-programs/care-programs.component'), {
   moduleName: 'patient-care-programs',
   featureName: 'care-programs',
 });
 
 // t('carePanel', 'Care panel')
-export const carePanelSummaryDashboardLink = getSyncLifecycle(
-  createDashboardLink({ ...dashboardMeta, icon: 'omrs-icon-document', moduleName }),
+export const carePanelSummaryDashboardLink = getAsyncLifecycle(
+  () =>
+    import('@openmrs/esm-patient-common-lib').then((m) => ({
+      default: m.createDashboardLink({ ...dashboardMeta, icon: 'omrs-icon-document', moduleName }),
+    })),
   options,
 );
-export const hivPatientSummary = getSyncLifecycle(PatientSummary, options);
-export const regimenFormWorkspace = getSyncLifecycle(regimenFormComponent, options);
+export const hivPatientSummary = getAsyncLifecycle(
+  () => import('./patient-summary/patient-summary.component'),
+  options,
+);
+export const regimenFormWorkspace = getAsyncLifecycle(() => import('./regimen-editor/regimen-form.component'), options);
 
-export const dispensingPaentientVitals = getSyncLifecycle(DispensingPatientVitals, options);
+export const dispensingPaentientVitals = getAsyncLifecycle(
+  () => import('./dispensing-patient-details/patient-vitals.component'),
+  options,
+);
 
-export const patientDischargeSideRailIcon = getSyncLifecycle(PatientDischargeSideRailIcon, options);
+export const patientDischargeSideRailIcon = getAsyncLifecycle(
+  () => import('./patient-discharge/discharge-workspace-siderail.component'),
+  options,
+);
 export const patientDischargeWorkspace = getAsyncLifecycle(
   () => import('./patient-discharge/patient-discharge.workspace'),
   options,
 );
-export const mchProgramForm = getSyncLifecycle(ProgramForm, options);
-export const kvpPeerLinkageForm = getSyncLifecycle(KvpPeerLinkageForm, options);
+export const mchProgramForm = getAsyncLifecycle(() => import('./care-programs/program.workspace'), options);
+export const kvpPeerLinkageForm = getAsyncLifecycle(
+  () => import('./care-programs/kvp-peer-linkage-form.workspace'),
+  options,
+);

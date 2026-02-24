@@ -18,7 +18,7 @@
   "source": true,
   "browser": "dist/kenyaemr-esm-admin-app.js",
   "scripts": {
-    "analyze": "rspack --mode=production --env analyze=true",
+    "analyze": "rspack build --mode=production --analyze",
     "build": "rspack --mode=production",
     "coverage": "yarn test --coverage",
     "debug": "npm run serve",

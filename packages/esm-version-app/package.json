@@ -18,7 +18,7 @@
   "source": true,
   "browser": "dist/openmrs-esm-patient-verification-app.js",
   "scripts": {
-    "analyze": "rspack --mode=production --env analyze=true",
+    "analyze": "rspack build --mode=production --analyze",
     "build": "node src/version.js && rspack --mode=production",
     "coverage": "yarn test --coverage",
     "debug": "npm run serve",
@@ -33,9 +33,6 @@
   "browserslist": [
     "extends browserslist-config-openmrs"
   ],
-  "dependencies": {
-    "lodash-es": "^4.17.15"
-  },
   "devDependencies": {
     "git-describe": "^4.1.1",
     "webpack": "^5.99.9"

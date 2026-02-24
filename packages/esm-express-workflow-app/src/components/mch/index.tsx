@@ -1,20 +1,21 @@
-import { getSyncLifecycle } from '@openmrs/esm-framework';
+import { getAsyncLifecycle } from '@openmrs/esm-framework';
 
 import { moduleName } from '../../constants';
-import { createLeftPanelLink } from '../../shared/dashboard-link/dashboard-link.component';
-import MCHDashboard from './dashboard.component';
 
 const options = {
   featureName: 'express-workflow',
   moduleName,
 };
 
-export const mchDashboard = getSyncLifecycle(MCHDashboard, options);
+export const mchDashboard = getAsyncLifecycle(() => import('./dashboard.component'), options);
 // t('mch', 'MCH')
-export const mchLeftPanelLink = getSyncLifecycle(
-  createLeftPanelLink({
-    title: 'mch',
-    name: 'mch',
-  }),
+export const mchLeftPanelLink = getAsyncLifecycle(
+  () =>
+    import('../../shared/dashboard-link/dashboard-link.component').then((m) => ({
+      default: m.createLeftPanelLink({
+        title: 'mch',
+        name: 'mch',
+      }),
+    })),
   options,
 );

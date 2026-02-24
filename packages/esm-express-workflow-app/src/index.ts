@@ -1,10 +1,5 @@
-import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
+import { defineConfigSchema, getAsyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
-import CheckinFormExtraExtension from './components/registration/checkin-form-extra/checkin-form-extra.extension';
-import { Home } from '@carbon/react/icons';
-
-import PatientSummaryDashboard from './shared/patient-chart/patient-summary-dashboard/patient-summary-dashboard.component';
-import { createLeftPanelLink } from './shared/dashboard-link/dashboard-link.component';
 
 const moduleName = '@kenyaemr/esm-express-workflow-app';
 
@@ -37,15 +32,26 @@ export const otpVerificationModal = getAsyncLifecycle(
   () => import('./shared/otp-verification/otp-verification.modal'),
   options,
 );
-export const checkinFormExtraExtension = getSyncLifecycle(CheckinFormExtraExtension, options);
-export const patientSummaryDashboard = getSyncLifecycle(PatientSummaryDashboard, options);
+export const checkinFormExtraExtension = getAsyncLifecycle(
+  () => import('./components/registration/checkin-form-extra/checkin-form-extra.extension'),
+  options,
+);
+export const patientSummaryDashboard = getAsyncLifecycle(
+  () => import('./shared/patient-chart/patient-summary-dashboard/patient-summary-dashboard.component'),
+  options,
+);
 
 export const queuesAdminHome = getAsyncLifecycle(() => import('./shared/queue/queues-home.component'), options);
-export const homepageDashboardLink = getSyncLifecycle(
-  createLeftPanelLink({
-    name: `consultation`,
-    title: 'Home',
-    icon: Home,
-  }),
+export const homepageDashboardLink = getAsyncLifecycle(
+  () =>
+    Promise.all([import('./shared/dashboard-link/dashboard-link.component'), import('@carbon/react/icons')]).then(
+      ([m, icons]) => ({
+        default: m.createLeftPanelLink({
+          name: 'consultation',
+          title: 'Home',
+          icon: icons.Home,
+        }),
+      }),
+    ),
   options,
 );

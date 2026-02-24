@@ -42,6 +42,14 @@
         "^test:watch"
       ],
       "outputs": []
+    },
+    "analyze": {
+      "dependsOn": [
+        "^analyze"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
     }
   }
 }

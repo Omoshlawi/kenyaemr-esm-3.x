@@ -1,12 +1,5 @@
-import { defineConfigSchema, getSyncLifecycle } from '@openmrs/esm-framework';
+import { defineConfigSchema, getAsyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
-import CrossBorderApp from './root.component';
-import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
-import SideMenu from './components/side-menu/side-menu.component';
-import MPISearch from './components/search/mpi-search.component';
-import Summary from './components/summary/summary.component';
-import FormEntryWorkspace from './components/form-entry/form-entry.component';
-import PatientSearch from './components/form-entry/patient-search.component';
 
 const moduleName = '@kenyaemr/esm-cross-border-app';
 
@@ -17,18 +10,35 @@ const options = {
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
-export const crossBorderApp = getSyncLifecycle(CrossBorderApp, options);
+export const crossBorderApp = getAsyncLifecycle(() => import('./root.component'), options);
 
-export const crossBorderSideNav = getSyncLifecycle(SideMenu, options);
-export const crossBorderSearch = getSyncLifecycle(MPISearch, options);
-export const crossBorderSummary = getSyncLifecycle(Summary, options);
+export const crossBorderSideNav = getAsyncLifecycle(
+  () => import('./components/side-menu/side-menu.component'),
+  options,
+);
+export const crossBorderSearch = getAsyncLifecycle(() => import('./components/search/mpi-search.component'), options);
+export const crossBorderSummary = getAsyncLifecycle(() => import('./components/summary/summary.component'), options);
 
-export const crossBorderFormEntry = getSyncLifecycle(FormEntryWorkspace, options);
-export const crossBorderPatientSearch = getSyncLifecycle(PatientSearch, options);
+export const crossBorderFormEntry = getAsyncLifecycle(
+  () => import('./components/form-entry/form-entry.component'),
+  options,
+);
+export const crossBorderPatientSearch = getAsyncLifecycle(
+  () => import('./components/form-entry/patient-search.component'),
+  options,
+);
 
 // Dashboard link for the search page
-export const overviewDashboardLink = getSyncLifecycle(
-  createDashboardLink({ moduleName, path: 'overview', title: 'Overview', icon: 'omrs-icon-inventory-management' }),
+export const overviewDashboardLink = getAsyncLifecycle(
+  () =>
+    import('@openmrs/esm-patient-common-lib').then((m) => ({
+      default: m.createDashboardLink({
+        moduleName,
+        path: 'overview',
+        title: 'Overview',
+        icon: 'omrs-icon-inventory-management',
+      }),
+    })),
   options,
 );
 

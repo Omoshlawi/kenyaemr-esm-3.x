@@ -1,14 +1,11 @@
 import {
   getAsyncLifecycle,
   defineConfigSchema,
-  getSyncLifecycle,
   registerBreadcrumbs,
   registerFeatureFlag,
 } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 import { createLeftPanelLink } from './left-panel/morgue-left-panel-link.component';
-import FormEntryWorkspace from './forms/form-entry-workspace/form-entry-workspace.workspace';
-import PrintPostMortemOverflowMenuItem from './extension/overflow-menu-item-postmortem/print-postmorterm-report.component';
 import { mortuaryDashboardMeta } from './dashboard.meta';
 import markPatientDeceasedActionButtonComponent from './mark-patient-deceased-extension/overflow-menu-item/mark-patient-deceased-overflow.extension';
 
@@ -36,14 +33,23 @@ export function startupApp() {
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
 
-export const morgueDashboardLink = getSyncLifecycle(
-  createLeftPanelLink({
-    name: 'morgue',
-    title: 'Mortuary',
-  }),
+export const morgueDashboardLink = getAsyncLifecycle(
+  () =>
+    import('./left-panel/morgue-left-panel-link.component').then((m) => ({
+      default: m.createLeftPanelLink({
+        name: 'morgue',
+        title: 'Mortuary',
+      }),
+    })),
   options,
 );
-export const mortuaryDashboardLink = getSyncLifecycle(createLeftPanelLink({ ...mortuaryDashboardMeta }), options);
+export const mortuaryDashboardLink = getAsyncLifecycle(
+  () =>
+    import('./left-panel/morgue-left-panel-link.component').then((m) => ({
+      default: m.createLeftPanelLink({ ...mortuaryDashboardMeta }),
+    })),
+  options,
+);
 
 export const actionBarButtons = getAsyncLifecycle(() => import('./extension/actionButton.component'), options);
 export const bannerInfo = getAsyncLifecycle(() => import('./extension/deceasedInfoBanner.component'), options);
@@ -60,7 +66,10 @@ export const dischargeBodyForm = getAsyncLifecycle(
   options,
 );
 export const morgueDashboard = getAsyncLifecycle(() => import('./home/home.component'), options);
-export const mortuaryFormEntry = getSyncLifecycle(FormEntryWorkspace, options);
+export const mortuaryFormEntry = getAsyncLifecycle(
+  () => import('./forms/form-entry-workspace/form-entry-workspace.workspace'),
+  options,
+);
 export const mortuaryChartView = getAsyncLifecycle(() => import('./view-details/main/main.component'), options);
 export const printConfirmationModal = getAsyncLifecycle(
   () => import('./modals/mortuary-gate-pass/print-preview-confirmation.modal'),
@@ -71,10 +80,13 @@ export const autopsyReportModal = getAsyncLifecycle(
   options,
 );
 
-export const markPatientDeceasedActionButton = getSyncLifecycle(markPatientDeceasedActionButtonComponent, {
-  featureName: 'patient-actions-slot-deceased-button',
-  moduleName,
-});
+export const markPatientDeceasedActionButton = getAsyncLifecycle(
+  () => import('./mark-patient-deceased-extension/overflow-menu-item/mark-patient-deceased-overflow.extension'),
+  {
+    featureName: 'patient-actions-slot-deceased-button',
+    moduleName,
+  },
+);
 
 export const markPatientDeceasedForm = getAsyncLifecycle(
   () => import('./mark-patient-deceased-extension/mark-patient-deceased-workspace/mark-patient-deceased.workspace'),
@@ -88,4 +100,7 @@ export const confirmationModal = getAsyncLifecycle(() => import('./modal/operati
   featureName: 'mortuary-operation-confirmation-modal',
   moduleName,
 });
-export const printPostMortemOverflowMenuItem = getSyncLifecycle(PrintPostMortemOverflowMenuItem, options);
+export const printPostMortemOverflowMenuItem = getAsyncLifecycle(
+  () => import('./extension/overflow-menu-item-postmortem/print-postmorterm-report.component'),
+  options,
+);
