@@ -1,190 +1,257 @@
 import React, { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { MappedBill } from '../../../types';
-import styles from './payment.scss';
-import { Stack, TextInput, Button, ButtonSet, InlineLoading, Dropdown } from '@carbon/react';
 import {
   DefaultWorkspaceProps,
   ResponsiveWrapper,
-  showNotification,
+  restBaseUrl,
+  showModal,
   showSnackbar,
   useLayoutType,
 } from '@openmrs/esm-framework';
+import { Button, ButtonSet, ComboBox, InlineLoading, InlineNotification, NumberInput, TextInput } from '@carbon/react';
+import { zodResolver } from '@hookform/resolvers/zod';
 import classNames from 'classnames';
-import { Controller } from 'react-hook-form';
-import { addPaymentToBill, usePaymentModes } from '../../../billing.resource';
-import { usePaymentForm } from './use-payment-form';
-import { z } from 'zod';
+import startCase from 'lodash-es/startCase';
+import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
+import { z } from 'zod';
+
+import { usePaymentModes } from '../../../billing.resource';
+import { formatCurrency } from '../../../helpers/currency';
+import { PaymentMode, PaymentStatus, type LineItem, type MappedBill } from '../../../types';
+import { extractErrorMessagesFromResponse } from '../../../utils';
+import { makePayment } from '../payments.resource';
+
+import styles from './payment.workspace.scss';
 
 type PaymentWorkspaceProps = DefaultWorkspaceProps & {
+  selectedLineItems: Array<LineItem>;
   bill: MappedBill;
 };
 
+type PaymentModeFormData = {
+  paymentMode: PaymentMode;
+  amount: number;
+  referenceCode?: string;
+};
+
+const paymentModeFormSchema = (amountDue: number) =>
+  z
+    .object({
+      paymentMode: z.object({
+        uuid: z.string(),
+        name: z.string(),
+        attributeTypes: z
+          .array(
+            z
+              .object({
+                required: z.boolean().optional(),
+              })
+              .passthrough(),
+          )
+          .optional(),
+      }),
+      amount: z.number(),
+      referenceCode: z.string().optional(),
+    })
+    .superRefine((data, ctx) => {
+      if (data.amount !== amountDue) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['amount'],
+          message: 'Amount must equal amount due',
+        });
+      }
+
+      const requiresReferenceCode = data.paymentMode.attributeTypes?.some((attr) => attr.required) ?? false;
+
+      if (requiresReferenceCode && !data.referenceCode?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['referenceCode'],
+          message: 'Reference code is required for this payment mode',
+        });
+      }
+    });
+
 const PaymentWorkspace: React.FC<PaymentWorkspaceProps> = ({
+  selectedLineItems,
   bill,
   closeWorkspace,
-  promptBeforeClosing,
   closeWorkspaceWithSavedChanges,
+  promptBeforeClosing,
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { formMethods, paymentSchema } = usePaymentForm(t, bill.balance);
-
-  type PaymentFormData = z.infer<typeof paymentSchema>;
+  const unPaidLineItems = selectedLineItems.filter((item) => item.paymentStatus !== PaymentStatus.PAID);
+  const totalAmount = unPaidLineItems.reduce((acc, curr) => acc + curr.price * curr.quantity, 0);
+  const billLineItemsUuids = unPaidLineItems.map((item) => item.uuid);
 
   const { paymentModes, isLoading: isLoadingPaymentModes } = usePaymentModes();
 
+  const formMethods = useForm<PaymentModeFormData>({
+    resolver: zodResolver(paymentModeFormSchema(totalAmount)),
+    mode: 'all',
+    defaultValues: {
+      paymentMode: undefined,
+      amount: undefined,
+      referenceCode: undefined,
+    },
+  });
+
   const {
-    formState: { isSubmitting, errors },
-    control,
-    handleSubmit,
+    formState: { isSubmitting, errors, isValid, isDirty },
   } = formMethods;
 
-  const onSubmit = async (data: PaymentFormData) => {
-    const payment = {
-      instanceType: data.instanceType?.uuid,
-      amount: data.amountTendered,
-      amountTendered: data.amountTendered,
-      attributes: data.attributes
-        ? Object.entries(data.attributes).map(([uuid, value]) => ({
-            attributeType: {
-              uuid,
-            },
-            value,
-          }))
+  const selectedPaymentMode = formMethods.watch('paymentMode');
+  const doesSelectedPaymentModeRequireReferenceCode = selectedPaymentMode?.attributeTypes?.length > 0;
+
+  useEffect(() => {
+    if (isDirty) {
+      promptBeforeClosing(() => isDirty);
+    }
+  }, [isDirty, promptBeforeClosing]);
+
+  const handlePrintReceipt = (paymentsUuids: Array<string>) => {
+    const lineItemUuids = unPaidLineItems.map((item) => item.uuid);
+    const receiptUrl = `${window.openmrsBase}${restBaseUrl}/cashier/receipt?billId=${
+      bill.id
+    }&lineItemUuids=${lineItemUuids.join(',')}&paymentsUuids=${paymentsUuids.join(',')}`;
+    const dispose = showModal('print-preview-modal', {
+      onClose: () => dispose(),
+      title: `${t('receipt', 'Receipt')} ${bill?.receiptNumber} - ${startCase(bill?.patientName)}`,
+      documentUrl: receiptUrl,
+    });
+  };
+
+  const onSubmit = async (data: PaymentModeFormData) => {
+    const paymentPayload = {
+      instanceType: data.paymentMode.uuid,
+      amount: totalAmount,
+      amountTendered: data.amount,
+      attributes: data.referenceCode
+        ? [{ attributeType: data.paymentMode.attributeTypes[0].uuid, value: data.referenceCode }]
         : [],
+      lineItemsToMarkPaid: billLineItemsUuids,
     };
 
+    let shouldCloseWorkspace = false;
+
     try {
-      const response = await addPaymentToBill(bill.uuid, payment);
+      const response = await makePayment(bill.uuid, paymentPayload);
       if (response.ok) {
         showSnackbar({
           title: t('paymentSaved', 'Payment saved'),
           kind: 'success',
           subtitle: t('paymentSavedSuccessfully', 'Payment saved successfully'),
         });
+        const url = `${restBaseUrl}/cashier/bill/${bill.uuid}`;
+        mutate((key) => typeof key === 'string' && key.startsWith(url), undefined, { revalidate: true });
+        handlePrintReceipt([response.data.uuid]);
+        shouldCloseWorkspace = true;
       }
-      const url = `/ws/rest/v1/cashier/bill/${bill.uuid}`;
-      mutate((key) => typeof key === 'string' && key.startsWith(url), undefined, { revalidate: true });
-      closeWorkspaceWithSavedChanges();
     } catch (error) {
       showSnackbar({
-        title: t('errorSavingPayment', 'Error saving payment'),
+        title: t('errorProcessingPayment', 'Error processing payment'),
         kind: 'error',
-        subtitle: error.message,
+        subtitle: extractErrorMessagesFromResponse(error?.responseBody),
+        isLowContrast: true,
       });
+    } finally {
+      if (shouldCloseWorkspace) {
+        closeWorkspaceWithSavedChanges();
+      }
     }
   };
-
-  const handleError = (error: any) => {
-    showSnackbar({
-      title: t('errorSavingPayment', 'Error generating payment'),
-      kind: 'error',
-      subtitle: JSON.stringify(error, null, 2),
-    });
-  };
-
-  useEffect(() => {
-    promptBeforeClosing(() => formMethods.formState.isDirty);
-  }, [formMethods.formState.isDirty, promptBeforeClosing]);
 
   if (isLoadingPaymentModes) {
     return <InlineLoading status="active" iconDescription="Loading payment modes" />;
   }
 
-  const attributeTypes = (formMethods.watch('instanceType')?.attributeTypes as Array<Record<string, string>>) || [];
-
   return (
-    <form onSubmit={handleSubmit(onSubmit, handleError)} className={styles.form}>
+    <form onSubmit={formMethods.handleSubmit(onSubmit)} className={styles.form}>
       <div className={styles.formContainer}>
-        <Stack className={styles.formStackControl} gap={7}>
-          <ResponsiveWrapper>
-            <Stack gap={4}>
-              <Controller
-                name="instanceType"
-                control={control}
-                render={({ field }) => (
-                  <Dropdown
-                    {...field}
-                    id="instanceType"
-                    titleText={t('instanceType', 'Instance Type')}
-                    label={t('selectInstanceType', 'Select instance type')}
-                    items={paymentModes}
-                    onChange={({ selectedItem }) => field.onChange(selectedItem)}
-                    itemToString={(item) => (item ? item.name : '')}
-                    invalid={!!errors.instanceType}
-                    invalidText={errors.instanceType?.message}
-                  />
-                )}
+        <InlineNotification
+          kind="info"
+          lowContrast
+          hideCloseButton
+          title={t('totalAmountDueTitle', 'Total amount due')}
+          subtitle={t('totalAmountDueSubtitle', 'The total amount due for the selected line items is {{totalAmount}}', {
+            totalAmount: formatCurrency(totalAmount),
+          })}
+        />
+
+        <ResponsiveWrapper>
+          <Controller
+            name="paymentMode"
+            control={formMethods.control}
+            render={({ field }) => (
+              <ComboBox
+                id="paymentMode"
+                itemToString={(item) => (item ? item.name : '')}
+                items={paymentModes}
+                onChange={({ selectedItem }) => field.onChange(selectedItem)}
+                titleText="Payment Mode"
+                invalid={!!errors.paymentMode}
+                invalidText={errors.paymentMode?.message}
               />
-            </Stack>
-          </ResponsiveWrapper>
+            )}
+          />
+        </ResponsiveWrapper>
+
+        <ResponsiveWrapper>
+          <Controller
+            name="amount"
+            control={formMethods.control}
+            render={({ field }) => (
+              <NumberInput
+                id="amount"
+                label={t('amount', 'Amount')}
+                max={totalAmount}
+                min={0}
+                onChange={(e, { value }) => field.onChange(Number(value))}
+                size="md"
+                step={0.01}
+                invalid={!!errors.amount}
+                invalidText={errors.amount?.message}
+              />
+            )}
+          />
+        </ResponsiveWrapper>
+
+        {doesSelectedPaymentModeRequireReferenceCode && (
           <ResponsiveWrapper>
             <Controller
-              name="amountTendered"
-              control={control}
+              name="referenceCode"
+              control={formMethods.control}
               render={({ field }) => (
                 <TextInput
-                  {...field}
-                  id="amountTendered"
-                  labelText={t('amountTendered', 'Amount Tendered')}
-                  placeholder={t('enterAmountTendered', 'Enter amount tendered, max is {{max}}', {
-                    max: bill.balance,
-                  })}
-                  type="number"
-                  step="0.01"
-                  max={bill.balance}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                  invalid={!!errors.amountTendered}
-                  invalidText={errors.amountTendered?.message}
+                  id="referenceCode"
+                  labelText={t('referenceCode', 'Reference Code')}
+                  maxCount={10}
+                  onChange={field.onChange}
+                  placeholder="Enter reference code"
+                  size="md"
+                  type="text"
+                  value={field.value}
+                  invalid={!!errors.referenceCode}
+                  invalidText={errors.referenceCode?.message}
                 />
               )}
             />
           </ResponsiveWrapper>
-          <ResponsiveWrapper>
-            {attributeTypes.map((attributeType) => (
-              <Controller
-                key={attributeType.uuid}
-                name={`attributes.${attributeType.uuid}`}
-                control={control}
-                render={({ field }) => (
-                  <TextInput
-                    {...field}
-                    id={attributeType.uuid}
-                    labelText={`${attributeType.name || 'Attribute'}${
-                      attributeType.required ? t('required', ' (Required)') : ''
-                    }`}
-                    placeholder={attributeType.description || 'Enter value'}
-                    invalid={!!errors.attributes?.[attributeType.uuid] || (attributeType.required && !field.value)}
-                    invalidText={
-                      errors.attributes?.[attributeType.uuid]?.message ||
-                      (attributeType.required && !field.value
-                        ? t('attributeValueRequired', 'Attribute value is required')
-                        : '')
-                    }
-                  />
-                )}
-              />
-            ))}
-          </ResponsiveWrapper>
-        </Stack>
+        )}
       </div>
+
       <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-        <Button style={{ maxWidth: '50%' }} kind="secondary" onClick={() => closeWorkspace()}>
+        <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button
-          disabled={isSubmitting || Object.keys(errors).length > 0}
-          style={{ maxWidth: '50%' }}
-          kind="primary"
-          type="submit">
+        <Button className={styles.button} disabled={isSubmitting || !isValid} kind="primary" type="submit">
           {isSubmitting ? (
-            <span style={{ display: 'flex', justifyItems: 'center' }}>
-              {t('submitting', 'Submitting...')} <InlineLoading status="active" iconDescription="Loading" />
-            </span>
+            <InlineLoading className={styles.spinner} description={t('saving', 'Saving') + '...'} />
           ) : (
-            t('saveAndClose', 'Save & close')
+            <span>{t('saveAndClose', 'Save & close')}</span>
           )}
         </Button>
       </ButtonSet>

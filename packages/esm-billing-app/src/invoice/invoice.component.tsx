@@ -1,18 +1,26 @@
-import { InlineLoading } from '@carbon/react';
-import { ExtensionSlot, formatDatetime, parseDate, usePatient, useVisit } from '@openmrs/esm-framework';
+import { Button, InlineLoading } from '@carbon/react';
+import {
+  ExtensionSlot,
+  formatDatetime,
+  launchWorkspace,
+  parseDate,
+  usePatient,
+  useVisit,
+} from '@openmrs/esm-framework';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { useBill } from '../billing.resource';
 import { usePaymentsReconciler } from '../hooks/use-payments-reconciler';
-import { LineItem, MappedBill } from '../types';
+import { LineItem, MappedBill, PaymentStatus } from '../types';
 import InvoiceTable from './invoice-table.component';
 import styles from './invoice.scss';
-import Payments from './payments/payments.component';
 import capitalize from 'lodash-es/capitalize';
 import { InvoiceActions } from './invoice-actions.component';
-import { useCurrencyFormatting } from '../helpers/currency';
+import { formatCurrency, useCurrencyFormatting } from '../helpers/currency';
+import PaymentHistory from './payments/payment-history/payment-history.component';
+import { ArrowRight } from '@carbon/react/icons';
 
 const Invoice: React.FC = () => {
   const { t } = useTranslation();
@@ -27,6 +35,23 @@ const Invoice: React.FC = () => {
     const paidLineItems = bill?.lineItems?.filter((item) => item.paymentStatus === 'PAID') ?? [];
     const uniqueLineItems = [...new Set([...lineItems, ...paidLineItems])];
     setSelectedLineItems(uniqueLineItems);
+  };
+
+  const unPaidLineItems = useMemo(
+    () => selectedLineItems?.filter((item) => item.paymentStatus !== PaymentStatus.PAID) ?? [],
+    [selectedLineItems],
+  );
+  const selectedLineItemsAmountDue = useMemo(
+    () => unPaidLineItems.reduce((acc, item) => acc + Number(item.price * item.quantity), 0),
+    [unPaidLineItems],
+  );
+
+  const handleOpenPayments = () => {
+    if (!bill) {
+      return;
+    }
+
+    launchWorkspace('payment-workspace', { selectedLineItems, bill, workspaceTitle: t('payments', 'Payments') });
   };
 
   useEffect(() => {
@@ -63,8 +88,38 @@ const Invoice: React.FC = () => {
     <div className={styles.invoiceContainer}>
       {patient && patientUuid && <ExtensionSlot name="patient-header-slot" state={{ patient, patientUuid }} />}
       <InvoiceSummary bill={bill} selectedLineItems={selectedLineItems} activeVisit={activeVisit} />
-      <InvoiceTable bill={bill} isLoadingBill={isLoadingBill} onSelectItem={handleSelectItem} />
-      <Payments bill={bill} selectedLineItems={selectedLineItems} />
+      <div className={styles.invoiceTableContainer}>
+        <div>
+          <InvoiceTable bill={bill} isLoadingBill={isLoadingBill} onSelectItem={handleSelectItem} />
+          <PaymentHistory bill={bill} />
+        </div>
+        <div className={styles.addPaymentButtonContainer}>
+          <div className={styles.summaryContainer}>
+            <div className={styles.summaryRow}>
+              <span className={styles.summaryLabel}>{t('totalAmount', 'Total amount')}</span>
+              <span className={styles.summaryValue}>{formatCurrency(bill?.totalAmount ?? 0)}</span>
+            </div>
+            <div className={styles.summaryRow}>
+              <span className={styles.summaryLabel}>{t('paymentsAmount', 'Payments amount')}</span>
+              <span className={styles.summaryValue}>{formatCurrency(bill?.totalPayments ?? 0)}</span>
+            </div>
+            <div className={styles.summaryHorizontalDivider} />
+          </div>
+          <div className={styles.summaryButtonsContainer}>
+            <div className={`${styles.summaryRow} ${styles.summaryTotalsRow}`}>
+              <span className={styles.summaryLabel}>{t('amountDue', 'Amount due')}</span>
+              <span className={styles.summaryValue}>{formatCurrency(selectedLineItemsAmountDue ?? 0)}</span>
+            </div>
+            <Button
+              disabled={unPaidLineItems?.length === 0}
+              className={styles.addPaymentButton}
+              renderIcon={ArrowRight}
+              onClick={handleOpenPayments}>
+              {t('payments', 'Payments')}
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

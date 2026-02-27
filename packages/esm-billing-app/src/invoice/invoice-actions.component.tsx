@@ -214,22 +214,6 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
           </Button>
         </UserHasAccess>
       )}
-      <Button
-        kind="ghost"
-        size="sm"
-        renderIcon={Wallet}
-        iconDescription="Add"
-        tooltipPosition="right"
-        onClick={() =>
-          launchWorkspace('payment-workspace', {
-            bill,
-            workspaceTitle: t('additionalPayment', 'Additional Payment (Balance {{billBalance}})', {
-              billBalance: formatCurrency(bill.balance),
-            }),
-          })
-        }>
-        {t('additionalPayment', 'Additional Payment')}
-      </Button>
       {bill?.balance !== 0 && (
         <Button
           onClick={handleBillPayment}

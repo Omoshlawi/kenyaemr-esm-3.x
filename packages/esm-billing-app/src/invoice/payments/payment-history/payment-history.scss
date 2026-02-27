@@ -1,0 +1,7 @@
+@use '@carbon/layout';
+@use '@carbon/colors';
+
+.paymentHistoryContainer {
+  margin: layout.$spacing-05;
+  border: 1px solid colors.$gray-20;
+}

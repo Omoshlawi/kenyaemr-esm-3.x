@@ -148,10 +148,6 @@ export const deletePaymentModeModal = getAsyncLifecycle(
   () => import('./bill-administration/payment-modes/delete-payment-mode.modal'),
   options,
 );
-export const paymentWorkspace = getAsyncLifecycle(
-  () => import('./invoice/payments/payment-form/payment.workspace'),
-  options,
-);
 
 // Payment Points Components
 export const createPaymentPoint = getAsyncLifecycle(
@@ -232,3 +228,8 @@ export function startupApp() {
     'HIE feature flag, this enables and disables the HIE feature',
   );
 }
+
+export const paymentWorkspace = getAsyncLifecycle(
+  () => import('./invoice/payments/payment-form/payment.workspace'),
+  options,
+);

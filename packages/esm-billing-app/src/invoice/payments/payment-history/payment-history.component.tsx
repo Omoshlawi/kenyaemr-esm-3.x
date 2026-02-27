@@ -1,9 +1,19 @@
 import React from 'react';
-import { DataTable, Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from '@carbon/react';
+import {
+  DataTable,
+  Table,
+  TableHead,
+  TableRow,
+  TableHeader,
+  TableBody,
+  TableCell,
+  TableContainer,
+} from '@carbon/react';
 import { MappedBill } from '../../../types';
 import { formatDate } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { useCurrencyFormatting } from '../../../helpers/currency';
+import styles from './payment-history.scss';
 
 type PaymentHistoryProps = {
   bill: MappedBill;
@@ -40,28 +50,32 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ bill }) => {
   }
 
   return (
-    <DataTable size="sm" rows={rows} headers={headers}>
-      {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
-        <Table {...getTableProps()}>
-          <TableHead>
-            <TableRow>
-              {headers.map((header) => (
-                <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((row) => (
-              <TableRow {...getRowProps({ row })}>
-                {row.cells.map((cell) => (
-                  <TableCell key={cell.id}>{cell.value}</TableCell>
+    <div className={styles.paymentHistoryContainer}>
+      <DataTable headers={headers} isSortable rows={rows} size="sm" useZebraStyles>
+        {({ rows, headers, getRowProps, getTableProps }) => (
+          <TableContainer
+            description={t('listOfPaymentsInThisBill', 'List of payments in this bill')}
+            title={t('paymentSummary', 'Payment summary')}>
+            <Table {...getTableProps()} aria-label="List of payments in this bill">
+              <TableHead>
+                {headers.map((header) => (
+                  <TableHeader key={header.key}>{header.header}</TableHeader>
                 ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
-    </DataTable>
+              </TableHead>
+              <TableBody>
+                {rows.map((row) => (
+                  <TableRow {...getRowProps({ row })}>
+                    {row.cells.map((cell) => (
+                      <TableCell key={cell.id}>{cell.value}</TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </DataTable>
+    </div>
   );
 };
 

@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { openmrsFetch, OpenmrsResource, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { BillingConfig } from '../../config-schema';
 
 type PaymentMethod = {
@@ -63,3 +63,48 @@ export const checkPaymentStatus = (transactionId: string) => {
   const url = `${restBaseUrl}/rmsdataexchange/api/rmsmpesachecker?transactionId=${transactionId}`;
   return openmrsFetch<PaymentStatusResponse>(url);
 };
+
+export const makePayment = (billUuid: string, paymentPayload: Record<string, any>) => {
+  const url = `${restBaseUrl}/cashier/bill/${billUuid}/payment`;
+  return openmrsFetch<PaymentResponse>(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: paymentPayload,
+  });
+};
+
+export interface PaymentResponse {
+  uuid: string;
+  instanceType: OpenmrsResource;
+  attributes: Array<Attribute>;
+  amount: number;
+  amountTendered: number;
+  item: any;
+  dateCreated: number;
+  voided: boolean;
+  resourceVersion: string;
+}
+
+interface Attribute {
+  uuid: string;
+  display: string;
+  voided: boolean;
+  voidReason: any;
+  value: string;
+  attributeType: AttributeType;
+  order: number;
+  valueName: string;
+  resourceVersion: string;
+}
+
+interface AttributeType {
+  uuid: string;
+  name: string;
+  description: string;
+  retired: boolean;
+  attributeOrder: number;
+  format: string;
+  foreignKey: any;
+  regExp: any;
+  required: boolean;
+}

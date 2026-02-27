@@ -1,7 +1,8 @@
 {
   "$schema": "https://json.openmrs.org/routes.schema.json",
   "backendDependencies": {
-    "kenyaemr": "^19.0.0"
+    "kenyaemr": "^19.0.0",
+    "kenyaemr.cashier": "^4.2.6-SNAPSHOT"
   },
   "pages": [
     {

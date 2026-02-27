@@ -188,6 +188,8 @@ export const useBill = (billUuid: string) => {
     openmrsFetch,
     {
       errorRetryCount: 2,
+      keepPreviousData: true,
+      revalidateOnFocus: true,
     },
   );
 
