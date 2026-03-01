@@ -566,6 +566,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
                                   initialSelectedItem={defaultIdentifierType}
                                   items={identifierTypes}
                                   itemToString={(item) => (item ? item.name : '')}
+                                  disabled={!isInitialValuesEmpty}
                                 />
                               </Column>
                               <Column>
@@ -579,6 +580,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
                                   initialSelectedItem={defaultRegulator}
                                   items={regulatorOptions}
                                   itemToString={(item) => (item ? item.name : '')}
+                                  disabled={!isInitialValuesEmpty}
                                 />
                               </Column>
                               <Column>
@@ -592,6 +594,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
                                     defaultValue={searchHWR.identifier}
                                     placeholder={t('enterIdentifierNumber', 'Enter identifier number')}
                                     id="formSearchHealthWorkers"
+                                    disabled={!isInitialValuesEmpty}
                                     onChange={(value) => {
                                       setSearchHWR({ ...searchHWR, identifier: value.target.value });
                                     }}
@@ -604,7 +607,8 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
                                       !searchHWR.identifier ||
                                       searchHWR.isHWRLoading ||
                                       !searchHWR.identifierType ||
-                                      !searchHWR.regulator
+                                      !searchHWR.regulator ||
+                                      !isInitialValuesEmpty
                                     }
                                     iconDescription={t('search', 'Search')}
                                     hasIconOnly
