@@ -20,6 +20,11 @@
       "order": 5,
       "online": true,
       "offline": true
+    },
+    {
+      "name": "patient-diagnosis",
+      "slot": "visit-context-header-slot",
+      "component": "patientDiagnosis"
     }
   ]
 }

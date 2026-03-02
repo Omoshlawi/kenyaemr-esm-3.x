@@ -11,6 +11,10 @@ const options = {
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 export const navbarButtons = getAsyncLifecycle(() => import('./navbar/navbar-action-button.component'), options);
 export const patientFlag = getAsyncLifecycle(() => import('./patient-flags/patient-flags.component'), options);
+export const patientDiagnosis = getAsyncLifecycle(
+  () => import('./patient-diagnosis/patient-diagnosis.component'),
+  options,
+);
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);

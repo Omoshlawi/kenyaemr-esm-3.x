@@ -15,9 +15,15 @@ export const configSchema: ConfigSchema = {
     _description: 'Application Instance Name',
     _default: 'KenyaEMR ',
   },
+  clinicalEncounterFormUuid: {
+    _type: Type.String,
+    _description: 'UUID for the clinical encounter form',
+    _default: 'e958f902-64df-4819-afd4-7fb061f59308',
+  },
 };
 
 export type ConfigObject = {
   excludeLinks: Array<string>;
   instanceName: string;
+  clinicalEncounterFormUuid: string;
 };

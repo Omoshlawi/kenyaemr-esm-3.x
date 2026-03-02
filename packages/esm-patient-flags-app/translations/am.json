@@ -1,4 +1,5 @@
 {
+  "add": "Add",
   "administration": "አስተዳደር",
   "adrAssessment": "የኤዲአር ግምገማ",
   "appointments": "Appointments",
@@ -7,6 +8,7 @@
   "caseManagement": "Case Management",
   "clearCache": "መሸጎጫ አጽዳ",
   "clearSearch": "ፍለጋ አጽዳ",
+  "clinicalEncounter": "Clinical Encounter",
   "crossBorder": "ድንበር ተሻጋሪ",
   "dispensingApp": "የመድኃኒት ማከፋፈያ መተግበሪያ",
   "emptyLinkSearchText": "የፍለጋ መስፈርቶቹን የሚያሟሉ ምንም አገናኞች የሉም",
@@ -19,6 +21,8 @@
   "labManifestApp": "የላብራቶሪ ማኒፌስት መተግበሪያ",
   "legacyAdmin": "Legacy Admin",
   "manageStocks": "አክሲዮኖችን አስተዳድር",
+  "noMainDiagnosis": "Main diagnosis required",
+  "noMainDiagnosisSubtitle": "Main diagnosis is required for claim processing",
   "queueScreen": "Queue Screen",
   "referrals": "ሪፈራሎች",
   "reports": "ሪፖርቶች",

@@ -1,4 +1,5 @@
 {
+  "add": "Add",
   "administration": "Administration",
   "adrAssessment": "ADR Assessment",
   "appointments": "Appointments",
@@ -7,6 +8,7 @@
   "caseManagement": "Case Management",
   "clearCache": "Clear Cache",
   "clearSearch": "Clear search",
+  "clinicalEncounter": "Clinical Encounter",
   "crossBorder": "Cross Border",
   "dispensingApp": "Dispensing App",
   "emptyLinkSearchText": "There are no links to display that match the search criteria",
@@ -19,6 +21,8 @@
   "labManifestApp": "Lab Manifest App",
   "legacyAdmin": "Legacy Admin",
   "manageStocks": "Manage Stocks",
+  "noMainDiagnosis": "Main diagnosis required",
+  "noMainDiagnosisSubtitle": "Main diagnosis is required for claim processing",
   "queueScreen": "Queue Screen",
   "referrals": "Referrals",
   "reports": "Reports",
