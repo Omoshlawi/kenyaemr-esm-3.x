@@ -66,13 +66,13 @@ const ClaimsSupportingDocumentsInput: FC<{ patientUuid: string }> = ({ patientUu
             render={({ field, fieldState }) => (
               <div className="cds--file__container">
                 <FileUploader
-                  accept={['.jpg', '.png']}
+                  accept={['.jpg', '.png', '.pdf']}
                   buttonKind="tertiary"
                   buttonLabel={t('select', 'Select')}
                   filenameStatus="edit"
                   labelDescription={t(
                     'supportDocsInstruction',
-                    'Max file size is 1 MB. Only .jpg and .png files are supported.',
+                    'Max file size is 1 MB. Only .jpg, .png, and .pdf files are supported.',
                   )}
                   labelTitle={t('uploadSupportFiles', 'Upload support files')}
                   name=""
