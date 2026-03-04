@@ -27,7 +27,7 @@ const InvoiceTableRow: React.FC<InvoiceTableRowProps> = ({
   const isDisabled = rowStatus === PaymentStatus.PAID || rowStatus === PaymentStatus.EXEMPTED;
   const isChecked = isDisabled || Boolean(selectedLineItems?.find((item) => item?.uuid === row?.id));
 
-  const showSelectRow = rowsCount > 1 && isSelectable;
+  const showSelectRow = rowsCount >= 1 && isSelectable;
 
   return (
     <TableRow {...getRowProps({ row })}>

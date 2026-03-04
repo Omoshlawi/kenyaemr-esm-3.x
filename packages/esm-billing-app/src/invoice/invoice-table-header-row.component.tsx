@@ -30,7 +30,7 @@ const InvoiceTableHeaderRow: React.FC<InvoiceTableHeaderRowProps> = ({
   onSelectItem,
   getSelectionProps,
 }) => {
-  if (rows.length <= 1 || !isSelectable) {
+  if (!isSelectable) {
     return (
       <TableRow>
         {headers.map((header) => (
