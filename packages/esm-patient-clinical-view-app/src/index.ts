@@ -193,3 +193,5 @@ export const patientComplaints = getAsyncLifecycle(() => import('./complaints/pa
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
 }
+
+export const formEntryModal = getAsyncLifecycle(() => import('./modals/form-entry.modal'), options);

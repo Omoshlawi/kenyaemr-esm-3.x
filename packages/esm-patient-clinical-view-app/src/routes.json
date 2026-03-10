@@ -217,6 +217,10 @@
     {
       "name": "end-relationship-dialog",
       "component": "endRelationshipModal"
+    },
+    {
+      "name": "form-entry-modal",
+      "component": "formEntryModal"
     }
   ],
   "workspaces": [
