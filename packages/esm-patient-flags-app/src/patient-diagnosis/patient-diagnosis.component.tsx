@@ -1,11 +1,11 @@
-import React, { useEffect } from 'react';
-import { useConfig, useVisit, useWorkspaces } from '@openmrs/esm-framework';
-import { ActionableNotification } from '@carbon/react';
+import React, { useEffect, useMemo } from 'react';
+import { useVisit } from '@openmrs/esm-framework';
+import { InlineNotification } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 
 import styles from './patient-diagnosis.scss';
-import { useLaunchWorkspaceRequiringVisit, useOrderBasket } from '@openmrs/esm-patient-common-lib';
-import { ConfigObject } from '../config-schema';
+import { useOrderBasket, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
+import { useMarkIncompleteOrdersOnMissingDiagnosis } from './patient-diagnosis.resource';
 
 const defaultVisitCustomRepresentation =
   'custom:(uuid,display,voided,indication,startDatetime,stopDatetime,' +
@@ -19,20 +19,15 @@ const defaultVisitCustomRepresentation =
   'attributes:(uuid,display,attributeType:(name,datatypeClassname,uuid),value),' +
   'location:(uuid,name,display))';
 
-type PatientDiagnosisComponentProps = {
+type PatientDiagnosisContentProps = {
   patientUuid: string;
   patient: fhir.Patient;
 };
 
-const PatientDiagnosisComponent: React.FC<PatientDiagnosisComponentProps> = ({ patientUuid, patient }) => {
-  const { workspaces } = useWorkspaces();
+const PatientDiagnosisComponent: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
+  const { patient } = usePatientChartStore(patientUuid);
   const { orders } = useOrderBasket(patient);
   const hasDrugOrder = orders.some((order) => 'drug' in order);
-  const orderWorkspace = workspaces?.[0]?.name === 'order-basket';
-
-  if (!orderWorkspace) {
-    return null;
-  }
 
   if (!hasDrugOrder) {
     return null;
@@ -41,79 +36,9 @@ const PatientDiagnosisComponent: React.FC<PatientDiagnosisComponentProps> = ({ p
   return <PatientDiagnosisContent patientUuid={patientUuid} patient={patient} />;
 };
 
-const PatientDiagnosisContent: React.FC<PatientDiagnosisComponentProps> = ({ patientUuid, patient }) => {
+const PatientDiagnosisContent: React.FC<PatientDiagnosisContentProps> = ({ patientUuid, patient }) => {
   const { t } = useTranslation();
-  const { clinicalEncounterFormUuid } = useConfig<ConfigObject>();
-  const launchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit(patientUuid, 'patient-form-entry-workspace');
-  const { activeVisit, isLoading, mutate: mutateVisit } = useVisit(patientUuid, defaultVisitCustomRepresentation);
-  const { orders, setOrders } = useOrderBasket(patient);
-  const hasDrugOrder = orders.some((order) => 'drug' in order);
-
-  // Find the encounter with the form uuid clinicalEncounterFormUuid
-  const clinicalEncounter = activeVisit?.encounters?.find(
-    (encounter) => encounter.form?.uuid === clinicalEncounterFormUuid,
-  );
-
-  const diagnoses = activeVisit?.encounters?.flatMap((encounter) => encounter.diagnoses) || [];
-  const mainDiagnosis = diagnoses.find((diagnosis) => diagnosis.rank === 2);
-  const hasMainDiagnosis = !!mainDiagnosis;
-
-  const handleActionButtonClick = () => {
-    launchWorkspaceRequiringVisit({
-      workspaceTitle: t('clinicalEncounter', 'Clinical Encounter'),
-      formInfo: {
-        mutateForm: () => {
-          mutateVisit();
-        },
-        encounterUuid: clinicalEncounter?.uuid ?? '',
-        formUuid: clinicalEncounterFormUuid,
-        additionalProps: {},
-      },
-    });
-  };
-
-  useEffect(() => {
-    if (!hasDrugOrder) {
-      return;
-    }
-
-    const shouldBeIncomplete = !hasMainDiagnosis;
-    let hasChange = false;
-
-    const updatedOrders = orders.map((order) => {
-      if (!('drug' in order)) {
-        return order;
-      }
-
-      if (order.isOrderIncomplete === shouldBeIncomplete) {
-        return order;
-      }
-
-      hasChange = true;
-      return {
-        ...order,
-        isOrderIncomplete: shouldBeIncomplete,
-      };
-    });
-
-    if (hasChange) {
-      setOrders('default', updatedOrders);
-    }
-
-    return () => {
-      if (!hasDrugOrder) {
-        return;
-      }
-      const hasAnyIncomplete = orders.some((o) => 'drug' in o && o.isOrderIncomplete);
-      if (!hasAnyIncomplete) {
-        return;
-      }
-      const clearedOrders = orders.map((order) =>
-        'drug' in order && order.isOrderIncomplete ? { ...order, isOrderIncomplete: false } : order,
-      );
-      setOrders('default', clearedOrders);
-    };
-  }, [hasDrugOrder, hasMainDiagnosis, orders, setOrders]);
+  const { hasMainDiagnosis, isLoading, hasDrugOrder } = useMarkIncompleteOrdersOnMissingDiagnosis(patientUuid, patient);
 
   if (isLoading) {
     return null;
@@ -123,18 +48,24 @@ const PatientDiagnosisContent: React.FC<PatientDiagnosisComponentProps> = ({ pat
     return null;
   }
 
+  if (!hasDrugOrder) {
+    return null;
+  }
+
   return (
-    <ActionableNotification
+    <InlineNotification
       className={styles.noMainDiagnosis}
       aria-label="closes notification"
       kind="warning-alt"
+      role="status"
       lowContrast={true}
-      statusIconDescription={t('noMainDiagnosis', 'No main diagnosis')}
-      subtitle={t('noMainDiagnosisSubtitle', 'Main diagnosis is required for claim processing')}
+      statusIconDescription="notification"
+      subtitle={t(
+        'noMainDiagnosisSubtitle',
+        'Main diagnosis is required for claim processing, please add main diagnosis to the clinical encounter form',
+      )}
       title={t('noMainDiagnosis', 'Main diagnosis required')}
-      hideCloseButton
-      onActionButtonClick={handleActionButtonClick}
-      actionButtonLabel={t('add', 'Add')}
+      hideCloseButton={true}
     />
   );
 };

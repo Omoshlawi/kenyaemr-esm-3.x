@@ -1,5 +1,4 @@
 {
-  "add": "Add",
   "administration": "አስተዳደር",
   "adrAssessment": "የኤዲአር ግምገማ",
   "appointments": "Appointments",
@@ -8,7 +7,6 @@
   "caseManagement": "Case Management",
   "clearCache": "መሸጎጫ አጽዳ",
   "clearSearch": "ፍለጋ አጽዳ",
-  "clinicalEncounter": "Clinical Encounter",
   "crossBorder": "ድንበር ተሻጋሪ",
   "dispensingApp": "የመድኃኒት ማከፋፈያ መተግበሪያ",
   "emptyLinkSearchText": "የፍለጋ መስፈርቶቹን የሚያሟሉ ምንም አገናኞች የሉም",
