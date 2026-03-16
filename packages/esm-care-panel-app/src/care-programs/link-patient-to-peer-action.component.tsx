@@ -1,10 +1,14 @@
-import React, { FC } from 'react';
+import React, { FC, useMemo } from 'react';
 import { usePatientActivePeerEducator } from './kvp-program-actions.resource';
 import { useTranslation } from 'react-i18next';
 import { InlineLoading, OverflowMenuItem } from '@carbon/react';
-import { launchWorkspace, useConfig, Visit } from '@openmrs/esm-framework';
+import { launchWorkspace, launchWorkspace2, useConfig, Visit } from '@openmrs/esm-framework';
 import { CarePanelConfig } from '../config-schema';
-import { launchStartVisitPrompt } from '@openmrs/esm-patient-common-lib';
+import {
+  launchStartVisitPrompt,
+  useLaunchWorkspaceRequiringVisit,
+  usePatientChartStore,
+} from '@openmrs/esm-patient-common-lib';
 
 type KvpLinkPatientToPeerEducatorProps = {
   patientUuid: string;
@@ -18,10 +22,22 @@ const KvpLinkPatientToPeerEducator: FC<KvpLinkPatientToPeerEducatorProps> = ({
   visit: currentVisit,
   mutate,
 }) => {
+  const { mutateVisitContext, visitContext, patient: fhirPatient } = usePatientChartStore(patientUuid);
   const { activePeer, error, isLoading } = usePatientActivePeerEducator(patientUuid);
   const { hideFilledProgramForm } = useConfig<CarePanelConfig>();
   const { t } = useTranslation();
   const formEncounter = currentVisit?.encounters?.find((en) => en.form?.uuid === form.formUuId);
+  const launchFormEntryWorkspace = useLaunchWorkspaceRequiringVisit(patientUuid, 'patient-form-entry-workspace');
+
+  const groupProps = useMemo(
+    () => ({
+      patientUuid,
+      patient: fhirPatient,
+      visitContext,
+      mutateVisitContext,
+    }),
+    [fhirPatient, visitContext, mutateVisitContext],
+  );
 
   if (isLoading) {
     return <InlineLoading />;
@@ -32,10 +48,15 @@ const KvpLinkPatientToPeerEducator: FC<KvpLinkPatientToPeerEducatorProps> = ({
       <OverflowMenuItem
         itemText={t('linkToPeerEducator', 'Link to peer Educator')}
         onClick={() => {
-          launchWorkspace('kvp-peer-linkage-form-workspace', {
-            workspaceTitle: t('linkPatientToPeerEducator', 'Link Patient to Peer Educator'),
-            patientUuid,
-          });
+          launchWorkspace2(
+            'kvp-peer-linkage-form-workspace',
+            {
+              workspaceTitle: t('linkPatientToPeerEducator', 'Link Patient to Peer Educator'),
+              patientUuid,
+            },
+            {},
+            {},
+          );
         }}
       />
     );
@@ -50,18 +71,15 @@ const KvpLinkPatientToPeerEducator: FC<KvpLinkPatientToPeerEducatorProps> = ({
       key={form.formUuId}
       itemText={form.formName}
       onClick={() => {
-        if (currentVisit) {
-          return launchWorkspace('patient-form-entry-workspace', {
+        launchFormEntryWorkspace(
+          {
             workspaceTitle: form.formName,
-            mutateForm: mutate,
-            formInfo: {
-              encounterUuid: formEncounter?.uuid ?? '',
-              formUuid: form.formUuId,
-              // additionalProps: { enrollmenrDetails: careProgram.enrollmentDetails ?? {} },
-            },
-          });
-        }
-        launchStartVisitPrompt();
+            form: { uuid: form.formUuId },
+            encounterUuid: formEncounter?.uuid ?? '',
+          },
+          {},
+          groupProps,
+        );
       }}
     />
   );

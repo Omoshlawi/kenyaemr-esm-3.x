@@ -1,15 +1,18 @@
-import { DefaultWorkspaceProps, ExtensionSlot, useConnectivity, usePatient } from '@openmrs/esm-framework';
+import { ExtensionSlot, useConnectivity, usePatient, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 
-type FormEntryWorkspaceProps = DefaultWorkspaceProps & {
+type FormEntryWorkspaceProps = {
   formUuid?: string;
   patientUuid?: string;
   encounterUuid?: string;
   mutateForm: () => void;
 };
 
-const FormEntryWorkspace: React.FC<FormEntryWorkspaceProps> = (props) => {
-  const { formUuid, patientUuid, encounterUuid, mutateForm, closeWorkspace, closeWorkspaceWithSavedChanges } = props;
+const FormEntryWorkspace: React.FC<Workspace2DefinitionProps<FormEntryWorkspaceProps, object, object>> = (props) => {
+  const {
+    closeWorkspace,
+    workspaceProps: { formUuid, patientUuid, encounterUuid, mutateForm },
+  } = props;
   const { patient, isLoading } = usePatient(patientUuid);
 
   const isOnline = useConnectivity();
@@ -32,20 +35,10 @@ const FormEntryWorkspace: React.FC<FormEntryWorkspaceProps> = (props) => {
       },
       closeWorkspaceWithSavedChanges: () => {
         typeof mutateForm === 'function' && mutateForm();
-        closeWorkspaceWithSavedChanges();
+        closeWorkspace({ discardUnsavedChanges: true });
       },
     }),
-    [
-      patient,
-      patientUuid,
-      encounterUuid,
-      formUuid,
-      isOnline,
-      props,
-      closeWorkspace,
-      closeWorkspaceWithSavedChanges,
-      mutateForm,
-    ],
+    [patient, patientUuid, encounterUuid, formUuid, isOnline, props, closeWorkspace, mutateForm],
   );
 
   if (isLoading) {

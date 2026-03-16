@@ -9,7 +9,6 @@ import {
   Dashboard,
   Stethoscope,
   Add,
-  Edit,
   DocumentMultiple_02,
 } from '@carbon/react/icons';
 
@@ -88,6 +87,7 @@ const EncounterDetails: React.FC<EncounterDetailsProps> = ({ patientUuid, patien
         <TabPanels>
           <TabPanel>
             <EncounterCard
+              patientUuid={patientUuid}
               encounterUuid={lastEncounter?.uuid}
               title={t('visitDetails', 'Visit Details')}
               mutateForm={mutate}
@@ -108,6 +108,7 @@ const EncounterDetails: React.FC<EncounterDetailsProps> = ({ patientUuid, patien
           </TabPanel>
           <TabPanel>
             <EncounterCard
+              patientUuid={patientUuid}
               encounterUuid={lastEncounter?.uuid}
               mutateForm={mutate}
               title={t('patientHistory', 'Patient History')}
@@ -116,6 +117,7 @@ const EncounterDetails: React.FC<EncounterDetailsProps> = ({ patientUuid, patien
           </TabPanel>
           <TabPanel>
             <EncounterCard
+              patientUuid={patientUuid}
               encounterUuid={lastEncounter?.uuid}
               mutateForm={mutate}
               title={t('patientExamination', 'Patient Examination')}
@@ -124,6 +126,7 @@ const EncounterDetails: React.FC<EncounterDetailsProps> = ({ patientUuid, patien
           </TabPanel>
           <TabPanel>
             <EncounterCard
+              patientUuid={patientUuid}
               encounterUuid={lastEncounter?.uuid}
               mutateForm={mutate}
               title={t('patientManagement', 'Patient Management')}
@@ -146,24 +149,21 @@ type EncounterCardProps = {
   cardItems: Array<{ title: string; value: string }>;
   mutateForm: () => void;
   encounterUuid?: string;
+  patientUuid: string;
 };
 
-const EncounterCard = ({ title, cardItems, mutateForm, encounterUuid }: EncounterCardProps) => {
+const EncounterCard = ({ title, cardItems, mutateForm, encounterUuid, patientUuid }: EncounterCardProps) => {
   const { t } = useTranslation();
   const {
     clinicalEncounter: { formUuid },
   } = useConfig<ExpressWorkflowConfig>();
-  const launchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit('patient-form-entry-workspace');
+  const launchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit(patientUuid, 'patient-form-entry-workspace');
 
   const handleOpenOrEditClinicalEncounterForm = (encounterUuid?: string) => {
     launchWorkspaceRequiringVisit({
-      workspaceTitle: title,
+      form: { uuid: formUuid },
       mutateForm: mutateForm,
-      formInfo: {
-        encounterUuid: encounterUuid ?? '',
-        formUuid: formUuid,
-        additionalProps: {},
-      },
+      encounterUuid: encounterUuid ?? '',
     });
   };
   return (

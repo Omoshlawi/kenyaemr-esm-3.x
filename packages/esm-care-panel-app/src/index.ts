@@ -56,10 +56,6 @@ export const patientDischargeSideRailIcon = getAsyncLifecycle(
   () => import('./patient-discharge/discharge-workspace-siderail.component'),
   options,
 );
-export const patientDischargeWorkspace = getAsyncLifecycle(
-  () => import('./patient-discharge/patient-discharge.workspace'),
-  options,
-);
 export const mchProgramForm = getAsyncLifecycle(() => import('./care-programs/program.workspace'), options);
 export const kvpPeerLinkageForm = getAsyncLifecycle(
   () => import('./care-programs/kvp-peer-linkage-form.workspace'),

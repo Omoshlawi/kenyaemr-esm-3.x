@@ -1,7 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   DataTable,
+  DataTableSkeleton,
+  OverflowMenu,
+  OverflowMenuItem,
+  Pagination,
+  Search,
   Table,
   TableBody,
   TableCell,
@@ -9,20 +14,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Pagination,
-  OverflowMenu,
-  OverflowMenuItem,
-  DataTableSkeleton,
-  Search,
-  Tag,
 } from '@carbon/react';
-import styles from '../bed-linelist-view.scss';
+import { launchWorkspace2, showModal, showSnackbar, useConfig, useLayoutType } from '@openmrs/esm-framework';
+
+import { type EnhancedPatient, type MortuaryLocationResponse } from '../../types';
 import { formatDateTime } from '../../utils/utils';
-import { type MortuaryLocationResponse, type EnhancedPatient } from '../../types';
-import { launchWorkspace, showModal, showSnackbar, useConfig, useLayoutType } from '@openmrs/esm-framework';
-import EmptyMorgueAdmission from '../../empty-state/empty-morgue-admission.component';
 import { ConfigObject } from '../../config-schema';
 import { removeFromMortuaryQueue } from '../../home/home.resource';
+import EmptyMorgueAdmission from '../../empty-state/empty-morgue-admission.component';
+
+import styles from '../bed-linelist-view.scss';
 
 interface AwaitingBedLineListViewProps {
   awaitingQueuePatients: Array<EnhancedPatient>;
@@ -132,7 +133,7 @@ const AwaitingBedLineListView: React.FC<AwaitingBedLineListViewProps> = ({
   const paginatedRows = paginated ? filteredRows.slice(startIndex, endIndex) : filteredRows;
 
   const handleAdmit = (patient: EnhancedPatient) => {
-    launchWorkspace('admit-deceased-person-form', {
+    launchWorkspace2('admit-deceased-person-form', {
       workspaceTitle: t('admissionForm', 'Admission form'),
       patient,
       queueEntryUuid: patient.queueInfo?.queueEntryUuid,

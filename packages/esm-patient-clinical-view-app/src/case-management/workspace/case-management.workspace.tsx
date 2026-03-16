@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Column, TextArea, Form, Stack, ButtonSet, ComboBox, Button, DatePicker, DatePickerInput } from '@carbon/react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { ExtensionSlot, showSnackbar, useSession, Workspace2, Workspace2DefinitionProps } from '@openmrs/esm-framework';
+import { Column, TextArea, Form, Stack, ButtonSet, ComboBox, Button, DatePicker, DatePickerInput } from '@carbon/react';
+
 import styles from './case-management.scss';
-import { ExtensionSlot, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
 import { saveRelationship, useActivecases, useCaseManagers } from './case-management.resource';
 import { extractNameString, uppercaseText } from '../../utils/expression-helper';
 import PatientInfo from './patient-info.component';
@@ -20,15 +21,12 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-type CaseManagementProp = {
-  closeWorkspace: () => void;
-};
-
-const CaseManagementForm: React.FC<CaseManagementProp> = ({ closeWorkspace }) => {
+const CaseManagementForm: React.FC<Workspace2DefinitionProps<object, object, object>> = ({ closeWorkspace }) => {
   const { t } = useTranslation();
   const { user } = useSession();
   const [patientUuid, setPatientUuid] = useState('');
   const [patientSelected, setPatientSelected] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const { data } = useCaseManagers();
   const { data: relationshipTypes } = useMappedRelationshipTypes();
 
@@ -52,7 +50,7 @@ const CaseManagementForm: React.FC<CaseManagementProp> = ({ closeWorkspace }) =>
   const {
     control,
     handleSubmit,
-    formState: { isValid },
+    formState: { isValid, isDirty },
   } = useForm<FormData>({
     mode: 'onChange',
     resolver: zodResolver(schema),
@@ -77,12 +75,12 @@ const CaseManagementForm: React.FC<CaseManagementProp> = ({ closeWorkspace }) =>
         isLowContrast: true,
       });
 
-      closeWorkspace();
+      closeWorkspace({ discardUnsavedChanges: true });
     } catch (err) {
       showSnackbar({
         kind: 'error',
         title: t('RlshipError', 'Relationship Error'),
-        subtitle: t('RlshipError', 'Request Failed.......'),
+        subtitle: t('RlshipError', 'Request Failed.......' + (err?.message || JSON.stringify(err))),
         timeoutInMs: 2500,
         isLowContrast: true,
       });
@@ -94,114 +92,120 @@ const CaseManagementForm: React.FC<CaseManagementProp> = ({ closeWorkspace }) =>
     setPatientSelected(true);
   };
 
+  useEffect(() => {
+    setHasUnsavedChanges(isDirty);
+  }, [isDirty, setHasUnsavedChanges]);
+
   return (
-    <Form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
-      <span className={styles.caseFormTitle}>{t('formTitle', 'Fill in the form details')}</span>
-      <Stack gap={4} className={styles.grid}>
-        <span className={styles.sectionHeader}>Demographics</span>
+    <Workspace2 title={t('caseManagementForm', 'Case Management Form')} hasUnsavedChanges={hasUnsavedChanges}>
+      <Form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
+        <span className={styles.caseFormTitle}>{t('formTitle', 'Fill in the form details')}</span>
+        <Stack gap={4} className={styles.grid}>
+          <span className={styles.sectionHeader}>Demographics</span>
 
-        <Column>
-          <Controller
-            name="caseManager"
-            control={control}
-            defaultValue={caseManagerUuid}
-            render={({ field, fieldState }) => {
-              return (
-                <ComboBox
-                  id="case_manager_name"
-                  titleText={t('manager', 'Case Manager')}
-                  placeholder="Select Case Manager"
-                  items={caseManagers}
-                  itemToString={(item) => uppercaseText(extractNameString(item ? item.text : ''))}
-                  onChange={(e) => {
-                    field.onChange(e.selectedItem?.id);
-                  }}
-                  selectedItem={caseManagers.find((manager) => manager.id === field.value)}
-                  invalid={!!fieldState.error}
-                  invalidText={fieldState.error?.message}
-                />
-              );
-            }}
-          />
-        </Column>
-
-        <span className={styles.sectionHeader}>Relationship Info</span>
-        {patientSelected && <PatientInfo patientUuid={patientUuid} />}
-        {!patientSelected && (
           <Column>
-            <ExtensionSlot
-              name="patient-search-bar-slot"
-              state={{
-                selectPatientAction: selectPatient,
-                buttonProps: {
-                  kind: 'primary',
-                },
+            <Controller
+              name="caseManager"
+              control={control}
+              defaultValue={caseManagerUuid}
+              render={({ field, fieldState }) => {
+                return (
+                  <ComboBox
+                    id="case_manager_name"
+                    titleText={t('manager', 'Case Manager')}
+                    placeholder="Select Case Manager"
+                    items={caseManagers}
+                    itemToString={(item) => uppercaseText(extractNameString(item ? item.text : ''))}
+                    onChange={(e) => {
+                      field.onChange(e.selectedItem?.id);
+                    }}
+                    selectedItem={caseManagers.find((manager) => manager.id === field.value)}
+                    invalid={!!fieldState.error}
+                    invalidText={fieldState.error?.message}
+                  />
+                );
               }}
             />
           </Column>
-        )}
 
-        <Column>
-          <Controller
-            name="relationship"
-            control={control}
-            render={({ field, fieldState }) => (
-              <ComboBox
-                id="relationship_name"
-                titleText={t('relationship', 'Relationship')}
-                placeholder="Select Relationship"
-                items={caseManagerRelationshipTypeMapped}
-                itemToString={(item) => (item ? uppercaseText(item.text) : '')}
-                onChange={(e) => field.onChange(e.selectedItem?.id)}
-                invalid={!!fieldState.error}
-                invalidText={fieldState.error?.message}
+          <span className={styles.sectionHeader}>Relationship Info</span>
+          {patientSelected && <PatientInfo patientUuid={patientUuid} />}
+          {!patientSelected && (
+            <Column>
+              <ExtensionSlot
+                name="patient-search-bar-slot"
+                state={{
+                  selectPatientAction: selectPatient,
+                  buttonProps: {
+                    kind: 'primary',
+                  },
+                }}
               />
-            )}
-          />
-        </Column>
+            </Column>
+          )}
 
-        <Column>
-          <Controller
-            name="startDate"
-            control={control}
-            render={({ field, fieldState }) => (
-              <DatePicker
-                datePickerType="single"
-                onChange={(e) => field.onChange(e[0])}
-                className={styles.formDatePicker}>
-                <DatePickerInput
-                  placeholder="mm/dd/yyyy"
-                  labelText="Start Date"
-                  id="case-start-date-picker"
-                  size="md"
-                  className={styles.formDatePicker}
+          <Column>
+            <Controller
+              name="relationship"
+              control={control}
+              render={({ field, fieldState }) => (
+                <ComboBox
+                  id="relationship_name"
+                  titleText={t('relationship', 'Relationship')}
+                  placeholder="Select Relationship"
+                  items={caseManagerRelationshipTypeMapped}
+                  itemToString={(item) => (item ? uppercaseText(item.text) : '')}
+                  onChange={(e) => field.onChange(e.selectedItem?.id)}
                   invalid={!!fieldState.error}
                   invalidText={fieldState.error?.message}
                 />
-              </DatePicker>
-            )}
-          />
-        </Column>
-        <Column className={styles.textbox}>
-          <Controller
-            name="notes"
-            control={control}
-            render={({ field }) => (
-              <TextArea labelText="Any additional notes" rows={4} id="case-manager-notes" {...field} />
-            )}
-          />
-        </Column>
-      </Stack>
+              )}
+            />
+          </Column>
 
-      <ButtonSet className={styles.buttonSet}>
-        <Button className={styles.button} kind="secondary" onClick={closeWorkspace}>
-          {t('discard', 'Discard')}
-        </Button>
-        <Button className={styles.button} kind="primary" type="submit" disabled={!isValid || !patientSelected}>
-          {t('save', 'Save')}
-        </Button>
-      </ButtonSet>
-    </Form>
+          <Column>
+            <Controller
+              name="startDate"
+              control={control}
+              render={({ field, fieldState }) => (
+                <DatePicker
+                  datePickerType="single"
+                  onChange={(e) => field.onChange(e[0])}
+                  className={styles.formDatePicker}>
+                  <DatePickerInput
+                    placeholder="mm/dd/yyyy"
+                    labelText="Start Date"
+                    id="case-start-date-picker"
+                    size="md"
+                    className={styles.formDatePicker}
+                    invalid={!!fieldState.error}
+                    invalidText={fieldState.error?.message}
+                  />
+                </DatePicker>
+              )}
+            />
+          </Column>
+          <Column className={styles.textbox}>
+            <Controller
+              name="notes"
+              control={control}
+              render={({ field }) => (
+                <TextArea labelText="Any additional notes" rows={4} id="case-manager-notes" {...field} />
+              )}
+            />
+          </Column>
+        </Stack>
+
+        <ButtonSet className={styles.buttonSet}>
+          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+            {t('discard', 'Discard')}
+          </Button>
+          <Button className={styles.button} kind="primary" type="submit" disabled={!isValid || !patientSelected}>
+            {t('save', 'Save')}
+          </Button>
+        </ButtonSet>
+      </Form>
+    </Workspace2>
   );
 };
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
-import { launchWorkspace } from '@openmrs/esm-framework';
+import { launchWorkspace2 } from '@openmrs/esm-framework';
 import { Scalpel } from '@carbon/react/icons';
 
 import { MappedBill, PaymentStatus } from '../../../types';
@@ -17,10 +17,14 @@ const WaiveBillActionButton: React.FC<WaiveBillActionButtonProps> = ({ bill }) =
     return null;
   }
   const handleOpenWaiveBillWorkspace = (bill: MappedBill) => {
-    launchWorkspace('waive-bill-form', {
-      workspaceTitle: 'Waive Bill Form',
-      bill: bill,
-    });
+    launchWorkspace2(
+      'waive-bill-form',
+      {
+        bill: bill,
+      },
+      {},
+      {},
+    );
   };
   return (
     <Button

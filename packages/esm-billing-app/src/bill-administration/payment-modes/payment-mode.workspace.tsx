@@ -1,11 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  DefaultWorkspaceProps,
   ResponsiveWrapper,
   restBaseUrl,
   showSnackbar,
   useLayoutType,
+  type Workspace2DefinitionProps,
+  Workspace2,
 } from '@openmrs/esm-framework';
 import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form';
 import styles from './payment-mode.workspace.scss';
@@ -19,22 +20,20 @@ import usePaymentModeFormSchema from './usePaymentModeFormSchema';
 import PaymentModeAttributeFields from './payment-attributes/payment-mode-attributes.component';
 import { Add } from '@carbon/react/icons';
 
-type PaymentModeWorkspaceProps = DefaultWorkspaceProps & {
+type PaymentModeWorkspaceProps = {
   initialPaymentMode?: PaymentMode;
 };
 
-const PaymentModeWorkspace: React.FC<PaymentModeWorkspaceProps> = ({
+const PaymentModeWorkspace: React.FC<Workspace2DefinitionProps<PaymentModeWorkspaceProps, {}, {}>> = ({
   closeWorkspace,
-  promptBeforeClosing,
-  closeWorkspaceWithSavedChanges,
-  initialPaymentMode = {} as PaymentMode,
+  workspaceProps: { initialPaymentMode = {} as PaymentMode },
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const { paymentModeFormSchema } = usePaymentModeFormSchema();
   type PaymentModeFormSchema = z.infer<typeof paymentModeFormSchema>;
   const formDefaultValues = Object.keys(initialPaymentMode).length > 0 ? initialPaymentMode : {};
-
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const formMethods = useForm<PaymentModeFormSchema>({
     resolver: zodResolver(paymentModeFormSchema),
     mode: 'all',
@@ -89,7 +88,7 @@ const PaymentModeWorkspace: React.FC<PaymentModeWorkspaceProps> = ({
           kind: 'success',
           isLowContrast: true,
         });
-        closeWorkspaceWithSavedChanges();
+        closeWorkspace({ discardUnsavedChanges: true });
         handleMutation(`${restBaseUrl}/cashier/paymentMode?v=full`);
       }
     } catch (error) {
@@ -123,100 +122,102 @@ const PaymentModeWorkspace: React.FC<PaymentModeWorkspaceProps> = ({
 
   useEffect(() => {
     if (isDirty) {
-      promptBeforeClosing(() => isDirty);
+      setHasUnsavedChanges(isDirty);
     }
-  }, [isDirty, promptBeforeClosing]);
+  }, [isDirty, setHasUnsavedChanges]);
 
   return (
-    <FormProvider {...formMethods}>
-      <form onSubmit={formMethods.handleSubmit(onSubmit, handleError)} className={styles.form}>
-        <div className={styles.formContainer}>
-          <Stack className={styles.formStackControl} gap={7}>
-            <ResponsiveWrapper>
-              <Controller
-                name="name"
-                control={formMethods.control}
-                render={({ field }) => (
-                  <TextInput
-                    {...field}
-                    id="name"
-                    type="text"
-                    labelText={t('paymentModeName', 'Payment mode name')}
-                    placeholder={t('paymentModeNamePlaceholder', 'Enter payment mode name')}
-                    invalid={!!errors.name}
-                    invalidText={errors.name?.message}
-                  />
-                )}
-              />
-            </ResponsiveWrapper>
-            <ResponsiveWrapper>
-              <Controller
-                name="description"
-                control={formMethods.control}
-                render={({ field }) => (
-                  <TextInput
-                    {...field}
-                    id="description"
-                    type="text"
-                    labelText={t('paymentModeDescription', 'Payment mode description')}
-                    placeholder={t('paymentModeDescriptionPlaceholder', 'Enter payment mode description')}
-                    invalid={!!errors.description}
-                    invalidText={errors.description?.message}
-                  />
-                )}
-              />
-            </ResponsiveWrapper>
-            <ResponsiveWrapper>
-              <Controller
-                name="retired"
-                control={formMethods.control}
-                render={({ field }) => (
-                  <Toggle
-                    labelText={t('enablePaymentMode', 'Enable payment mode')}
-                    labelA="Off"
-                    labelB="On"
-                    toggled={field.value}
-                    id="retired"
-                    onToggle={(value) => (value ? field.onChange(true) : field.onChange(false))}
-                  />
-                )}
-              />
-            </ResponsiveWrapper>
-            <Button size="sm" kind="tertiary" renderIcon={Add} onClick={() => appendAttributeType({})}>
-              {t('addAttributeType', 'Add attribute type')}
+    <Workspace2 hasUnsavedChanges={hasUnsavedChanges} title={t('paymentModeWorkspace', 'Payment mode workspace')}>
+      <FormProvider {...formMethods}>
+        <form onSubmit={formMethods.handleSubmit(onSubmit, handleError)} className={styles.form}>
+          <div className={styles.formContainer}>
+            <Stack className={styles.formStackControl} gap={7}>
+              <ResponsiveWrapper>
+                <Controller
+                  name="name"
+                  control={formMethods.control}
+                  render={({ field }) => (
+                    <TextInput
+                      {...field}
+                      id="name"
+                      type="text"
+                      labelText={t('paymentModeName', 'Payment mode name')}
+                      placeholder={t('paymentModeNamePlaceholder', 'Enter payment mode name')}
+                      invalid={!!errors.name}
+                      invalidText={errors.name?.message}
+                    />
+                  )}
+                />
+              </ResponsiveWrapper>
+              <ResponsiveWrapper>
+                <Controller
+                  name="description"
+                  control={formMethods.control}
+                  render={({ field }) => (
+                    <TextInput
+                      {...field}
+                      id="description"
+                      type="text"
+                      labelText={t('paymentModeDescription', 'Payment mode description')}
+                      placeholder={t('paymentModeDescriptionPlaceholder', 'Enter payment mode description')}
+                      invalid={!!errors.description}
+                      invalidText={errors.description?.message}
+                    />
+                  )}
+                />
+              </ResponsiveWrapper>
+              <ResponsiveWrapper>
+                <Controller
+                  name="retired"
+                  control={formMethods.control}
+                  render={({ field }) => (
+                    <Toggle
+                      labelText={t('enablePaymentMode', 'Enable payment mode')}
+                      labelA="Off"
+                      labelB="On"
+                      toggled={field.value}
+                      id="retired"
+                      onToggle={(value) => (value ? field.onChange(true) : field.onChange(false))}
+                    />
+                  )}
+                />
+              </ResponsiveWrapper>
+              <Button size="sm" kind="tertiary" renderIcon={Add} onClick={() => appendAttributeType({})}>
+                {t('addAttributeType', 'Add attribute type')}
+              </Button>
+              {attributeTypeFields.map((field, index) => (
+                <PaymentModeAttributeFields
+                  key={field.id}
+                  field={field}
+                  index={index}
+                  control={formMethods.control}
+                  removeAttributeType={removeAttributeType}
+                  errors={errors}
+                />
+              ))}
+            </Stack>
+          </div>
+          <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
+            <Button style={{ maxWidth: '50%' }} kind="secondary" onClick={() => closeWorkspace()}>
+              {t('cancel', 'Cancel')}
             </Button>
-            {attributeTypeFields.map((field, index) => (
-              <PaymentModeAttributeFields
-                key={field.id}
-                field={field}
-                index={index}
-                control={formMethods.control}
-                removeAttributeType={removeAttributeType}
-                errors={errors}
-              />
-            ))}
-          </Stack>
-        </div>
-        <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-          <Button style={{ maxWidth: '50%' }} kind="secondary" onClick={() => closeWorkspace()}>
-            {t('cancel', 'Cancel')}
-          </Button>
-          <Button
-            disabled={isSubmitting || Object.keys(errors).length > 0}
-            style={{ maxWidth: '50%' }}
-            kind="primary"
-            type="submit">
-            {isSubmitting ? (
-              <span style={{ display: 'flex', justifyItems: 'center' }}>
-                {t('submitting', 'Submitting...')} <InlineLoading status="active" iconDescription="Loading" />
-              </span>
-            ) : (
-              t('saveAndClose', 'Save & close')
-            )}
-          </Button>
-        </ButtonSet>
-      </form>
-    </FormProvider>
+            <Button
+              disabled={isSubmitting || Object.keys(errors).length > 0}
+              style={{ maxWidth: '50%' }}
+              kind="primary"
+              type="submit">
+              {isSubmitting ? (
+                <span style={{ display: 'flex', justifyItems: 'center' }}>
+                  {t('submitting', 'Submitting...')} <InlineLoading status="active" iconDescription="Loading" />
+                </span>
+              ) : (
+                t('saveAndClose', 'Save & close')
+              )}
+            </Button>
+          </ButtonSet>
+        </form>
+      </FormProvider>
+    </Workspace2>
   );
 };
 

@@ -9,18 +9,27 @@
       "route": "adr-assessment"
     }
   ],
-  "workspaces": [
+  "workspaces2": [
     {
       "name": "patient-adr-workspace",
-      "title": "ADR Assessment Review",
       "component": "patientAdrWorkspace",
-      "type": "workspace",
+      "window": "esm-adr-workspace-window"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "esm-adr-workspace-window",
       "canMaximize": true,
-      "canHide": true,
+      "group": "esm-adr-workspace-group",
       "width": "extra-wide"
     }
-
-
+  ],
+  "workspaceGroups2": [
+    {
+      "name": "esm-adr-workspace-group",
+      "scopePattern": "/adr-assessment",
+      "closeable": true
+    }
   ],
   "extensions": [
     {

@@ -51,7 +51,6 @@
   "reaction": "Reaction",
   "reasonCode": "Reason Code",
   "referError": "Facility Referal Error",
-  "referErrorDetails": "",
   "referral": "Referrals",
   "referralDate": "Referral Date",
   "referralError": "Error processing referral",

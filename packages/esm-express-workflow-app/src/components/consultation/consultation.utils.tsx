@@ -1,7 +1,7 @@
 import React from 'react';
 import { IconButton, InlineLoading } from '@carbon/react';
+import type { TFunction } from 'i18next';
 import { Renew } from '@carbon/react/icons';
-import type { TFunction } from 'react-i18next';
 import type { QueueSummaryCard } from '../../shared/queue/queue-summary-cards.component';
 import type { QueueFilter, QueueEntry } from '../../types';
 import styles from './consultation.scss';

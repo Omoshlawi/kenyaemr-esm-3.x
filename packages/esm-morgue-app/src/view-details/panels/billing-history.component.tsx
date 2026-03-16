@@ -1,8 +1,6 @@
 import React from 'react';
-import { ExtensionSlot, navigate, usePatient } from '@openmrs/esm-framework';
+import { ExtensionSlot } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
-import { EmptyState, getPatientUuidFromStore } from '@openmrs/esm-patient-common-lib';
-import styles from './panels.scss';
 import { useParams } from 'react-router-dom';
 
 interface RouteParams {

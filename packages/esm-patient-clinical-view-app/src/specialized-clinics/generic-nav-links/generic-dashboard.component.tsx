@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { CardHeader, EmptyState } from '@openmrs/esm-patient-common-lib';
 import { useTranslation } from 'react-i18next';
 import capitalize from 'lodash/capitalize';
-import { ErrorState, launchWorkspace, showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
-import { ConfigObject } from '../../config-schema';
+import { ErrorState, launchWorkspace2, showModal, showSnackbar } from '@openmrs/esm-framework';
 import { genericTableHeader, useEncounters } from './useEncounters';
 import { DataTableSkeleton, Button } from '@carbon/react';
 import GenericTable from './generic-table.component';
@@ -11,6 +10,7 @@ import { deleteEncounter } from '../../case-management/encounters/case-encounter
 
 type GenericDashboardProps = {
   patientUuid: string;
+  patient: fhir.Patient;
   clinicConfig: {
     formUuid: string;
     encounterTypeUuid: string;
@@ -18,7 +18,7 @@ type GenericDashboardProps = {
   };
 };
 
-const GenericDashboard: React.FC<GenericDashboardProps> = ({ patientUuid, clinicConfig }) => {
+const GenericDashboard: React.FC<GenericDashboardProps> = ({ patientUuid, clinicConfig, patient }) => {
   const { t } = useTranslation();
   const { encounters, isLoading, error, mutate } = useEncounters(
     clinicConfig.encounterTypeUuid,
@@ -29,26 +29,28 @@ const GenericDashboard: React.FC<GenericDashboardProps> = ({ patientUuid, clinic
   const clinicalFormTitle = capitalize(clinicConfig.title.replace('-', ' '));
 
   const handleWorkspaceForm = () => {
-    launchWorkspace('patient-form-entry-workspace', {
-      workspaceTitle: clinicalFormTitle.replace('clinic', 'form'),
-      mutateForm: mutate,
-      formInfo: {
+    launchWorkspace2(
+      'patient-form-entry-workspace',
+      {
+        workspaceTitle: clinicalFormTitle.replace('clinic', 'form'),
+        form: { uuid: clinicConfig.formUuid },
         encounterUuid: '',
-        formUuid: clinicConfig.formUuid,
-        additionalProps: {},
+        mutateForm: mutate,
       },
-    });
+      { mutateVisitContext: () => mutate?.() },
+    );
   };
   const handleWorkspaceEditForm = (encounterUuid: string = '') => {
-    launchWorkspace('patient-form-entry-workspace', {
-      workspaceTitle: clinicalFormTitle.replace('clinic', 'form'),
-      mutateForm: mutate,
-      formInfo: {
-        encounterUuid: encounterUuid,
-        formUuid: clinicConfig.formUuid,
-        additionalProps: {},
+    launchWorkspace2(
+      'patient-form-entry-workspace',
+      {
+        form: { uuid: clinicConfig.formUuid },
+        encounterUuid,
+        workspaceTitle: clinicalFormTitle.replace('clinic', 'form'),
+        mutateForm: mutate,
       },
-    });
+      { mutateVisitContext: () => mutate?.() },
+    );
   };
 
   const handleDeleteEncounter = React.useCallback(

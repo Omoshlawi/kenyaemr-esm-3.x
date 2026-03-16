@@ -9,24 +9,6 @@
       "route": "cross-border"
     }
   ],
-  "workspaces": [
-    {
-      "name": "cross-border-form-entry",
-      "component": "crossBorderFormEntry",
-      "title": "Cross Border Form Entry",
-      "type": "form",
-      "width": "wider",
-      "canMaximize": true,
-      "canHide": true
-    },
-    {
-      "name": "cross-border-patient-search",
-      "component": "crossBorderPatientSearch",
-      "title": "Patient Search",
-      "type": "form",
-      "width": "wider"
-    }
-  ],
   "extensions": [
     {
       "name": "cross-border-side-nav",
@@ -51,6 +33,34 @@
       "name": "cross-border-summary",
       "component": "crossBorderSummary",
       "slot": "cross-border-overview-dashboard-slot"
+    }
+  ],
+  "workspaces2": [
+    {
+      "name": "cross-border-form-entry",
+      "component": "crossBorderFormEntry",
+      "window": "cross-border-workspace-window"
+    },
+    {
+      "name": "cross-border-patient-search",
+      "component": "crossBorderPatientSearch",
+      "window": "cross-border-workspace-window"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "cross-border-workspace-window",
+      "canMaximize": true,
+      "canHide": true,
+      "group": "cross-border-workspace-group",
+      "width": "wider"
+    }
+  ],
+  "workspaceGroups2": [
+    {
+      "name": "cross-border-workspace-group",
+      "scopePattern": "/cross-border",
+      "closeable": true
     }
   ]
 }

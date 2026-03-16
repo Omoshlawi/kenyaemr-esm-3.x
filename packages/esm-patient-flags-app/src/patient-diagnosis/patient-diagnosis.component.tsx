@@ -21,11 +21,12 @@ const defaultVisitCustomRepresentation =
 
 type PatientDiagnosisComponentProps = {
   patientUuid: string;
+  patient: fhir.Patient;
 };
 
-const PatientDiagnosisComponent: React.FC<PatientDiagnosisComponentProps> = ({ patientUuid }) => {
+const PatientDiagnosisComponent: React.FC<PatientDiagnosisComponentProps> = ({ patientUuid, patient }) => {
   const { workspaces } = useWorkspaces();
-  const { orders } = useOrderBasket();
+  const { orders } = useOrderBasket(patient);
   const hasDrugOrder = orders.some((order) => 'drug' in order);
   const orderWorkspace = workspaces?.[0]?.name === 'order-basket';
 
@@ -37,15 +38,15 @@ const PatientDiagnosisComponent: React.FC<PatientDiagnosisComponentProps> = ({ p
     return null;
   }
 
-  return <PatientDiagnosisContent patientUuid={patientUuid} />;
+  return <PatientDiagnosisContent patientUuid={patientUuid} patient={patient} />;
 };
 
-const PatientDiagnosisContent: React.FC<PatientDiagnosisComponentProps> = ({ patientUuid }) => {
+const PatientDiagnosisContent: React.FC<PatientDiagnosisComponentProps> = ({ patientUuid, patient }) => {
   const { t } = useTranslation();
   const { clinicalEncounterFormUuid } = useConfig<ConfigObject>();
-  const launchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit('patient-form-entry-workspace');
+  const launchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit(patientUuid, 'patient-form-entry-workspace');
   const { activeVisit, isLoading, mutate: mutateVisit } = useVisit(patientUuid, defaultVisitCustomRepresentation);
-  const { orders, setOrders } = useOrderBasket();
+  const { orders, setOrders } = useOrderBasket(patient);
   const hasDrugOrder = orders.some((order) => 'drug' in order);
 
   // Find the encounter with the form uuid clinicalEncounterFormUuid

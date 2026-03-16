@@ -1,11 +1,12 @@
+import React from 'react';
+import { launchWorkspace2, useSession } from '@openmrs/esm-framework';
+import { useTranslation } from 'react-i18next';
 import { Button, Layer, Row, SkeletonPlaceholder } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { launchWorkspace, useSession } from '@openmrs/esm-framework';
-import React from 'react';
-import { useTranslation } from 'react-i18next';
+
 import type { Peer, ReportingPeriod } from '../../types';
-import styles from './metrics.scss';
 import MetricsCard from './peer-calendar-metrics-card.component';
+import styles from './metrics.scss';
 
 interface PeerCalendarMetricsHeaderProps {
   reportigPeriod?: Partial<ReportingPeriod>;
@@ -30,7 +31,7 @@ const PeerCalendarMetricsHeader: React.FC<PeerCalendarMetricsHeaderProps> = ({
 
   const { t } = useTranslation();
   const handleAddPeer = () => {
-    launchWorkspace('peers-form', {});
+    launchWorkspace2('peers-form', {});
   };
 
   if (isLoading) {

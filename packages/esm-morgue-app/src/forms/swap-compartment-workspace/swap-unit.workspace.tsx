@@ -5,7 +5,6 @@ import {
   Stack,
   Column,
   InlineLoading,
-  InlineNotification,
   Search,
   RadioButton,
   RadioButtonGroup,
@@ -14,7 +13,7 @@ import {
   Tile,
   FormGroup,
 } from '@carbon/react';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import DeceasedInfo from '../../deceased-patient-header/deceasedInfo/deceased-info.component';
 import styles from './swap-unit.scss';
@@ -25,9 +24,10 @@ import {
   useVisit,
   showSnackbar,
   navigate,
-  restBaseUrl,
   ResponsiveWrapper,
   useLayoutType,
+  Workspace2DefinitionProps,
+  Workspace2,
 } from '@openmrs/esm-framework';
 import { EmptyDataIllustration } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
@@ -53,13 +53,16 @@ const schema = z.object({
     .transform((val) => (typeof val === 'string' ? Number(val) : val)),
 });
 
-const SwapForm: React.FC<SwapFormProps> = ({ closeWorkspace, patientUuid, mortuaryLocation, mutate }) => {
+const SwapForm: React.FC<Workspace2DefinitionProps<SwapFormProps, object, object>> = ({
+  closeWorkspace,
+  workspaceProps: { patientUuid, mortuaryLocation, mutate },
+}) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const { currentVisit } = useVisit(patientUuid);
   const { assignDeceasedToCompartment, removeDeceasedFromCompartment, createEncounterForCompartmentSwap } =
     useMortuaryOperation();
-
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   const {
@@ -164,116 +167,122 @@ const SwapForm: React.FC<SwapFormProps> = ({ closeWorkspace, patientUuid, mortua
     }
   };
 
-  return (
-    <Form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
-      <div className={styles.formContainer}>
-        <Stack gap={3}>
-          <DeceasedInfo patientUuid={patientUuid} />
-          <ResponsiveWrapper>
-            <Column>
-              <FormGroup legendText="">
-                <div className={classNames(styles.visitTypeOverviewWrapper)}>
-                  <Search
-                    onChange={(event) => setSearchTerm(event.target.value)}
-                    placeholder={t('searchForCompartments', 'Search for a compartment')}
-                    labelText=""
-                    value={searchTerm}
-                    className={styles.searchInput}
-                  />
-                  <div className={styles.compartmentListContainer}>
-                    {filteredBeds.length > 0 ? (
-                      <Controller
-                        control={control}
-                        name="availableCompartment"
-                        render={({ field }) => (
-                          <RadioButtonGroup
-                            className={styles.radioButtonGroup}
-                            orientation="vertical"
-                            name="availableCompartment"
-                            valueSelected={field.value ? field.value.toString() : ''}
-                            onChange={(value) => {
-                              field.onChange(value);
-                            }}>
-                            {filteredBeds.map((bed, index) => {
-                              const isCurrentBed = bed.bedId === currentBed?.bedId;
-                              const isOccupied = bed.status === 'OCCUPIED';
+  useEffect(() => {
+    setHasUnsavedChanges(isDirty);
+  }, [isDirty, setHasUnsavedChanges]);
 
-                              return (
-                                <div key={index} className={styles.compartmentOption}>
-                                  <div className={styles.radioButtonWrapper}>
-                                    <RadioButton
-                                      className={styles.radioButton}
-                                      id={`compartment-${index}`}
-                                      labelText={bed.bedNumber}
-                                      value={bed.bedId.toString()}
-                                      disabled={isCurrentBed}
-                                    />
-                                  </div>
-                                  <div className={styles.compartmentInfo}>
-                                    <div className={styles.compartmentTags}>
-                                      <Tag type={bed.bedType?.displayName === 'VIP' ? 'green' : 'blue'} size="sm">
-                                        {bed.bedType?.displayName || 'Standard'}
-                                      </Tag>
-                                      <Tag type={bed.status === 'AVAILABLE' ? 'green' : 'red'} size="sm">
-                                        {bed.status || 'Unknown'}
-                                      </Tag>
-                                      {isCurrentBed && (
-                                        <Tag type="purple" size="sm">
-                                          {t('current', 'Current')}
+  return (
+    <Workspace2 title={t('swapCompartment', 'Swap compartment')} hasUnsavedChanges={hasUnsavedChanges}>
+      <Form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
+        <div className={styles.formContainer}>
+          <Stack gap={3}>
+            <DeceasedInfo patientUuid={patientUuid} />
+            <ResponsiveWrapper>
+              <Column>
+                <FormGroup legendText="">
+                  <div className={classNames(styles.visitTypeOverviewWrapper)}>
+                    <Search
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      placeholder={t('searchForCompartments', 'Search for a compartment')}
+                      labelText=""
+                      value={searchTerm}
+                      className={styles.searchInput}
+                    />
+                    <div className={styles.compartmentListContainer}>
+                      {filteredBeds.length > 0 ? (
+                        <Controller
+                          control={control}
+                          name="availableCompartment"
+                          render={({ field }) => (
+                            <RadioButtonGroup
+                              className={styles.radioButtonGroup}
+                              orientation="vertical"
+                              name="availableCompartment"
+                              valueSelected={field.value ? field.value.toString() : ''}
+                              onChange={(value) => {
+                                field.onChange(value);
+                              }}>
+                              {filteredBeds.map((bed, index) => {
+                                const isCurrentBed = bed.bedId === currentBed?.bedId;
+                                const isOccupied = bed.status === 'OCCUPIED';
+
+                                return (
+                                  <div key={index} className={styles.compartmentOption}>
+                                    <div className={styles.radioButtonWrapper}>
+                                      <RadioButton
+                                        className={styles.radioButton}
+                                        id={`compartment-${index}`}
+                                        labelText={bed.bedNumber}
+                                        value={bed.bedId.toString()}
+                                        disabled={isCurrentBed}
+                                      />
+                                    </div>
+                                    <div className={styles.compartmentInfo}>
+                                      <div className={styles.compartmentTags}>
+                                        <Tag type={bed.bedType?.displayName === 'VIP' ? 'green' : 'blue'} size="sm">
+                                          {bed.bedType?.displayName || 'Standard'}
                                         </Tag>
-                                      )}
+                                        <Tag type={bed.status === 'AVAILABLE' ? 'green' : 'red'} size="sm">
+                                          {bed.status || 'Unknown'}
+                                        </Tag>
+                                        {isCurrentBed && (
+                                          <Tag type="purple" size="sm">
+                                            {t('current', 'Current')}
+                                          </Tag>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              );
-                            })}
-                          </RadioButtonGroup>
-                        )}
-                      />
-                    ) : (
-                      <Layer>
-                        <Tile className={styles.emptyStateTile}>
-                          <EmptyDataIllustration />
-                          <p className={styles.emptyStateContent}>
-                            {t('noCompartmentsFound', 'No compartments found')}
-                          </p>
-                        </Tile>
-                      </Layer>
-                    )}
+                                );
+                              })}
+                            </RadioButtonGroup>
+                          )}
+                        />
+                      ) : (
+                        <Layer>
+                          <Tile className={styles.emptyStateTile}>
+                            <EmptyDataIllustration />
+                            <p className={styles.emptyStateContent}>
+                              {t('noCompartmentsFound', 'No compartments found')}
+                            </p>
+                          </Tile>
+                        </Layer>
+                      )}
+                    </div>
                   </div>
-                </div>
-                {errors.availableCompartment && (
-                  <div className={styles.invalidText}>
-                    {typeof errors.availableCompartment?.message === 'string'
-                      ? errors.availableCompartment.message
-                      : ''}
-                  </div>
-                )}
-              </FormGroup>
-            </Column>
-          </ResponsiveWrapper>
-        </Stack>
-      </div>
-      <ButtonSet
-        className={classNames({
-          [styles.tablet]: isTablet,
-          [styles.desktop]: !isTablet,
-        })}>
-        <Button className={styles.buttonContainer} kind="secondary" onClick={() => closeWorkspace()}>
-          {t('cancel', 'Cancel')}
-        </Button>
-        <Button className={styles.buttonContainer} disabled={isSubmitting || !isDirty} kind="primary" type="submit">
-          {isSubmitting ? (
-            <span className={styles.inlineLoading}>
-              {t('submitting', 'Submitting' + '...')}
-              <InlineLoading status="active" iconDescription="Loading" />
-            </span>
-          ) : (
-            t('saveAndClose', 'Save & close')
-          )}
-        </Button>
-      </ButtonSet>
-    </Form>
+                  {errors.availableCompartment && (
+                    <div className={styles.invalidText}>
+                      {typeof errors.availableCompartment?.message === 'string'
+                        ? errors.availableCompartment.message
+                        : ''}
+                    </div>
+                  )}
+                </FormGroup>
+              </Column>
+            </ResponsiveWrapper>
+          </Stack>
+        </div>
+        <ButtonSet
+          className={classNames({
+            [styles.tablet]: isTablet,
+            [styles.desktop]: !isTablet,
+          })}>
+          <Button className={styles.buttonContainer} kind="secondary" onClick={() => closeWorkspace()}>
+            {t('cancel', 'Cancel')}
+          </Button>
+          <Button className={styles.buttonContainer} disabled={isSubmitting || !isDirty} kind="primary" type="submit">
+            {isSubmitting ? (
+              <span className={styles.inlineLoading}>
+                {t('submitting', 'Submitting' + '...')}
+                <InlineLoading status="active" iconDescription="Loading" />
+              </span>
+            ) : (
+              t('saveAndClose', 'Save & close')
+            )}
+          </Button>
+        </ButtonSet>
+      </Form>
+    </Workspace2>
   );
 };
 

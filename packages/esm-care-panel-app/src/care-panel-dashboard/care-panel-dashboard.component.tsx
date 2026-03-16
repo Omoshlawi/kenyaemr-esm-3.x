@@ -7,11 +7,15 @@ import CarePrograms from '../care-programs/care-programs.component';
 
 import CarePanelMachineLearning from '../machine-learning/machine-learning.component';
 import styles from './care-panel-dashboard.scss';
-import { DefaultWorkspaceProps, launchWorkspace } from '@openmrs/esm-framework/src';
+import { DefaultWorkspaceProps } from '@openmrs/esm-framework/src';
 
-type CarePanelDashboardProps = { patientUuid: string; formEntrySub: any } & DefaultWorkspaceProps;
+type CarePanelDashboardProps = {
+  patientUuid: string;
+  formEntrySub: any;
+  patient: fhir.Patient;
+} & DefaultWorkspaceProps;
 
-const CarePanelDashboard: React.FC<CarePanelDashboardProps> = ({ formEntrySub, patientUuid }) => {
+const CarePanelDashboard: React.FC<CarePanelDashboardProps> = ({ formEntrySub, patientUuid, patient }) => {
   const { t } = useTranslation();
   return (
     <Layer className={styles.container}>
@@ -32,7 +36,7 @@ const CarePanelDashboard: React.FC<CarePanelDashboardProps> = ({ formEntrySub, p
               <CarePanel patientUuid={patientUuid} formEntrySub={formEntrySub} />
             </TabPanel>
             <TabPanel>
-              <CarePrograms patientUuid={patientUuid} />
+              <CarePrograms patientUuid={patientUuid} patient={patient} />
             </TabPanel>
             <TabPanel>
               <CarePanelMachineLearning patientUuid={patientUuid} />

@@ -4,10 +4,10 @@
     "kenyaemr": "^19.0.0"
   },
   "pages": [
-  {
-    "component": "wrapComponent",
-    "route": "case-management"
-  }
+    {
+      "component": "wrapComponent",
+      "route": "case-management"
+    }
   ],
   "extensions": [
     {
@@ -223,63 +223,69 @@
       "component": "formEntryModal"
     }
   ],
-  "workspaces": [
+  
+  "workspaces2": [
     {
       "name": "contact-list-form",
       "component": "contactListForm",
-      "title": "Contact List Form",
-      "type": "form"
+      "window": "contact-list-workspace-window"
     },
     {
       "name": "case-management-form",
       "component": "caseManagementForm",
-      "title": "Case Management Form",
-      "type": "form"
+      "window": "case-management-workspace-window"
     },
     {
       "name": "add-patient-case-form",
       "component": "addPatientCaseForm",
-      "title": "Add patient case Form",
-      "type": "form"
+      "window": "case-management-workspace-window"
     },
     {
       "name": "family-relationship-form",
       "component": "familyRelationshipForm",
-      "title": "Family Relationship Form",
-      "type": "form"
+      "window": "case-management-workspace-window"
     },
     {
       "name": "peers-form",
       "component": "peersForm",
-      "title": "Add New Peer",
-      "type": "form"
+      "window": "case-management-workspace-window"
     },
     {
-      "name": "kenyaemr-cusom-form-entry-workspace",
+      "name": "kenyaemr-custom-form-entry-workspace",
       "component": "peerCalendarFormEntry",
-      "title": "KVP Peer Educator Outreach Calendar",
-      "type": "form",
-      "width": "extra-wide",
-      "canMaximize": true,
-      "canHide": true
+      "window": "kenyaemr-custom-form-entry-workspace-window"
     },
     {
       "name": "contact-list-update-form",
       "component": "contactListUpdateForm",
-      "title": "Contact List Update Form",
-      "type": "form"
-    },
-    {
-      "name": "other-relationship-form",
-      "component": "otherRelationshipsForm",
-      "title": "Other Relationships Form",
-      "type": "form"
+      "window": "patient-clinical-view-workspace-window"
     },
     {
       "name": "end-relationship-form",
       "component": "endRelationshipWorkspace",
-      "title": "Discontinue relationship form",
-      "type": "form"
+      "window": "patient-clinical-view-workspace-window"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "patient-clinical-view-workspace-window",
+      "canMaximize": true,
+      "canHide": true,
+      "group": "patient-clinical-view-workspace-group",
+      "width": "wider"
+    },
+    {
+      "name": "kenyaemr-custom-form-entry-workspace-window",
+      "canMaximize": true,
+      "canHide": true,
+      "group": "patient-clinical-view-workspace-group",
+      "width": "extra-wide"
+    }
+  ],
+  "workspaceGroups2": [
+    {
+      "name": "patient-clinical-view-workspace-group",
+      "closeable": true
     }
   ]
 }

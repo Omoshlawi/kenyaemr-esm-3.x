@@ -1,12 +1,12 @@
-import { Button, DataTableSkeleton } from '@carbon/react';
-import { ArrowRight } from '@carbon/react/icons';
-import { getPatientUuidFromStore } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { formatDate, launchWorkspace, parseDate } from '@openmrs/esm-framework';
+import { Button, DataTableSkeleton } from '@carbon/react';
+import { ArrowRight } from '@carbon/react/icons';
+
+import { useFacilityClaims } from '../../claims/claims-management/table/use-facility-claims';
 import { usePreAuthRequests } from '../../hooks/use-pre-auth-requests';
 import GenericDataTable from './generic_data_table.component';
-import { formatDate, launchWorkspace, parseDate } from '@openmrs/esm-framework';
-import { useFacilityClaims } from '../../claims/claims-management/table/use-facility-claims';
 
 const headers = [
   {
@@ -35,9 +35,12 @@ const headers = [
   },
 ];
 
-const BenefitsTable = () => {
+type BenefitsTableProps = {
+  patientUuid: string;
+};
+
+const BenefitsTable: React.FC<BenefitsTableProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const patientUuid = getPatientUuidFromStore();
   const { isLoading } = usePreAuthRequests();
 
   const { claims } = useFacilityClaims();
@@ -59,7 +62,7 @@ const BenefitsTable = () => {
       />
     );
   }
-  //
+
   const handleLaunchPreAuthForm = () => {
     launchWorkspace('benefits-pre-auth-form', {
       workspaceTitle: 'Pre Auth Form',
@@ -68,22 +71,20 @@ const BenefitsTable = () => {
   };
 
   return (
-    <>
-      <GenericDataTable
-        rows={claimsByUse.map((r) => ({
-          ...r,
-          lastUpdatedAt: formatDate(parseDate(r.dateFrom)),
-          provider: r.provider.person.display,
-        }))}
-        headers={headers}
-        title={t('preAuthRequests', 'Pre Auth Requests')}
-        renderActionComponent={() => (
-          <Button kind="ghost" renderIcon={ArrowRight} onClick={handleLaunchPreAuthForm}>
-            {t('makePreAuthRequests', 'Make Pre Auth Request')}
-          </Button>
-        )}
-      />
-    </>
+    <GenericDataTable
+      rows={claimsByUse.map((r) => ({
+        ...r,
+        lastUpdatedAt: formatDate(parseDate(r.dateFrom)),
+        provider: r.provider.person.display,
+      }))}
+      headers={headers}
+      title={t('preAuthRequests', 'Pre Auth Requests')}
+      renderActionComponent={() => (
+        <Button kind="ghost" renderIcon={ArrowRight} onClick={handleLaunchPreAuthForm}>
+          {t('makePreAuthRequests', 'Make Pre Auth Request')}
+        </Button>
+      )}
+    />
   );
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { launchWorkspace } from '@openmrs/esm-framework';
+import { launchWorkspace2 } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { OverflowMenuItem } from '@carbon/react';
 import { LineItem, MappedBill, PaymentStatus } from '../../../types';
@@ -16,11 +16,17 @@ const CancelLineItem: React.FC<CancelLineItemProps> = ({ lineItem, bill }) => {
     return null;
   }
   const handleCancelLineItemWorkspace = () => {
-    launchWorkspace('cancel-bill-workspace', {
-      workspaceTitle: t('cancelBillForm', 'Cancel Bill Form'),
-      bill,
-      lineItem,
-    });
+    launchWorkspace2(
+      'cancel-bill-workspace',
+      {
+        workspaceTitle: t('cancelBillForm', 'Cancel Bill Form'),
+        bill,
+        lineItem,
+        patientUuid: bill.patientUuid,
+      },
+      {},
+      {},
+    );
   };
 
   return <OverflowMenuItem itemText={t('cancelItem', 'Cancel item')} onClick={handleCancelLineItemWorkspace} />;

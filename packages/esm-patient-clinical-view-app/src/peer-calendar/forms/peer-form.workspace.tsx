@@ -1,7 +1,13 @@
+import React, { useEffect, useState } from 'react';
+import {
+  showSnackbar,
+  useConfig,
+  useSession,
+  Workspace2,
+  type Workspace2DefinitionProps,
+} from '@openmrs/esm-framework';
 import { Button, ButtonSet, Column, DatePicker, DatePickerInput, Dropdown, Form, Stack } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { DefaultWorkspaceProps, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
-import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
@@ -11,12 +17,13 @@ import { ConfigObject } from '../../config-schema';
 import { createRelationship, fetchPerson, peerFormSchema } from '../peer-calendar.resources';
 import styles from './peer-form.scss';
 
-interface PeerFormProps extends DefaultWorkspaceProps {}
+interface PeerFormProps {}
 
 type PeerFormType = z.infer<typeof peerFormSchema>;
 
-const PeerForm: React.FC<PeerFormProps> = ({ closeWorkspace }) => {
+const PeerForm: React.FC<Workspace2DefinitionProps<PeerFormProps, object, object>> = ({ closeWorkspace }) => {
   const { t } = useTranslation();
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const {
     user: { person: peerEducatorPerson },
   } = useSession();
@@ -46,141 +53,149 @@ const PeerForm: React.FC<PeerFormProps> = ({ closeWorkspace }) => {
     const abortController = new AbortController();
     return await fetchPerson(query, abortController, kvpProgramUuid);
   };
+
+  useEffect(() => {
+    setHasUnsavedChanges(form.formState.isDirty);
+  }, [form.formState.isDirty, setHasUnsavedChanges]);
+
   return (
-    <Form onSubmit={form.handleSubmit(onSubmit)}>
-      <Stack gap={4} className={styles.grid}>
-        <Column>
-          <Controller
-            control={form.control}
-            name="personB"
-            render={({ field }) => (
-              <Autosuggest
-                className={styles.input}
-                labelText={t('peer', 'Peer')}
-                placeholder={t('patientPlaceHolder', 'Search patient')}
-                invalid={Boolean(form.formState.errors[field.name]?.message)}
-                invalidText={form.formState.errors[field.name]?.message}
-                getDisplayValue={(item) => item.display}
-                getFieldValue={(item) => item.uuid}
-                getSearchResults={searchPatient}
-                onClear={() => field.onChange('')}
-                onSuggestionSelected={(field_, value) => {
-                  if (value) {
-                    field.onChange(value);
+    <Workspace2 title={t('peersForm', 'Peers Form')} hasUnsavedChanges={hasUnsavedChanges}>
+      <Form onSubmit={form.handleSubmit(onSubmit)}>
+        <Stack gap={4} className={styles.grid}>
+          <Column>
+            <Controller
+              control={form.control}
+              name="personB"
+              render={({ field }) => (
+                <Autosuggest
+                  className={styles.input}
+                  labelText={t('peer', 'Peer')}
+                  placeholder={t('patientPlaceHolder', 'Search patient')}
+                  invalid={Boolean(form.formState.errors[field.name]?.message)}
+                  invalidText={form.formState.errors[field.name]?.message}
+                  getDisplayValue={(item) => item.display}
+                  getFieldValue={(item) => item.uuid}
+                  getSearchResults={searchPatient}
+                  onClear={() => field.onChange('')}
+                  onSuggestionSelected={(field_, value) => {
+                    if (value) {
+                      field.onChange(value);
+                    }
+                  }}
+                />
+              )}
+            />
+          </Column>
+          <Column>
+            <Controller
+              control={form.control}
+              name="relationshipType"
+              render={({ field }) => (
+                <Dropdown
+                  ref={field.ref}
+                  invalid={!!form.formState.errors[field.name]?.message}
+                  invalidText={form.formState.errors[field.name]?.message}
+                  id="relationship"
+                  titleText={t('relationshipType', 'RelationshipbType')}
+                  onChange={(e) => {
+                    field.onChange(e.selectedItem);
+                  }}
+                  initialSelectedItem={field.value}
+                  label="Choose option"
+                  items={[field.value]}
+                  itemToString={(item) =>
+                    [{ label: 'Peer Educator/Peer', value: peerEducatorRelationship }].find((r) => r.value === item)
+                      ?.label ?? ''
                   }
-                }}
-              />
-            )}
-          />
-        </Column>
-        <Column>
-          <Controller
-            control={form.control}
-            name="relationshipType"
-            render={({ field }) => (
-              <Dropdown
-                ref={field.ref}
-                invalid={!!form.formState.errors[field.name]?.message}
-                invalidText={form.formState.errors[field.name]?.message}
-                id="relationship"
-                titleText={t('relationshipType', 'RelationshipbType')}
-                onChange={(e) => {
-                  field.onChange(e.selectedItem);
-                }}
-                initialSelectedItem={field.value}
-                label="Choose option"
-                items={[field.value]}
-                itemToString={(item) =>
-                  [{ label: 'Peer Educator/Peer', value: peerEducatorRelationship }].find((r) => r.value === item)
-                    ?.label ?? ''
-                }
-              />
-            )}
-          />
-        </Column>
-        <Column>
-          <Controller
-            control={form.control}
-            name="personA"
-            render={({ field }) => (
-              <Dropdown
-                ref={field.ref}
-                invalid={!!form.formState.errors[field.name]?.message}
-                invalidText={form.formState.errors[field.name]?.message}
-                id="peerEducator"
-                titleText={t('peerEducator', 'Peer Educator')}
-                onChange={(e) => {
-                  field.onChange(e.selectedItem);
-                }}
-                initialSelectedItem={field.value}
-                label="Choose option"
-                items={[field.value]}
-                itemToString={(item) =>
-                  [{ label: peerEducatorPerson.display, value: peerEducatorPerson.uuid }].find((r) => r.value === item)
-                    ?.label ?? ''
-                }
-              />
-            )}
-          />
-        </Column>
-        <Column>
-          <Controller
-            control={form.control}
-            name="startDate"
-            render={({ field }) => (
-              <DatePicker
-                value={field.value}
-                onChange={field.onChange}
-                dateFormat="d/m/Y"
-                datePickerType="single"
-                invalid={!!form.formState.errors[field.name]?.message}
-                invalidText={form.formState.errors[field.name]?.message}>
-                <DatePickerInput
+                />
+              )}
+            />
+          </Column>
+          <Column>
+            <Controller
+              control={form.control}
+              name="personA"
+              render={({ field }) => (
+                <Dropdown
+                  ref={field.ref}
                   invalid={!!form.formState.errors[field.name]?.message}
                   invalidText={form.formState.errors[field.name]?.message}
-                  placeholder="mm/dd/yyyy"
-                  labelText={t('startDate', 'Start Date')}
-                  size="lg"
-                  id="startDate"
+                  id="peerEducator"
+                  titleText={t('peerEducator', 'Peer Educator')}
+                  onChange={(e) => {
+                    field.onChange(e.selectedItem);
+                  }}
+                  initialSelectedItem={field.value}
+                  label="Choose option"
+                  items={[field.value]}
+                  itemToString={(item) =>
+                    [{ label: peerEducatorPerson.display, value: peerEducatorPerson.uuid }].find(
+                      (r) => r.value === item,
+                    )?.label ?? ''
+                  }
                 />
-              </DatePicker>
-            )}
-          />
-        </Column>
-        <Column>
-          <Controller
-            control={form.control}
-            name="endDate"
-            render={({ field }) => (
-              <DatePicker
-                value={field.value}
-                onChange={field.onChange}
-                dateFormat="d/m/Y"
-                datePickerType="single"
-                invalid={!!form.formState.errors[field.name]?.message}
-                invalidText={form.formState.errors[field.name]?.message}>
-                <DatePickerInput
+              )}
+            />
+          </Column>
+          <Column>
+            <Controller
+              control={form.control}
+              name="startDate"
+              render={({ field }) => (
+                <DatePicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  dateFormat="d/m/Y"
+                  datePickerType="single"
                   invalid={!!form.formState.errors[field.name]?.message}
-                  invalidText={form.formState.errors[field.name]?.message}
-                  placeholder="mm/dd/yyyy"
-                  labelText={t('endDate', 'End Date')}
-                  size="lg"
-                  id="endDate"
-                />
-              </DatePicker>
-            )}
-          />
-        </Column>
-      </Stack>
-      <ButtonSet className={styles.buttonSet}>
-        <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
-          {t('discard', 'Discard')}
-        </Button>
-        <Button className={styles.button} kind="primary" type="submit" disabled={form.formState.isSubmitting}>
-          {t('submit', 'Submit')}
-        </Button>
-      </ButtonSet>
-    </Form>
+                  invalidText={form.formState.errors[field.name]?.message}>
+                  <DatePickerInput
+                    invalid={!!form.formState.errors[field.name]?.message}
+                    invalidText={form.formState.errors[field.name]?.message}
+                    placeholder="mm/dd/yyyy"
+                    labelText={t('startDate', 'Start Date')}
+                    size="lg"
+                    id="startDate"
+                  />
+                </DatePicker>
+              )}
+            />
+          </Column>
+          <Column>
+            <Controller
+              control={form.control}
+              name="endDate"
+              render={({ field }) => (
+                <DatePicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  dateFormat="d/m/Y"
+                  datePickerType="single"
+                  invalid={!!form.formState.errors[field.name]?.message}
+                  invalidText={form.formState.errors[field.name]?.message}>
+                  <DatePickerInput
+                    invalid={!!form.formState.errors[field.name]?.message}
+                    invalidText={form.formState.errors[field.name]?.message}
+                    placeholder="mm/dd/yyyy"
+                    labelText={t('endDate', 'End Date')}
+                    size="lg"
+                    id="endDate"
+                  />
+                </DatePicker>
+              )}
+            />
+          </Column>
+        </Stack>
+        <ButtonSet className={styles.buttonSet}>
+          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+            {t('discard', 'Discard')}
+          </Button>
+          <Button className={styles.button} kind="primary" type="submit" disabled={form.formState.isSubmitting}>
+            {t('submit', 'Submit')}
+          </Button>
+        </ButtonSet>
+      </Form>
+    </Workspace2>
   );
 };
 

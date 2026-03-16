@@ -185,7 +185,7 @@ export const getBulkUploadPayloadFromExcelFile = (
   return [payload, rowsWithMissingCategories];
 };
 
-export function createExcelTemplateFile(): Uint8Array {
+export function createExcelTemplateFile(): ArrayBuffer {
   const headers = ['concept_id', 'name', 'short_name', 'price', 'disable', 'service_type_id'];
 
   const worksheet = XLSX.utils.aoa_to_sheet([headers]);
@@ -203,9 +203,9 @@ export function createExcelTemplateFile(): Uint8Array {
   ];
   worksheet['!cols'] = colWidths;
 
-  // Generate the Excel file as a Uint8Array
-  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  return new Uint8Array(excelBuffer);
+  // Generate the Excel file as an ArrayBuffer
+  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' }) as ArrayBuffer;
+  return excelBuffer;
 }
 
 export const downloadExcelTemplateFile = () => {

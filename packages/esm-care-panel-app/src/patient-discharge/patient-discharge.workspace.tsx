@@ -7,8 +7,8 @@ import {
   ExtensionSlot,
   useEmrConfiguration,
   usePatient,
+  useVisit,
 } from '@openmrs/esm-framework';
-import { useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
 import { usePatientDischarge } from './patient-discharge.resource';
 import { WardPatient } from '../types';
 
@@ -23,7 +23,7 @@ export function PatientDischargeWorkspace(props: PatientDischargeWorkspaceProps)
   const { t } = useTranslation();
   const { patientUuid, closeWorkspace, closeWorkspaceWithSavedChanges, wardPatient, promptBeforeClosing } = props;
 
-  const { isLoading: isLoadingVisit, currentVisit, error: visitError } = useVisitOrOfflineVisit(patientUuid);
+  const { isLoading: isLoadingVisit, activeVisit: currentVisit, error: visitError } = useVisit(patientUuid);
   const { patient, isLoading: isLoadingPatient, error: patientError } = usePatient(patientUuid);
   const { emrConfiguration, isLoadingEmrConfiguration, errorFetchingEmrConfiguration } = useEmrConfiguration();
 

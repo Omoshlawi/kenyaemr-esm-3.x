@@ -17,11 +17,11 @@ import {
 import styles from './program-enrollment.scss';
 import isEmpty from 'lodash/isEmpty';
 import dayjs from 'dayjs';
-import { formatDate, launchWorkspace, restBaseUrl, useVisit } from '@openmrs/esm-framework';
+import { formatDate, launchWorkspace2, restBaseUrl, useVisit } from '@openmrs/esm-framework';
 import orderBy from 'lodash/orderBy';
 import { mutate } from 'swr';
-import { getPatientUuidFromStore } from '@openmrs/esm-patient-common-lib';
 import { useHeiOutcome } from '../hooks/useHeiOutcome';
+import { usePatientChartStore } from '@openmrs/esm-patient-common-lib/src';
 
 export interface ProgramEnrollmentProps {
   patientUuid: string;
@@ -64,9 +64,10 @@ const programDetailsMap = {
   },
 };
 
-const ProgramEnrollment: React.FC<ProgramEnrollmentProps> = ({ enrollments = [], programName }) => {
+const ProgramEnrollment: React.FC<ProgramEnrollmentProps> = ({ enrollments = [], programName, patientUuid }) => {
   const { t } = useTranslation();
-  const { currentVisit } = useVisit(getPatientUuidFromStore());
+  const { mutateVisitContext, visitContext, patient: fhirPatient } = usePatientChartStore(patientUuid);
+  const { currentVisit } = useVisit(patientUuid);
   const { heiOutcome } = useHeiOutcome(currentVisit?.patient?.uuid);
   const orderedEnrollments = orderBy(enrollments, 'dateEnrolled', 'desc');
   const headers: Array<DataTableHeader> = useMemo(
@@ -104,61 +105,64 @@ const ProgramEnrollment: React.FC<ProgramEnrollmentProps> = ({ enrollments = [],
     });
   };
 
+  const groupProps = useMemo(() => {
+    return {
+      patientUuid,
+      patient: fhirPatient,
+      mutateVisitContext: () => {
+        handleMutation();
+      },
+      visitContext,
+    };
+  }, [patientUuid, fhirPatient, mutateVisitContext, visitContext]);
+
   const handleDiscontinue = (enrollment) => {
-    launchWorkspace('patient-form-entry-workspace', {
-      workspaceTitle: enrollment?.discontinuationFormName,
-      mutateForm: handleMutation,
-      formInfo: {
+    launchWorkspace2(
+      'patient-form-entry-workspace',
+      {
+        form: {
+          uuid: enrollment?.discontinuationFormUuid,
+        },
         encounterUuid: '',
-        visitTypeUuid: currentVisit?.visitType?.uuid ?? '',
-        visitUuid: currentVisit?.uuid ?? '',
-        formUuid: enrollment?.discontinuationFormUuid,
         additionalProps: {
           enrollmentDetails: { dateEnrolled: new Date(enrollment.dateEnrolled), uuid: enrollment.enrollmentUuid },
         },
       },
-    });
+      {},
+      groupProps,
+    );
   };
 
   const handleHeiOutcome = () => {
-    launchWorkspace('patient-form-entry-workspace', {
-      workspaceTitle: 'HEI Outcome',
-      mutateForm: () => {
-        mutate((key) => true, undefined, {
-          revalidate: true,
-        });
+    launchWorkspace2(
+      'patient-form-entry-workspace',
+      {
+        form: {
+          uuid: 'd823f1ef-0973-44ee-b113-7090dc23257b',
+        },
+        encounterUuid: 'enrollmentEncounterUuid',
       },
-      formInfo: {
-        encounterUuid: '',
-        visitTypeUuid: currentVisit?.visitType?.uuid ?? '',
-        visitUuid: currentVisit?.uuid ?? '',
-        formUuid: 'd823f1ef-0973-44ee-b113-7090dc23257b',
-        additionalProps: {},
-      },
-    });
+      {},
+      groupProps,
+    );
   };
 
   const handleEditEnrollment = (enrollment) => {
-    launchWorkspace('patient-form-entry-workspace', {
-      workspaceTitle: enrollment?.enrollmentFormName,
-      mutateForm: () => {
-        mutate(
-          (key) =>
-            typeof key === 'string' && key.startsWith('/ws/rest/v1/kenyaemr/patientHistoricalEnrollment?patientUuid='),
-          undefined,
-          { revalidate: true },
-        );
-      },
-      formInfo: {
-        encounterUuid: enrollment?.enrollmentEncounterUuid,
-        formUuid: enrollment?.enrollmentFormUuid,
-        visitTypeUuid: currentVisit?.visitType?.uuid ?? '',
-        visitUuid: currentVisit?.uuid ?? '',
+    launchWorkspace2(
+      'patient-form-entry-workspace',
+      {
+        workspaceTitle: enrollment?.enrollmentFormName,
+        form: {
+          uuid: enrollment?.enrollmentFormUuid,
+        },
         additionalProps: {
           enrollmentDetails: { dateEnrolled: new Date(enrollment.dateEnrolled), uuid: enrollment.enrollmentUuid },
         },
+        encounterUuid: enrollment?.enrollmentEncounterUuid,
       },
-    });
+      {},
+      groupProps,
+    );
   };
 
   if (orderedEnrollments?.length === 0) {

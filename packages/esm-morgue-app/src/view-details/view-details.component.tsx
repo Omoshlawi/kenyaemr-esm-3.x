@@ -2,10 +2,8 @@ import React from 'react';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import { Tab, TabList, TabPanel, TabPanels, Tabs, InlineLoading } from '@carbon/react';
-import { ExtensionSlot, useConfig, useLayoutType } from '@openmrs/esm-framework';
 
 import styles from './views-details.scss';
-import { getPatientUuidFromStore } from '@openmrs/esm-patient-common-lib';
 import { usePerson } from '../deceased-patient-header/deceasedInfo/deceased-info.resource';
 import BillingHistoryView from './panels/billing-history.component';
 import AutopsyView from './panels/autopsy.component';

@@ -2,7 +2,7 @@
   "$schema": "https://json.openmrs.org/routes.schema.json",
   "backendDependencies": {
     "fhir2": ">=1.2",
-   "webservices.rest": ">=2.24.0"
+    "webservices.rest": ">=2.24.0"
   },
   "pages": [
     {
@@ -125,7 +125,7 @@
     {
       "name": "custom-visit-form-queue-fields",
       "component": "checkinFormExtraExtension",
-      "slot":"visit-form-bottom-slot",
+      "slot": "visit-form-bottom-slot",
       "order": 0
     },
     {
@@ -193,7 +193,7 @@
       "online": true,
       "offline": false
     },
-     {
+    {
       "name": "ewf-laboratory-dashboard-link",
       "component": "laboratoryLeftPanelLink",
       "slot": "patient-chart-dashboard-slot",
@@ -266,15 +266,15 @@
         "hideDashboardTitle": true
       }
     },
-
-        {
+    {
       "name": "ewf-pharmacy-dashboard",
       "component": "pharmacyTabs",
       "slot": "ewf-patient-chart-pharmacy-dashboard-slot",
       "online": true,
       "offline": false
     },
-    {"name": "ewf-admissions-dashboard-link",
+    {
+      "name": "ewf-admissions-dashboard-link",
       "component": "admissionsDashboardLink",
       "slot": "patient-chart-dashboard-slot",
       "meta": {
@@ -307,36 +307,14 @@
       "offline": false
     }
   ],
-
-  "workspaces": [
-    {
-      "name": "express-workflow-workspace",
-      "component": "expressWorkflowWorkspace",
-      "title": "Express Workflow Workspace",
-      "type": "workspace",
-      "canMaximize": true,
-      "canHide": true
-    }
-  ],
   "modals": [
     {
       "component": "otpVerificationModal",
       "name": "otp-verification-modal"
-    }, {
+    },
+    {
       "component": "facilityDashboardAuthorizationModal",
       "name": "facility-dashboard-authorization-form-modal"
-    }
-  ],
-  "workspaceGroups": [
-    {
-      "name": "express-workflow",
-      "members": [
-        "add-drug-order",
-        "order-basket",
-        "add-lab-order",
-        "express-workflow-workspace",
-        "start-visit-workspace-form"
-      ]
     }
   ]
 }

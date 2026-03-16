@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   formatDate,
   isDesktop,
-  launchWorkspace,
+  launchWorkspace2,
   parseDate,
   useConfig,
   useLayoutType,
@@ -64,7 +64,7 @@ const AutopsyView: React.FC = () => {
       ? t('editAutopsyReport', 'Edit Autopsy Report')
       : t('addAutopsyReport', 'Add Autopsy Report');
 
-    launchWorkspace('mortuary-form-entry', {
+    launchWorkspace2('mortuary-form-entry', {
       workspaceTitle,
       mutateForm: () => {
         mutate();

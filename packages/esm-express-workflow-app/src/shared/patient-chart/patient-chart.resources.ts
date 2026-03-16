@@ -143,7 +143,7 @@ export const useShowPatography = (patient: fhir.Patient) => {
     error: admissionError,
     isLoading: isloadingAdmission,
     isPatientAdmitted,
-  } = useCurrentPatientAdmissionEncounter(patient.id);
+  } = useCurrentPatientAdmissionEncounter(patient?.id);
   const {
     error: tagsError,
     isLoading: isloadingTags,

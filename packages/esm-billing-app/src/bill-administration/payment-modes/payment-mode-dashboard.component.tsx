@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { usePaymentModes } from '../../billing.resource';
-import { CardHeader, EmptyState } from '@openmrs/esm-patient-common-lib';
 import { useTranslation } from 'react-i18next';
+import { formatDate, launchWorkspace2, showModal, useDebounce, useLayoutType } from '@openmrs/esm-framework';
+import { CardHeader, EmptyState } from '@openmrs/esm-patient-common-lib';
 import {
   DataTable,
   TableContainer,
@@ -20,12 +20,13 @@ import {
   DataTableSkeleton,
   Button,
 } from '@carbon/react';
+import startCase from 'lodash/startCase';
+
+import { usePaymentModes } from '../../billing.resource';
+import { PaymentMode } from '../../types';
+import BillingHeader from '../../billing-header/billing-header.component';
 
 import styles from './payment-mode-dashboard.scss';
-import { formatDate, launchWorkspace, showModal, useDebounce, useLayoutType } from '@openmrs/esm-framework';
-import { PaymentMode } from '../../types';
-import startCase from 'lodash/startCase';
-import BillingHeader from '../../billing-header/billing-header.component';
 
 type PaymentModeDashboardProps = {};
 
@@ -66,7 +67,7 @@ const PaymentModeDashboard: React.FC<PaymentModeDashboardProps> = () => {
         displayText={t('noPaymentModes', 'No payment modes')}
         headerTitle={t('paymentModes', 'Payment Modes')}
         launchForm={() =>
-          launchWorkspace('payment-mode-workspace', { workspaceTitle: t('addPaymentMode', 'Add Payment Mode') })
+          launchWorkspace2('payment-mode-workspace', { workspaceTitle: t('addPaymentMode', 'Add Payment Mode') })
         }
       />
     );
@@ -109,7 +110,12 @@ const PaymentModeDashboard: React.FC<PaymentModeDashboardProps> = () => {
       <CardHeader title={t('paymentModes', 'Payment Modes')}>
         <Button
           onClick={() =>
-            launchWorkspace('payment-mode-workspace', { workspaceTitle: t('addPaymentMode', 'Add Payment Mode') })
+            launchWorkspace2(
+              'payment-mode-workspace',
+              { workspaceTitle: t('addPaymentMode', 'Add Payment Mode') },
+              {},
+              {},
+            )
           }
           className={styles.addPaymentModeButton}
           size={size}
@@ -159,10 +165,15 @@ const PaymentModeDashboard: React.FC<PaymentModeDashboardProps> = () => {
                           <OverflowMenu size={size} iconDescription={t('actions', 'Actions')} flipped>
                             <OverflowMenuItem
                               onClick={() =>
-                                launchWorkspace('payment-mode-workspace', {
-                                  workspaceTitle: t('editPaymentMode', 'Edit Payment Mode'),
-                                  initialPaymentMode: paymentModes[index],
-                                })
+                                launchWorkspace2(
+                                  'payment-mode-workspace',
+                                  {
+                                    workspaceTitle: t('editPaymentMode', 'Edit Payment Mode'),
+                                    initialPaymentMode: paymentModes[index],
+                                  },
+                                  {},
+                                  {},
+                                )
                               }
                               itemText={t('edit', 'Edit')}
                             />

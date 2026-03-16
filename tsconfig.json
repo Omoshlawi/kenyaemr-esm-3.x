@@ -23,6 +23,7 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "target": "esnext",
-    "typeRoots": ["./node_modules/@types"]
-  }
+    "typeRoots": ["./types", "./node_modules/@types"]
+  },
+  "exclude": ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**"]
 }

@@ -23,7 +23,7 @@ import {
   ConfigurableLink,
   ErrorState,
   isDesktop,
-  launchWorkspace,
+  launchWorkspace2,
   useConfig,
   useLayoutType,
   usePagination,
@@ -110,17 +110,12 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
   ];
 
   const handleAddContact = () => {
-    launchWorkspace('contact-list-form', {
-      workspaceTitle: 'Contact Form',
-      patientUuid,
-    });
+    launchWorkspace2('contact-list-form', { patientUuid });
   };
 
   const handleLaunchContactTracingForm = (contactUuid: string) => {
-    launchWorkspace('kenyaemr-cusom-form-entry-workspace', {
+    launchWorkspace2('kenyaemr-custom-form-entry-workspace', {
       formUuid: htsClientTracingFormUuid,
-      workspaceTitle: t('contactTracingForm', 'Contact tracing form'),
-
       patientUuid: contactUuid,
       encounterUuid: '',
       mutateForm: () => {
@@ -132,11 +127,7 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
   };
 
   const handleEditContactListUpdateForm = (relation: Contact) => {
-    launchWorkspace('contact-list-update-form', {
-      relation,
-      workspaceTitle: t('editContactList', 'Edit contact list'),
-      patientUuid,
-    });
+    launchWorkspace2('contact-list-update-form', { relation, patientUuid });
   };
   const tableRows =
     results?.map((relation) => {
@@ -148,7 +139,7 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
         name: (
           <ConfigurableLink
             style={{ textDecoration: 'none' }}
-            to={window.getOpenmrsSpaBase() + `patient/${relation.relativeUuid}/chart/Patient Summary`}>
+            to={globalThis.getOpenmrsSpaBase() + `patient/${relation.relativeUuid}/chart/Patient Summary`}>
             {extractNameString(uppercaseText(relation.name))}
           </ConfigurableLink>
         ),

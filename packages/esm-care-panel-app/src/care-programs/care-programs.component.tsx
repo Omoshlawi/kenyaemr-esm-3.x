@@ -16,8 +16,14 @@ import {
   Tile,
 } from '@carbon/react';
 import { Close, DocumentAdd } from '@carbon/react/icons';
-import { formatDate, launchWorkspace, restBaseUrl, useLayoutType, useVisit } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState, launchStartVisitPrompt } from '@openmrs/esm-patient-common-lib';
+import { formatDate, restBaseUrl, useLayoutType, useVisit } from '@openmrs/esm-framework';
+import {
+  CardHeader,
+  EmptyState,
+  ErrorState,
+  useLaunchWorkspaceRequiringVisit,
+  usePatientChartStore,
+} from '@openmrs/esm-patient-common-lib';
 import capitalize from 'lodash/capitalize';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,9 +37,10 @@ import useCareProgramForms from './useCareProgramForms';
 
 type CareProgramsProps = {
   patientUuid: string;
+  patient: fhir.Patient;
 };
 
-const CarePrograms: React.FC<CareProgramsProps> = ({ patientUuid }) => {
+const CarePrograms: React.FC<CareProgramsProps> = ({ patientUuid, patient }) => {
   const { t } = useTranslation();
   const { getProgramForms, getProgramEnrollmentForm } = useCareProgramForms();
   const { currentVisit, mutate: mutateVisit } = useVisit(patientUuid);
@@ -44,6 +51,17 @@ const CarePrograms: React.FC<CareProgramsProps> = ({ patientUuid }) => {
     error: enrollmentsError,
     mutate: mutateEnrollments,
   } = usePatientEnrolledPrograms(patientUuid);
+  const { mutateVisitContext, visitContext } = usePatientChartStore(patientUuid);
+
+  const groupProps = useMemo(
+    () => ({
+      patient,
+      patientUuid,
+      visitContext,
+      mutateVisitContext,
+    }),
+    [patient, patientUuid, visitContext, mutateVisitContext],
+  );
 
   const isTablet = useLayoutType() === 'tablet';
 
@@ -63,6 +81,8 @@ const CarePrograms: React.FC<CareProgramsProps> = ({ patientUuid }) => {
     mutateVisit();
     mutateEnrollments();
   }, [mutateEligiblePrograms, mutateEnrollments, mutateVisit, patientUuid]);
+
+  const launchFormEntryWorkspace = useLaunchWorkspaceRequiringVisit(patientUuid, 'patient-form-entry-workspace');
 
   const rows = useMemo(
     () => [
@@ -132,19 +152,15 @@ const CarePrograms: React.FC<CareProgramsProps> = ({ patientUuid }) => {
                       mutateEligiblePrograms();
                     });
                   }
-                  if (currentVisit) {
-                    if (enrollmentForm) {
-                      return launchWorkspace('patient-form-entry-workspace', {
-                        workspaceTitle: enrollmentForm.formName,
-                        mutateForm: handleMutations,
-                        formInfo: {
-                          encounterUuid: '',
-                          formUuid: enrollmentForm.formUuId,
-                        },
-                      });
-                    }
-                  }
-                  launchStartVisitPrompt();
+                  launchFormEntryWorkspace(
+                    {
+                      workspaceTitle: enrollmentForm.formName,
+                      form: { uuid: enrollmentForm.formUuId },
+                      encounterUuid: '',
+                    },
+                    {},
+                    groupProps,
+                  );
                 }}
                 renderIcon={careProgram.enrollmentStatus == 'active' ? Close : DocumentAdd}>
                 {careProgram.enrollmentStatus == 'active' ? 'Discontinue' : 'Enroll'}

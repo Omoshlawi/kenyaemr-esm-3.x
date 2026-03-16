@@ -1,9 +1,9 @@
 import React from 'react';
+import { launchWorkspace2 } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { WatsonHealthStressBreathEditor } from '@carbon/react/icons';
 import { Button } from '@carbon/react';
 import styles from './case-management-header.scss';
-import { launchWorkspace, useSession } from '@openmrs/esm-framework';
 
 interface MetricsHeaderProps {
   activeTabIndex: number;
@@ -11,12 +11,9 @@ interface MetricsHeaderProps {
 
 const MetricsHeader: React.FC<MetricsHeaderProps> = ({ activeTabIndex }) => {
   const { t } = useTranslation();
-  const { user } = useSession();
-  const metricsTitle = t(' ', 'Case Manager');
+
   const handleAddCase = () => {
-    launchWorkspace('case-management-form', {
-      workspaceTitle: 'Case Management Form',
-    });
+    launchWorkspace2('case-management-form', {}, {}, {});
   };
 
   const isDiscontinuationTab = activeTabIndex === 1;

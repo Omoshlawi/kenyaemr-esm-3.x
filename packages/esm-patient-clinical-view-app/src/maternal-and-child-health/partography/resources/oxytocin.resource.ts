@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { MCH_PARTOGRAPHY_ENCOUNTER_UUID } from '../forms/useCervixData';
 import { ENCOUNTER_ROLE } from '../../../config-schema';
 import { OXYTOCIN_FORM_CONCEPTS } from '../types';
+import type { TFunction } from 'i18next';
 
 export interface OxytocinFormData {
   time: string;
@@ -141,7 +142,7 @@ export function useOxytocinData(patientUuid: string) {
 export async function saveOxytocinFormData(
   patientUuid: string,
   formData: OxytocinFormData,
-  t: (key: string, defaultValue?: string, options?: any) => string,
+  t: TFunction,
   providerUuid?: string,
   locationUuid?: string,
 ): Promise<SaveOxytocinDataResponse> {

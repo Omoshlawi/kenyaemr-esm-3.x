@@ -11,9 +11,16 @@ import {
   Tile,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { DefaultWorkspaceProps, parseDate, restBaseUrl, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import {
+  parseDate,
+  restBaseUrl,
+  showSnackbar,
+  useConfig,
+  Workspace2,
+  Workspace2DefinitionProps,
+} from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
@@ -34,7 +41,7 @@ import {
 import { type Contact } from '../../types';
 import styles from './contact-list-update.scss';
 
-interface ContactListUpdateFormProps extends DefaultWorkspaceProps {
+interface ContactListUpdateFormProps {
   relation: Contact;
   closeWorkspace: () => void;
   patientUuid: string;
@@ -42,7 +49,11 @@ interface ContactListUpdateFormProps extends DefaultWorkspaceProps {
 
 type ContactListUpdateFormType = z.infer<typeof relationshipFormSchema>;
 
-const ContactListUpdateForm: React.FC<ContactListUpdateFormProps> = ({ closeWorkspace, relation, patientUuid }) => {
+const ContactListUpdateForm: React.FC<Workspace2DefinitionProps<ContactListUpdateFormProps, object, object>> = ({
+  closeWorkspace,
+  workspaceProps: { relation, patientUuid },
+}) => {
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const { error, isLoading, relationship } = useRelationship(relation?.uuid);
   const { isLoading: typesLoading, error: typesError, relationshipTypes } = useRelationshipTypes();
   const personUuid = relationship?.personB?.uuid;
@@ -132,133 +143,145 @@ const ContactListUpdateForm: React.FC<ContactListUpdateFormProps> = ({ closeWork
     }
   };
 
+  useEffect(() => {
+    setHasUnsavedChanges(form.formState.isDirty);
+  }, [form.formState.isDirty, setHasUnsavedChanges]);
+
   if (isLoading || typesLoading || isPatientLoading) {
     return (
-      <div className={styles.loading}>
-        <InlineLoading status="active" iconDescription="Loading" description="Loading form..." />
-      </div>
+      <Workspace2 title={t('contactListUpdateForm', 'Contact List Update Form')} hasUnsavedChanges={hasUnsavedChanges}>
+        <div className={styles.loading}>
+          <InlineLoading status="active" iconDescription="Loading" description="Loading form..." />
+        </div>
+      </Workspace2>
     );
   }
 
   if (error || typesError) {
     return (
-      <div className={styles.error}>
-        <Tile id="error">
-          <strong>Error:</strong>
-          <p>{error?.message ?? typesError?.message ?? t('errorLoadingForm', 'Failed to load form')}</p>
-        </Tile>
-      </div>
+      <Workspace2 title={t('contactListUpdateForm', 'Contact List Update Form')} hasUnsavedChanges={hasUnsavedChanges}>
+        <div className={styles.error}>
+          <Tile id="error">
+            <strong>Error:</strong>
+            <p>{error?.message ?? typesError?.message ?? t('errorLoadingForm', 'Failed to load form')}</p>
+          </Tile>
+        </div>
+      </Workspace2>
     );
   }
 
   if (!relationship) {
     return (
-      <div className={styles.error}>
-        <Tile id="no-relationship">
-          <strong>Error:</strong>
-          <p>{t('noRelationshipFound', 'No relationship data found')}</p>
-        </Tile>
-      </div>
+      <Workspace2 title={t('contactListUpdateForm', 'Contact List Update Form')} hasUnsavedChanges={hasUnsavedChanges}>
+        <div className={styles.error}>
+          <Tile id="no-relationship">
+            <strong>Error:</strong>
+            <p>{t('noRelationshipFound', 'No relationship data found')}</p>
+          </Tile>
+        </div>
+      </Workspace2>
     );
   }
 
   return (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(onSubmit)}>
-        <Stack gap={4} className={styles.grid}>
-          <Column>
-            <PatientInfo patientUuid={relationship?.personB?.uuid || relation?.relativeUuid} />
-          </Column>
-          <span className={styles.sectionHeader}>{t('relationship', 'Relationship')}</span>
-          <Column>
-            <Controller
-              control={form.control}
-              name="startDate"
-              render={({ field, fieldState: { error } }) => (
-                <DatePicker
-                  className={styles.datePickerInput}
-                  dateFormat="d/m/Y"
-                  datePickerType="single"
-                  value={field.value}
-                  onChange={(v) => field.onChange(v[0])}
-                  ref={undefined}
-                  invalid={!!error?.message}
-                  invalidText={error?.message}>
-                  <DatePickerInput
-                    id={`startdate-input`}
+    <Workspace2 title={t('contactListUpdateForm', 'Contact List Update Form')} hasUnsavedChanges={hasUnsavedChanges}>
+      <FormProvider {...form}>
+        <Form onSubmit={form.handleSubmit(onSubmit)}>
+          <Stack gap={4} className={styles.grid}>
+            <Column>
+              <PatientInfo patientUuid={relationship?.personB?.uuid || relation?.relativeUuid} />
+            </Column>
+            <span className={styles.sectionHeader}>{t('relationship', 'Relationship')}</span>
+            <Column>
+              <Controller
+                control={form.control}
+                name="startDate"
+                render={({ field, fieldState: { error } }) => (
+                  <DatePicker
+                    className={styles.datePickerInput}
+                    dateFormat="d/m/Y"
+                    datePickerType="single"
+                    value={field.value}
+                    onChange={(v) => field.onChange(v[0])}
+                    ref={undefined}
+                    invalid={!!error?.message}
+                    invalidText={error?.message}>
+                    <DatePickerInput
+                      id={`startdate-input`}
+                      invalid={!!error?.message}
+                      invalidText={error?.message}
+                      placeholder="mm/dd/yyyy"
+                      labelText={t('startDate', 'Start Date')}
+                      size="lg"
+                    />
+                  </DatePicker>
+                )}
+              />
+            </Column>
+
+            <Column>
+              <Controller
+                control={form.control}
+                name="endDate"
+                render={({ field, fieldState: { error } }) => (
+                  <DatePicker
+                    className={styles.datePickerInput}
+                    dateFormat="d/m/Y"
+                    datePickerType="single"
+                    value={field.value}
+                    onChange={(dates) => field.onChange(dates[0])}
+                    invalid={!!error?.message}
+                    invalidText={error?.message}>
+                    <DatePickerInput
+                      id="enddate-input"
+                      invalid={!!error?.message}
+                      invalidText={error?.message}
+                      placeholder="dd/mm/yyyy"
+                      labelText={t('endDate', 'End Date')}
+                      size="lg"
+                    />
+                  </DatePicker>
+                )}
+              />
+            </Column>
+
+            <Column>
+              <Controller
+                control={form.control}
+                name="relationshipType"
+                render={({ field, fieldState: { error } }) => (
+                  <Dropdown
+                    ref={field.ref}
                     invalid={!!error?.message}
                     invalidText={error?.message}
-                    placeholder="mm/dd/yyyy"
-                    labelText={t('startDate', 'Start Date')}
-                    size="lg"
+                    id="relationshipToPatient"
+                    titleText={t('relationToPatient', 'Relation to patient')}
+                    onChange={(e) => {
+                      field.onChange(e.selectedItem);
+                    }}
+                    selectedItem={field.value}
+                    label="Select Relationship"
+                    items={relationshipTypes.map((r) => r.uuid)}
+                    itemToString={(item) => relationshipTypes.find((r) => r.uuid === item)?.displayBIsToA.toString()}
                   />
-                </DatePicker>
-              )}
-            />
-          </Column>
+                )}
+              />
+            </Column>
 
-          <Column>
-            <Controller
-              control={form.control}
-              name="endDate"
-              render={({ field, fieldState: { error } }) => (
-                <DatePicker
-                  className={styles.datePickerInput}
-                  dateFormat="d/m/Y"
-                  datePickerType="single"
-                  value={field.value}
-                  onChange={(dates) => field.onChange(dates[0])}
-                  invalid={!!error?.message}
-                  invalidText={error?.message}>
-                  <DatePickerInput
-                    id="enddate-input"
-                    invalid={!!error?.message}
-                    invalidText={error?.message}
-                    placeholder="dd/mm/yyyy"
-                    labelText={t('endDate', 'End Date')}
-                    size="lg"
-                  />
-                </DatePicker>
-              )}
-            />
-          </Column>
+            <RelationshipBaselineInfoFormSection patientAgeMonths={patientAgeMonths} patientUuid={personUuid} />
+          </Stack>
 
-          <Column>
-            <Controller
-              control={form.control}
-              name="relationshipType"
-              render={({ field, fieldState: { error } }) => (
-                <Dropdown
-                  ref={field.ref}
-                  invalid={!!error?.message}
-                  invalidText={error?.message}
-                  id="relationshipToPatient"
-                  titleText={t('relationToPatient', 'Relation to patient')}
-                  onChange={(e) => {
-                    field.onChange(e.selectedItem);
-                  }}
-                  selectedItem={field.value}
-                  label="Select Relationship"
-                  items={relationshipTypes.map((r) => r.uuid)}
-                  itemToString={(item) => relationshipTypes.find((r) => r.uuid === item)?.displayBIsToA.toString()}
-                />
-              )}
-            />
-          </Column>
-
-          <RelationshipBaselineInfoFormSection patientAgeMonths={patientAgeMonths} patientUuid={personUuid} />
-        </Stack>
-
-        <ButtonSet className={styles.buttonSet}>
-          <Button className={styles.button} kind="secondary" onClick={closeWorkspace}>
-            {t('discard', 'Discard')}
-          </Button>
-          <Button className={styles.button} kind="primary" type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? t('submitting', 'Submitting...') : t('submit', 'Submit')}
-          </Button>
-        </ButtonSet>
-      </Form>
-    </FormProvider>
+          <ButtonSet className={styles.buttonSet}>
+            <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+              {t('discard', 'Discard')}
+            </Button>
+            <Button className={styles.button} kind="primary" type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? t('submitting', 'Submitting...') : t('submit', 'Submit')}
+            </Button>
+          </ButtonSet>
+        </Form>
+      </FormProvider>
+    </Workspace2>
   );
 };
 

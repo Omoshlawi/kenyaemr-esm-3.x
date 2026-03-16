@@ -19,8 +19,8 @@ const LaboratoryTabs: React.FC<LaboratoryTabsProps> = ({ patientUuid, patient })
       basePath="laboratory"
       resultsSlotName="ewf-laboratory-results-slot"
       orderTypeUuid={testOrderTypeUuid}
-      Table={({ orders }) => {
-        return <LabTable orders={orders} />;
+      Table={({ orders, mutateOrders }) => {
+        return <LabTable orders={orders} patientUuid={patientUuid} mutateOrders={mutateOrders} />;
       }}
     />
   );

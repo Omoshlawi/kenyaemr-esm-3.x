@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import {
@@ -16,7 +16,6 @@ import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { WarningFilled } from '@carbon/react/icons';
-import { type DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
 import {
   ExtensionSlot,
   useLayoutType,
@@ -25,6 +24,8 @@ import {
   OpenmrsDatePicker,
   useConfig,
   useSession,
+  Workspace2DefinitionProps,
+  Workspace2,
 } from '@openmrs/esm-framework';
 import styles from './mark-patient-deceased-form.scss';
 import { markPatientDeceased } from './mark-patient-deceased.resource';
@@ -32,12 +33,20 @@ import ICD11DiagnosisSearch from '../icd11-diagnosis-search/icd11-diagnosis-sear
 import { ConfigObject } from '../../config-schema';
 import { DiagnosisOption } from '../type';
 
-const MarkPatientDeceasedForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWorkspace, patientUuid }) => {
+type MarkPatientDeceasedFormProps = {
+  patientUuid: string;
+};
+
+const MarkPatientDeceasedForm: React.FC<Workspace2DefinitionProps<MarkPatientDeceasedFormProps, object, object>> = ({
+  closeWorkspace,
+  workspaceProps: { patientUuid },
+}) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const memoizedPatientUuid = useMemo(() => ({ patientUuid }), [patientUuid]);
   const config = useConfig<ConfigObject>();
   const session = useSession();
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const sessionLocation = session?.sessionLocation?.uuid;
   const currentProvider = session?.currentProvider?.uuid;
@@ -77,7 +86,7 @@ const MarkPatientDeceasedForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
 
   const {
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
     handleSubmit,
     setValue,
     watch,
@@ -140,7 +149,7 @@ const MarkPatientDeceasedForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
           title: t('patientMarkedDeceased', 'Patient marked as deceased'),
         });
 
-        closeWorkspace();
+        closeWorkspace({ discardUnsavedChanges: true });
       } catch (error) {
         showSnackbar({
           kind: 'error',
@@ -153,197 +162,206 @@ const MarkPatientDeceasedForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
     [closeWorkspace, config, currentProvider, patientUuid, sessionLocation, t],
   );
 
-  return (
-    <Form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
-      <div>
-        {isTablet && (
-          <Row className={styles.headerGridRow}>
-            <ExtensionSlot className={styles.dataGridRow} name="visit-form-header-slot" state={memoizedPatientUuid} />
-          </Row>
-        )}
-        <div className={styles.container}>
-          <span className={styles.warningContainer}>
-            <WarningFilled aria-label={t('warning', 'Warning')} className={styles.warningIcon} size={20} />
-            <span className={styles.warningText}>
-              {t('markDeceasedWarning', 'Marking the patient as deceased will end any active visits for this patient')}
-            </span>
-          </span>
+  useEffect(() => {
+    setHasUnsavedChanges(isDirty);
+  }, [isDirty, setHasUnsavedChanges]);
 
-          {/* Date of Death */}
-          <section className={styles.section}>
-            <div className={styles.sectionTitle}>{t('dateOfDeath', 'Date of death')}</div>
-            <ResponsiveWrapper>
+  return (
+    <Workspace2 title={t('markPatientDeceased', 'Mark Patient Deceased')} hasUnsavedChanges={hasUnsavedChanges}>
+      <Form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
+        <div>
+          {isTablet && (
+            <Row className={styles.headerGridRow}>
+              <ExtensionSlot className={styles.dataGridRow} name="visit-form-header-slot" state={memoizedPatientUuid} />
+            </Row>
+          )}
+          <div className={styles.container}>
+            <span className={styles.warningContainer}>
+              <WarningFilled aria-label={t('warning', 'Warning')} className={styles.warningIcon} size={20} />
+              <span className={styles.warningText}>
+                {t(
+                  'markDeceasedWarning',
+                  'Marking the patient as deceased will end any active visits for this patient',
+                )}
+              </span>
+            </span>
+
+            {/* Date of Death */}
+            <section className={styles.section}>
+              <div className={styles.sectionTitle}>{t('dateOfDeath', 'Date of death')}</div>
+              <ResponsiveWrapper>
+                <Controller
+                  name="deathDate"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <OpenmrsDatePicker
+                      {...field}
+                      className={styles.datePicker}
+                      id="deceasedDate"
+                      data-testid="deceasedDate"
+                      labelText={t('date', 'Date')}
+                      maxDate={new Date()}
+                      invalid={Boolean(fieldState?.error?.message)}
+                      invalidText={fieldState?.error?.message}
+                    />
+                  )}
+                />
+              </ResponsiveWrapper>
+            </section>
+
+            <section className={styles.section}>
+              <div className={styles.sectionTitle}>{t('causeOfDeathICD11', 'Cause of Death (ICD 11)')}</div>
               <Controller
-                name="deathDate"
+                name="immediateCause"
                 control={control}
                 render={({ field, fieldState }) => (
-                  <OpenmrsDatePicker
-                    {...field}
-                    className={styles.datePicker}
-                    id="deceasedDate"
-                    data-testid="deceasedDate"
-                    labelText={t('date', 'Date')}
-                    maxDate={new Date()}
+                  <ICD11DiagnosisSearch
+                    id="immediateCause"
+                    labelText={t('immediateCause', 'Immediate cause')}
+                    value={(field.value?.uuid ? field.value : null) as DiagnosisOption | null}
+                    onChange={(diagnosis) => {
+                      setValue('immediateCause', diagnosis || { uuid: '', display: '' });
+                    }}
+                    required
                     invalid={Boolean(fieldState?.error?.message)}
                     invalidText={fieldState?.error?.message}
                   />
                 )}
               />
-            </ResponsiveWrapper>
-          </section>
+            </section>
 
-          <section className={styles.section}>
-            <div className={styles.sectionTitle}>{t('causeOfDeathICD11', 'Cause of Death (ICD 11)')}</div>
-            <Controller
-              name="immediateCause"
-              control={control}
-              render={({ field, fieldState }) => (
-                <ICD11DiagnosisSearch
-                  id="immediateCause"
-                  labelText={t('immediateCause', 'Immediate cause')}
-                  value={(field.value?.uuid ? field.value : null) as DiagnosisOption | null}
-                  onChange={(diagnosis) => {
-                    setValue('immediateCause', diagnosis || { uuid: '', display: '' });
-                  }}
-                  required
-                  invalid={Boolean(fieldState?.error?.message)}
-                  invalidText={fieldState?.error?.message}
-                />
-              )}
-            />
-          </section>
-
-          <section className={styles.section}>
-            <Controller
-              name="antecedentCause"
-              control={control}
-              render={({ field }) => (
-                <ICD11DiagnosisSearch
-                  id="antecedentCause"
-                  labelText={t('antecedentCause', 'Antecedent cause')}
-                  value={field.value as DiagnosisOption | null}
-                  onChange={(diagnosis) => {
-                    setValue('antecedentCause', diagnosis);
-                  }}
-                />
-              )}
-            />
-          </section>
-
-          <section className={styles.section}>
-            <Controller
-              name="underlyingCondition"
-              control={control}
-              render={({ field }) => (
-                <ICD11DiagnosisSearch
-                  id="underlyingCondition"
-                  labelText={t('underlyingCondition', 'Underlying condition')}
-                  value={field.value as DiagnosisOption | null}
-                  onChange={(diagnosis) => {
-                    setValue('underlyingCondition', diagnosis);
-                  }}
-                />
-              )}
-            />
-          </section>
-
-          <section className={styles.section}>
-            <div className={styles.sectionTitle}>
-              {t('transferTo', 'Transfer to')} <span className={styles.required}>*</span>
-            </div>
-            <Layer>
+            <section className={styles.section}>
               <Controller
-                name="transferTo"
+                name="antecedentCause"
                 control={control}
-                render={({ field, fieldState }) => (
-                  <>
-                    <RadioButtonGroup
-                      legendText=""
-                      name="transferTo"
-                      valueSelected={field.value}
-                      onChange={(value) => {
-                        setValue('transferTo', value as string);
-                        if (value === config.currentMortuaryUuid) {
-                          setValue('receivingMortuaryName', '');
-                          setValue('serialNumber', '');
-                        }
-                      }}
-                      orientation="vertical">
-                      <RadioButton
-                        id="thisFacilityMortuary"
-                        labelText={t('thisFacilityMortuary', 'This facility mortuary')}
-                        value={config.currentMortuaryUuid}
-                        className={styles.radioGroup}
-                      />
-                      <RadioButton
-                        id="otherFacilityMortuary"
-                        labelText={t('otherFacilityMortuary', 'Other facility mortuary')}
-                        value={config.otherFacilityMortuaryUuid}
-                        className={styles.radioGroup}
-                      />
-                    </RadioButtonGroup>
-                    {fieldState?.error?.message && (
-                      <div className={styles.errorMessage}>{fieldState.error.message}</div>
-                    )}
-                  </>
+                render={({ field }) => (
+                  <ICD11DiagnosisSearch
+                    id="antecedentCause"
+                    labelText={t('antecedentCause', 'Antecedent cause')}
+                    value={field.value as DiagnosisOption | null}
+                    onChange={(diagnosis) => {
+                      setValue('antecedentCause', diagnosis);
+                    }}
+                  />
                 )}
               />
-            </Layer>
-          </section>
+            </section>
 
-          {showOtherFacilityFields && (
-            <>
-              <section className={styles.section}>
+            <section className={styles.section}>
+              <Controller
+                name="underlyingCondition"
+                control={control}
+                render={({ field }) => (
+                  <ICD11DiagnosisSearch
+                    id="underlyingCondition"
+                    labelText={t('underlyingCondition', 'Underlying condition')}
+                    value={field.value as DiagnosisOption | null}
+                    onChange={(diagnosis) => {
+                      setValue('underlyingCondition', diagnosis);
+                    }}
+                  />
+                )}
+              />
+            </section>
+
+            <section className={styles.section}>
+              <div className={styles.sectionTitle}>
+                {t('transferTo', 'Transfer to')} <span className={styles.required}>*</span>
+              </div>
+              <Layer>
                 <Controller
-                  name="receivingMortuaryName"
+                  name="transferTo"
                   control={control}
                   render={({ field, fieldState }) => (
-                    <TextInput
-                      {...field}
-                      id="receivingMortuaryName"
-                      labelText={t('receivingMortuaryName', 'Name of Receiving Mortuary')}
-                      placeholder={t('enterMortuaryName', 'Enter mortuary name')}
-                      invalid={Boolean(fieldState?.error?.message)}
-                      invalidText={fieldState?.error?.message}
-                    />
+                    <>
+                      <RadioButtonGroup
+                        legendText=""
+                        name="transferTo"
+                        valueSelected={field.value}
+                        onChange={(value) => {
+                          setValue('transferTo', value as string);
+                          if (value === config.currentMortuaryUuid) {
+                            setValue('receivingMortuaryName', '');
+                            setValue('serialNumber', '');
+                          }
+                        }}
+                        orientation="vertical">
+                        <RadioButton
+                          id="thisFacilityMortuary"
+                          labelText={t('thisFacilityMortuary', 'This facility mortuary')}
+                          value={config.currentMortuaryUuid}
+                          className={styles.radioGroup}
+                        />
+                        <RadioButton
+                          id="otherFacilityMortuary"
+                          labelText={t('otherFacilityMortuary', 'Other facility mortuary')}
+                          value={config.otherFacilityMortuaryUuid}
+                          className={styles.radioGroup}
+                        />
+                      </RadioButtonGroup>
+                      {fieldState?.error?.message && (
+                        <div className={styles.errorMessage}>{fieldState.error.message}</div>
+                      )}
+                    </>
                   )}
                 />
-              </section>
+              </Layer>
+            </section>
 
-              <section className={styles.section}>
-                <Controller
-                  name="serialNumber"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <TextInput
-                      {...field}
-                      id="serialNumber"
-                      labelText={t('serialNumber', 'Serial Number')}
-                      placeholder={t('enterSerialNumber', 'Enter serial number')}
-                      invalid={Boolean(fieldState?.error?.message)}
-                      invalidText={fieldState?.error?.message}
-                    />
-                  )}
-                />
-              </section>
-            </>
-          )}
+            {showOtherFacilityFields && (
+              <>
+                <section className={styles.section}>
+                  <Controller
+                    name="receivingMortuaryName"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <TextInput
+                        {...field}
+                        id="receivingMortuaryName"
+                        labelText={t('receivingMortuaryName', 'Name of Receiving Mortuary')}
+                        placeholder={t('enterMortuaryName', 'Enter mortuary name')}
+                        invalid={Boolean(fieldState?.error?.message)}
+                        invalidText={fieldState?.error?.message}
+                      />
+                    )}
+                  />
+                </section>
+
+                <section className={styles.section}>
+                  <Controller
+                    name="serialNumber"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <TextInput
+                        {...field}
+                        id="serialNumber"
+                        labelText={t('serialNumber', 'Serial Number')}
+                        placeholder={t('enterSerialNumber', 'Enter serial number')}
+                        invalid={Boolean(fieldState?.error?.message)}
+                        invalidText={fieldState?.error?.message}
+                      />
+                    )}
+                  />
+                </section>
+              </>
+            )}
+          </div>
         </div>
-      </div>
 
-      <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-        <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
-          {t('discard', 'Discard')}
-        </Button>
-        <Button className={styles.button} disabled={isSubmitting} kind="primary" type="submit">
-          {isSubmitting ? (
-            <InlineLoading description={t('saving', 'Saving') + '...'} role="progressbar" />
-          ) : (
-            t('saveAndClose', 'Save and close')
-          )}
-        </Button>
-      </ButtonSet>
-    </Form>
+        <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
+          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+            {t('discard', 'Discard')}
+          </Button>
+          <Button className={styles.button} disabled={isSubmitting} kind="primary" type="submit">
+            {isSubmitting ? (
+              <InlineLoading description={t('saving', 'Saving') + '...'} role="progressbar" />
+            ) : (
+              t('saveAndClose', 'Save and close')
+            )}
+          </Button>
+        </ButtonSet>
+      </Form>
+    </Workspace2>
   );
 };
 

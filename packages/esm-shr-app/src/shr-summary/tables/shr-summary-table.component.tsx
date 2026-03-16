@@ -1,12 +1,7 @@
 import { Button, DataTableSkeleton, Layer, Tile } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
-import { launchWorkspace, useLayoutType } from '@openmrs/esm-framework';
-import {
-  CardHeader,
-  EmptyDataIllustration,
-  ErrorState,
-  getPatientUuidFromStore,
-} from '@openmrs/esm-patient-common-lib';
+import { launchWorkspace } from '@openmrs/esm-framework';
+import { CardHeader, EmptyDataIllustration, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import usePatient from '../../hooks/usePatient';
@@ -15,13 +10,16 @@ import styles from './shr-tables.scss';
 
 interface PatientSHRSummaryTableProps {}
 
+export function getPatientUuidFromUrl(): string {
+  const match = /\/patient\/([a-zA-Z0-9\-]+)\/?/.exec(location.pathname);
+  const patientUuidFromUrl = match && match[1];
+  return patientUuidFromUrl;
+}
+
 const PatientSHRSummaryTable: React.FC<PatientSHRSummaryTableProps> = () => {
   const { t } = useTranslation();
-  const [pageSize, setPageSize] = useState(10);
-  const layout = useLayoutType();
-  const headerTitle = t('shrRecords', 'SHR Records');
 
-  const patientUuid = getPatientUuidFromStore();
+  const patientUuid = getPatientUuidFromUrl();
   const [accessGranted, setAccessGranted] = useState(false);
   const { error, isLoading, patientPhoneNumber, patientName } = usePatient(patientUuid);
 

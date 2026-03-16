@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { useTranslation, type TFunction } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { formatDatetime, useConfig } from '@openmrs/esm-framework';
 import { InlineLoading } from '@carbon/react';
 import { Phone, Email, Location, Globe, WarningAlt } from '@carbon/react/icons';

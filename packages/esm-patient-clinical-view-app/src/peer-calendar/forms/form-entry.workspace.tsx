@@ -1,15 +1,31 @@
-import { DefaultWorkspaceProps, ExtensionSlot, useConnectivity, usePatient } from '@openmrs/esm-framework';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { InlineLoading } from '@carbon/react';
+import {
+  ExtensionSlot,
+  useConnectivity,
+  usePatient,
+  Workspace2,
+  Workspace2DefinitionProps,
+} from '@openmrs/esm-framework';
+import { useTranslation } from 'react-i18next';
 
-type FormEntryWorkspaceProps = DefaultWorkspaceProps & {
+type FormEntryWorkspaceProps = {
   formUuid?: string;
   patientUuid?: string;
   encounterUuid?: string;
   mutateForm: () => void;
 };
 
-const FormEntryWorkspace: React.FC<FormEntryWorkspaceProps> = (props) => {
-  const { formUuid, patientUuid, encounterUuid, mutateForm, closeWorkspace, closeWorkspaceWithSavedChanges } = props;
+const FormEntryWorkspace: React.FC<Workspace2DefinitionProps<FormEntryWorkspaceProps, object, object>> = ({
+  closeWorkspace,
+  workspaceProps: { formUuid, patientUuid, encounterUuid, mutateForm },
+}) => {
+  const { t } = useTranslation();
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const props = useMemo(
+    () => ({ formUuid, patientUuid, encounterUuid, mutateForm }),
+    [formUuid, patientUuid, encounterUuid, mutateForm],
+  );
   const { patient, isLoading } = usePatient(patientUuid);
   const isOnline = useConnectivity();
   const state = useMemo(
@@ -31,27 +47,26 @@ const FormEntryWorkspace: React.FC<FormEntryWorkspaceProps> = (props) => {
       },
       closeWorkspaceWithSavedChanges: () => {
         typeof mutateForm === 'function' && mutateForm();
-        closeWorkspaceWithSavedChanges();
+        closeWorkspace({ discardUnsavedChanges: true });
       },
+      promptBeforeClosing: () => setHasUnsavedChanges(true),
     }),
-    [
-      patient,
-      patientUuid,
-      encounterUuid,
-      formUuid,
-      isOnline,
-      props,
-      closeWorkspace,
-      closeWorkspaceWithSavedChanges,
-      mutateForm,
-    ],
+    [patient, patientUuid, encounterUuid, formUuid, isOnline, props, closeWorkspace, mutateForm],
   );
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <Workspace2 title={t('peerCalendarFormEntry', 'Peer Calendar Form Entry')} hasUnsavedChanges={hasUnsavedChanges}>
+        <InlineLoading description={t('loading', 'Loading')} iconDescription={t('loading', 'Loading data...')} />
+      </Workspace2>
+    );
   }
 
-  return <ExtensionSlot name="form-widget-slot" state={state} />;
+  return (
+    <Workspace2 title={t('peerCalendarFormEntry', 'Peer Calendar Form Entry')} hasUnsavedChanges={hasUnsavedChanges}>
+      <ExtensionSlot name="form-widget-slot" state={state} />
+    </Workspace2>
+  );
 };
 
 export default FormEntryWorkspace;

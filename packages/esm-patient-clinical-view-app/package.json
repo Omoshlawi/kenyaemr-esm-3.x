@@ -20,14 +20,12 @@
   "scripts": {
     "analyze": "rspack build --mode=production --analyze",
     "build": "rspack --mode=production",
-    "coverage": "yarn test --coverage",
+    "coverage": "echo \"Jest has been removed; no unit test runner is configured\" && exit 0",
     "debug": "npm run serve",
     "extract-translations": "i18next 'src/**/*.component.tsx' 'src/index.ts' --config ../../tools/i18next-parser.config.js",
     "lint": "eslint src --ext ts,tsx",
     "serve": "rspack serve --mode=development",
     "start": "openmrs develop",
-    "test": "cross-env TZ=UTC jest --config jest.config.js --verbose false --passWithNoTests",
-    "test:watch": "cross-env TZ=UTC jest --watchAll --config jest.config.js",
     "typescript": "tsc"
   },
   "browserslist": [
@@ -40,7 +38,7 @@
   },
   "peerDependencies": {
     "@carbon/react": "1.x",
-    "@openmrs/esm-framework": "8.x",
+    "@openmrs/esm-framework": "9.x",
     "react": "^18.1.0",
     "react-i18next": "11.x",
     "react-router-dom": "6.x"

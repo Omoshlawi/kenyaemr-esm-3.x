@@ -29,6 +29,7 @@ import {
   isDesktop,
   usePagination,
   showModal,
+  launchWorkspace2,
 } from '@openmrs/esm-framework';
 import { CardHeader, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import capitalize from 'lodash-es/capitalize';
@@ -261,10 +262,15 @@ const UserList: React.FC = () => {
             onClick={() => {
               const selectedUser = users.find((u) => u.uuid === user.uuid);
               if (selectedUser) {
-                launchWorkspace('manage-user-workspace', {
-                  workspaceTitle: t('editUser', 'Edit User'),
-                  initialUserValue: user,
-                });
+                launchWorkspace2(
+                  'manage-user-workspace',
+                  {
+                    workspaceTitle: t('editUser', 'Edit User'),
+                    initialUserValue: user,
+                  },
+                  {},
+                  {},
+                );
               } else {
                 console.error('User not found:', user.uuid);
               }
@@ -280,10 +286,15 @@ const UserList: React.FC = () => {
             hasDivider
             disabled={!userHasInventoryRole}
             onClick={() => {
-              launchWorkspace('user-role-scope-workspace', {
-                workspaceTitle: t('manageUserRoleScope', 'Manage user role scope'),
-                user: user,
-              });
+              launchWorkspace2(
+                'user-role-scope-workspace',
+                {
+                  workspaceTitle: t('manageUserRoleScope', 'Manage user role scope'),
+                  user: user,
+                },
+                {},
+                {},
+              );
             }}
             itemText={t('manageUserRoleScope', 'Manage user role scope')}
           />
@@ -317,7 +328,9 @@ const UserList: React.FC = () => {
               size={isDesktop(layout) ? 'lg' : 'sm'}
             />
             <Button
-              onClick={() => launchWorkspace('manage-user-workspace', { workspaceTitle: t('addUser', 'Add user') })}
+              onClick={() =>
+                launchWorkspace2('manage-user-workspace', { workspaceTitle: t('addUser', 'Add user') }, {}, {})
+              }
               className={styles.userManagementModeButton}
               renderIcon={UserFollow}
               size={isDesktop(layout) ? 'lg' : 'sm'}

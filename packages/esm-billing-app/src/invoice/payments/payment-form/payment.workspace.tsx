@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   DefaultWorkspaceProps,
   ResponsiveWrapper,
@@ -6,6 +6,8 @@ import {
   showModal,
   showSnackbar,
   useLayoutType,
+  Workspace2,
+  Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import { Button, ButtonSet, ComboBox, InlineLoading, InlineNotification, NumberInput, TextInput } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,7 +26,7 @@ import { makePayment } from '../payments.resource';
 
 import styles from './payment.workspace.scss';
 
-type PaymentWorkspaceProps = DefaultWorkspaceProps & {
+type PaymentWorkspaceProps = {
   selectedLineItems: Array<LineItem>;
   bill: MappedBill;
 };
@@ -74,13 +76,11 @@ const paymentModeFormSchema = (amountDue: number) =>
       }
     });
 
-const PaymentWorkspace: React.FC<PaymentWorkspaceProps> = ({
-  selectedLineItems,
-  bill,
+const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps, {}, {}>> = ({
+  workspaceProps: { selectedLineItems, bill },
   closeWorkspace,
-  closeWorkspaceWithSavedChanges,
-  promptBeforeClosing,
 }) => {
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const unPaidLineItems = selectedLineItems.filter((item) => item.paymentStatus !== PaymentStatus.PAID);
@@ -108,9 +108,9 @@ const PaymentWorkspace: React.FC<PaymentWorkspaceProps> = ({
 
   useEffect(() => {
     if (isDirty) {
-      promptBeforeClosing(() => isDirty);
+      setHasUnsavedChanges(isDirty);
     }
-  }, [isDirty, promptBeforeClosing]);
+  }, [isDirty, setHasUnsavedChanges]);
 
   const handlePrintReceipt = (paymentsUuids: Array<string>) => {
     const lineItemUuids = unPaidLineItems.map((item) => item.uuid);
@@ -159,7 +159,7 @@ const PaymentWorkspace: React.FC<PaymentWorkspaceProps> = ({
       });
     } finally {
       if (shouldCloseWorkspace) {
-        closeWorkspaceWithSavedChanges();
+        closeWorkspace({ discardUnsavedChanges: true });
       }
     }
   };
@@ -169,93 +169,99 @@ const PaymentWorkspace: React.FC<PaymentWorkspaceProps> = ({
   }
 
   return (
-    <form onSubmit={formMethods.handleSubmit(onSubmit)} className={styles.form}>
-      <div className={styles.formContainer}>
-        <InlineNotification
-          kind="info"
-          lowContrast
-          hideCloseButton
-          title={t('totalAmountDueTitle', 'Total amount due')}
-          subtitle={t('totalAmountDueSubtitle', 'The total amount due for the selected line items is {{totalAmount}}', {
-            totalAmount: formatCurrency(totalAmount),
-          })}
-        />
-
-        <ResponsiveWrapper>
-          <Controller
-            name="paymentMode"
-            control={formMethods.control}
-            render={({ field }) => (
-              <ComboBox
-                id="paymentMode"
-                itemToString={(item) => (item ? item.name : '')}
-                items={paymentModes}
-                onChange={({ selectedItem }) => field.onChange(selectedItem)}
-                titleText="Payment Mode"
-                invalid={!!errors.paymentMode}
-                invalidText={errors.paymentMode?.message}
-              />
+    <Workspace2 hasUnsavedChanges={hasUnsavedChanges} title={t('paymentWorkspace', 'Payment workspace')}>
+      <form onSubmit={formMethods.handleSubmit(onSubmit)} className={styles.form}>
+        <div className={styles.formContainer}>
+          <InlineNotification
+            kind="info"
+            lowContrast
+            hideCloseButton
+            title={t('totalAmountDueTitle', 'Total amount due')}
+            subtitle={t(
+              'totalAmountDueSubtitle',
+              'The total amount due for the selected line items is {{totalAmount}}',
+              {
+                totalAmount: formatCurrency(totalAmount),
+              },
             )}
           />
-        </ResponsiveWrapper>
 
-        <ResponsiveWrapper>
-          <Controller
-            name="amount"
-            control={formMethods.control}
-            render={({ field }) => (
-              <NumberInput
-                id="amount"
-                label={t('amount', 'Amount')}
-                max={totalAmount}
-                min={0}
-                onChange={(e, { value }) => field.onChange(Number(value))}
-                size="md"
-                step={0.01}
-                invalid={!!errors.amount}
-                invalidText={errors.amount?.message}
-              />
-            )}
-          />
-        </ResponsiveWrapper>
-
-        {doesSelectedPaymentModeRequireReferenceCode && (
           <ResponsiveWrapper>
             <Controller
-              name="referenceCode"
+              name="paymentMode"
               control={formMethods.control}
               render={({ field }) => (
-                <TextInput
-                  id="referenceCode"
-                  labelText={t('referenceCode', 'Reference Code')}
-                  maxCount={10}
-                  onChange={field.onChange}
-                  placeholder="Enter reference code"
-                  size="md"
-                  type="text"
-                  value={field.value}
-                  invalid={!!errors.referenceCode}
-                  invalidText={errors.referenceCode?.message}
+                <ComboBox
+                  id="paymentMode"
+                  itemToString={(item) => (item ? item.name : '')}
+                  items={paymentModes}
+                  onChange={({ selectedItem }) => field.onChange(selectedItem)}
+                  titleText="Payment Mode"
+                  invalid={!!errors.paymentMode}
+                  invalidText={errors.paymentMode?.message}
                 />
               )}
             />
           </ResponsiveWrapper>
-        )}
-      </div>
 
-      <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-        <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
-          {t('cancel', 'Cancel')}
-        </Button>
-        <Button className={styles.button} disabled={isSubmitting || !isValid} kind="primary" type="submit">
-          {isSubmitting ? (
-            <InlineLoading className={styles.spinner} description={t('saving', 'Saving') + '...'} />
-          ) : (
-            <span>{t('saveAndClose', 'Save & close')}</span>
+          <ResponsiveWrapper>
+            <Controller
+              name="amount"
+              control={formMethods.control}
+              render={({ field }) => (
+                <NumberInput
+                  id="amount"
+                  label={t('amount', 'Amount')}
+                  max={totalAmount}
+                  min={0}
+                  onChange={(e, { value }) => field.onChange(Number(value))}
+                  size="md"
+                  step={0.01}
+                  invalid={!!errors.amount}
+                  invalidText={errors.amount?.message}
+                />
+              )}
+            />
+          </ResponsiveWrapper>
+
+          {doesSelectedPaymentModeRequireReferenceCode && (
+            <ResponsiveWrapper>
+              <Controller
+                name="referenceCode"
+                control={formMethods.control}
+                render={({ field }) => (
+                  <TextInput
+                    id="referenceCode"
+                    labelText={t('referenceCode', 'Reference Code')}
+                    maxCount={10}
+                    onChange={field.onChange}
+                    placeholder="Enter reference code"
+                    size="md"
+                    type="text"
+                    value={field.value}
+                    invalid={!!errors.referenceCode}
+                    invalidText={errors.referenceCode?.message}
+                  />
+                )}
+              />
+            </ResponsiveWrapper>
           )}
-        </Button>
-      </ButtonSet>
-    </form>
+        </div>
+
+        <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
+          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+            {t('cancel', 'Cancel')}
+          </Button>
+          <Button className={styles.button} disabled={isSubmitting || !isValid} kind="primary" type="submit">
+            {isSubmitting ? (
+              <InlineLoading className={styles.spinner} description={t('saving', 'Saving') + '...'} />
+            ) : (
+              <span>{t('saveAndClose', 'Save & close')}</span>
+            )}
+          </Button>
+        </ButtonSet>
+      </form>
+    </Workspace2>
   );
 };
 

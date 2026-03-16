@@ -1,27 +1,28 @@
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi, type MockedFunction } from 'vitest';
 import { formatDatetime, parseDate } from '@openmrs/esm-framework';
 import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import EncounterDetails from './encounter-details.component';
 import { usePatientEncounter, useClinicalEncounterForm } from '../../../hooks/usePatientEncounter';
 
 // Create a mock function for the workspace launcher
-const mockLaunchWorkspaceRequiringVisit = jest.fn();
+const mockLaunchWorkspaceRequiringVisit = vi.fn();
 
 // Mock dependencies
-jest.mock('@openmrs/esm-framework', () => ({
-  ...jest.requireActual('@openmrs/esm-framework'),
-  formatDatetime: jest.fn((date, options) => '15-Jan-2024'),
-  parseDate: jest.fn((date) => new Date(date)),
-  openmrsFetch: jest.fn(),
-  useConfig: jest.fn(() => ({
+vi.mock('@openmrs/esm-framework', () => ({
+  ...vi.importActual<typeof import('@openmrs/esm-framework')>('@openmrs/esm-framework'),
+  formatDatetime: vi.fn((date, options) => '15-Jan-2024'),
+  parseDate: vi.fn((date) => new Date(date)),
+  openmrsFetch: vi.fn(),
+  useConfig: vi.fn(() => ({
     clinicalEncounter: {
       encounterTypeUuid: '465a92f2-baf8-42e9-9612-53064be868e8',
       formUuid: 'e958f902-64df-4819-afd4-7fb061f59308',
     },
   })),
-  ErrorState: jest.fn(({ error, headerTitle }) => (
+  ErrorState: vi.fn(({ error, headerTitle }) => (
     <div data-testid="error-state">
       <h2>{headerTitle}</h2>
       <p>{error.message}</p>
@@ -29,26 +30,26 @@ jest.mock('@openmrs/esm-framework', () => ({
   )),
 }));
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
+vi.mock('@openmrs/esm-patient-common-lib', () => ({
   CardHeader: ({ title, children }: { title: string; children: React.ReactNode }) => (
     <div data-testid="card-header">
       <h2>{title}</h2>
       {children}
     </div>
   ),
-  useLaunchWorkspaceRequiringVisit: jest.fn(),
+  useLaunchWorkspaceRequiringVisit: vi.fn(),
 }));
 
-jest.mock('@carbon/react', () => ({
-  ...jest.requireActual('@carbon/react'),
-  TabsSkeleton: jest.fn(() => <div data-testid="tabs-skeleton">Loading tabs...</div>),
+vi.mock('@carbon/react', () => ({
+  ...vi.importActual<typeof import('@carbon/react')>('@carbon/react'),
+  TabsSkeleton: vi.fn(() => <div data-testid="tabs-skeleton">Loading tabs...</div>),
 }));
 
-jest.mock('../../../hooks/usePatientEncounter');
+vi.mock('../../../hooks/usePatientEncounter');
 
-const mockUsePatientEncounter = usePatientEncounter as jest.MockedFunction<typeof usePatientEncounter>;
-const mockUseClinicalEncounterForm = useClinicalEncounterForm as jest.MockedFunction<typeof useClinicalEncounterForm>;
-const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as jest.MockedFunction<
+const mockUsePatientEncounter = usePatientEncounter as MockedFunction<typeof usePatientEncounter>;
+const mockUseClinicalEncounterForm = useClinicalEncounterForm as MockedFunction<typeof useClinicalEncounterForm>;
+const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as MockedFunction<
   typeof useLaunchWorkspaceRequiringVisit
 >;
 
@@ -150,7 +151,7 @@ describe('EncounterDetails', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockLaunchWorkspaceRequiringVisit.mockClear();
     mockUseLaunchWorkspaceRequiringVisit.mockReturnValue(mockLaunchWorkspaceRequiringVisit);
     mockUsePatientEncounter.mockReturnValue({

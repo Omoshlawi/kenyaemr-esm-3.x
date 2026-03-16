@@ -53,7 +53,6 @@
   "error": "Error",
   "errorLoadingDashboard": "Error loading dashboard",
   "errorLoadingMedicationOrders": "Error loading medication orders",
-  "errorLoadingPatient": "Error loading patient",
   "errorLoadingQueueEntries": "Error loading queue entries",
   "errorLoadingQueues": "Error loading queues",
   "filters": "Filters",
@@ -78,7 +77,6 @@
   "loading": "Loading...",
   "loadingDashboard": "Loading dashboard data...",
   "loadingOtpConfig": "Loading...",
-  "loadingPatient": "Loading patient...",
   "loadingQueues": "Loading queues...",
   "mchConsultationQueues": "MCH Consultation Queues",
   "medication": "Medication",
@@ -195,7 +193,7 @@
   "visitProvider": "Visit Provider",
   "visits": "Visits",
   "visitType": "Visit Type",
-  "vitalsAndAnthropometric": "Vitals and Anthropometric",
+  "vitalsAndAnthropometric": "Vitals & Anthropometric",
   "waiting": "Waiting",
   "waitTime": "Wait time"
 }

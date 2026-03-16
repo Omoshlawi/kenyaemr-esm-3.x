@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { InlineLoading, Search, SkeletonText } from '@carbon/react';
 import styles from '../bed-layout.scss';
 import { EnhancedPatient, MortuaryLocationResponse } from '../../types';
-import { launchWorkspace, showModal, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
+import { launchWorkspace, launchWorkspace2, showModal, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import EmptyMorgueAdmission from '../../empty-state/empty-morgue-admission.component';
 import { PatientProvider } from '../../context/deceased-person-context';
 import BedCard from '../../bed/bed.component';
@@ -57,7 +57,7 @@ const AwaitingBedLayout: React.FC<BedLayoutProps> = ({
   }, [awaitingQueuePatients, searchTerm]);
 
   const handleAdmit = (patient: EnhancedPatient) => {
-    launchWorkspace('admit-deceased-person-form', {
+    launchWorkspace2('admit-deceased-person-form', {
       workspaceTitle: t('admissionForm', 'Admission form'),
       patient,
       queueEntryUuid: patient.queueInfo?.queueEntryUuid,
