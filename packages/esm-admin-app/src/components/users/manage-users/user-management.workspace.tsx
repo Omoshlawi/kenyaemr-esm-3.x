@@ -556,66 +556,68 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                             />
                           ) : (
                             <>
-                              <>
-                                <Column>
-                                  <ComboBox
-                                    onChange={({ selectedItem }) => {
-                                      setSearchHWR({ ...searchHWR, identifierType: selectedItem?.key ?? '' });
+                              <Column>
+                                <ComboBox
+                                  onChange={({ selectedItem }) => {
+                                    setSearchHWR({ ...searchHWR, identifierType: selectedItem?.key ?? '' });
+                                  }}
+                                  id="formIdentifierType"
+                                  titleText={t('identificationType', 'Identification Type')}
+                                  placeholder={t('chooseIdentifierType', 'Choose identifier type')}
+                                  initialSelectedItem={defaultIdentifierType}
+                                  items={identifierTypes}
+                                  itemToString={(item) => (item ? item.name : '')}
+                                  disabled={!isInitialValuesEmpty}
+                                />
+                              </Column>
+                              <Column>
+                                <ComboBox
+                                  onChange={({ selectedItem }) => {
+                                    setSearchHWR({ ...searchHWR, regulator: selectedItem?.key ?? '' });
+                                  }}
+                                  id="formRegulatorOptions"
+                                  titleText={t('regulator', 'Regulator')}
+                                  placeholder={t('chooseRegulatorType', 'Choose regulator option')}
+                                  initialSelectedItem={defaultRegulator}
+                                  items={regulatorOptions}
+                                  itemToString={(item) => (item ? item.name : '')}
+                                  disabled={!isInitialValuesEmpty}
+                                />
+                              </Column>
+                              <Column>
+                                <span className={styles.formIdentifierType}>
+                                  {t('identifierNumber', 'Identifier number*')}
+                                </span>
+                                <Row className={styles.formRow}>
+                                  <Search
+                                    labelText={t('enterIdentifierNumber', 'Enter identifier number')}
+                                    className={styles.formSearch}
+                                    defaultValue={searchHWR.identifier}
+                                    placeholder={t('enterIdentifierNumber', 'Enter identifier number')}
+                                    id="formSearchHealthWorkers"
+                                    disabled={!isInitialValuesEmpty}
+                                    onChange={(value) => {
+                                      setSearchHWR({ ...searchHWR, identifier: value.target.value });
                                     }}
-                                    id="formIdentifierType"
-                                    titleText={t('identificationType', 'Identification Type')}
-                                    placeholder={t('chooseIdentifierType', 'Choose identifier type')}
-                                    initialSelectedItem={defaultIdentifierType}
-                                    items={identifierTypes}
-                                    itemToString={(item) => (item ? item.name : '')}
                                   />
-                                </Column>
-                                <Column>
-                                  <ComboBox
-                                    onChange={({ selectedItem }) => {
-                                      setSearchHWR({ ...searchHWR, regulator: selectedItem?.key ?? '' });
-                                    }}
-                                    id="formRegulatorOptions"
-                                    titleText={t('regulator', 'Regulator')}
-                                    placeholder={t('chooseRegulatorType', 'Choose regulator option')}
-                                    initialSelectedItem={defaultRegulator}
-                                    items={regulatorOptions}
-                                    itemToString={(item) => (item ? item.name : '')}
+                                  <Button
+                                    kind="secondary"
+                                    size="md"
+                                    renderIcon={Query}
+                                    disabled={
+                                      !searchHWR.identifier ||
+                                      searchHWR.isHWRLoading ||
+                                      !searchHWR.identifierType ||
+                                      !searchHWR.regulator ||
+                                      !isInitialValuesEmpty
+                                    }
+                                    iconDescription={t('search', 'Search')}
+                                    hasIconOnly
+                                    className={styles.formSearchButton}
+                                    onClick={handleSearch}
                                   />
-                                </Column>
-                                <Column>
-                                  <span className={styles.formIdentifierType}>
-                                    {t('identifierNumber', 'Identifier number*')}
-                                  </span>
-                                  <Row className={styles.formRow}>
-                                    <Search
-                                      labelText={t('enterIdentifierNumber', 'Enter identifier number')}
-                                      className={styles.formSearch}
-                                      defaultValue={searchHWR.identifier}
-                                      placeholder={t('enterIdentifierNumber', 'Enter identifier number')}
-                                      id="formSearchHealthWorkers"
-                                      onChange={(value) => {
-                                        setSearchHWR({ ...searchHWR, identifier: value.target.value });
-                                      }}
-                                    />
-                                    <Button
-                                      kind="secondary"
-                                      size="md"
-                                      renderIcon={Query}
-                                      disabled={
-                                        !searchHWR.identifier ||
-                                        searchHWR.isHWRLoading ||
-                                        !searchHWR.identifierType ||
-                                        !searchHWR.regulator
-                                      }
-                                      iconDescription={t('search', 'Search')}
-                                      hasIconOnly
-                                      className={styles.formSearchButton}
-                                      onClick={handleSearch}
-                                    />
-                                  </Row>
-                                </Column>
-                              </>
+                                </Row>
+                              </Column>
                               <span className={styles.formHeaderSection}>
                                 {t('demographicInfo', 'Demographic info')}
                               </span>
