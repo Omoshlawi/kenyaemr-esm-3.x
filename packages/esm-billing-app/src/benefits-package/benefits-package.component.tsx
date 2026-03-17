@@ -1,13 +1,19 @@
 import React from 'react';
-import BenefitsTable from './table/benefits-table.component';
-import styles from './benefits-package.scss';
 import { useTranslation } from 'react-i18next';
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
-import Benefits from './benefits/benefits.component';
 import { Layer, Tile, Tabs, TabList, Tab, TabPanels, TabPanel } from '@carbon/react';
 import { Task, Upload } from '@carbon/react/icons';
 
-const BenefitsPackage = () => {
+import BenefitsTable from './table/benefits-table.component';
+import Benefits from './benefits/benefits.component';
+
+import styles from './benefits-package.scss';
+
+type BenefitsPackageProps = {
+  patientUuid: string;
+};
+
+const BenefitsPackage: React.FC<BenefitsPackageProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   return (
     <Layer className={styles.container}>
@@ -25,7 +31,7 @@ const BenefitsPackage = () => {
               <Benefits />
             </TabPanel>
             <TabPanel>
-              <BenefitsTable />
+              <BenefitsTable patientUuid={patientUuid} />
             </TabPanel>
           </TabPanels>
         </Tabs>

@@ -2,7 +2,7 @@ import React from 'react';
 import { useConfig } from '@openmrs/esm-framework';
 
 import OrdersTabs from '../../shared/orders/OrdersTabs';
-import LabTable from './procedures-table.component';
+import ProceduresTable from './procedures-table.component';
 import { ExpressWorkflowConfig } from '../../config-schema';
 
 type ProceduresTabsProps = {
@@ -20,7 +20,7 @@ const ProceduresTabs: React.FC<ProceduresTabsProps> = ({ patientUuid, patient })
       resultsSlotName="ewf-procedures-results-slot"
       orderTypeUuid={imagingOrderTypeUuid}
       filter={(order) => order.concept?.conceptClass?.uuid === proceduresConceptClassUuid}
-      Table={({ orders }) => <LabTable orders={orders} />}
+      Table={({ orders }) => <ProceduresTable orders={orders} patientUuid={patientUuid} patient={patient} />}
     />
   );
 };

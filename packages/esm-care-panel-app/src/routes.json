@@ -64,38 +64,35 @@
       "slot": "action-menu-ward-patient-items-slot"
     }
   ],
-  "workspaces": [
+  "workspaces2": [
     {
       "name": "patient-regimen-workspace",
-      "title": "Patient Regimen",
       "component": "regimenFormWorkspace",
-      "type": "form",
-      "canMaximize": true,
-      "canHide": true,
-      "width": "wider"
+      "window": "care-panel-workspace-window"
     },
-    {
-      "name": "patient-care-discharge-workspace",
-      "title": "Patient Discharge",
-      "component": "patientDischargeWorkspace",
-      "type": "workspace",
-      "canMaximize": true,
-      "canHide": true,
-      "width": "extra-wide",
-      "groups": ["ward-patient"]
-    },
-
     {
       "name": "mch-program-form-workspace",
       "component": "mchProgramForm",
-      "title": "Program Form",
-      "type": "workspace"
+      "window": "care-panel-workspace-window"
     },
     {
       "name": "kvp-peer-linkage-form-workspace",
       "component": "kvpPeerLinkageForm",
-      "title": "Program Form",
-      "type": "workspace"
+      "window": "care-panel-workspace-window"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "care-panel-workspace-window",
+      "canMaximize": true,
+      "group": "care-panel-workspace-group",
+      "canHide": true,
+      "width": "wider"
+    }
+  ],
+  "workspaceGroups2": [
+    {
+      "name": "care-panel-workspace-group"
     }
   ]
 }

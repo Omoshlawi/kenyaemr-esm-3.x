@@ -2,7 +2,7 @@ import { Button, InlineLoading } from '@carbon/react';
 import {
   ExtensionSlot,
   formatDatetime,
-  launchWorkspace,
+  launchWorkspace2,
   parseDate,
   usePatient,
   useVisit,
@@ -51,7 +51,12 @@ const Invoice: React.FC = () => {
       return;
     }
 
-    launchWorkspace('payment-workspace', { selectedLineItems, bill, workspaceTitle: t('payments', 'Payments') });
+    launchWorkspace2(
+      'payment-workspace',
+      { selectedLineItems, bill, workspaceTitle: t('payments', 'Payments') },
+      {},
+      {},
+    );
   };
 
   useEffect(() => {

@@ -100,8 +100,6 @@ export function buildGeneralOrder(order: Order, action?: OrderAction): OrderBask
     action: action,
     display: order.display,
     previousOrder: action !== 'NEW' ? order.uuid : null,
-    orderer: order.orderer.uuid,
-    careSetting: order.careSetting.uuid,
     instructions: order.instructions,
     urgency: order.urgency,
     accessionNumber: order.accessionNumber,
@@ -109,6 +107,7 @@ export function buildGeneralOrder(order: Order, action?: OrderAction): OrderBask
     orderNumber: order.orderNumber,
     orderType: order.orderType.uuid,
     scheduledDate: order.scheduledDate ? new Date(order.scheduledDate) : null,
+    visit: order.encounter.visit,
   };
 }
 

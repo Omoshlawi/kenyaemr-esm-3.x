@@ -1,13 +1,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { PatientDischargeWorkspace } from './patient-discharge.workspace';
-import { useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
-import { usePatient, useEmrConfiguration } from '@openmrs/esm-framework';
+import { usePatient, useEmrConfiguration, useVisit } from '@openmrs/esm-framework';
 import { usePatientDischarge } from './patient-discharge.resource';
-
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  useVisitOrOfflineVisit: jest.fn(),
-}));
 
 jest.mock('@openmrs/esm-framework', () => ({
   usePatient: jest.fn(),
@@ -89,7 +84,7 @@ describe('PatientDischargeWorkspace', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (useVisitOrOfflineVisit as jest.Mock).mockReturnValue({
+    (useVisit as jest.Mock).mockReturnValue({
       isLoading: false,
       currentVisit: mockVisit,
       error: null,
@@ -110,7 +105,7 @@ describe('PatientDischargeWorkspace', () => {
   });
 
   test('renders loading state when data is being fetched', () => {
-    (useVisitOrOfflineVisit as jest.Mock).mockReturnValue({
+    (useVisit as jest.Mock).mockReturnValue({
       isLoading: true,
       currentVisit: null,
       error: null,
@@ -122,7 +117,7 @@ describe('PatientDischargeWorkspace', () => {
   });
 
   test('renders error state when there is an error', () => {
-    (useVisitOrOfflineVisit as jest.Mock).mockReturnValue({
+    (useVisit as jest.Mock).mockReturnValue({
       isLoading: false,
       currentVisit: null,
       error: new Error('Test error'),
@@ -148,7 +143,7 @@ describe('PatientDischargeWorkspace', () => {
   });
 
   test('handles missing visit data gracefully', () => {
-    (useVisitOrOfflineVisit as jest.Mock).mockReturnValue({
+    (useVisit as jest.Mock).mockReturnValue({
       isLoading: false,
       currentVisit: null,
       error: null,

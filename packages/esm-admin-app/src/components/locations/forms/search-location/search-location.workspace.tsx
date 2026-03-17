@@ -1,27 +1,29 @@
-import { Button, ButtonSet, FilterableMultiSelect, Form, FormGroup, InlineLoading, Stack } from '@carbon/react';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { mutate } from 'swr';
+import classNames from 'classnames';
+import { z } from 'zod';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  type DefaultWorkspaceProps,
+  Workspace2,
+  Workspace2DefinitionProps,
+  useLayoutType,
   ResponsiveWrapper,
   restBaseUrl,
   showSnackbar,
-  useLayoutType,
 } from '@openmrs/esm-framework';
-import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
-import { mutate } from 'swr';
-import { z } from 'zod';
+import { Button, ButtonSet, FilterableMultiSelect, Form, FormGroup, InlineLoading, Stack } from '@carbon/react';
+
 import { LocationAutosuggest } from '../../auto-suggest/location-autosuggest.component';
 import ResultsTile from '../../common/results-tile.component';
-import { extractErrorMessagesFromResponse } from '../../helpers';
-import { saveOrUpdateLocation } from '../../hooks/useLocation';
 import { useLocationTags } from '../../hooks/useLocationTags';
+import { saveOrUpdateLocation } from '../../hooks/useLocation';
+import { extractErrorMessagesFromResponse } from '../../helpers';
 import { LocationResponse } from '../../types';
 import styles from './search-location.workspace.scss';
 
-type AddLocationWorkspaceProps = DefaultWorkspaceProps & {
+type AddLocationWorkspaceProps = {
   location?: LocationResponse;
 };
 
@@ -37,17 +39,15 @@ const locationFormSchema = z.object({
 
 type LocationFormType = z.infer<typeof locationFormSchema>;
 
-const SearchLocationWorkspace: React.FC<AddLocationWorkspaceProps> = ({
+const SearchLocationWorkspace: React.FC<Workspace2DefinitionProps<AddLocationWorkspaceProps, {}, {}>> = ({
   closeWorkspace,
-  closeWorkspaceWithSavedChanges,
-  promptBeforeClosing,
-  location,
+  workspaceProps: { location = {} as LocationResponse },
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const { locationTagList: Tags } = useLocationTags();
   const [selectedLocation, setSelectedLocation] = useState<LocationResponse | null>(null);
-
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const handleMutation = () => {
     const url = `${restBaseUrl}/location`;
     mutate((key) => typeof key === 'string' && key.startsWith(url), undefined, { revalidate: true });
@@ -56,7 +56,6 @@ const SearchLocationWorkspace: React.FC<AddLocationWorkspaceProps> = ({
   const {
     handleSubmit,
     control,
-    getValues,
     setValue,
     reset,
     formState: { isSubmitting, isDirty, errors },
@@ -89,7 +88,7 @@ const SearchLocationWorkspace: React.FC<AddLocationWorkspaceProps> = ({
       });
 
       handleMutation();
-      closeWorkspaceWithSavedChanges();
+      closeWorkspace({ discardUnsavedChanges: true });
     } catch (error: any) {
       console.error('Error saving location:', error);
       const errorMessages = extractErrorMessagesFromResponse(error);
@@ -137,78 +136,84 @@ const SearchLocationWorkspace: React.FC<AddLocationWorkspaceProps> = ({
   };
 
   useEffect(() => {
-    promptBeforeClosing(() => isDirty);
-  }, [isDirty, promptBeforeClosing]);
+    setHasUnsavedChanges(true);
+  }, [isDirty, setHasUnsavedChanges]);
 
   const isFormReady = (selectedLocation || location) && isDirty;
 
   return (
-    <Form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
-      <div className={styles.formContainer}>
-        <Stack gap={3}>
-          <ResponsiveWrapper>
-            <FormGroup legendText="">
-              {!selectedLocation ? (
-                <LocationAutosuggest
-                  onLocationSelected={handleLocationSelected}
-                  labelText={t('searchForLocation', 'Search for location')}
-                  placeholder={t('searchParentLocation', 'Search for location...')}
-                />
-              ) : (
-                renderSelectedLocationTile()
-              )}
-            </FormGroup>
-          </ResponsiveWrapper>
-
-          <ResponsiveWrapper>
-            <FormGroup legendText="">
-              <Controller
-                control={control}
-                name="tags"
-                render={({ field: { onChange, value, ref } }) => (
-                  <FilterableMultiSelect
-                    id="locationTags"
-                    titleText={t('selectTags', 'Select tag(s)')}
-                    placeholder={t('selectTagPlaceholder', 'Select a tag')}
-                    items={Tags || []}
-                    selectedItems={(value || []).map(
-                      (selected) => Tags?.find((tag) => tag.uuid === selected.uuid) || selected,
-                    )}
-                    onChange={({ selectedItems }) => onChange(selectedItems || [])}
-                    itemToString={(item) => (item && typeof item === 'object' ? item.display : '')}
-                    selectionFeedback="top-after-reopen"
-                    invalid={!!errors.tags?.message}
-                    invalidText={errors.tags?.message}
-                    disabled={!Tags?.length}
-                    ref={ref}
+    <Workspace2 title={t('searchLocation', 'Search Location')} hasUnsavedChanges={hasUnsavedChanges}>
+      <Form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
+        <div className={styles.formContainer}>
+          <Stack gap={3}>
+            <ResponsiveWrapper>
+              <FormGroup legendText="">
+                {!selectedLocation ? (
+                  <LocationAutosuggest
+                    onLocationSelected={handleLocationSelected}
+                    labelText={t('searchForLocation', 'Search for location')}
+                    placeholder={t('searchParentLocation', 'Search for location...')}
                   />
+                ) : (
+                  renderSelectedLocationTile()
                 )}
-              />
-            </FormGroup>
-          </ResponsiveWrapper>
-        </Stack>
-      </div>
+              </FormGroup>
+            </ResponsiveWrapper>
 
-      <ButtonSet
-        className={classNames({
-          [styles.tablet]: isTablet,
-          [styles.desktop]: !isTablet,
-        })}>
-        <Button className={styles.buttonContainer} kind="secondary" onClick={() => closeWorkspace()}>
-          {t('cancel', 'Cancel')}
-        </Button>
-        <Button className={styles.buttonContainer} disabled={isSubmitting || !isFormReady} kind="primary" type="submit">
-          {isSubmitting ? (
-            <span className={styles.inlineLoading}>
-              {t('submitting', 'Submitting' + '...')}
-              <InlineLoading status="active" iconDescription="Loading" />
-            </span>
-          ) : (
-            t('saveAndClose', 'Save & close')
-          )}
-        </Button>
-      </ButtonSet>
-    </Form>
+            <ResponsiveWrapper>
+              <FormGroup legendText="">
+                <Controller
+                  control={control}
+                  name="tags"
+                  render={({ field: { onChange, value, ref } }) => (
+                    <FilterableMultiSelect
+                      id="locationTags"
+                      titleText={t('selectTags', 'Select tag(s)')}
+                      placeholder={t('selectTagPlaceholder', 'Select a tag')}
+                      items={Tags || []}
+                      selectedItems={(value || []).map(
+                        (selected) => Tags?.find((tag) => tag.uuid === selected.uuid) || selected,
+                      )}
+                      onChange={({ selectedItems }) => onChange(selectedItems || [])}
+                      itemToString={(item) => (item && typeof item === 'object' ? item.display : '')}
+                      selectionFeedback="top-after-reopen"
+                      invalid={!!errors.tags?.message}
+                      invalidText={errors.tags?.message}
+                      disabled={!Tags?.length}
+                      ref={ref}
+                    />
+                  )}
+                />
+              </FormGroup>
+            </ResponsiveWrapper>
+          </Stack>
+        </div>
+
+        <ButtonSet
+          className={classNames({
+            [styles.tablet]: isTablet,
+            [styles.desktop]: !isTablet,
+          })}>
+          <Button className={styles.buttonContainer} kind="secondary" onClick={() => closeWorkspace()}>
+            {t('cancel', 'Cancel')}
+          </Button>
+          <Button
+            className={styles.buttonContainer}
+            disabled={isSubmitting || !isFormReady}
+            kind="primary"
+            type="submit">
+            {isSubmitting ? (
+              <span className={styles.inlineLoading}>
+                {t('submitting', 'Submitting' + '...')}
+                <InlineLoading status="active" iconDescription="Loading" />
+              </span>
+            ) : (
+              t('saveAndClose', 'Save & close')
+            )}
+          </Button>
+        </ButtonSet>
+      </Form>
+    </Workspace2>
   );
 };
 

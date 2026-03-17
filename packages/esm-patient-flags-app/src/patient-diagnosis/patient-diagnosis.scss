@@ -1,0 +1,7 @@
+.noMainDiagnosis {
+  max-width: 100%;
+
+  :global(.cds--actionable-notification__button-wrapper) {
+    align-self: flex-end;
+  }
+}

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -20,6 +20,8 @@ import {
   useConfig,
   useLayoutType,
   showSnackbar,
+  Workspace2DefinitionProps,
+  Workspace2,
 } from '@openmrs/esm-framework';
 import { type Order } from '@openmrs/esm-patient-common-lib';
 import { useBillableItem } from '../../../../billable-services/billable-orders/useBillableItem';
@@ -29,7 +31,7 @@ import { processBillItems } from '../../../../billing.resource';
 import { mutate } from 'swr';
 import { useCurrencyFormatting } from '../../../../helpers/currency';
 
-type CreateBillWorkspaceProps = DefaultWorkspaceProps & {
+type CreateBillWorkspaceProps = {
   patientUuid: string;
   order: Order;
   closeModal: () => void;
@@ -145,18 +147,15 @@ const StandardBillForm: React.FC<Omit<BillFormProps, 'quantityToDispense'>> = (p
   return <BillForm {...props} quantityToDispense={1} />;
 };
 
-const CreateBillWorkspace: React.FC<CreateBillWorkspaceProps> = ({
-  patientUuid,
-  order,
+const CreateBillWorkspace: React.FC<Workspace2DefinitionProps<CreateBillWorkspaceProps, {}, {}>> = ({
   closeWorkspace,
-  closeWorkspaceWithSavedChanges,
-  promptBeforeClosing,
-  medicationRequestBundle,
+  workspaceProps: { patientUuid, order, medicationRequestBundle },
 }) => {
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
   const defaultPaymentStatus = 'PENDING';
   const isTablet = useLayoutType() === 'tablet';
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const { cashPointUuid, cashierUuid } = useConfig<BillingConfig>();
   const drugUuid = order?.drug?.uuid;
   const { billableItem, isLoading } = useBillableItem(order?.concept?.uuid ?? order?.drug?.concept?.uuid, drugUuid);
@@ -222,7 +221,7 @@ const CreateBillWorkspace: React.FC<CreateBillWorkspaceProps> = ({
       mutate((key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/cashier/bill`), undefined, {
         revalidate: true,
       });
-      closeWorkspaceWithSavedChanges();
+      closeWorkspace({ discardUnsavedChanges: true });
     } catch (error) {
       console.error('Bill processing error:', error);
       showSnackbar({
@@ -235,12 +234,20 @@ const CreateBillWorkspace: React.FC<CreateBillWorkspaceProps> = ({
 
   useEffect(() => {
     if (isDirty) {
-      promptBeforeClosing(() => true);
+      setHasUnsavedChanges(true);
     }
-  }, [isDirty, promptBeforeClosing]);
+  }, [isDirty, setHasUnsavedChanges]);
 
   if (isLoading) {
-    return <InlineLoading description={t('loadingBillableItems', 'Loading billable items...')} />;
+    return (
+      <Workspace2
+        hasUnsavedChanges={hasUnsavedChanges}
+        title={t('createBillForOrder', 'Create bill for order {{order}}', {
+          order: order?.concept?.display ?? order?.drug?.display,
+        })}>
+        <InlineLoading description={t('loadingBillableItems', 'Loading billable items...')} />
+      </Workspace2>
+    );
   }
 
   const commonFormProps = {
@@ -252,43 +259,53 @@ const CreateBillWorkspace: React.FC<CreateBillWorkspaceProps> = ({
   };
 
   return (
-    <form
-      className={styles.form}
-      onSubmit={handleSubmit(handleCreateBill, (errors) => console.error('errors', errors))}>
-      <div className={styles.formContainer}>
-        <ResponsiveWrapper>
-          <InlineNotification
-            aria-label="closes notification"
-            kind="info"
-            lowContrast
-            statusIconDescription="notification"
-            subtitle={t('createBillForOrder', 'Create bill for order {{order}} by selecting the correct unit price', {
-              order: order?.concept?.display ?? order?.drug?.display,
-            })}
-            title={t('orderBillCreation', 'Order Bill Creation {{orderNumber}}', { orderNumber: order.orderNumber })}
-          />
-        </ResponsiveWrapper>
-        <ResponsiveWrapper>
-          {medicationRequestBundle ? (
-            <MedicationBillForm {...commonFormProps} medicationRequestBundle={medicationRequestBundle} />
-          ) : (
-            <StandardBillForm {...commonFormProps} />
-          )}
-        </ResponsiveWrapper>
-      </div>
-      <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-        <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
-          {t('cancel', 'Cancel')}
-        </Button>
-        <Button className={styles.button} disabled={!isValid || !isDirty || isSubmitting} kind="primary" type="submit">
-          {isSubmitting ? (
-            <InlineLoading className={styles.spinner} description={t('creatingBill', 'Creating bill...')} />
-          ) : (
-            <span>{t('saveAndClose', 'Save & close')}</span>
-          )}
-        </Button>
-      </ButtonSet>
-    </form>
+    <Workspace2
+      hasUnsavedChanges={hasUnsavedChanges}
+      title={t('createBillForOrder', 'Bill for {{order}}', {
+        order: order?.concept?.display ?? order?.drug?.display,
+      })}>
+      <form
+        className={styles.form}
+        onSubmit={handleSubmit(handleCreateBill, (errors) => console.error('errors', errors))}>
+        <div className={styles.formContainer}>
+          <ResponsiveWrapper>
+            <InlineNotification
+              aria-label="closes notification"
+              kind="info"
+              lowContrast
+              statusIconDescription="notification"
+              subtitle={t('createBillForOrder', 'Create bill for order {{order}} by selecting the correct unit price', {
+                order: order?.concept?.display ?? order?.drug?.display,
+              })}
+              title={t('orderBillCreation', 'Order Bill Creation {{orderNumber}}', { orderNumber: order.orderNumber })}
+            />
+          </ResponsiveWrapper>
+          <ResponsiveWrapper>
+            {medicationRequestBundle ? (
+              <MedicationBillForm {...commonFormProps} medicationRequestBundle={medicationRequestBundle} />
+            ) : (
+              <StandardBillForm {...commonFormProps} />
+            )}
+          </ResponsiveWrapper>
+        </div>
+        <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
+          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+            {t('cancel', 'Cancel')}
+          </Button>
+          <Button
+            className={styles.button}
+            disabled={!isValid || !isDirty || isSubmitting}
+            kind="primary"
+            type="submit">
+            {isSubmitting ? (
+              <InlineLoading className={styles.spinner} description={t('creatingBill', 'Creating bill...')} />
+            ) : (
+              <span>{t('saveAndClose', 'Save & close')}</span>
+            )}
+          </Button>
+        </ButtonSet>
+      </form>
+    </Workspace2>
   );
 };
 

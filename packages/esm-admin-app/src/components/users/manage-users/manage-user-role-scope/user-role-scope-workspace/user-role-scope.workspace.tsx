@@ -6,6 +6,8 @@ import {
   restBaseUrl,
   showSnackbar,
   useLayoutType,
+  Workspace2,
+  Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 import styles from '../../../manage-users/user-management.workspace.scss';
@@ -29,15 +31,13 @@ import { useSystemUserRoleConfigSetting } from '../../../../hook/useSystemRoleSe
 import UserRoleScopeFormFields from './user-role-scope-fields.component';
 import StockUserRoleScopesList from '../user-role-scope-list/user-role-scope-list.component';
 
-type UserRoleScopeWorkspaceProps = DefaultWorkspaceProps & {
+type UserRoleScopeWorkspaceProps = {
   user?: User;
 };
 
-const UserRoleScopeWorkspace: React.FC<UserRoleScopeWorkspaceProps> = ({
+const UserRoleScopeWorkspace: React.FC<Workspace2DefinitionProps<UserRoleScopeWorkspaceProps, {}, {}>> = ({
   closeWorkspace,
-  promptBeforeClosing,
-  closeWorkspaceWithSavedChanges,
-  user = {} as User,
+  workspaceProps: { user = {} as User },
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -46,7 +46,7 @@ const UserRoleScopeWorkspace: React.FC<UserRoleScopeWorkspaceProps> = ({
   const { stockLocations, isLoading: loadinglocation } = useStockTagLocations();
   const { rolesConfig, error } = useSystemUserRoleConfigSetting();
   const { items, loadingRoleScope } = useUserRoleScopes();
-
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [userRoleScopeInitialValues, setUserRoleScopeInitialValues] = useState<UserRoleScope | null>(null);
   const handleEditUserRoleScope = useCallback((userRoleScope: UserRoleScope) => {
     setUserRoleScopeInitialValues(userRoleScope);
@@ -93,9 +93,9 @@ const UserRoleScopeWorkspace: React.FC<UserRoleScopeWorkspaceProps> = ({
   const { errors, isSubmitting, isDirty } = roleScopeformMethods.formState;
   useEffect(() => {
     if (isDirty) {
-      promptBeforeClosing(() => isDirty);
+      setHasUnsavedChanges(true);
     }
-  }, [isDirty, promptBeforeClosing]);
+  }, [isDirty, setHasUnsavedChanges]);
 
   useEffect(() => {
     if (userRoleScopeInitialValues && !loadingStock) {
@@ -154,7 +154,7 @@ const UserRoleScopeWorkspace: React.FC<UserRoleScopeWorkspaceProps> = ({
           const response = await createOrUpdateUserRoleScope(userRoleScopeUrl, roleScope, user?.uuid ?? '');
           if (response.ok) {
             showNotification('userRoleScopeSaved', 'User role scope saved successfully', 'success');
-            closeWorkspaceWithSavedChanges();
+            closeWorkspace({ discardUnsavedChanges: true });
           }
         }),
       );
@@ -184,9 +184,9 @@ const UserRoleScopeWorkspace: React.FC<UserRoleScopeWorkspaceProps> = ({
 
   useEffect(() => {
     if (isDirty) {
-      promptBeforeClosing(() => isDirty);
+      setHasUnsavedChanges(true);
     }
-  }, [isDirty, promptBeforeClosing]);
+  }, [isDirty, setHasUnsavedChanges]);
 
   function extractInventoryRoleNames(rolesConfig) {
     return rolesConfig.find((category) => category.category === ROLE_CATEGORIES.CORE_INVENTORY)?.roles || [];
@@ -225,7 +225,7 @@ const UserRoleScopeWorkspace: React.FC<UserRoleScopeWorkspaceProps> = ({
   );
 
   return (
-    <>
+    <Workspace2 title={t('userRoleScopeWorkspace', 'User Role Scope Workspace')} hasUnsavedChanges={hasUnsavedChanges}>
       <div>
         <StockUserRoleScopesList onEditUserRoleScope={handleEditUserRoleScope} user={user} />
       </div>
@@ -309,7 +309,7 @@ const UserRoleScopeWorkspace: React.FC<UserRoleScopeWorkspaceProps> = ({
           </form>
         </FormProvider>
       )}
-    </>
+    </Workspace2>
   );
 };
 

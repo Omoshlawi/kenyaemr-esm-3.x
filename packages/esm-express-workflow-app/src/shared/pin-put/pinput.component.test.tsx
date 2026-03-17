@@ -1,17 +1,18 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import PinPut from './pinput.component';
 
 describe('PinPut Component', () => {
   const defaultProps = {
     value: '',
-    onChange: jest.fn(),
+    onChange: vi.fn(),
     numInputs: 5,
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders with default props', () => {
@@ -37,7 +38,7 @@ describe('PinPut Component', () => {
   });
 
   it('calls onChange when input value changes', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
     const user = userEvent.setup();
 
     render(<PinPut {...defaultProps} onChange={onChange} />);
@@ -109,7 +110,7 @@ describe('PinPut Component', () => {
   });
 
   it('calls onComplete when all inputs are filled', async () => {
-    const onComplete = jest.fn();
+    const onComplete = vi.fn();
 
     // Test with a pre-filled value that matches the number of inputs
     render(<PinPut {...defaultProps} numInputs={3} onComplete={onComplete} value="123" />);
@@ -119,7 +120,7 @@ describe('PinPut Component', () => {
   });
 
   it('calls onFocus when input gains focus', async () => {
-    const onFocus = jest.fn();
+    const onFocus = vi.fn();
     const user = userEvent.setup();
 
     render(<PinPut {...defaultProps} onFocus={onFocus} />);
@@ -131,7 +132,7 @@ describe('PinPut Component', () => {
   });
 
   it('calls onBlur when input loses focus', async () => {
-    const onBlur = jest.fn();
+    const onBlur = vi.fn();
     const user = userEvent.setup();
 
     render(<PinPut {...defaultProps} onBlur={onBlur} />);

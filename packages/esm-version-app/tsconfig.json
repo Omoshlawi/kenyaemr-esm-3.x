@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.json",
   "include": ["src/**/*", "increment-version.js"],
-  "exclude": ["src/**/*.test.tsx", "src/**/*.outdated.tsx"]
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/*.outdated.tsx"]
 }

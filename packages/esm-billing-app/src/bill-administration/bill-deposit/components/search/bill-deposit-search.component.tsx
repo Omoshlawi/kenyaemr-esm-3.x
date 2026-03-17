@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { formatDate, launchWorkspace, parseDate } from '@openmrs/esm-framework';
+import { formatDate, launchWorkspace2, parseDate } from '@openmrs/esm-framework';
 import { useBillDeposit } from '../../hooks/useBillDeposit';
 import { Button, InlineLoading } from '@carbon/react';
 import styles from './bill-deposit-search.scss';
@@ -42,9 +42,14 @@ const BillDepositSearch: React.FC = () => {
   }));
 
   const handleLaunchDepositForm = () => {
-    launchWorkspace('add-deposit-workspace', {
-      patientUuid: selectedPatientUuid,
-    });
+    launchWorkspace2(
+      'add-deposit-workspace',
+      {
+        patientUuid: selectedPatientUuid,
+      },
+      {},
+      {},
+    );
   };
 
   const handlePatientSelect = (uuid: string) => {

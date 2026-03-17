@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Edit } from '@carbon/react/icons';
-import { launchWorkspace, useConfig, usePagination } from '@openmrs/esm-framework';
+import { launchWorkspace2, useConfig, usePagination } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -35,7 +35,7 @@ const ContactTracingHistory: React.FC<ContactTracingHistoryProps> = ({ patientUu
 
   const handleLaunchContactTracingForm = useCallback(
     (encounterUuid: string) => {
-      launchWorkspace('kenyaemr-cusom-form-entry-workspace', {
+      launchWorkspace2('kenyaemr-custom-form-entry-workspace', {
         workspaceTitle: t('contactTracingForm', 'Contact tracing form'),
         formUuid: htsClientTracingFormUuid,
         patientUuid,

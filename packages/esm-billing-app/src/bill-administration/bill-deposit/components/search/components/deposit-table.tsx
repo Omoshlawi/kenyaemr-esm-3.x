@@ -15,7 +15,7 @@ import {
   OverflowMenuItem,
   Pagination,
 } from '@carbon/react';
-import { launchWorkspace, showModal, usePagination } from '@openmrs/esm-framework';
+import { launchWorkspace2, showModal, usePagination } from '@openmrs/esm-framework';
 import { usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import { type FormattedDeposit } from '../../../types/bill-deposit.types';
 import { BILL_DEPOSIT_STATUS } from '../../../constants/bill-deposit.constants';
@@ -41,10 +41,15 @@ const DepositTable: React.FC<DepositTableProps> = ({ deposits }) => {
   ];
 
   const handleEditDeposit = (deposit: FormattedDeposit) => {
-    launchWorkspace('add-deposit-workspace', {
-      deposit: { ...deposit, uuid: deposit.id },
-      patientUuid: deposit?.patient?.uuid,
-    });
+    launchWorkspace2(
+      'add-deposit-workspace',
+      {
+        deposit: { ...deposit, uuid: deposit.id },
+        patientUuid: deposit?.patient?.uuid,
+      },
+      {},
+      {},
+    );
   };
 
   const handleDeleteDeposit = (deposit: FormattedDeposit) => {
@@ -56,10 +61,15 @@ const DepositTable: React.FC<DepositTableProps> = ({ deposits }) => {
   };
 
   const handleApplyDepositToBill = (deposit: FormattedDeposit) => {
-    launchWorkspace('deposit-transaction-workspace', {
-      deposit: { ...deposit, uuid: deposit.id },
-      patientUuid: deposit?.patient?.uuid,
-    });
+    launchWorkspace2(
+      'deposit-transaction-workspace',
+      {
+        deposit: { ...deposit, uuid: deposit.id },
+        patientUuid: deposit?.patient?.uuid,
+      },
+      {},
+      {},
+    );
   };
 
   return (

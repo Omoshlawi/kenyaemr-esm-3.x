@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { mutate } from 'swr';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
@@ -14,11 +14,12 @@ import {
   TextArea,
 } from '@carbon/react';
 import {
-  DefaultWorkspaceProps,
   ResponsiveWrapper,
   restBaseUrl,
   showSnackbar,
   useLayoutType,
+  Workspace2,
+  type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 
 import { LineItem, MappedBill } from '../../../../types';
@@ -34,21 +35,18 @@ import {
   useFormInitialValues,
 } from './useEditBillFormSchema';
 
-type EditBillFormProps = DefaultWorkspaceProps & { lineItem: LineItem; bill: MappedBill };
+type EditBillFormProps = { lineItem: LineItem; bill: MappedBill };
 
-export const EditBillForm: React.FC<EditBillFormProps> = ({
-  lineItem,
+export const EditBillForm: React.FC<Workspace2DefinitionProps<EditBillFormProps, {}, {}>> = ({
   closeWorkspace,
-  bill,
-  promptBeforeClosing,
-  closeWorkspaceWithSavedChanges,
+  workspaceProps: { lineItem, bill },
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const editBillFormSchema = useEditBillFormSchema();
   const defaultValues = useDefaultEditBillFormValues(lineItem, bill);
   const { selectedServicePrice, isLoadingServices, selectedBillableService } = useFormInitialValues(lineItem);
-
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const {
     control,
     handleSubmit,
@@ -60,8 +58,8 @@ export const EditBillForm: React.FC<EditBillFormProps> = ({
   });
 
   useEffect(() => {
-    promptBeforeClosing(() => isDirty);
-  }, [isDirty, promptBeforeClosing]);
+    setHasUnsavedChanges(isDirty);
+  }, [isDirty, setHasUnsavedChanges]);
 
   const onSubmit: SubmitHandler<EditBillFormData> = async (formData) => {
     const updateBill = createEditBillPayload(lineItem, formData, bill, formData.adjustmentReason);
@@ -78,7 +76,7 @@ export const EditBillForm: React.FC<EditBillFormProps> = ({
     } catch (error) {
       showSnackbar({
         title: t('billUpdate', 'Bill update'),
-        subtitle: t('billUpdateError', 'An error occurred while updating the bill'),
+        subtitle: t('billUpdateError', 'An error occurred while updating the bill {{error}}', { error: error }),
         kind: 'error',
         timeoutInMs: 5000,
       });
@@ -86,12 +84,16 @@ export const EditBillForm: React.FC<EditBillFormProps> = ({
       mutate((key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/cashier/bill`), undefined, {
         revalidate: true,
       });
-      closeWorkspaceWithSavedChanges();
+      closeWorkspace({ discardUnsavedChanges: true });
     }
   };
 
   if (isLoadingServices) {
-    return <InlineLoading description={t('loading', 'Loading')} />;
+    return (
+      <Workspace2 hasUnsavedChanges={hasUnsavedChanges} title={t('editBillForm', 'Edit bill form')}>
+        <InlineLoading description={t('loading', 'Loading')} />
+      </Workspace2>
+    );
   }
 
   const formattedPrice = formatCurrencySimple(lineItem.price);
@@ -102,89 +104,95 @@ export const EditBillForm: React.FC<EditBillFormProps> = ({
   )}: ${formattedPrice} ${t('quantity', 'Quantity')}: ${lineItem.quantity}`;
 
   return (
-    <Form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
-      <div className={styles.formContainer}>
-        <InlineNotification
-          title={lineItem.billableService?.split(':')[1]}
-          subtitle={subtitleText}
-          kind="info"
-          lowContrast
-          hideCloseButton
-        />
-        <ResponsiveWrapper>
-          <Controller
-            control={control}
-            name="price"
-            render={({ field }) => (
-              <ComboBox
-                id={`${field.name}-${field.value}`}
-                onChange={({ selectedItem }) => {
-                  if (selectedItem) {
-                    field.onChange(selectedItem?.price?.toString());
-                  }
-                }}
-                titleText={t('priceOption', 'Price option')}
-                items={selectedBillableService?.servicePrices ?? []}
-                itemToString={(item) => `${item?.name} - (${item?.price})`}
-                placeholder={t('selectPrice', 'Select price')}
-                initialSelectedItem={selectedServicePrice}
-                disabled={isLoadingServices}
-                invalid={!!errors.price}
-                invalidText={errors.price?.message}
-              />
-            )}
+    <Workspace2 hasUnsavedChanges={hasUnsavedChanges} title={t('editBillForm', 'Edit bill form')}>
+      <Form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
+        <div className={styles.formContainer}>
+          <InlineNotification
+            title={lineItem.billableService?.split(':')[1]}
+            subtitle={subtitleText}
+            kind="info"
+            lowContrast
+            hideCloseButton
           />
-        </ResponsiveWrapper>
-        <ResponsiveWrapper>
-          <Controller
-            control={control}
-            name="quantity"
-            render={({ field }) => (
-              <NumberInput
-                {...field}
-                size="md"
-                label={t('quantity', 'Quantity')}
-                placeholder={t('pleaseEnterQuantity', 'Please enter Quantity')}
-                invalid={!!errors.quantity}
-                invalidText={errors.quantity?.message}
-                className={styles.formField}
-                min={1}
-                value={field.value}
-                id={`${field.name}-${field.value}`}
-                hideSteppers
-                disableWheel
-              />
+          <ResponsiveWrapper>
+            <Controller
+              control={control}
+              name="price"
+              render={({ field }) => (
+                <ComboBox
+                  id={`${field.name}-${field.value}`}
+                  onChange={({ selectedItem }) => {
+                    if (selectedItem) {
+                      field.onChange(selectedItem?.price?.toString());
+                    }
+                  }}
+                  titleText={t('priceOption', 'Price option')}
+                  items={selectedBillableService?.servicePrices ?? []}
+                  itemToString={(item) => `${item?.name} - (${item?.price})`}
+                  placeholder={t('selectPrice', 'Select price')}
+                  initialSelectedItem={selectedServicePrice}
+                  disabled={isLoadingServices}
+                  invalid={!!errors.price}
+                  invalidText={errors.price?.message}
+                />
+              )}
+            />
+          </ResponsiveWrapper>
+          <ResponsiveWrapper>
+            <Controller
+              control={control}
+              name="quantity"
+              render={({ field }) => (
+                <NumberInput
+                  {...field}
+                  size="md"
+                  label={t('quantity', 'Quantity')}
+                  placeholder={t('pleaseEnterQuantity', 'Please enter Quantity')}
+                  invalid={!!errors.quantity}
+                  invalidText={errors.quantity?.message}
+                  className={styles.formField}
+                  min={1}
+                  value={field.value}
+                  id={`${field.name}-${field.value}`}
+                  hideSteppers
+                  disableWheel
+                />
+              )}
+            />
+          </ResponsiveWrapper>
+          <ResponsiveWrapper>
+            <Controller
+              control={control}
+              name="adjustmentReason"
+              render={({ field }) => (
+                <TextArea
+                  {...field}
+                  labelText={t('adjustmentReason', 'Adjustment reason')}
+                  placeholder={t('pleaseEnterAdjustmentReason', 'Please enter adjustment reason')}
+                  invalid={!!errors.adjustmentReason}
+                  invalidText={errors.adjustmentReason?.message}
+                />
+              )}
+            />
+          </ResponsiveWrapper>
+        </div>
+        <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
+          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+            {t('cancel', 'Cancel')}
+          </Button>
+          <Button
+            className={styles.button}
+            disabled={!isValid || !isDirty || isSubmitting}
+            kind="primary"
+            type="submit">
+            {isSubmitting ? (
+              <InlineLoading className={styles.spinner} description={t('updatingBill', 'Updating bill...')} />
+            ) : (
+              <span>{t('saveAndClose', 'Save & close')}</span>
             )}
-          />
-        </ResponsiveWrapper>
-        <ResponsiveWrapper>
-          <Controller
-            control={control}
-            name="adjustmentReason"
-            render={({ field }) => (
-              <TextArea
-                {...field}
-                labelText={t('adjustmentReason', 'Adjustment reason')}
-                placeholder={t('pleaseEnterAdjustmentReason', 'Please enter adjustment reason')}
-                invalid={!!errors.adjustmentReason}
-                invalidText={errors.adjustmentReason?.message}
-              />
-            )}
-          />
-        </ResponsiveWrapper>
-      </div>
-      <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-        <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
-          {t('cancel', 'Cancel')}
-        </Button>
-        <Button className={styles.button} disabled={!isValid || !isDirty || isSubmitting} kind="primary" type="submit">
-          {isSubmitting ? (
-            <InlineLoading className={styles.spinner} description={t('updatingBill', 'Updating bill...')} />
-          ) : (
-            <span>{t('saveAndClose', 'Save & close')}</span>
-          )}
-        </Button>
-      </ButtonSet>
-    </Form>
+          </Button>
+        </ButtonSet>
+      </Form>
+    </Workspace2>
   );
 };

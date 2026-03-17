@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { InlineLoading, Search } from '@carbon/react';
-import { launchWorkspace, navigate, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { launchWorkspace, launchWorkspace2, navigate, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import styles from '../bed-layout.scss';
 import BedCard from '../../bed/bed.component';
 import { type MortuaryLocationResponse } from '../../types';
@@ -47,19 +47,24 @@ const BedLayout: React.FC<BedLayoutProps> = ({
     if (onPostmortem) {
       onPostmortem(patientUuid);
     } else {
-      launchWorkspace('mortuary-form-entry', {
-        formUuid: autopsyFormUuid,
-        workspaceTitle: t('postmortemForm', 'Postmortem form'),
-        patientUuid: patientUuid,
-        encounterUuid: '',
-        mutateForm: () => {
-          mutateSWR((key) => true, undefined, {
-            revalidate: true,
-          });
+      launchWorkspace2(
+        'mortuary-form-entry',
+        {
+          formUuid: autopsyFormUuid,
+          workspaceTitle: t('postmortemForm', 'Postmortem form'),
+          patientUuid: patientUuid,
+          encounterUuid: '',
+          mutateForm: () => {
+            mutateSWR((key) => true, undefined, {
+              revalidate: true,
+            });
+          },
         },
-      });
+        {},
+        {},
+      );
     }
-    const base = `${window.getOpenmrsSpaBase()}home/mortuary/patient/${patientUuid}`;
+    const base = `${globalThis.getOpenmrsSpaBase()}home/mortuary/patient/${patientUuid}`;
     const to = hasBedInfo
       ? `${base}/compartment/${bedInfo.bedNumber}/${bedInfo.bedId}/mortuary-chart`
       : `${base}/mortuary-chart`;
@@ -70,12 +75,17 @@ const BedLayout: React.FC<BedLayoutProps> = ({
     if (onDischarge) {
       onDischarge(patientUuid);
     } else {
-      launchWorkspace('discharge-body-form', {
-        workspaceTitle: t('dischargeForm', 'Discharge form'),
-        patientUuid: patientUuid,
-        bedId,
-        mutate,
-      });
+      launchWorkspace2(
+        'discharge-body-form',
+        {
+          workspaceTitle: t('dischargeForm', 'Discharge form'),
+          patientUuid: patientUuid,
+          bedId,
+          mutate,
+        },
+        {},
+        {},
+      );
     }
   };
 
@@ -83,13 +93,18 @@ const BedLayout: React.FC<BedLayoutProps> = ({
     if (onSwapCompartment) {
       onSwapCompartment(patientUuid, bedId?.toString() || '');
     } else {
-      launchWorkspace('swap-unit-form', {
-        workspaceTitle: t('swapCompartment', 'Swap compartment'),
-        patientUuid: patientUuid,
-        bedId,
-        mortuaryLocation: AdmittedDeceasedPatient,
-        mutate,
-      });
+      launchWorkspace2(
+        'swap-unit-form',
+        {
+          workspaceTitle: t('swapCompartment', 'Swap compartment'),
+          patientUuid: patientUuid,
+          bedId,
+          mortuaryLocation: AdmittedDeceasedPatient,
+          mutate,
+        },
+        {},
+        {},
+      );
     }
   };
 

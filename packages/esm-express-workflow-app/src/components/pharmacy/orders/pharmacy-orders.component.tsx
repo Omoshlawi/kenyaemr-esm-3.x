@@ -18,12 +18,20 @@ import {
 } from '@carbon/react';
 import { Add, Renew } from '@carbon/react/icons';
 import { ErrorState, formatDatetime, parseDate, useDebounce, useLayoutType } from '@openmrs/esm-framework';
-import { EmptyState, useLaunchWorkspaceRequiringVisit, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
+import {
+  EmptyState,
+  invalidateVisitAndEncounterData,
+  invalidateVisitByUuid,
+  useLaunchWorkspaceRequiringVisit,
+  usePaginationInfo,
+  usePatientChartStore,
+} from '@openmrs/esm-patient-common-lib';
 import capitalize from 'lodash-es/capitalize';
 
 import { usePharmacyOrders } from './pharmacy-orders.resource';
 
 import styles from './pharmacy-orders.scss';
+import { useSWRConfig } from 'swr';
 
 type PharmacyOrdersProps = {
   patient: fhir.Patient;
@@ -36,7 +44,22 @@ const PharmacyOrders: React.FC<PharmacyOrdersProps> = ({ patient }) => {
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const { medicationRequests, isLoading, error, mutate, currentPage, goTo, totalCount, currPageSize, setCurrPageSize } =
     usePharmacyOrders(patient.identifier[0]?.value ?? '', debouncedSearchTerm);
-  const launchAddDrugOrder = useLaunchWorkspaceRequiringVisit('add-drug-order');
+  const { mutate: globalMutate } = useSWRConfig();
+
+  const { visitContext } = usePatientChartStore(patient.id);
+  const groupProps = useMemo(
+    () => ({
+      patient,
+      patientUuid: patient?.id,
+      visitContext: visitContext,
+      mutateVisitContext: () => {
+        invalidateVisitByUuid(globalMutate, visitContext.uuid);
+        invalidateVisitAndEncounterData(globalMutate, patient.id);
+      },
+    }),
+    [globalMutate, visitContext, patient.id],
+  );
+  const launchOrderBasket = useLaunchWorkspaceRequiringVisit(patient?.id, 'order-basket');
 
   const currentItems = useMemo(() => {
     return medicationRequests.length;
@@ -86,7 +109,7 @@ const PharmacyOrders: React.FC<PharmacyOrdersProps> = ({ patient }) => {
         <EmptyState
           displayText={t('noMedicationOrdersFound', 'medication orders found')}
           headerTitle={t('medicationOrders', 'Medication Orders')}
-          launchForm={launchAddDrugOrder}
+          launchForm={() => launchOrderBasket({}, { encounterUuid: '' }, groupProps)}
         />
       </div>
     );
@@ -113,7 +136,11 @@ const PharmacyOrders: React.FC<PharmacyOrdersProps> = ({ patient }) => {
                 <Button kind="ghost" renderIcon={Renew} size={responseSize} onClick={() => mutate()}>
                   {t('refresh', 'Refresh')}
                 </Button>
-                <Button size={responseSize} onClick={() => launchAddDrugOrder()} kind="ghost" renderIcon={Add}>
+                <Button
+                  size={responseSize}
+                  onClick={() => launchOrderBasket({}, { encounterUuid: '' }, groupProps)}
+                  kind="ghost"
+                  renderIcon={Add}>
                   {t('addMedicationOrder', 'Add Medication Order')}
                 </Button>
               </TableToolbarContent>

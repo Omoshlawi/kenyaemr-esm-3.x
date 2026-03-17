@@ -24,7 +24,9 @@
     {
       "component": "accountingDashboardLink",
       "name": "accounting-dashboard-link",
-      "slots": ["homepage-dashboard-slot"],
+      "slots": [
+        "homepage-dashboard-slot"
+      ],
       "meta": {
         "name": "accounting",
         "slot": "accounting-dashboard-slot",
@@ -93,7 +95,6 @@
       "component": "billingCheckInForm",
       "order": 1
     },
-    
     {
       "name": "patient-banner-billing-tags",
       "component": "visitAttributeTags",
@@ -154,12 +155,16 @@
     {
       "component": "claimsManagementOverviewDashboardLink",
       "name": "claims-management-overview-link",
-      "slots": ["claims-management-dashboard-link-slot"]
+      "slots": [
+        "claims-management-dashboard-link-slot"
+      ]
     },
     {
       "component": "preAuthRequestsDashboardLink",
       "name": "preauthrequest-overview-link",
-      "slots": ["claims-management-dashboard-link-slot"]
+      "slots": [
+        "claims-management-dashboard-link-slot"
+      ]
     },
     {
       "component": "claimsOverview",
@@ -303,73 +308,9 @@
     }
   ],
   "workspaces": [
-    {
-      "name": "create-bill-workspace",
-      "component": "createBillWorkspace",
-      "title": "Create Bill Workspace",
-      "type": "other-form"
-    },
-    {
-      "name": "waive-bill-form",
-      "component": "waiveBillForm",
-      "title": "Waive Bill Form",
-      "type": "other-form"
-    },
-    {
-      "name": "edit-bill-form",
-      "component": "editBillForm",
-      "title": "Edit Bill Form",
-      "type": "other-form"
-    },
-    {
-      "name": "billable-service-form",
-      "component": "addServiceForm",
-      "title": "Create Charge Item Form",
-      "type": "other-form"
-    },
-    {
-      "name": "commodity-form",
-      "component": "commodityForm",
-      "title": "Charge Commodity Form",
-      "type": "other-form"
-    },
-    {
-      "name": "billing-form",
-      "component": "billingForm",
-      "title": "Billing Form",
-      "type": "other-form",
-      "width": "extra-wide"
-    },
-    {
-      "name": "payment-mode-workspace",
-      "component": "paymentModeWorkspace",
-      "title": "Payment Mode Workspace",
-      "type": "other-form"
-    },
-    {
-      "name": "cancel-bill-workspace",
-      "component": "cancelBillWorkspace",
-      "title": "Cancel Bill Workspace",
-      "type": "other-form"
-    },
-    {
-      "name": "add-deposit-workspace",
-      "component": "addDepositWorkspace",
-      "title": "Add Deposit",
-      "type": "other-form"
-    },
-    {
-      "name": "deposit-transaction-workspace",
-      "component": "depositTransactionWorkspace",
-      "title": "Deposit Transaction",
-      "type": "other-form"
-    },
-    {
-      "name": "payment-workspace",
-      "component": "paymentWorkspace",
-      "title": "Payment Workspace",
-      "type": "other-form"
-    }
+    
+    
+   
   ],
   "modals": [
     {
@@ -423,6 +364,83 @@
     {
       "name": "require-billing-modal",
       "component": "requirePaymentModal"
+    }
+  ],
+  "workspaces2": [
+    {
+      "name": "create-bill-workspace",
+      "component": "createBillWorkspace",
+      "window": "billing-workspace-window"
+    },
+    {
+      "name": "waive-bill-form",
+      "component": "waiveBillForm",
+      "window": "billing-workspace-window"
+    },
+    {
+      "name": "edit-bill-form",
+      "component": "editBillForm",
+      "window": "billing-workspace-window"
+    },
+    {
+      "name": "billable-service-form",
+      "component": "addServiceForm",
+      "window": "billing-workspace-window"
+    },
+    {
+      "name": "commodity-form",
+      "component": "commodityForm",
+      "window": "billing-workspace-window"
+    },
+    {
+      "name": "billing-form",
+      "component": "billingForm",
+      "window": "billing-extra-wide-workspace-window"
+    },
+    {
+      "name": "payment-mode-workspace",
+      "component": "paymentModeWorkspace",
+      "window": "billing-workspace-window"
+    },
+    {
+      "name": "cancel-bill-workspace",
+      "component": "cancelBillWorkspace",
+      "window": "billing-workspace-window"
+    },
+    {
+      "name": "add-deposit-workspace",
+      "component": "addDepositWorkspace",
+      "window": "billing-workspace-window"
+    },
+    {
+      "name": "deposit-transaction-workspace",
+      "component": "depositTransactionWorkspace",
+      "window": "billing-workspace-window"
+    },
+    {
+      "name": "payment-workspace",
+      "component": "paymentWorkspace",
+      "window": "billing-workspace-window"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "billing-workspace-window",
+      "group": "billing-workspace-group",
+      "canMaximize": true
+    },
+    {
+      "name": "billing-extra-wide-workspace-window",
+      "group": "billing-workspace-group",
+      "canMaximize": true,
+      "width": "extra-wide"
+    }
+  ],
+  "workspaceGroups2": [
+    {
+      "name": "billing-workspace-group",
+      "persistence": "closeable",
+      "closeable": true
     }
   ]
 }

@@ -1,10 +1,10 @@
+import React from 'react';
+import { mutate } from 'swr';
+import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
 import { Button, Loading, Tooltip } from '@carbon/react';
 import { Error, Launch } from '@carbon/react/icons';
-import { launchWorkspace, useConfig, usePatient } from '@openmrs/esm-framework';
-import dayjs from 'dayjs';
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { mutate } from 'swr';
+import { launchWorkspace2, useConfig, usePatient } from '@openmrs/esm-framework';
 import { ConfigObject } from '../../config-schema';
 import useEncounters from '../../hooks/useEncounters';
 import { Peer, ReportingPeriod } from '../../types';
@@ -34,7 +34,7 @@ const PeerCalendarActions: React.FC<PeerCalendarActionsProps> = ({ peer: { patie
   const to = dayjs(firstDay).add(1, 'month').format('YYYY-MM-DD');
 
   const handleLauchPeerOutreachForm = (encounterUuid?: string) => {
-    launchWorkspace('kenyaemr-cusom-form-entry-workspace', {
+    launchWorkspace2('kenyaemr-custom-form-entry-workspace', {
       formUuid,
       patientUuid,
       encounterUuid: encounterUuid ?? '',

@@ -1,7 +1,7 @@
 import React, { FC, PropsWithChildren } from 'react';
+import { ErrorState, launchWorkspace2 } from '@openmrs/esm-framework';
 import { usePatientActiveCases } from './case-encounter-table.resource';
 import { DataTableSkeleton } from '@carbon/react';
-import { ErrorState, launchWorkspace } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@openmrs/esm-patient-common-lib';
 
@@ -11,7 +11,7 @@ const PatientHasActiveCase: FC<PatientHasActiveCaseProps> = ({ patientUuid, chil
   const { activeCases, error, isLoading } = usePatientActiveCases(patientUuid);
   const { t } = useTranslation();
   const handleAddPatientCase = () => {
-    launchWorkspace('add-patient-case-form', { workspaceTitle: 'Add Patient Case', patientUuid });
+    launchWorkspace2('add-patient-case-form', { patientUuid });
   };
   if (isLoading) {
     return <DataTableSkeleton />;

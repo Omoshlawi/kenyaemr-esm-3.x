@@ -5,9 +5,9 @@ import { PatientProgram } from '@openmrs/esm-patient-common-lib';
 import useSWRImmutable from 'swr/immutable';
 const customRepresentation = `custom:(uuid,display,program,dateEnrolled,dateCompleted,location:(uuid,display))`;
 
-export const usePatientEnrollment = (patientUuid: string) => {
+export const usePatientEnrollment = (patientUuid?: string) => {
   const { data, error, isLoading, isValidating } = useSWRImmutable<{ data: { results: Array<PatientProgram> } }>(
-    `${restBaseUrl}/programenrollment?patient=${patientUuid}&v=${customRepresentation}`,
+    patientUuid ? `${restBaseUrl}/programenrollment?patient=${patientUuid}&v=${customRepresentation}` : null,
     openmrsFetch,
   );
 

@@ -1,24 +1,22 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { useLeftNav } from '@openmrs/esm-framework';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { setLeftNav, unsetLeftNav, WorkspaceContainer } from '@openmrs/esm-framework';
-import styles from './root.scss';
+
 import LeftPanel from './components/side-menu/left-pannel.component';
 import UserManagentLandingPage from './components/users/manage-users/manage-user.component';
 import EtlAdminDashboard from './components/dashboard/etl-dashboard.component';
 import FacilitySetup from './components/facility-setup/facility-setup.component';
 import HomeComponent from './components/locations/home/home-locations.component';
 
-const Root: React.FC = () => {
-  const spaBasePath = window.spaBase;
-  const adminBasename = window.getOpenmrsSpaBase() + 'admin';
+import styles from './root.scss';
 
-  useEffect(() => {
-    setLeftNav({
-      name: 'admin-left-panel-slot',
-      basePath: spaBasePath,
-    });
-    return () => unsetLeftNav('admin-left-panel-slot');
-  }, [spaBasePath]);
+const Root: React.FC = () => {
+  const spaBasePath = globalThis.spaBase;
+  const adminBasename = globalThis.getOpenmrsSpaBase() + 'admin';
+  useLeftNav({
+    name: 'admin-left-panel-slot',
+    basePath: spaBasePath,
+  });
 
   return (
     <BrowserRouter basename={adminBasename}>

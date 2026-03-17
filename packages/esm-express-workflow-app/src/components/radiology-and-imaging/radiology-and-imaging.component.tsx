@@ -1,7 +1,7 @@
 import React from 'react';
 import { useConfig } from '@openmrs/esm-framework';
 import OrdersTabs from '../../shared/orders/OrdersTabs';
-import LabTable from './radiology-and-imaging-table.component';
+import RadiologyAndImagingTable from './radiology-and-imaging-table.component';
 import { ExpressWorkflowConfig } from '../../config-schema';
 
 type RadiologyAndImagingTabsProps = {
@@ -20,7 +20,7 @@ const RadiologyAndImagingTabs: React.FC<RadiologyAndImagingTabsProps> = ({ patie
       resultsSlotName="ewf-radiology-and-imaging-results-slot"
       orderTypeUuid={imagingOrderTypeUuid}
       filter={(order) => order.concept?.conceptClass?.uuid === imagingRadiologyConceptClassUuid}
-      Table={({ orders }) => <LabTable orders={orders} />}
+      Table={({ orders }) => <RadiologyAndImagingTable orders={orders} patientUuid={patientUuid} patient={patient} />}
     />
   );
 };

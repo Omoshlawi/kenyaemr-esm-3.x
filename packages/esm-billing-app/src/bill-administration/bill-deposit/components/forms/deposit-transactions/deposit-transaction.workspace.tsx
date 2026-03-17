@@ -1,11 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  DefaultWorkspaceProps,
   ResponsiveWrapper,
   restBaseUrl,
   showSnackbar,
   useLayoutType,
+  type Workspace2DefinitionProps,
+  Workspace2,
 } from '@openmrs/esm-framework';
 import { ButtonSet, Button, InlineLoading, ComboBox, NumberInput, TextInput, InlineNotification } from '@carbon/react';
 import { useForm, Controller } from 'react-hook-form';
@@ -23,19 +24,17 @@ import { LineItem, PaymentStatus } from '../../../../../types';
 import { extractString } from '../../../../../helpers';
 import { useCurrencyFormatting } from '../../../../../helpers/currency';
 
-type DepositTransactionWorkspaceProps = DefaultWorkspaceProps & {
+type DepositTransactionWorkspaceProps = {
   deposit: FormattedDeposit;
   patientUuid: string;
 };
 
-const DepositTransactionWorkspace: React.FC<DepositTransactionWorkspaceProps> = ({
-  deposit,
-  patientUuid,
+const DepositTransactionWorkspace: React.FC<Workspace2DefinitionProps<DepositTransactionWorkspaceProps, {}, {}>> = ({
   closeWorkspace,
-  closeWorkspaceWithSavedChanges,
-  promptBeforeClosing,
+  workspaceProps: { deposit, patientUuid },
 }) => {
   const { t } = useTranslation();
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const { format: formatCurrency } = useCurrencyFormatting();
 
   const isTablet = useLayoutType() === 'tablet';
@@ -121,7 +120,7 @@ const DepositTransactionWorkspace: React.FC<DepositTransactionWorkspaceProps> = 
         autoClose: true,
       });
     } finally {
-      closeWorkspaceWithSavedChanges();
+      closeWorkspace({ discardUnsavedChanges: true });
     }
   };
   const handleError = (error: any) => {
@@ -129,9 +128,8 @@ const DepositTransactionWorkspace: React.FC<DepositTransactionWorkspaceProps> = 
   };
 
   useEffect(() => {
-    promptBeforeClosing(() => isDirty);
-    // eslint-disable-line react-hooks/exhaustive-deps
-  }, [isDirty, promptBeforeClosing]);
+    setHasUnsavedChanges(isDirty);
+  }, [isDirty, setHasUnsavedChanges]);
 
   if (error) {
     return (
@@ -148,109 +146,117 @@ const DepositTransactionWorkspace: React.FC<DepositTransactionWorkspaceProps> = 
 
   if (isLoading) {
     return (
-      <div className={styles.loadingContainer}>
-        <InlineLoading status="active" iconDescription="Loading" />
-      </div>
+      <Workspace2
+        hasUnsavedChanges={hasUnsavedChanges}
+        title={t('depositTransactionWorkspace', 'Deposit transaction workspace')}>
+        <div className={styles.loadingContainer}>
+          <InlineLoading status="active" iconDescription="Loading" />
+        </div>
+      </Workspace2>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit, handleError)} className={styles.form}>
-      <div className={styles.formContainer}>
-        <ResponsiveWrapper>
-          <Controller
-            control={control}
-            name="billLineItem"
-            render={({ field }) => (
-              <ComboBox
-                id="billLineItem"
-                itemToString={(item: LineItem) =>
-                  item ? `${extractString(item.billableService)} - ${formatCurrency(item.price)}` : ''
-                }
-                items={pendingLineItems ?? []}
-                onChange={({ selectedItem }) => field.onChange(selectedItem?.uuid)}
-                placeholder={t('selectBillLineItem', 'Select bill line item')}
-                invalid={!!errors.billLineItem}
-                invalidText={errors.billLineItem?.message}
-                titleText={t('billLineItem', 'Bill line item')}
-                onToggleClick={() => {}}
-              />
+    <Workspace2
+      hasUnsavedChanges={hasUnsavedChanges}
+      title={t('depositTransactionWorkspace', 'Deposit transaction workspace')}>
+      <form onSubmit={handleSubmit(onSubmit, handleError)} className={styles.form}>
+        <div className={styles.formContainer}>
+          <ResponsiveWrapper>
+            <Controller
+              control={control}
+              name="billLineItem"
+              render={({ field }) => (
+                <ComboBox
+                  id="billLineItem"
+                  itemToString={(item: LineItem) =>
+                    item ? `${extractString(item.billableService)} - ${formatCurrency(item.price)}` : ''
+                  }
+                  items={pendingLineItems ?? []}
+                  onChange={({ selectedItem }) => field.onChange(selectedItem?.uuid)}
+                  placeholder={t('selectBillLineItem', 'Select bill line item')}
+                  invalid={!!errors.billLineItem}
+                  invalidText={errors.billLineItem?.message}
+                  titleText={t('billLineItem', 'Bill line item')}
+                  onToggleClick={() => {}}
+                />
+              )}
+            />
+          </ResponsiveWrapper>
+          <ResponsiveWrapper>
+            <Controller
+              control={control}
+              name="amount"
+              render={({ field }) => (
+                <NumberInput
+                  id="amount"
+                  invalid={!!errors.amount}
+                  invalidText={errors.amount?.message}
+                  label={t('amount', 'Amount')}
+                  onChange={({ target }, { value }) => field.onChange(Number(value))}
+                  max={deposit?.availableBalance}
+                  min={0}
+                  size="md"
+                  hideSteppers
+                  value={field.value}
+                />
+              )}
+            />
+          </ResponsiveWrapper>
+          <ResponsiveWrapper>
+            <Controller
+              control={control}
+              name="transactionType"
+              render={({ field }) => (
+                <ComboBox
+                  id="transactionType"
+                  itemToString={(item) => item?.key}
+                  items={transactionTypes ?? []}
+                  onChange={({ selectedItem }) => field.onChange(selectedItem.value)}
+                  placeholder={t('selectTransactionType', 'Select transaction type')}
+                  invalid={!!errors.transactionType}
+                  invalidText={errors.transactionType?.message}
+                  titleText={t('transactionType', 'Transaction type')}
+                  size="md"
+                />
+              )}
+            />
+          </ResponsiveWrapper>
+          <ResponsiveWrapper>
+            <Controller
+              control={control}
+              name="reason"
+              render={({ field }) => (
+                <TextInput
+                  labelText={t('reason', 'Reason')}
+                  id="reason"
+                  invalid={!!errors.reason}
+                  invalidText={errors.reason?.message}
+                  onChange={({ target }) => field.onChange(target.value)}
+                  max={deposit?.availableBalance}
+                  size="md"
+                  value={field.value}
+                />
+              )}
+            />
+          </ResponsiveWrapper>
+        </div>
+        <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
+          <Button style={{ maxWidth: '50%' }} kind="secondary" onClick={() => closeWorkspace}>
+            {t('cancel', 'Cancel')}
+          </Button>
+          <Button disabled={isSubmitting || !isDirty} style={{ maxWidth: '50%' }} kind="primary" type="submit">
+            {isSubmitting ? (
+              <span style={{ display: 'flex', justifyItems: 'center' }}>
+                {t('submitting', 'Submitting...')} <InlineLoading status="active" iconDescription="Loading" />
+              </span>
+            ) : (
+              t('saveAndClose', 'Save & close')
             )}
-          />
-        </ResponsiveWrapper>
-        <ResponsiveWrapper>
-          <Controller
-            control={control}
-            name="amount"
-            render={({ field }) => (
-              <NumberInput
-                id="amount"
-                invalid={!!errors.amount}
-                invalidText={errors.amount?.message}
-                label={t('amount', 'Amount')}
-                onChange={({ target }, { value }) => field.onChange(Number(value))}
-                max={deposit?.availableBalance}
-                min={0}
-                size="md"
-                hideSteppers
-                value={field.value}
-              />
-            )}
-          />
-        </ResponsiveWrapper>
-        <ResponsiveWrapper>
-          <Controller
-            control={control}
-            name="transactionType"
-            render={({ field }) => (
-              <ComboBox
-                id="transactionType"
-                itemToString={(item) => item?.key}
-                items={transactionTypes ?? []}
-                onChange={({ selectedItem }) => field.onChange(selectedItem.value)}
-                placeholder={t('selectTransactionType', 'Select transaction type')}
-                invalid={!!errors.transactionType}
-                invalidText={errors.transactionType?.message}
-                titleText={t('transactionType', 'Transaction type')}
-                size="md"
-              />
-            )}
-          />
-        </ResponsiveWrapper>
-        <ResponsiveWrapper>
-          <Controller
-            control={control}
-            name="reason"
-            render={({ field }) => (
-              <TextInput
-                labelText={t('reason', 'Reason')}
-                id="reason"
-                invalid={!!errors.reason}
-                invalidText={errors.reason?.message}
-                onChange={({ target }) => field.onChange(target.value)}
-                max={deposit?.availableBalance}
-                size="md"
-                value={field.value}
-              />
-            )}
-          />
-        </ResponsiveWrapper>
-      </div>
-      <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-        <Button style={{ maxWidth: '50%' }} kind="secondary" onClick={() => closeWorkspace}>
-          {t('cancel', 'Cancel')}
-        </Button>
-        <Button disabled={isSubmitting || !isDirty} style={{ maxWidth: '50%' }} kind="primary" type="submit">
-          {isSubmitting ? (
-            <span style={{ display: 'flex', justifyItems: 'center' }}>
-              {t('submitting', 'Submitting...')} <InlineLoading status="active" iconDescription="Loading" />
-            </span>
-          ) : (
-            t('saveAndClose', 'Save & close')
-          )}
-        </Button>
-      </ButtonSet>
-    </form>
+          </Button>
+        </ButtonSet>
+      </form>
+    </Workspace2>
   );
 };
 

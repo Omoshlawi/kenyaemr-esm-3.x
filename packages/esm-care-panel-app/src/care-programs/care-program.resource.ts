@@ -1,6 +1,7 @@
 import {
   FetchResponse,
   launchWorkspace,
+  launchWorkspace2,
   openmrsFetch,
   parseDate,
   restBaseUrl,
@@ -266,10 +267,15 @@ export const launchProgramForm = (
   enrollment: Enrollment | undefined,
   onSuccess?: () => void,
 ) => {
-  launchWorkspace('mch-program-form-workspace', {
-    enrollment,
-    patientUuid,
-    programUuid,
-    onSubmitSuccess: onSuccess,
-  });
+  launchWorkspace2(
+    'mch-program-form-workspace',
+    {
+      enrollment,
+      patientUuid,
+      programUuid,
+      onSubmitSuccess: onSuccess,
+    },
+    {},
+    {},
+  );
 };

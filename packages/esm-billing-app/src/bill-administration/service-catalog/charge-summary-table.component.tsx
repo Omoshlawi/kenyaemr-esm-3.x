@@ -19,7 +19,14 @@ import {
   TableToolbarSearch,
 } from '@carbon/react';
 import { CategoryAdd, Download, Upload, WatsonHealthScalpelSelect } from '@carbon/react/icons';
-import { ErrorState, launchWorkspace, showModal, useLayoutType, usePagination } from '@openmrs/esm-framework';
+import {
+  ErrorState,
+  launchWorkspace,
+  launchWorkspace2,
+  showModal,
+  useLayoutType,
+  usePagination,
+} from '@openmrs/esm-framework';
 import { EmptyState, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import React, { ChangeEvent, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -91,14 +98,24 @@ const ChargeSummaryTable: React.FC = () => {
 
   const handleEdit = (service) => {
     Boolean(service?.serviceType?.display)
-      ? launchWorkspace('billable-service-form', {
-          initialValues: service,
-          workspaceTitle: t('editServiceChargeItem', 'Edit Service Charge Item'),
-        })
-      : launchWorkspace('commodity-form', {
-          initialValues: service,
-          workspaceTitle: t('editChargeItem', 'Edit Charge Item'),
-        });
+      ? launchWorkspace2(
+          'billable-service-form',
+          {
+            initialValues: service,
+            workspaceTitle: t('editServiceChargeItem', 'Edit Service Charge Item'),
+          },
+          {},
+          {},
+        )
+      : launchWorkspace2(
+          'commodity-form',
+          {
+            initialValues: service,
+            workspaceTitle: t('editChargeItem', 'Edit Charge Item'),
+          },
+          {},
+          {},
+        );
   };
 
   const openBulkUploadModal = () => {
@@ -119,7 +136,7 @@ const ChargeSummaryTable: React.FC = () => {
     return (
       <EmptyState
         headerTitle={t('chargeItems', 'Charge Items')}
-        launchForm={() => launchWorkspace('billable-service-form')}
+        launchForm={() => launchWorkspace2('billable-service-form', {}, {}, {})}
         displayText={t('chargeItemsDescription', 'Charge Items')}
       />
     );
@@ -145,18 +162,28 @@ const ChargeSummaryTable: React.FC = () => {
                   <MenuItem
                     renderIcon={CategoryAdd}
                     onClick={() =>
-                      launchWorkspace('billable-service-form', {
-                        workspaceTitle: t('chargeServiceForm', 'Charge Service Form'),
-                      })
+                      launchWorkspace2(
+                        'billable-service-form',
+                        {
+                          workspaceTitle: t('chargeServiceForm', 'Charge Service Form'),
+                        },
+                        {},
+                        {},
+                      )
                     }
                     label={t('addServiceChargeItem', 'Add charge service')}
                   />
                   <MenuItem
                     renderIcon={WatsonHealthScalpelSelect}
                     onClick={() =>
-                      launchWorkspace('commodity-form', {
-                        workspaceTitle: t('chargeCommodityForm', 'Charge Commodity Form'),
-                      })
+                      launchWorkspace2(
+                        'commodity-form',
+                        {
+                          workspaceTitle: t('chargeCommodityForm', 'Charge Commodity Form'),
+                        },
+                        {},
+                        {},
+                      )
                     }
                     label={t('addCommodityChargeItem', 'Add charge item')}
                   />

@@ -20,6 +20,8 @@ import {
   useConfig,
   showModal,
   showSnackbar,
+  type Workspace2DefinitionProps,
+  Workspace2,
 } from '@openmrs/esm-framework';
 import styles from './standard-regimen.scss';
 import StandardRegimen from './standard-regimen.component';
@@ -98,12 +100,9 @@ const getRegimenFormSchema = (regimenEvent: string, selectedRegimenType: string)
   return schema;
 };
 
-const RegimenForm: React.FC<RegimenFormProps> = ({
-  patientUuid,
-  category,
-  onRegimen,
-  lastRegimenEncounter,
+const RegimenForm: React.FC<Workspace2DefinitionProps<RegimenFormProps, {}, {}>> = ({
   closeWorkspace,
+  workspaceProps: { patientUuid, category, onRegimen, lastRegimenEncounter },
 }) => {
   const { t } = useTranslation();
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -121,6 +120,7 @@ const RegimenForm: React.FC<RegimenFormProps> = ({
   const [selectedRegimenType, setSelectedRegimenType] = useState('');
   const [obsArray, setObsArray] = useState([]);
   const [obsArrayForPrevEncounter, setObsArrayForPrevEncounter] = useState([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
     const regimenLineObs = {
@@ -353,108 +353,112 @@ const RegimenForm: React.FC<RegimenFormProps> = ({
   );
 
   return (
-    <Form className={styles.form} onSubmit={handleSubmit}>
-      <div>
-        <Stack gap={8} className={styles.container}>
-          <h4 className={styles.regimenTitle}>Current Regimen: {onRegimen}</h4>
-          <section className={styles.section}>
-            <div className={styles.sectionTitle}>{t('regimenEvent', 'Regimen event')}</div>
-            <RadioButtonGroup
-              className={styles.radioButtonWrapper}
-              name="regimenEvent"
-              onChange={(uuid) => setRegimenEvent(uuid as string)}>
-              <RadioButton
-                key={'start-regimen'}
-                labelText={t('startRegimen', 'Start')}
-                value={Regimen.startOrRestartConcept}
-                disabled={!!lastRegimenEncounter.uuid}
-              />
-              <RadioButton
-                key={'restart-regimen'}
-                labelText={t('restartRegimen', 'Restart')}
-                value={Regimen.startOrRestartConcept}
-                disabled={!lastRegimenEncounter.endDate && lastRegimenEncounter.event !== 'STOP ALL'}
-              />
-              <RadioButton
-                key={'change-regimen'}
-                labelText={t('changeRegimen', 'Change')}
-                value={Regimen.changeRegimenConcept}
-                disabled={!lastRegimenEncounter.startDate || lastRegimenEncounter.event === 'STOP ALL'}
-              />
-              <RadioButton
-                key={'stop-regimen'}
-                labelText={t('stopRegimen', 'Stop')}
-                value={Regimen.stopRegimenConcept}
-                disabled={
-                  !!lastRegimenEncounter.endDate || (!lastRegimenEncounter.uuid && !lastRegimenEncounter.endDate)
-                }
-              />
-              <RadioButton
-                key={'undo-regimen'}
-                labelText={t('undoRegimen', 'Undo')}
-                value={'undo'}
-                disabled={!lastRegimenEncounter.uuid}
-                onClick={launchDeleteRegimenDialog}
-              />
-            </RadioButtonGroup>
-            {errors.regimenEvent && <div className={styles.errorText}>{errors.regimenEvent}</div>}
-            {regimenEvent ? (
-              <>
-                {regimenEvent !== 'undo' && regimenDatePicker}
-                {regimenEvent && regimenEvent !== Regimen.stopRegimenConcept && regimenEvent !== 'undo' ? (
-                  <>
-                    <RadioButtonGroup
-                      className={styles.radioButtonWrapper}
-                      name="regimenType"
-                      onChange={(uuid) => setSelectedRegimenType(uuid as string)}>
-                      <RadioButton key={'standardUuid'} labelText={'Use standard regimen'} value={'standardUuid'} />
-                      <RadioButton
-                        key={'nonStandardUuid'}
-                        labelText={'Use non standard regimen'}
-                        value={'nonStandardUuid'}
-                        disabled={category !== 'ARV'}
-                      />
-                    </RadioButtonGroup>
-                    {errors.selectedRegimenType && <div className={styles.errorText}>{errors.selectedRegimenType}</div>}
-                    {selectedRegimenType === 'standardUuid' ? (
-                      <StandardRegimen
-                        category={category}
-                        setStandardRegimen={setStandardRegimen}
-                        setStandardRegimenLine={setStandardRegimenLine}
-                        selectedRegimenType={selectedRegimenType}
-                        visitDate={visitDate}
-                        errors={errors}
-                      />
-                    ) : (
-                      <NonStandardRegimen
-                        category={category}
-                        setNonStandardRegimens={setNonStandardRegimens}
-                        setStandardRegimenLine={setStandardRegimenLine}
-                        selectedRegimenType={selectedRegimenType}
-                        visitDate={visitDate}
-                        errors={errors}
-                      />
-                    )}
-                  </>
-                ) : null}
-                {(regimenEvent === Regimen.stopRegimenConcept ||
-                  (regimenEvent === Regimen.changeRegimenConcept && selectedRegimenType)) && (
-                  <RegimenReason category={category} setRegimenReason={setRegimenReason} errors={errors} />
-                )}
-              </>
-            ) : null}
-          </section>
-        </Stack>
-      </div>
-      <ButtonSet className={isTablet ? styles.tablet : styles.desktop}>
-        <Button className={styles.button} kind="secondary" onClick={closeWorkspace}>
-          {t('discard', 'Discard')}
-        </Button>
-        <Button className={styles.button} disabled={isSubmitting} kind="primary" type="submit">
-          {t('save', 'Save')}
-        </Button>
-      </ButtonSet>
-    </Form>
+    <Workspace2 hasUnsavedChanges={hasUnsavedChanges} title={t('regimenForm', 'Regimen Form')}>
+      <Form className={styles.form} onSubmit={handleSubmit}>
+        <div>
+          <Stack gap={8} className={styles.container}>
+            <h4 className={styles.regimenTitle}>Current Regimen: {onRegimen}</h4>
+            <section className={styles.section}>
+              <div className={styles.sectionTitle}>{t('regimenEvent', 'Regimen event')}</div>
+              <RadioButtonGroup
+                className={styles.radioButtonWrapper}
+                name="regimenEvent"
+                onChange={(uuid) => setRegimenEvent(uuid as string)}>
+                <RadioButton
+                  key={'start-regimen'}
+                  labelText={t('startRegimen', 'Start')}
+                  value={Regimen.startOrRestartConcept}
+                  disabled={!!lastRegimenEncounter.uuid}
+                />
+                <RadioButton
+                  key={'restart-regimen'}
+                  labelText={t('restartRegimen', 'Restart')}
+                  value={Regimen.startOrRestartConcept}
+                  disabled={!lastRegimenEncounter.endDate && lastRegimenEncounter.event !== 'STOP ALL'}
+                />
+                <RadioButton
+                  key={'change-regimen'}
+                  labelText={t('changeRegimen', 'Change')}
+                  value={Regimen.changeRegimenConcept}
+                  disabled={!lastRegimenEncounter.startDate || lastRegimenEncounter.event === 'STOP ALL'}
+                />
+                <RadioButton
+                  key={'stop-regimen'}
+                  labelText={t('stopRegimen', 'Stop')}
+                  value={Regimen.stopRegimenConcept}
+                  disabled={
+                    !!lastRegimenEncounter.endDate || (!lastRegimenEncounter.uuid && !lastRegimenEncounter.endDate)
+                  }
+                />
+                <RadioButton
+                  key={'undo-regimen'}
+                  labelText={t('undoRegimen', 'Undo')}
+                  value={'undo'}
+                  disabled={!lastRegimenEncounter.uuid}
+                  onClick={launchDeleteRegimenDialog}
+                />
+              </RadioButtonGroup>
+              {errors.regimenEvent && <div className={styles.errorText}>{errors.regimenEvent}</div>}
+              {regimenEvent ? (
+                <>
+                  {regimenEvent !== 'undo' && regimenDatePicker}
+                  {regimenEvent && regimenEvent !== Regimen.stopRegimenConcept && regimenEvent !== 'undo' ? (
+                    <>
+                      <RadioButtonGroup
+                        className={styles.radioButtonWrapper}
+                        name="regimenType"
+                        onChange={(uuid) => setSelectedRegimenType(uuid as string)}>
+                        <RadioButton key={'standardUuid'} labelText={'Use standard regimen'} value={'standardUuid'} />
+                        <RadioButton
+                          key={'nonStandardUuid'}
+                          labelText={'Use non standard regimen'}
+                          value={'nonStandardUuid'}
+                          disabled={category !== 'ARV'}
+                        />
+                      </RadioButtonGroup>
+                      {errors.selectedRegimenType && (
+                        <div className={styles.errorText}>{errors.selectedRegimenType}</div>
+                      )}
+                      {selectedRegimenType === 'standardUuid' ? (
+                        <StandardRegimen
+                          category={category}
+                          setStandardRegimen={setStandardRegimen}
+                          setStandardRegimenLine={setStandardRegimenLine}
+                          selectedRegimenType={selectedRegimenType}
+                          visitDate={visitDate}
+                          errors={errors}
+                        />
+                      ) : (
+                        <NonStandardRegimen
+                          category={category}
+                          setNonStandardRegimens={setNonStandardRegimens}
+                          setStandardRegimenLine={setStandardRegimenLine}
+                          selectedRegimenType={selectedRegimenType}
+                          visitDate={visitDate}
+                          errors={errors}
+                        />
+                      )}
+                    </>
+                  ) : null}
+                  {(regimenEvent === Regimen.stopRegimenConcept ||
+                    (regimenEvent === Regimen.changeRegimenConcept && selectedRegimenType)) && (
+                    <RegimenReason category={category} setRegimenReason={setRegimenReason} errors={errors} />
+                  )}
+                </>
+              ) : null}
+            </section>
+          </Stack>
+        </div>
+        <ButtonSet className={isTablet ? styles.tablet : styles.desktop}>
+          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+            {t('discard', 'Discard')}
+          </Button>
+          <Button className={styles.button} disabled={isSubmitting} kind="primary" type="submit">
+            {t('save', 'Save')}
+          </Button>
+        </ButtonSet>
+      </Form>
+    </Workspace2>
   );
 };
 

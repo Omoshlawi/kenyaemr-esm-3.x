@@ -1,8 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   DataTable,
+  Layer,
+  OverflowMenu,
+  OverflowMenuItem,
   Pagination,
+  Search,
   Table,
   TableBody,
   TableCell,
@@ -10,26 +13,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Search,
-  Layer,
-  Tile,
-  OverflowMenu,
   Tag,
-  OverflowMenuItem,
+  Tile,
 } from '@carbon/react';
+import { useTranslation } from 'react-i18next';
 import { CardHeader, EmptyDataIllustration } from '@openmrs/esm-patient-common-lib';
-import {
-  ConfigurableLink,
-  isDesktop,
-  launchWorkspace,
-  showModal,
-  showSnackbar,
-  useLayoutType,
-  useSession,
-} from '@openmrs/esm-framework';
-import styles from './case-management-list.scss';
+import { ConfigurableLink, isDesktop, launchWorkspace2, useLayoutType, useSession } from '@openmrs/esm-framework';
+
 import { useActivecases } from '../workspace/case-management.resource';
 import { extractNameString, uppercaseText } from '../../utils/expression-helper';
+import styles from './case-management-list.scss';
 
 interface CaseManagementListActiveProps {
   setActiveCasesCount: (count: number) => void;
@@ -104,7 +97,7 @@ const CaseManagementListActive: React.FC<CaseManagementListActiveProps> = ({ set
   }));
 
   const handleDiscontinueACase = async (relationshipUuid: string) => {
-    launchWorkspace('end-relationship-form', {
+    launchWorkspace2('end-relationship-form', {
       relationshipUuid,
     });
   };

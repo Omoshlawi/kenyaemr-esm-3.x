@@ -13,7 +13,7 @@ type OrdersTabsProps = {
   resultsSlotName: string;
   orderTypeUuid: string;
   filter?: (o: Order) => boolean;
-  Table: React.ComponentType<{ orders: Order[] }>;
+  Table: React.ComponentType<{ orders: Order[]; mutateOrders: () => void }>;
 };
 
 export const OrdersTabs: React.FC<OrdersTabsProps> = ({
@@ -27,7 +27,12 @@ export const OrdersTabs: React.FC<OrdersTabsProps> = ({
 }) => {
   const { t } = useTranslation();
   const state = useMemo(() => ({ patientUuid, patient, basePath }), [patientUuid, patient, basePath]);
-  const { data: orders, isLoading, error } = usePatientOrders(patientUuid, 'any', orderTypeUuid, undefined, undefined);
+  const {
+    data: orders,
+    isLoading,
+    error,
+    mutate: mutateOrders,
+  } = usePatientOrders(patientUuid, 'any', orderTypeUuid, undefined, undefined);
 
   const filteredOrders = useMemo(() => (filter ? orders?.filter(filter) ?? [] : orders ?? []), [filter, orders]);
 
@@ -44,7 +49,7 @@ export const OrdersTabs: React.FC<OrdersTabsProps> = ({
         </TabList>
         <TabPanels>
           <TabPanel>
-            <Table orders={filteredOrders} />
+            <Table orders={filteredOrders} mutateOrders={mutateOrders} />
           </TabPanel>
           <TabPanel>
             <ExtensionSlot state={state} name={resultsSlotName} />

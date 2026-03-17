@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { launchWorkspace, showModal } from '@openmrs/esm-framework';
+import { launchWorkspace2, showModal } from '@openmrs/esm-framework';
 import { Order } from '@openmrs/esm-patient-common-lib';
 import { BaseOrderButton } from './base-order-button.component';
 import { useLabOrderAction } from '../hooks/useLabOrderAction';
@@ -32,10 +32,15 @@ export const GenericOrderButton: React.FC<GenericOrderButtonProps> = ({
 
   const launchModal = useCallback(() => {
     if (shouldShowBillModal) {
-      launchWorkspace('create-bill-workspace', {
-        order,
-        patientUuid: order?.patient?.uuid,
-      });
+      launchWorkspace2(
+        'create-bill-workspace',
+        {
+          order,
+          patientUuid: order?.patient?.uuid,
+        },
+        {},
+        {},
+      );
     } else {
       const dispose = showModal(modalName, {
         closeModal: () => {

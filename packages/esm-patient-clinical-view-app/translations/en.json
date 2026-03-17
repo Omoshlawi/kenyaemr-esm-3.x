@@ -1,5 +1,4 @@
 {
-  " ": "Case Manager",
   "abnormal": "Abnormal",
   "abnormalRange": "Abnormal Range",
   "abnormalRangeGreater180": "Abnormal (>180)",
@@ -106,7 +105,6 @@
   "duplicateTimeEntry": "This time already exists",
   "duration": "Duration",
   "edit": "Edit",
-  "editContactList": "Edit contact list",
   "editEncounter": "Edit",
   "editForm": "Edit Form",
   "editTracing": "Edit tracing",

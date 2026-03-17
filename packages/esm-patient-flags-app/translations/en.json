@@ -19,6 +19,8 @@
   "labManifestApp": "Lab Manifest App",
   "legacyAdmin": "Legacy Admin",
   "manageStocks": "Manage Stocks",
+  "noMainDiagnosis": "Main diagnosis required",
+  "noMainDiagnosisSubtitle": "Main diagnosis is required for claim processing",
   "queueScreen": "Queue Screen",
   "referrals": "Referrals",
   "reports": "Reports",

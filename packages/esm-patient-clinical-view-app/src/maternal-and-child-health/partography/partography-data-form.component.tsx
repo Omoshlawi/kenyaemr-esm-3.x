@@ -162,7 +162,7 @@ const PartographyDataForm: React.FC<PartographyDataFormProps> = ({
             <SelectItem
               key={option.value || option.text}
               value={option.value}
-              text={t(option.text, (option as any).display || option.text)}
+              text={t(option.text as string, (option as any).display || option.text) as string}
             />
           ))}
         </Select>

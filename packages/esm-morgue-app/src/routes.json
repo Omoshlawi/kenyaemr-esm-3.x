@@ -2,7 +2,7 @@
   "$schema": "https://json.openmrs.org/routes.schema.json",
   "backendDependencies": {
     "fhir2": ">=1.2",
-   "webservices.rest": ">=2.24.0"
+    "webservices.rest": ">=2.24.0"
   },
   "extensions": [
     {
@@ -58,7 +58,7 @@
         "title": "Mortuary"
       }
     },
-     {
+    {
       "name": "mortuary-mark-patient-deceased-button",
       "slot": "patient-actions-slot",
       "component": "markPatientDeceasedActionButton",
@@ -66,53 +66,48 @@
       "offline": true
     }
   ],
-  "workspaces": [
+  "workspaces2": [
     {
-      "name": "patient-additional-info-form",
-      "component": "patientAdditionalInfoForm",
-      "title": "add more details",
-      "type": "other-form"
+      "name": "mortuary-form-entry",
+      "component": "mortuaryFormEntry",
+      "window": "morgue-workspace-window"
     },
-     {
+    {
       "name": "mortuary-mark-patient-deceased-workspace-form",
       "component": "markPatientDeceasedForm",
-      "title": "Mark Patient Deceased",
-      "type": "other-form"
-      },
+      "window": "morgue-workspace-window"
+    },
     {
       "name": "discharge-body-form",
       "component": "dischargeBodyForm",
-      "title": "discharge body form",
-      "type": "other-form"
-    },
-    {
-      "name": "admit-body-form",
-      "component": "admitBodyForm",
-      "title": "Admission form",
-      "type": "other-form"
+      "window": "morgue-workspace-window"
     },
     {
       "name": "swap-unit-form",
       "component": "swapForm",
-      "title": "Swap form",
-      "type": "other-form"
-    },{
-      "name": "admit-deceased-person-form",
-      "component": "admitDeceasedPersonForm",
-      "title": "Admit Deceased Person",
-      "type": "other-form"
+      "window": "morgue-workspace-window"
     },
     {
-      "name": "mortuary-form-entry",
-      "component": "mortuaryFormEntry",
-      "title": "Mortuary Form Entry",
-      "type": "form",
-      "width": "extra-wide",
-      "canMaximize": true,
-      "canHide": true
+      "name": "admit-deceased-person-form",
+      "component": "admitDeceasedPersonForm",
+      "window": "morgue-workspace-window"
     }
   ],
-    "modals": [
+  "workspaceWindows2": [
+    {
+      "name": "morgue-workspace-window",
+      "canMaximize": true,
+      "canHide": true,
+      "group": "mortuary-form-entry-workspace-group"
+    }
+  ],
+  "workspaceGroups2": [
+    {
+      "name": "morgue-workspace-group",
+      "closeable": true
+    }
+  ],
+  "modals": [
     {
       "name": "print-confirmation-modal",
       "component": "printConfirmationModal"
@@ -120,12 +115,11 @@
     {
       "name": "autopsy-report-modal",
       "component": "autopsyReportModal"
-    },{
+    },
+    {
       "name": "delete-confirmation-modal",
       "component": "confirmationModal"
     }
-
-
   ],
   "pages": [
     {

@@ -16,12 +16,13 @@ import {
   DataTableSkeleton,
   Search,
 } from '@carbon/react';
-import { launchWorkspace, navigate, useConfig, useLayoutType, useVisit } from '@openmrs/esm-framework';
+import { mutate as mutateSWR } from 'swr';
+import { launchWorkspace2, navigate, useConfig, useLayoutType, useVisit } from '@openmrs/esm-framework';
+
 import styles from '../bed-linelist-view.scss';
 import { convertDateToDays, formatDateTime } from '../../utils/utils';
 import { Patient, Person, type MortuaryLocationResponse } from '../../types';
 import { ConfigObject } from '../../config-schema';
-import { mutate as mutateSWR } from 'swr';
 import EmptyMorgueAdmission from '../../empty-state/empty-morgue-admission.component';
 
 interface AdmittedBedLineListViewProps {
@@ -94,19 +95,24 @@ const AdmittedBedLineListView: React.FC<AdmittedBedLineListViewProps> = ({
     if (onPostmortem) {
       onPostmortem(patientUuid);
     } else {
-      launchWorkspace('mortuary-form-entry', {
-        formUuid: autopsyFormUuid,
-        workspaceTitle: t('postmortemForm', 'Postmortem form'),
-        patientUuid: patientUuid,
-        encounterUuid: '',
-        mutateForm: () => {
-          mutateSWR((key) => true, undefined, {
-            revalidate: true,
-          });
+      launchWorkspace2(
+        'mortuary-form-entry',
+        {
+          formUuid: autopsyFormUuid,
+          workspaceTitle: t('postmortemForm', 'Postmortem form'),
+          patientUuid: patientUuid,
+          encounterUuid: '',
+          mutateForm: () => {
+            mutateSWR((key) => true, undefined, {
+              revalidate: true,
+            });
+          },
         },
-      });
+        {},
+        {},
+      );
     }
-    const base = `${window.getOpenmrsSpaBase()}home/mortuary/patient/${patientUuid}`;
+    const base = `${globalThis.getOpenmrsSpaBase()}home/mortuary/patient/${patientUuid}`;
     const to = hasBedInfo
       ? `${base}/compartment/${bedInfo.bedNumber}/${bedInfo.bedId}/mortuary-chart`
       : `${base}/mortuary-chart`;
@@ -116,12 +122,17 @@ const AdmittedBedLineListView: React.FC<AdmittedBedLineListViewProps> = ({
     if (onDischarge) {
       onDischarge(patientUuid);
     } else {
-      launchWorkspace('discharge-body-form', {
-        workspaceTitle: t('dischargeForm', 'Discharge form'),
-        patientUuid: patientUuid,
-        bedId,
-        mutate,
-      });
+      launchWorkspace2(
+        'discharge-body-form',
+        {
+          workspaceTitle: t('dischargeForm', 'Discharge form'),
+          patientUuid: patientUuid,
+          bedId,
+          mutate,
+        },
+        {},
+        {},
+      );
     }
   };
 
@@ -129,13 +140,18 @@ const AdmittedBedLineListView: React.FC<AdmittedBedLineListViewProps> = ({
     if (onSwapCompartment) {
       onSwapCompartment(patientUuid, bedId.toString());
     } else {
-      launchWorkspace('swap-unit-form', {
-        workspaceTitle: t('swapCompartment', 'Swap compartment'),
-        patientUuid: patientUuid,
-        bedId,
-        mortuaryLocation: AdmittedDeceasedPatient,
-        mutate,
-      });
+      launchWorkspace2(
+        'swap-unit-form',
+        {
+          workspaceTitle: t('swapCompartment', 'Swap compartment'),
+          patientUuid: patientUuid,
+          bedId,
+          mortuaryLocation: AdmittedDeceasedPatient,
+          mutate,
+        },
+        {},
+        {},
+      );
     }
   };
 
@@ -405,7 +421,7 @@ const AdmittedBedLineListView: React.FC<AdmittedBedLineListViewProps> = ({
                                       <OverflowMenuItem
                                         onClick={() => {
                                           const hasBedInfo = rowData.bedNumber && rowData.bedId;
-                                          const base = `${window.getOpenmrsSpaBase()}home/mortuary/patient/${
+                                          const base = `${globalThis.getOpenmrsSpaBase()}home/mortuary/patient/${
                                             rowData.patientUuid
                                           }`;
                                           const to = hasBedInfo

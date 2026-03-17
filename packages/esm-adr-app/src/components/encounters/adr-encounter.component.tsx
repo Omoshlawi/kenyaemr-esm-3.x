@@ -17,10 +17,9 @@ import {
 import styles from './encounter.scss';
 import { useTranslation } from 'react-i18next';
 import {
-  ActionMenuButton,
   formatDatetime,
   isDesktop,
-  launchWorkspace,
+  launchWorkspace2,
   parseDate,
   restBaseUrl,
   showModal,
@@ -57,14 +56,13 @@ const AdrEncounter: React.FC<adrEncounterProps> = ({ encounters }) => {
   const ReviewIcon = (props) => <TaskView {...props} />;
 
   const handler = (encounter) => {
-    launchWorkspace('patient-adr-workspace', { encounter: encounter });
+    launchWorkspace2('patient-adr-workspace', { encounter: encounter }, {}, {});
   };
   const handleSendEmail = (encounter) => {
     const dispose = showModal('adr-email-modal', {
       onClose: () => dispose(),
       encounter,
       onEmailSent: () => {
-        // checkEmailStatus();
         dispose();
       },
     });

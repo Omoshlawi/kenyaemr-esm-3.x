@@ -1,12 +1,13 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { Button, DatePicker, DatePickerInput, Column, ButtonSet, Form, Stack } from '@carbon/react';
+import React, { useEffect, useState } from 'react';
+import { Button, ButtonSet, Column, DatePicker, DatePickerInput, Form, Stack } from '@carbon/react';
 import { useForm, Controller } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
+import { z } from 'zod';
 import { mutate } from 'swr';
+import { showSnackbar, Workspace2, Workspace2DefinitionProps } from '@openmrs/esm-framework';
+
 import { updateRelationship } from '../../relationships/relationship.resources';
-import { showSnackbar } from '@openmrs/esm-framework';
 import styles from './case-management-workspace.scss';
 
 const EndRelationshipSchema = z.object({
@@ -19,17 +20,19 @@ const EndRelationshipSchema = z.object({
 type FormData = z.infer<typeof EndRelationshipSchema>;
 
 interface EndRelationshipWorkspaceProps {
-  closeWorkspace: () => void;
   relationshipUuid: string;
 }
 
-const EndRelationshipWorkspace: React.FC<EndRelationshipWorkspaceProps> = ({ closeWorkspace, relationshipUuid }) => {
+const EndRelationshipWorkspace: React.FC<Workspace2DefinitionProps<EndRelationshipWorkspaceProps, object, object>> = ({
+  closeWorkspace,
+  workspaceProps: { relationshipUuid },
+}) => {
   const { t } = useTranslation();
-
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const {
     handleSubmit,
     control,
-    formState: { errors, isSubmitting },
+    formState: { isDirty },
   } = useForm<FormData>({
     resolver: zodResolver(EndRelationshipSchema),
     defaultValues: { endDate: null },
@@ -48,55 +51,61 @@ const EndRelationshipWorkspace: React.FC<EndRelationshipWorkspaceProps> = ({ clo
         timeoutInMs: 3000,
         isLowContrast: true,
       });
-      closeWorkspace();
+      closeWorkspace({ discardUnsavedChanges: true });
     } catch (error) {
       showSnackbar({
         kind: 'error',
         title: t('relationshipError', 'Relationship Error'),
-        subtitle: t('relationshipErrorMessage', 'Request Failed'),
+        subtitle: t('relationshipErrorMessage', 'Request Failed', { error: error?.message }),
         timeoutInMs: 2500,
         isLowContrast: true,
       });
     }
   };
 
-  return (
-    <Form className={styles.formContainer} onSubmit={handleSubmit(handleEndRelationship)}>
-      <Stack gap={4} className={styles.formGrid}>
-        <div className={styles.dateTimePickerContainer}>
-          <p className={styles.confirmationText}>
-            {t('relationshipConfirmationText', 'This will end the relationship. Are you sure you want to proceed?')}
-          </p>
-          <Column>
-            <Controller
-              name="endDate"
-              control={control}
-              render={({ field, fieldState }) => (
-                <DatePicker datePickerType="single" onChange={(e) => field.onChange(e[0])}>
-                  <DatePickerInput
-                    placeholder="mm/dd/yyyy"
-                    labelText={t('endDate', 'End Date')}
-                    id="endDate-picker"
-                    size="md"
-                    invalid={!!fieldState.error}
-                    invalidText={fieldState.error?.message}
-                  />
-                </DatePicker>
-              )}
-            />
-          </Column>
-        </div>
+  useEffect(() => {
+    setHasUnsavedChanges(isDirty);
+  }, [isDirty, setHasUnsavedChanges]);
 
-        <ButtonSet className={styles.buttonSet}>
-          <Button size="lg" kind="secondary" onClick={closeWorkspace}>
-            {t('discard', 'Discard')}
-          </Button>
-          <Button kind="primary" size="lg" type="submit">
-            {t('save', 'Save')}
-          </Button>
-        </ButtonSet>
-      </Stack>
-    </Form>
+  return (
+    <Workspace2 title={t('endRelationship', 'End Relationship')} hasUnsavedChanges={hasUnsavedChanges}>
+      <Form className={styles.formContainer} onSubmit={handleSubmit(handleEndRelationship)}>
+        <Stack gap={4} className={styles.formGrid}>
+          <div className={styles.dateTimePickerContainer}>
+            <p className={styles.confirmationText}>
+              {t('relationshipConfirmationText', 'This will end the relationship. Are you sure you want to proceed?')}
+            </p>
+            <Column>
+              <Controller
+                name="endDate"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <DatePicker datePickerType="single" onChange={(e) => field.onChange(e[0])}>
+                    <DatePickerInput
+                      placeholder="mm/dd/yyyy"
+                      labelText={t('endDate', 'End Date')}
+                      id="endDate-picker"
+                      size="md"
+                      invalid={!!fieldState.error}
+                      invalidText={fieldState.error?.message}
+                    />
+                  </DatePicker>
+                )}
+              />
+            </Column>
+          </div>
+
+          <ButtonSet className={styles.buttonSet}>
+            <Button size="lg" kind="secondary" onClick={() => closeWorkspace()}>
+              {t('discard', 'Discard')}
+            </Button>
+            <Button kind="primary" size="lg" type="submit">
+              {t('save', 'Save')}
+            </Button>
+          </ButtonSet>
+        </Stack>
+      </Form>
+    </Workspace2>
   );
 };
 

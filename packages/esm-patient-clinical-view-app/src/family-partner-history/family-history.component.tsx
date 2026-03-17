@@ -23,6 +23,7 @@ import {
   ConfigurableLink,
   isDesktop,
   launchWorkspace,
+  launchWorkspace2,
   useConfig,
   useLayoutType,
   usePagination,
@@ -109,15 +110,13 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
   ];
 
   const handleAddHistory = () => {
-    launchWorkspace('family-relationship-form', {
-      workspaceTitle: 'Family Relationship Form',
+    launchWorkspace2('family-relationship-form', {
       patientUuid,
     });
   };
   const handleEditRelationship = (relation: Contact) => {
-    launchWorkspace('contact-list-update-form', {
+    launchWorkspace2('contact-list-update-form', {
       relation,
-      workspaceTitle: t('editContactList', 'Edit contact list'),
       patientUuid,
     });
   };
@@ -132,7 +131,7 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
         name: (
           <ConfigurableLink
             style={{ textDecoration: 'none' }}
-            to={window.getOpenmrsSpaBase() + `patient/${relation.relativeUuid}/chart/Patient Summary`}>
+            to={globalThis.getOpenmrsSpaBase() + `patient/${relation.relativeUuid}/chart/Patient Summary`}>
             {extractNameString(uppercaseText(relation.name))}
           </ConfigurableLink>
         ),
@@ -153,12 +152,10 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
         ipvOutcome: relation.ipvOutcome ?? '--',
 
         actions: (
-          <>
-            <OverflowMenu size={size} flipped>
-              <OverflowMenuItem itemText={t('edit', 'Edit')} onClick={() => handleEditRelationship(relation)} />
-              <OverflowMenuItem itemText={t('delete', 'Delete')} onClick={() => deleteRelationship(relation.uuid)} />
-            </OverflowMenu>
-          </>
+          <OverflowMenu size={size} flipped>
+            <OverflowMenuItem itemText={t('edit', 'Edit')} onClick={() => handleEditRelationship(relation)} />
+            <OverflowMenuItem itemText={t('delete', 'Delete')} onClick={() => deleteRelationship(relation.uuid)} />
+          </OverflowMenu>
         ),
       };
     }) ?? [];

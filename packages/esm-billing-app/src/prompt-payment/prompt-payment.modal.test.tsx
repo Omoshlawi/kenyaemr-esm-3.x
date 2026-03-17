@@ -87,10 +87,6 @@ const mockMappedBill = [
 
 const mockUseBillingPrompt = useBillingPrompt as jest.MockedFunction<typeof useBillingPrompt>;
 const mockUseConfig = useConfig as jest.MockedFunction<typeof useConfig>;
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  getPatientUuidFromStore: jest.fn(() => 'patient-uuid'),
-}));
-
 jest.mock('@openmrs/esm-framework', () => ({
   useConfig: jest.fn(),
   navigate: jest.fn(),

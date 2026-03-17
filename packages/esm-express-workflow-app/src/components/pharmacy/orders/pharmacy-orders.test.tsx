@@ -1,21 +1,22 @@
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi, type MockedFunction } from 'vitest';
 import { renderWithSwr } from '../../../../../../tools/test-helpers';
 import PharmacyOrders from './pharmacy-orders.component';
 import { usePharmacyOrders } from './pharmacy-orders.resource';
 
 // Mock the workspace launcher hook
-const mockLaunchAddDrugOrder = jest.fn();
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  ...jest.requireActual('@openmrs/esm-patient-common-lib'),
-  useLaunchWorkspaceRequiringVisit: jest.fn(() => mockLaunchAddDrugOrder),
+const mockLaunchAddDrugOrder = vi.fn();
+vi.mock('@openmrs/esm-patient-common-lib', () => ({
+  ...vi.importActual<typeof import('@openmrs/esm-patient-common-lib')>('@openmrs/esm-patient-common-lib'),
+  useLaunchWorkspaceRequiringVisit: vi.fn(() => mockLaunchAddDrugOrder),
 }));
 
 // Mock the pharmacy orders hook
-jest.mock('./pharmacy-orders.resource');
+vi.mock('./pharmacy-orders.resource');
 
-const mockUsePharmacyOrders = usePharmacyOrders as jest.MockedFunction<typeof usePharmacyOrders>;
+const mockUsePharmacyOrders = usePharmacyOrders as MockedFunction<typeof usePharmacyOrders>;
 
 describe('PharmacyOrders Component', () => {
   const mockPatient: fhir.Patient = {
@@ -103,7 +104,7 @@ describe('PharmacyOrders Component', () => {
   const mockSetCurrPageSize = jest.fn() as unknown as React.Dispatch<React.SetStateAction<number>>;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Loading State', () => {

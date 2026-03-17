@@ -2,10 +2,9 @@ import React, { useMemo } from 'react';
 import classNames from 'classnames';
 import last from 'lodash-es/last';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
-import { ConfigurableLink, MaybeIcon, evaluateAsBoolean } from '@openmrs/esm-framework';
+import { useLocation, useParams } from 'react-router-dom';
+import { ConfigurableLink, MaybeIcon, evaluateAsBoolean, usePatient } from '@openmrs/esm-framework';
 import styles from './dashboard.scss';
-import { getPatientFromStore } from '@openmrs/esm-patient-common-lib';
 import { usePatientEnrollment } from './useDashboard';
 import { InlineLoading } from '@carbon/react';
 
@@ -20,8 +19,9 @@ export interface DashboardExtensionProps {
 export const DashboardExtension = ({ path, title, basePath, icon, showWhenExpression }: DashboardExtensionProps) => {
   const { t } = useTranslation();
   const location = useLocation();
-  const patient = getPatientFromStore();
-  const { activePatientEnrollment, patientEnrollments, isLoading } = usePatientEnrollment(patient?.id);
+  const { patientUuid } = useParams();
+  const { patient } = usePatient(patientUuid);
+  const { activePatientEnrollment, patientEnrollments, isLoading } = usePatientEnrollment(patientUuid);
 
   const show = evaluateAsBoolean(showWhenExpression, {
     activePatientEnrollment,

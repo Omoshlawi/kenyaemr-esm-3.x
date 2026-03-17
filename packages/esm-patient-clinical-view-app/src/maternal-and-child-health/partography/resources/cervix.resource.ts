@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 export { MCH_PARTOGRAPHY_ENCOUNTER_UUID } from '../types';
 import { CERVIX_FORM_CONCEPTS, MCH_PARTOGRAPHY_ENCOUNTER_UUID, DESCENT_OF_HEAD_OPTIONS } from '../types';
 import { ENCOUNTER_ROLE } from '../../../config-schema';
+import type { TFunction } from 'i18next';
 
 export interface CervixFormData {
   hour: string;
@@ -46,7 +47,7 @@ export interface SaveCervixDataResponse {
 export async function saveCervixFormData(
   patientUuid: string,
   formData: CervixFormData,
-  t: (key: string, defaultValue?: string, options?: any) => string,
+  t: TFunction,
   providerUuid?: string,
   locationUuid?: string,
 ): Promise<SaveCervixDataResponse> {

@@ -1,8 +1,9 @@
-import { launchWorkspace } from '@openmrs/esm-framework';
 import React from 'react';
-import { LineItem, MappedBill, PaymentStatus } from '../../../types';
-import { useTranslation } from 'react-i18next';
 import { OverflowMenuItem } from '@carbon/react';
+import { useTranslation } from 'react-i18next';
+import { launchWorkspace2 } from '@openmrs/esm-framework';
+
+import { LineItem, MappedBill, PaymentStatus } from '../../../types';
 
 type EditLineItemProps = {
   lineItem: LineItem;
@@ -17,11 +18,15 @@ const EditLineItem: React.FC<EditLineItemProps> = ({ lineItem, bill }) => {
   }
 
   const handleOpenEditLineItemWorkspace = (lineItem: LineItem) => {
-    launchWorkspace('edit-bill-form', {
-      workspaceTitle: t('editBillForm', 'Edit Bill Form'),
-      lineItem,
-      bill,
-    });
+    launchWorkspace2(
+      'edit-bill-form',
+      {
+        lineItem,
+        bill,
+      },
+      {},
+      {},
+    );
   };
   return (
     <OverflowMenuItem itemText={t('editItem', 'Edit item')} onClick={() => handleOpenEditLineItemWorkspace(lineItem)} />

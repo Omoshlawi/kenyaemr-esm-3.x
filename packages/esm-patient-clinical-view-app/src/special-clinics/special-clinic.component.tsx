@@ -8,6 +8,7 @@ import styles from './special-clinics.scss';
 
 type SpecialClinicDashboardProps = {
   patientUuid: string;
+  patient: fhir.Patient;
 };
 
 type ClinicConfig = {
@@ -16,12 +17,15 @@ type ClinicConfig = {
   formUuid: string;
 };
 
-const SpecialClinicDashboard: React.FC<SpecialClinicDashboardProps> = ({ patientUuid }) => {
+const SpecialClinicDashboard: React.FC<SpecialClinicDashboardProps> = ({ patientUuid, patient }) => {
   const { t } = useTranslation();
   const { specialClinics } = useConfig<ConfigObject>();
   const [selectedClinic, setSelectedClinic] = useState<ClinicConfig | null>(specialClinics[0]);
 
-  const sortedClinics = useMemo(() => specialClinics.sort((a, b) => a.title.localeCompare(b.title)), [specialClinics]);
+  const sortedClinics = useMemo(
+    () => [...specialClinics].sort((a, b) => a.title.localeCompare(b.title)),
+    [specialClinics],
+  );
 
   return (
     <Layer>
@@ -44,7 +48,7 @@ const SpecialClinicDashboard: React.FC<SpecialClinicDashboardProps> = ({ patient
         />
       </div>
       <Layer level={0}>
-        <GenericDashboard patientUuid={patientUuid} clinicConfig={selectedClinic} />
+        <GenericDashboard patientUuid={patientUuid} clinicConfig={selectedClinic} patient={patient} />
       </Layer>
     </Layer>
   );

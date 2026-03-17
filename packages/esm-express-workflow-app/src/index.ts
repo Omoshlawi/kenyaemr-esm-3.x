@@ -36,6 +36,7 @@ export const checkinFormExtraExtension = getAsyncLifecycle(
   () => import('./components/registration/checkin-form-extra/checkin-form-extra.extension'),
   options,
 );
+
 export const patientSummaryDashboard = getAsyncLifecycle(
   () => import('./shared/patient-chart/patient-summary-dashboard/patient-summary-dashboard.component'),
   options,

@@ -234,7 +234,7 @@ const FacilityReferralForm: React.FC<FacilityReferralProps> = ({ closeWorkspace,
       showSnackbar({
         kind: 'error',
         title: t('referError', 'Referral Failed'),
-        subtitle: t('referErrorDetails', error.message || 'An unexpected error occurred'),
+        subtitle: t('referErrorDetails', String(error.message) || 'An unexpected error occurred'),
         timeoutInMs: 6000,
       });
     } finally {

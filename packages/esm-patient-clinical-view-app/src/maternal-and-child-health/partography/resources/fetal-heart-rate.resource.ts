@@ -1,10 +1,11 @@
 import React from 'react';
-import { openmrsFetch, restBaseUrl, toOmrsIsoString } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { MCH_PARTOGRAPHY_ENCOUNTER_UUID, PARTOGRAPHY_CONCEPTS } from '../types';
 import { createPartographyEncounter } from '../partography.resource';
 import { useTranslation } from 'react-i18next';
 import { FETAL_HEART_RATE_HOUR_CONCEPT } from '../../../config-schema';
+import { TFunction } from 'i18next';
 
 export interface FetalHeartRateEntry {
   id: string;
@@ -95,7 +96,7 @@ export function useFetalHeartRateData(patientUuid: string) {
 export async function saveFetalHeartRateData(
   patientUuid: string,
   formData: { hour: number; time: string; fetalHeartRate: number },
-  t: (key: string, defaultValue?: string, options?: any) => string,
+  t: TFunction,
   locationUuid?: string,
   providerUuid?: string,
 ): Promise<{ success: boolean; message: string }> {
