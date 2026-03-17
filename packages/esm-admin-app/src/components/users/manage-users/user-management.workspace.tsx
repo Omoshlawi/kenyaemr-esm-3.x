@@ -618,7 +618,9 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                                   />
                                 </Row>
                               </Column>
-                              <span className={styles.formHeaderSection}>{t('demographicInfo', 'Demographic info')}</span>
+                              <span className={styles.formHeaderSection}>
+                                {t('demographicInfo', 'Demographic info')}
+                              </span>
                               <ResponsiveWrapper>
                                 <Controller
                                   name="givenName"
