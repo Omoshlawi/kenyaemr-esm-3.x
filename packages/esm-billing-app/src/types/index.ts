@@ -555,15 +555,113 @@ export type FacilityClaim = {
   claimedTotal: number;
   approvedTotal: null | number;
   status: 'REJECTED' | 'ENTERED' | 'CHECKED' | 'VALUATED' | 'ERRORED';
+  interventions?: string[];
   provider: {
+    uuid: string;
     display: string;
-    person?: { display?: string };
+    person?: {
+      uuid: string;
+      display: string;
+      gender?: string;
+      age?: number;
+      birthdate?: string;
+      birthDate?: string;
+    };
   } | null;
-  patient?: { display: string; uuid?: string };
-  externalId: string;
-  responseUUID: string;
-  insurer?: string;
+  patient?: {
+    uuid: string;
+    display: string;
+    identifiers?: Array<{ uuid: string; display: string }>;
+    person?: {
+      display?: string;
+      gender?: string;
+      age?: number;
+      birthdate?: string;
+      birthDate?: string;
+    };
+  };
+  location?: { uuid: string; display: string };
   visitType?: { uuid: string; display: string };
+  visit?: {
+    uuid: string;
+    display: string;
+    startDatetime: string;
+    stopDatetime: string;
+    encounters: Array<{
+      uuid: string;
+      display: string;
+      encounterType?: { uuid: string; display: string };
+      diagnoses: Array<{
+        uuid: string;
+        display?: string;
+        certainty?: string;
+        voided?: boolean;
+        rank?: number;
+        diagnosis: {
+          coded?: {
+            uuid: string;
+            display: string;
+          };
+          nonCoded?: string;
+          display?: string;
+        };
+      }>;
+      obs?: Array<{ uuid: string; display: string }>;
+      orders?: Array<{ uuid: string; display: string; type?: string }>;
+    }>;
+    attributes?: Array<{
+      uuid: string;
+      display: string;
+      attributeType: { uuid: string; display: string };
+      value: string;
+    }>;
+  };
+  bill?: {
+    uuid: string;
+    totalAmount: number;
+    paymentStatus: string;
+    paymentType: string;
+    startDate: string;
+    endDate: string;
+    diagnosis?: string | null;
+    patient?: {
+      uuid: string;
+      display: string;
+      identifiers?: Array<{ uuid: string; display: string }>;
+      person?: {
+        display?: string;
+        gender?: string;
+        age?: number;
+        birthdate?: string;
+        birthDate?: string;
+        dead?: boolean;
+        deathDate?: string | null;
+        causeOfDeath?: { uuid: string; display: string } | null;
+      };
+      voided?: boolean;
+    };
+    providedItems?: Array<{
+      uuid: string;
+      originUuid: string;
+      price: number;
+      dateOfServed: string | null;
+      status: string;
+      numberOfConsumptions: number;
+      interventionCode: string | null;
+      interventionPackage: string | null;
+      item: { uuid: string; display: string };
+      patient?: { uuid: string; display: string };
+    }>;
+  };
+  externalId?: string;
+  responseUUID?: string;
+  insurer?: string;
+  adjustment?: string;
+  explanation?: string;
+  billNumber?: string | null;
+  rejectionReason?: string | null;
+  guaranteeId?: string;
+  dateProcessed?: string | null;
 };
 export type BillingPromptType = 'patient-chart' | 'billing-orders';
 

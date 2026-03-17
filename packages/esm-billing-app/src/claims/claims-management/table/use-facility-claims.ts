@@ -3,8 +3,7 @@ import useSWR from 'swr';
 import { FacilityClaim } from '../../../types';
 
 export const useFacilityClaims = () => {
-  const customPresentation = 'default';
-  const url = `${restBaseUrl}/claim?v=${customPresentation}`;
+  const url = `${restBaseUrl}/claim?v=full`;
 
   const { data, error, isLoading, mutate, isValidating } = useSWR<FetchResponse<{ results: Array<FacilityClaim> }>>(
     url,
@@ -22,7 +21,7 @@ export const useFacilityClaims = () => {
   } => ({
     ...claim,
     id: claim.uuid,
-    providerName: claim.provider?.person?.display || '',
+    providerName: claim.provider?.person?.display || claim.provider?.display || '',
     approvedTotal: claim.approvedTotal ?? 0,
     status: claim.status,
     patientName: claim.patient?.display || '',
