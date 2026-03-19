@@ -2,86 +2,129 @@
 @use '@carbon/type';
 @use '@carbon/colors';
 
-.omrs-main-content {
-  background-color: colors.$white;
+.root {
+  padding: layout.$spacing-05;
 }
 
-.bottomBorder {
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: layout.$spacing-05;
 }
 
-.btnLayer {
+.pageTitle {
+  @include type.type-style('heading-03');
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.pageActions {
   display: flex;
-  padding-top: layout.$spacing-05;
-  padding-right: layout.$spacing-05;
-  padding-bottom: layout.$spacing-05;
-  margin-top: layout.$spacing-05;
-  flex-direction: row;
-  justify-content: flex-end;
-  background-color: white;
-  width: 100%;
+  align-items: center;
+  gap: layout.$spacing-03;
+  margin-left: auto;
+  margin-right: layout.$spacing-09;
+}
+.grid {
+  margin-top: 0;
 }
 
-.tableLayer {
-  padding-left: layout.$spacing-05;
-  padding-right: layout.$spacing-05;
-  background: white;
-  padding-top: layout.$spacing-01;
+.sectionCard {
+  padding: layout.$spacing-05 !important;
+  background: white !important;
+  border: 1px solid colors.$gray-20 !important;
+  border-radius: 8px !important;
+  margin-bottom: layout.$spacing-05;
+  box-shadow: none !important;
 }
 
-.loading {
-  display: flex;
-  padding-top: layout.$spacing-05;
-  padding-right: layout.$spacing-05;
-  padding-bottom: layout.$spacing-05;
-  margin-top: layout.$spacing-05;
-  flex-direction: row;
-  justify-content: flex-end;
-  background-color: white;
-  width: 100%;
-}
-
-.facilityInfoContainer {
-  margin: layout.$spacing-05;
-}
-
-.card {
-  padding: 1rem;
-  background-color: colors.$gray-10;
-  border: 1px solid #e0e0e0;
-  border-radius: 2px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.cardTitle {
-  margin-bottom: 1rem;
-  font-size: 1.25rem;
+.sectionTitle {
+  @include type.type-style('label-01');
   font-weight: 600;
+  color: colors.$gray-60;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 layout.$spacing-04;
+  padding-bottom: layout.$spacing-03;
+  border-bottom: 1px solid colors.$gray-20;
 }
 
-.cardDivider {
-  border: none;
-  border-top: 1px solid #e0e0e0;
-  margin: 0.5rem 0;
-}
-.cardContent {
-  font-size: 1rem;
-  line-height: 1.8;
+.sectionBody {
+  display: flex;
+  flex-direction: column;
 }
 
-.cardContent p {
+/* ── Info rows ── */
+.infoRow {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
-}
-.cardContent br {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
+  align-items: baseline;
+  padding: layout.$spacing-02 0;
+  border-bottom: 1px solid colors.$gray-10;
+
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
-.cardContent strong {
-  min-width: 150px;
-  display: inline-block;
-  color: #393939;
+.infoLabel {
+  @include type.type-style('body-01');
+  color: colors.$gray-60;
+  flex-shrink: 0;
+  margin-right: layout.$spacing-05;
+}
+
+.infoValue {
+  @include type.type-style('body-01');
+  font-weight: 500;
+  color: colors.$gray-100;
+  text-align: right;
+  word-break: break-word;
+}
+
+.emptyValue {
+  color: colors.$gray-40;
+  font-weight: 400;
+}
+
+.contactValue {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+}
+
+.adminCard {
+  display: flex;
+  align-items: flex-start;
+  gap: layout.$spacing-04;
+  margin-top: layout.$spacing-04;
+  padding-top: layout.$spacing-04;
+  border-top: 1px solid colors.$gray-10;
+}
+.adminName {
+  @include type.type-style('body-01');
+  font-weight: 500;
+  color: colors.$gray-100;
+  margin: 0 0 layout.$spacing-01;
+  text-transform: capitalize;
+}
+
+.adminDetail {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+  margin: 0;
+}
+
+.serviceList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+}
+
+.emptyState {
+  @include type.type-style('body-01');
+  color: colors.$gray-40;
+  font-style: italic;
+  margin: 0;
 }
