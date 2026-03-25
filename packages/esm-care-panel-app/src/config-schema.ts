@@ -447,21 +447,9 @@ export const configSchema = {
             tags: ['initial'],
           },
           {
-            formName: 'PrEP Initial Form',
+            formName: 'PrEP Clinical Form',
             formUuId: '1bfb09fc-56d7-4108-bd59-b2765fd312b8',
             dependancies: ['d5ca78be-654e-4d23-836e-a934739be555'],
-            tags: [],
-          },
-          {
-            formName: 'PrEP Follow Up',
-            formUuId: 'ee3e2017-52c0-4a54-99ab-ebb542fb8984',
-            dependancies: ['1bfb09fc-56d7-4108-bd59-b2765fd312b8'],
-            tags: ['bound-to-current-visit'],
-          },
-          {
-            formName: 'PrEP Monthly Refill Form',
-            formUuId: '291c03c8-a216-11e9-a2a3-2a2ae2dbcce4',
-            dependancies: ['1bfb09fc-56d7-4108-bd59-b2765fd312b8'],
             tags: ['bound-to-current-visit'],
           },
           {
