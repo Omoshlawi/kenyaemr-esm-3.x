@@ -1,7 +1,8 @@
-import { launchWorkspace, navigate, getGlobalStore, launchWorkspace2 } from '@openmrs/esm-framework';
-import { Order, PatientWorkspaceGroupProps } from '@openmrs/esm-patient-common-lib';
+import { navigate, getGlobalStore, launchWorkspace2 } from '@openmrs/esm-framework';
+import { type Order, PatientWorkspaceGroupProps } from '@openmrs/esm-patient-common-lib';
 import { useCallback } from 'react';
 import { mutate } from 'swr';
+import { buildMedicationOrder } from './order';
 
 export function useModalHandler(mutateUrl?: string) {
   const handleModalClose = useCallback(() => {
@@ -28,101 +29,12 @@ export const launchPrescriptionEditWorkspace = (
   patientUuid: string,
   workspaceGroupProps: PatientWorkspaceGroupProps,
 ) => {
-  const newItem = {
-    uuid: order.uuid,
-    display: order.drug?.display,
-    previousOrder: order.uuid,
-    startDate: new Date(),
-    action: 'REVISE',
-    drug: order.drug,
-    dosage: order.dose,
-    unit: {
-      value: order.doseUnits?.display,
-      valueCoded: order.doseUnits?.uuid,
-    },
-    frequency: {
-      valueCoded: order.frequency?.uuid,
-      value: order.frequency?.display,
-    },
-    route: {
-      valueCoded: order.route?.uuid,
-      value: order.route?.display,
-    },
-    commonMedicationName: order.drug?.display,
-    isFreeTextDosage: order.dosingType === 'org.openmrs.FreeTextDosingInstructions',
-    freeTextDosage: order.dosingType === 'org.openmrs.FreeTextDosingInstructions' ? order.dosingInstructions : '',
-    patientInstructions: order.dosingType !== 'org.openmrs.FreeTextDosingInstructions' ? order.dosingInstructions : '',
-    asNeeded: order.asNeeded,
-    asNeededCondition: order.asNeededCondition,
-    duration: order.duration,
-    durationUnit: {
-      valueCoded: order.durationUnits?.uuid,
-      value: order.durationUnits?.display,
-    },
-    pillsDispensed: order.quantity,
-    numRefills: order.numRefills,
-    indication: order.orderReasonNonCoded,
-    orderer: order.orderer?.uuid,
-    careSetting: order.careSetting?.uuid,
-    quantityUnits: {
-      value: order.quantityUnits?.display,
-      valueCoded: order.quantityUnits?.uuid,
-    },
-    encounter: order.encounter?.uuid,
-  };
-
-  const targetUrl = `\${openmrsSpaBase}/patient/${patientUuid}/chart/Medications`;
-  const workspaceName = 'add-drug-order';
-  const additionalProps = {
-    patientUuid,
-    order: newItem,
-  };
-
-  navigateAndLaunchWorkspace2(
-    targetUrl,
-    `patient/${patientUuid}`,
-    workspaceName,
-    additionalProps,
-    patientUuid,
-    newItem as any,
+  const newItem = buildMedicationOrder(order, 'REVISE');
+  launchWorkspace2(
+    'edit-drug-order',
+    { order: newItem, orderToEditOrdererUuid: order.orderer?.uuid },
     workspaceGroupProps,
   );
-};
-
-export const navigateAndLaunchWorkspace2 = (
-  targetUrl: string,
-  contextKey: string,
-  workspaceName: string,
-  additionalProps: any,
-  patientUuid: string,
-  order: Order,
-  workspaceGroupProps: PatientWorkspaceGroupProps,
-) => {
-  const workspaceStore = getWorkspaceStore();
-
-  // Set up a one-time event listener for when navigation completes
-  const handleRoutingComplete = (event: Event) => {
-    // Remove the listener after it fires once
-    window.removeEventListener('single-spa:routing-event', handleRoutingComplete);
-
-    // Now that navigation is complete, change context and launch workspace
-    workspaceStore.setState({ context: `patient/${patientUuid}`, openWorkspaces: [], prompt: null });
-    launchWorkspace2(
-      'add-drug-order',
-      {
-        order: order,
-        orderToEditOrdererUuid: order.orderer?.uuid,
-      },
-      { encounterUuid: order.encounter?.uuid },
-      workspaceGroupProps,
-    );
-  };
-
-  // Add the event listener before navigating
-  window.addEventListener('single-spa:routing-event', handleRoutingComplete);
-
-  // Navigate to the target URL
-  navigate({ to: targetUrl });
 };
 
 export const navigateAndLaunchWorkspace = (

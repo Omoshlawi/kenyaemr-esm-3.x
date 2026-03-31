@@ -421,6 +421,11 @@
       "name": "payment-workspace",
       "component": "paymentWorkspace",
       "window": "billing-workspace-window"
+    },
+    {
+      "name": "edit-drug-order",
+      "component": "@openmrs/esm-patient-medications-app#exportedAddDrugOrderWorkspace",
+      "window": "billing-workspace-window"
     }
   ],
   "workspaceWindows2": [

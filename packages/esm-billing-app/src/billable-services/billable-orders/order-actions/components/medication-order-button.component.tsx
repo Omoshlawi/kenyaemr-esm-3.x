@@ -11,6 +11,7 @@ import { useSWRConfig } from 'swr';
 import {
   invalidateVisitAndEncounterData,
   invalidateVisitByUuid,
+  Order,
   PatientWorkspaceGroupProps,
 } from '@openmrs/esm-patient-common-lib';
 
@@ -26,7 +27,7 @@ export interface MedicationOrderButtonProps {
 interface ModifyButtonProps {
   currentVisit: boolean;
   isLoading: boolean;
-  order: any;
+  order: Order;
   patientUuid: string;
   visitMutate: () => void;
   patient: fhir.Patient;

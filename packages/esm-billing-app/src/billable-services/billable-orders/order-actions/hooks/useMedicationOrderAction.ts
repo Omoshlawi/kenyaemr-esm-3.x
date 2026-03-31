@@ -101,10 +101,10 @@ import useSWR from 'swr';
 const customRepresentation =
   'custom:(uuid,dosingType,orderNumber,accessionNumber,' +
   'patient:ref,action,careSetting:ref,previousOrder:ref,dateActivated,scheduledDate,dateStopped,autoExpireDate,' +
-  'orderType:ref,encounter:ref,orderer:(uuid,display,person:(display)),orderReason,orderReasonNonCoded,orderType,urgency,instructions,' +
-  'commentToFulfiller,drug:(uuid,display,strength,dosageForm:(display,uuid),concept),dose,doseUnits:ref,' +
+  'orderType:ref,encounter:(uuid,display,visit),orderer:(uuid,display,person:(display)),orderReason,orderReasonNonCoded,orderType,urgency,instructions,' +
+  'commentToFulfiller,fulfillerStatus,drug:(uuid,display,strength,dosageForm:(display,uuid),concept),dose,doseUnits:ref,' +
   'frequency:ref,asNeeded,asNeededCondition,quantity,quantityUnits:ref,numRefills,dosingInstructions,' +
-  'duration,durationUnits:ref,route:ref,brandName,dispenseAsWritten)';
+  'duration,durationUnits:ref,route:ref,brandName,dispenseAsWritten,concept)';
 
 /**
  * Hook to get a single order by UUID.
