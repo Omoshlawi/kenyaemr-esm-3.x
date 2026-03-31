@@ -13,20 +13,14 @@ import {
 type KvpLinkPatientToPeerEducatorProps = {
   patientUuid: string;
   form: CarePanelConfig['careProgramForms'][0]['forms'][0];
-  visit?: Visit;
   mutate?: () => void;
 };
-const KvpLinkPatientToPeerEducator: FC<KvpLinkPatientToPeerEducatorProps> = ({
-  patientUuid,
-  form,
-  visit: currentVisit,
-  mutate,
-}) => {
+const KvpLinkPatientToPeerEducator: FC<KvpLinkPatientToPeerEducatorProps> = ({ patientUuid, form, mutate }) => {
   const { mutateVisitContext, visitContext, patient: fhirPatient } = usePatientChartStore(patientUuid);
   const { activePeer, error, isLoading } = usePatientActivePeerEducator(patientUuid);
   const { hideFilledProgramForm } = useConfig<CarePanelConfig>();
   const { t } = useTranslation();
-  const formEncounter = currentVisit?.encounters?.find((en) => en.form?.uuid === form.formUuId);
+  const formEncounter = visitContext?.encounters?.find((en) => en.form?.uuid === form.formUuId);
   const launchFormEntryWorkspace = useLaunchWorkspaceRequiringVisit(patientUuid, 'patient-form-entry-workspace');
 
   const groupProps = useMemo(
@@ -36,7 +30,7 @@ const KvpLinkPatientToPeerEducator: FC<KvpLinkPatientToPeerEducatorProps> = ({
       visitContext,
       mutateVisitContext,
     }),
-    [fhirPatient, visitContext, mutateVisitContext],
+    [patientUuid, fhirPatient, visitContext, mutateVisitContext],
   );
 
   if (isLoading) {
