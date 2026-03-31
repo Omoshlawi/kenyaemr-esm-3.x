@@ -1,5 +1,5 @@
 import { launchWorkspace, navigate, getGlobalStore, launchWorkspace2 } from '@openmrs/esm-framework';
-import { Order } from '@openmrs/esm-patient-common-lib';
+import { Order, PatientWorkspaceGroupProps } from '@openmrs/esm-patient-common-lib';
 import { useCallback } from 'react';
 import { mutate } from 'swr';
 
@@ -23,7 +23,11 @@ export const getWorkspaceStore = () => {
   return getGlobalStore('workspace');
 };
 
-export const launchPrescriptionEditWorkspace = (order: Order, patientUuid: string) => {
+export const launchPrescriptionEditWorkspace = (
+  order: Order,
+  patientUuid: string,
+  workspaceGroupProps: PatientWorkspaceGroupProps,
+) => {
   const newItem = {
     uuid: order.uuid,
     display: order.drug?.display,
@@ -64,6 +68,7 @@ export const launchPrescriptionEditWorkspace = (order: Order, patientUuid: strin
       value: order.quantityUnits?.display,
       valueCoded: order.quantityUnits?.uuid,
     },
+    encounter: order.encounter?.uuid,
   };
 
   const targetUrl = `\${openmrsSpaBase}/patient/${patientUuid}/chart/Medications`;
@@ -73,7 +78,51 @@ export const launchPrescriptionEditWorkspace = (order: Order, patientUuid: strin
     order: newItem,
   };
 
-  navigateAndLaunchWorkspace(targetUrl, `patient/${patientUuid}`, workspaceName, additionalProps, patientUuid);
+  navigateAndLaunchWorkspace2(
+    targetUrl,
+    `patient/${patientUuid}`,
+    workspaceName,
+    additionalProps,
+    patientUuid,
+    newItem as any,
+    workspaceGroupProps,
+  );
+};
+
+export const navigateAndLaunchWorkspace2 = (
+  targetUrl: string,
+  contextKey: string,
+  workspaceName: string,
+  additionalProps: any,
+  patientUuid: string,
+  order: Order,
+  workspaceGroupProps: PatientWorkspaceGroupProps,
+) => {
+  const workspaceStore = getWorkspaceStore();
+
+  // Set up a one-time event listener for when navigation completes
+  const handleRoutingComplete = (event: Event) => {
+    // Remove the listener after it fires once
+    window.removeEventListener('single-spa:routing-event', handleRoutingComplete);
+
+    // Now that navigation is complete, change context and launch workspace
+    workspaceStore.setState({ context: `patient/${patientUuid}`, openWorkspaces: [], prompt: null });
+    launchWorkspace2(
+      'add-drug-order',
+      {
+        order: order,
+        orderToEditOrdererUuid: order.orderer?.uuid,
+      },
+      { encounterUuid: order.encounter?.uuid },
+      workspaceGroupProps,
+    );
+  };
+
+  // Add the event listener before navigating
+  window.addEventListener('single-spa:routing-event', handleRoutingComplete);
+
+  // Navigate to the target URL
+  navigate({ to: targetUrl });
 };
 
 export const navigateAndLaunchWorkspace = (

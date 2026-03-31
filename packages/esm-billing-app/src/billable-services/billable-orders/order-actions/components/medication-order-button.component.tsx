@@ -1,12 +1,18 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Edit } from '@carbon/react/icons';
-import { launchWorkspace, launchWorkspace2, useVisit } from '@openmrs/esm-framework';
+import { launchWorkspace2, usePatient, useVisit, Visit } from '@openmrs/esm-framework';
 import { BaseOrderButton } from './base-order-button.component';
 import { useMedicationOrderAction, useOrderByUuid } from '../hooks/useMedicationOrderAction';
 import { launchPrescriptionEditWorkspace, navigateAndLaunchWorkspace } from '../hooks/useModalHandler';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@carbon/react';
 import styles from './medication-order-button.scss';
+import { useSWRConfig } from 'swr';
+import {
+  invalidateVisitAndEncounterData,
+  invalidateVisitByUuid,
+  PatientWorkspaceGroupProps,
+} from '@openmrs/esm-patient-common-lib';
 
 export interface MedicationOrderButtonProps {
   medicationRequestBundle?: {
@@ -22,10 +28,34 @@ interface ModifyButtonProps {
   isLoading: boolean;
   order: any;
   patientUuid: string;
+  visitMutate: () => void;
+  patient: fhir.Patient;
+  activeVisit: Visit;
 }
 
-const ModifyButton: React.FC<ModifyButtonProps> = ({ currentVisit, isLoading, order, patientUuid }) => {
+const ModifyButton: React.FC<ModifyButtonProps> = ({
+  currentVisit,
+  isLoading,
+  order,
+  patientUuid,
+  visitMutate,
+  patient,
+  activeVisit,
+}) => {
   const { t } = useTranslation();
+  const { mutate: globalMutate } = useSWRConfig();
+  const workspaceGroupProps: PatientWorkspaceGroupProps = useMemo(
+    () => ({
+      patient,
+      patientUuid: patient?.id,
+      visitContext: activeVisit,
+      mutateVisitContext: () => {
+        invalidateVisitByUuid(globalMutate, activeVisit.uuid);
+        invalidateVisitAndEncounterData(globalMutate, patient.id);
+      },
+    }),
+    [patient, activeVisit, globalMutate, patient?.id],
+  );
 
   if (currentVisit) {
     return (
@@ -36,7 +66,7 @@ const ModifyButton: React.FC<ModifyButtonProps> = ({ currentVisit, isLoading, or
         isLoading={isLoading}
         isDisabled={false}
         buttonText={t('modify', 'Modify')}
-        onClick={() => launchPrescriptionEditWorkspace(order, patientUuid)}
+        onClick={() => launchPrescriptionEditWorkspace(order, patientUuid, workspaceGroupProps)}
       />
     );
   }
@@ -75,8 +105,9 @@ export const MedicationOrderButton: React.FC<MedicationOrderButtonProps> = ({
     shouldAllowModify,
   } = useMedicationOrderAction(medicationRequestBundle);
   const { data: order, isLoading: isOrderLoading } = useOrderByUuid(medicationRequestBundle?.request?.id);
-  const isLoading = isMedicationOrderLoading && isOrderLoading;
-  const { activeVisit: currentVisit } = useVisit(patientUuid);
+  const { patient, isLoading: isPatientLoading } = usePatient(patientUuid);
+  const isLoading = isMedicationOrderLoading && isOrderLoading && isPatientLoading;
+  const { activeVisit: currentVisit, mutate: visitMutate } = useVisit(patientUuid);
   const buttonText = actionText ?? defaultButtonText;
 
   const launchModal = useCallback(() => {
@@ -95,7 +126,7 @@ export const MedicationOrderButton: React.FC<MedicationOrderButtonProps> = ({
     }
 
     if (dispenseFormProps) {
-      launchWorkspace2('dispense-workspace', dispenseFormProps, {}, {});
+      launchWorkspace2('dispense-workspace', dispenseFormProps);
     }
   }, [shouldShowBillModal, medicationRequestBundle, dispenseFormProps, order]);
 
@@ -106,7 +137,15 @@ export const MedicationOrderButton: React.FC<MedicationOrderButtonProps> = ({
   return (
     <div className={styles.buttonContainer}>
       {shouldAllowModify && (
-        <ModifyButton currentVisit={!!currentVisit} isLoading={isLoading} order={order} patientUuid={patientUuid} />
+        <ModifyButton
+          currentVisit={!!currentVisit}
+          isLoading={isLoading}
+          order={order}
+          patientUuid={patientUuid}
+          visitMutate={visitMutate}
+          patient={patient}
+          activeVisit={currentVisit}
+        />
       )}
       <BaseOrderButton
         size="lg"
