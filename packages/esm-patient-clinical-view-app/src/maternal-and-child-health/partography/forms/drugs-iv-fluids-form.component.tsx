@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { Column, Grid, Modal, Select, SelectItem, TextInput } from '@carbon/react';
+import { launchWorkspace2, openmrsFetch, showSnackbar, useSession } from '@openmrs/esm-framework';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { useForm, Controller } from 'react-hook-form';
-import { Button, Modal, Grid, Column, Dropdown, TextInput, ButtonSkeleton, Select, SelectItem } from '@carbon/react';
-import { launchWorkspace, useSession, openmrsFetch, showSnackbar } from '@openmrs/esm-framework';
-import { saveDrugOrderData } from '../partography.resource';
 import styles from '../partography-data-form.scss';
-import { ROUTE_OPTIONS, FREQUENCY_OPTIONS } from '../types';
+import { saveDrugOrderData } from '../partography.resource';
+import { FREQUENCY_OPTIONS, ROUTE_OPTIONS } from '../types';
 
 type DrugsIVFluidsFormData = {
   drugName: string;
@@ -69,17 +69,22 @@ const DrugsIVFluidsForm: React.FC<DrugsIVFluidsFormProps> = ({ isOpen, onClose, 
 
   const handleLaunchDrugOrderWorkspace = useCallback(() => {
     if (patient?.uuid) {
-      launchWorkspace('add-drug-order', {
-        patientUuid: patient.uuid,
-        workspaceTitle: 'Add Drug Order',
-        onOrderSaved: (savedOrder) => {
-          if (onDataSaved) {
-            onDataSaved();
-          }
+      launchWorkspace2(
+        'add-drug-order',
+        {
+          patientUuid: patient.uuid,
+          workspaceTitle: 'Add Drug Order',
+          onOrderSaved: (savedOrder) => {
+            if (onDataSaved) {
+              onDataSaved();
+            }
 
-          onClose();
+            onClose();
+          },
         },
-      });
+        {},
+        {},
+      );
     }
   }, [patient?.uuid, onDataSaved, onClose]);
 
