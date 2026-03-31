@@ -43,7 +43,6 @@ type CareProgramsProps = {
 const CarePrograms: React.FC<CareProgramsProps> = ({ patientUuid, patient }) => {
   const { t } = useTranslation();
   const { getProgramForms, getProgramEnrollmentForm } = useCareProgramForms();
-  const { currentVisit, mutate: mutateVisit } = useVisit(patientUuid);
   const { eligibleCarePrograms, isLoading, isValidating, error, mutateEligiblePrograms } = useCarePrograms(patientUuid);
   const {
     enrollments,
@@ -52,19 +51,6 @@ const CarePrograms: React.FC<CareProgramsProps> = ({ patientUuid, patient }) => 
     mutate: mutateEnrollments,
   } = usePatientEnrolledPrograms(patientUuid);
   const { mutateVisitContext, visitContext } = usePatientChartStore(patientUuid);
-
-  const groupProps = useMemo(
-    () => ({
-      patient,
-      patientUuid,
-      visitContext,
-      mutateVisitContext,
-    }),
-    [patient, patientUuid, visitContext, mutateVisitContext],
-  );
-
-  const isTablet = useLayoutType() === 'tablet';
-
   const handleMutations = useCallback(() => {
     mutateEligiblePrograms();
     mutate(
@@ -78,9 +64,22 @@ const CarePrograms: React.FC<CareProgramsProps> = ({ patientUuid, patient }) => 
       undefined,
       { revalidate: true },
     );
-    mutateVisit();
     mutateEnrollments();
-  }, [mutateEligiblePrograms, mutateEnrollments, mutateVisit, patientUuid]);
+  }, [mutateEligiblePrograms, mutateEnrollments, patientUuid]);
+  const groupProps = useMemo(
+    () => ({
+      patient,
+      patientUuid,
+      visitContext,
+      mutateVisitContext: () => {
+        mutateVisitContext();
+        handleMutations();
+      },
+    }),
+    [patient, patientUuid, visitContext, mutateVisitContext, handleMutations],
+  );
+
+  const isTablet = useLayoutType() === 'tablet';
 
   const launchFormEntryWorkspace = useLaunchWorkspaceRequiringVisit(patientUuid, 'patient-form-entry-workspace');
 
@@ -101,7 +100,6 @@ const CarePrograms: React.FC<CareProgramsProps> = ({ patientUuid, patient }) => 
                     <ProgramFormOverflowMenuItem
                       key={`${enrollment.uuid}-${form.formUuId}`}
                       form={form}
-                      visit={currentVisit}
                       patientUuid={patientUuid}
                       mutate={handleMutations}
                       enrollment={enrollment}
@@ -175,11 +173,12 @@ const CarePrograms: React.FC<CareProgramsProps> = ({ patientUuid, patient }) => 
       eligibleCarePrograms,
       getProgramForms,
       t,
-      currentVisit,
       patientUuid,
       handleMutations,
       mutateEnrollments,
       getProgramEnrollmentForm,
+      launchFormEntryWorkspace,
+      groupProps,
       mutateEligiblePrograms,
     ],
   );

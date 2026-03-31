@@ -1,6 +1,10 @@
 import { InlineLoading, OverflowMenuItem } from '@carbon/react';
 import { launchWorkspace, showSnackbar, useConfig, Visit } from '@openmrs/esm-framework';
-import { launchStartVisitPrompt } from '@openmrs/esm-patient-common-lib';
+import {
+  launchStartVisitPrompt,
+  useLaunchWorkspaceRequiringVisit,
+  usePatientChartStore,
+} from '@openmrs/esm-patient-common-lib';
 import React, { FC, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CarePanelConfig } from '../config-schema';
@@ -11,7 +15,6 @@ type ProgramFormOverflowMenuItemProps = {
   patientUuid: string;
   form: CarePanelConfig['careProgramForms'][0]['forms'][0];
   mutate?: () => void;
-  visit?: Visit;
   enrollment: Enrollment;
 };
 
@@ -19,9 +22,10 @@ const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
   form,
   patientUuid,
   mutate,
-  visit: currentVisit,
   enrollment,
 }) => {
+  const { mutateVisitContext, visitContext, patient: fhirPatient } = usePatientChartStore(patientUuid);
+  const launchFormEntryWorkspace = useLaunchWorkspaceRequiringVisit(patientUuid, 'patient-form-entry-workspace');
   const {
     formEncounters,
     error,
@@ -29,7 +33,7 @@ const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
     mutate: mutateFormEncounters,
   } = usePatientFormEncounter(patientUuid, form.formUuId, {
     scope: form.tags.includes('bound-to-current-visit') ? 'current-visit' : 'all-visits',
-    currentVisit: currentVisit,
+    currentVisit: visitContext,
   });
   const { hideFilledProgramForm, peerCalendarOutreactForm } = useConfig<CarePanelConfig>();
   const { t } = useTranslation();
@@ -39,6 +43,20 @@ const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
     isLoading: isLoadingDependancyStatus,
     mutate: mutateDependancyStatus,
   } = useFormsFilled(patientUuid, form.dependancies);
+  const groupProps = useMemo(
+    () => ({
+      patientUuid,
+      patient: fhirPatient,
+      visitContext,
+      mutateVisitContext: () => {
+        mutateVisitContext();
+        mutate?.();
+        mutateDependancyStatus();
+        mutateFormEncounters();
+      },
+    }),
+    [patientUuid, fhirPatient, visitContext, mutateVisitContext, mutate, mutateDependancyStatus, mutateFormEncounters],
+  );
 
   const latestFormEncounter = useMemo(() => formEncounters.at(0)?.encounter, [formEncounters]);
   // Show form if
@@ -78,7 +96,6 @@ const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
       <KvpLinkPatientToPeerEducator
         form={form}
         patientUuid={patientUuid}
-        visit={currentVisit}
         mutate={() => {
           mutate?.();
           mutateDependancyStatus();
@@ -93,8 +110,8 @@ const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
       key={form.formUuId}
       itemText={form.formName}
       onClick={() => {
-        if (currentVisit) {
-          return launchWorkspace('patient-form-entry-workspace', {
+        /**
+          launchWorkspace('patient-form-entry-workspace', {
             workspaceTitle: form.formName,
             mutateForm: () => {
               mutate?.();
@@ -109,8 +126,21 @@ const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
               },
             },
           });
-        }
-        launchStartVisitPrompt();
+         */
+        return launchFormEntryWorkspace(
+          {
+            workspaceTitle: form.formName,
+            form: {
+              uuid: form.formUuId,
+            },
+            additionalProps: {
+              enrollmentDetails: { dateEnrolled: new Date(enrollment.dateEnrolled), uuid: enrollment.uuid },
+            },
+            encounterUuid: form.tags.includes('discontinuation') ? '' : latestFormEncounter?.uuid ?? '',
+          },
+          {},
+          groupProps,
+        );
       }}
     />
   );
