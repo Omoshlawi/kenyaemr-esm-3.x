@@ -1,4 +1,4 @@
-import { launchWorkspace, navigate, getGlobalStore } from '@openmrs/esm-framework';
+import { launchWorkspace, navigate, getGlobalStore, launchWorkspace2 } from '@openmrs/esm-framework';
 import { Order } from '@openmrs/esm-patient-common-lib';
 import { useCallback } from 'react';
 import { mutate } from 'swr';
@@ -92,7 +92,7 @@ export const navigateAndLaunchWorkspace = (
 
     // Now that navigation is complete, change context and launch workspace
     workspaceStore.setState({ context: `patient/${patientUuid}`, openWorkspaces: [], prompt: null });
-    launchWorkspace(workspaceName, additionalProps);
+    launchWorkspace2(workspaceName, additionalProps, {}, {});
   };
 
   // Add the event listener before navigating
