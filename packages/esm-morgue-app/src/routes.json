@@ -93,14 +93,15 @@
       "window": "morgue-workspace-window"
     }
   ],
-  "workspaceWindows2": [
-    {
-      "name": "morgue-workspace-window",
-      "canMaximize": true,
-      "canHide": true,
-      "group": "mortuary-form-entry-workspace-group"
-    }
-  ],
+"workspaceWindows2": [
+  {
+    "name": "morgue-workspace-window",
+    "canMaximize": true,
+    "canHide": true,
+    "group": "morgue-workspace-group",
+    "width": "wider"
+  }
+],
   "workspaceGroups2": [
     {
       "name": "morgue-workspace-group",

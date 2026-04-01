@@ -32,7 +32,6 @@ export const useVisitType = () => {
   const url = `${restBaseUrl}/visittype?v=${customRepresentation}`;
   const { data, error, isLoading } = useSWR<FetchResponse<{ results: VisitTypeResponse[] }>>(url, openmrsFetch);
   const visitType = data?.data?.results || null;
-
   return { data: visitType, error, isLoading };
 };
 
@@ -54,7 +53,6 @@ export const useBillableItems = () => {
 export const useCashPoint = () => {
   const url = `/ws/rest/v1/cashier/cashPoint`;
   const { data, isLoading, error } = useSWR<{ data: { results: Array<OpenmrsResource> } }>(url, openmrsFetch);
-
   return { isLoading, error, cashPoints: data?.data?.results ?? [] };
 };
 
@@ -123,7 +121,6 @@ export const useMortuaryOperation = (location?: string) => {
     if (!conceptUuid || !value || (typeof value === 'string' && value.trim() === '')) {
       return null;
     }
-
     const formattedValue = formatter ? formatter(value) : typeof value === 'string' ? value.trim() : value;
     return { concept: conceptUuid, value: formattedValue };
   };
@@ -133,14 +130,12 @@ export const useMortuaryOperation = (location?: string) => {
     { uuid: config?.locationOfDeathQuestionUuid, value: formData?.placeOfDeath, formatter: undefined },
     { uuid: config?.deathConfirmationQuestionUuid, value: formData?.deathConfirmed, formatter: undefined },
     { uuid: config?.deathNotificationUuid, value: formData?.deathNotificationNumber, formatter: undefined },
-
     { uuid: config?.attendingClinicianUuid, value: formData?.attendingClinician, formatter: undefined },
     { uuid: config?.doctorRemarksUuid, value: formData?.doctorsRemarks, formatter: undefined },
     { uuid: config?.causeOfDeathUuid, value: formData?.causeOfDeath, formatter: undefined },
     { uuid: config?.autopsyPermissionUuid, value: formData?.autopsyPermission, formatter: undefined },
     { uuid: config?.deadBodyPreservationQuestionUuid, value: formData?.deadBodyPreservation, formatter: undefined },
     { uuid: config?.deadBodyPreservationQuestionUuid, value: formData?.bodyEmbalmentType, formatter: undefined },
-
     { uuid: config.obNumberUuid, value: formData.obNumber, formatter: undefined },
     { uuid: config.policeNameUuid, value: formData.policeName, formatter: undefined },
     { uuid: config.policeIDNumber, value: formData.policeIDNo, formatter: undefined },
@@ -153,14 +148,12 @@ export const useMortuaryOperation = (location?: string) => {
         .map(({ uuid, value, formatter }) => createObservation(uuid, value, formatter))
         .filter(Boolean);
 
-      const visitAttributes = [];
       const encounterPayload = {
         visit: {
           patient: patientUuid,
           startDatetime: dayjs(formData.dateOfAdmission).toISOString(),
           visitType: formData.visitType,
           location: location,
-          ...(visitAttributes.length > 0 && { attributes: visitAttributes }),
         },
         patient: patientUuid,
         encounterType: config.morgueAdmissionEncounterTypeUuid,
@@ -177,9 +170,7 @@ export const useMortuaryOperation = (location?: string) => {
 
       return openmrsFetch<Encounter>(`${restBaseUrl}/encounter`, {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
+        headers: { 'content-type': 'application/json' },
         body: encounterPayload,
       });
     },
@@ -212,13 +203,13 @@ export const useMortuaryOperation = (location?: string) => {
   };
 
   const createDischargeEncounter = useCallback(
-    async (visit: Visit, data: z.infer<typeof dischargeFormSchema>, encounterDateTime: Date) => {
+    async (patientUuid: string, visit: Visit, data: z.infer<typeof dischargeFormSchema>, encounterDateTime: Date) => {
       const observationMappings = getDischargeObservationMappings(data);
       const obs = observationMappings.map(({ uuid, value }) => createObservation(uuid, value)).filter(Boolean);
 
       const encounterPayload = {
         encounterDatetime: encounterDateTime.toISOString(),
-        patient: visit?.patient?.uuid,
+        patient: patientUuid,
         encounterType: config.morgueDischargeEncounterTypeUuid,
         location: visit?.location?.uuid,
         encounterProviders: [
@@ -233,9 +224,7 @@ export const useMortuaryOperation = (location?: string) => {
 
       return openmrsFetch<Encounter>(`${restBaseUrl}/encounter`, {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
+        headers: { 'content-type': 'application/json' },
         body: encounterPayload,
       });
     },
@@ -246,13 +235,8 @@ export const useMortuaryOperation = (location?: string) => {
     async (patientUuid: string, bedId: number, encounterUuid: string) =>
       openmrsFetch(`${restBaseUrl}/beds/${bedId}`, {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: {
-          patientUuid,
-          encounterUuid,
-        },
+        headers: { 'content-type': 'application/json' },
+        body: { patientUuid, encounterUuid },
       }),
     [],
   );
@@ -282,13 +266,7 @@ export const useMortuaryOperation = (location?: string) => {
   const endCurrentVisit = useCallback(
     async (currentVisit: Visit, queueEntry: MappedVisitQueueEntry, stopDateTime: Date) => {
       const abortController = new AbortController();
-      const response = await updateVisit(
-        currentVisit.uuid,
-        {
-          stopDatetime: stopDateTime,
-        },
-        abortController,
-      );
+      const response = await updateVisit(currentVisit.uuid, { stopDatetime: stopDateTime }, abortController);
 
       if (queueEntry) {
         removeQueuedPatient(
@@ -304,6 +282,7 @@ export const useMortuaryOperation = (location?: string) => {
 
   const dischargeBody = useCallback(
     async (
+      patientUuid: string,
       visit: Visit,
       queueEntry: MappedVisitQueueEntry,
       bedId: number,
@@ -318,24 +297,22 @@ export const useMortuaryOperation = (location?: string) => {
                 dateOfDischarge: data.dateOfDischarge ?? new Date(),
               });
 
-        const dischargeEncounter = await createDischargeEncounter(visit, data, dischargeDateTime);
-        const compartment = await removeDeceasedFromCompartment(visit?.patient?.uuid, bedId);
+        const dischargeEncounter = await createDischargeEncounter(patientUuid, visit, data, dischargeDateTime);
+        const compartment = await removeDeceasedFromCompartment(patientUuid, bedId);
 
         return { dischargeEncounter, compartment };
       } catch (error) {
         throw error;
       }
     },
-    [createDischargeEncounter, endCurrentVisit, removeDeceasedFromCompartment, parseDischargeDateTime],
+    [createDischargeEncounter, removeDeceasedFromCompartment],
   );
 
   const createEncounterForCompartmentSwap = useCallback(
     async (patientUuid: string, visitUuid: string) =>
       openmrsFetch<Encounter>(`${restBaseUrl}/encounter`, {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
+        headers: { 'content-type': 'application/json' },
         body: {
           encounterDatetime: new Date(),
           patient: patientUuid,
