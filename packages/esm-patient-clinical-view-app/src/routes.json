@@ -203,6 +203,14 @@
       "order": 0,
       "online": true,
       "offline": false
+    },
+    {
+      "name": "launch-malaria-results-workspace",
+      "slot": "inprogress-tests-actions-slot",
+      "component": "launchResultsButton",
+      "order": 0,
+      "online": true,
+      "offline": false
     }
   ],
   "modals": [
@@ -263,6 +271,11 @@
     {
       "name": "end-relationship-form",
       "component": "endRelationshipWorkspace",
+      "window": "patient-clinical-view-workspace-window"
+    },
+    {
+      "name": "exported-patient-clinical-view-lab-results-form",
+      "component": "exportedLabResultsForm",
       "window": "patient-clinical-view-workspace-window"
     }
   ],

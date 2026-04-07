@@ -8,6 +8,15 @@ import { Type } from '@openmrs/esm-framework';
 import _default from 'react-hook-form/dist/logic/appendErrors';
 
 export const configSchema = {
+  malariaConceptUuids: {
+    _type: Type.Array,
+    _elements: {
+      _type: Type.UUID,
+      _description: 'Malaria concept UUID',
+    },
+    _description: 'List of malaria concept UUIDs',
+    _default: ['66621368-15ab-4d27-b920-9df6f6356f29', '1643AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'],
+  },
   complaintsConceptUuids: {
     _type: Type.Array,
     _description: 'List of complaint concept UUIDs',
@@ -517,6 +526,7 @@ export const ESTIMATED_DELIVERY_DATE_CONCEPT = '5596AAAAAAAAAAAAAAAAAAAAAAAAAAAA
 export const LAST_MENSTRUAL_PERIOD_CONCEPT = '1427AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
 export interface ConfigObject {
+  malariaConceptUuids: Array<string>;
   requireMaritalStatusOnAgeGreaterThanOrEqualTo: number;
   peerEducatorRelationship: string;
   morgueVisitTypeUuid: string;

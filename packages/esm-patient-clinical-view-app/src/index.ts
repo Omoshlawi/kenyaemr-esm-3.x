@@ -195,3 +195,12 @@ export function startupApp() {
 }
 
 export const formEntryModal = getAsyncLifecycle(() => import('./modals/form-entry.modal'), options);
+
+export const exportedLabResultsForm = getAsyncLifecycle(
+  () => import('./lab-results/exported-lab-results-form.workspace'),
+  options,
+);
+export const launchResultsButton = getAsyncLifecycle(
+  () => import('./lab-results/launch-results-button.component'),
+  options,
+);
