@@ -7,19 +7,20 @@ import dayjs from 'dayjs';
 
 import styles from './metrics-cards.scss';
 import { useBillSummary } from './metrics.resource';
-import { convertToCurrency } from '../helpers';
 import { Renew } from '@carbon/react/icons';
+import { useCurrencyFormatting } from '../helpers/currency';
 
 export default function MetricsCards() {
   const { t } = useTranslation();
+  const { format: formatCurrency } = useCurrencyFormatting();
   const { data: billSummary, isLoading, error, mutate } = useBillSummary();
   const sectionDate = dayjs().format('dddd, MMMM D, YYYY');
   const cards = useMemo(
     () => [
-      { title: t('totalBillsLabel', 'Total Bills'), count: convertToCurrency(billSummary?.totalBills) },
-      { title: t('paidBills', 'Paid Bills'), count: convertToCurrency(billSummary?.paidBills) },
-      { title: t('pendingBills', 'Pending Bills'), count: convertToCurrency(billSummary?.pendingBills) },
-      { title: t('exemptedBills', 'Exempted Bills'), count: convertToCurrency(billSummary?.exemptedBills) },
+      { title: t('totalBillsLabel', 'Total Bills'), count: formatCurrency(billSummary?.totalBills) },
+      { title: t('paidBills', 'Paid Bills'), count: formatCurrency(billSummary?.paidBills) },
+      { title: t('pendingBills', 'Pending Bills'), count: formatCurrency(billSummary?.pendingBills) },
+      { title: t('exemptedBills', 'Exempted Bills'), count: formatCurrency(billSummary?.exemptedBills) },
     ],
     [t, billSummary],
   );
