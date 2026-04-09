@@ -1,4 +1,4 @@
-import { defineConfigSchema, getAsyncLifecycle } from '@openmrs/esm-framework';
+import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 
 const moduleName = '@kenyaemr/esm-express-workflow-app';
@@ -37,6 +37,21 @@ export const checkinFormExtraExtension = getAsyncLifecycle(
   options,
 );
 
+export const customStartVisitPatientSearchActionButton = getAsyncLifecycle(
+  () =>
+    import('./components/registration/start-visit-form/start-visit-overflow-menu/custom-start-visit-button.component'),
+  {
+    featureName: 'custom-patient-action-start-visit',
+    moduleName,
+  },
+);
+export const customStartVisitWorkspace = getAsyncLifecycle(
+  () => import('./components/registration/start-visit-form/start-visit-workspace/start-visit-form.workspace'),
+  {
+    featureName: 'custom-start-visit-form',
+    moduleName,
+  },
+);
 export const patientSummaryDashboard = getAsyncLifecycle(
   () => import('./shared/patient-chart/patient-summary-dashboard/patient-summary-dashboard.component'),
   options,

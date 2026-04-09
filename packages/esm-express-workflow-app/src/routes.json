@@ -305,6 +305,32 @@
       "slot": "ewf-clinical-encounter-slot",
       "online": true,
       "offline": false
+    },
+    {
+      "name": "custom-start-visit-button",
+      "component": "customStartVisitPatientSearchActionButton",
+      "slot": "patient-actions-slot",
+      "online": true,
+      "offline": true
+    }
+  ],
+  "workspaceGroups2": [
+    {
+      "name": "custom-patient-chart-group",
+      "scopePattern": "/patient/([^/]+)/chart"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "custom-start-visit-window",
+      "group": "custom-patient-chart-group"
+    }
+  ],
+  "workspaces2": [
+    {
+      "name": "custom-start-visit-workspace-form",
+      "component": "customStartVisitWorkspace",
+      "window": "custom-start-visit-window"
     }
   ],
   "modals": [

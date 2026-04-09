@@ -237,4 +237,17 @@ export type ExpressWorkflowConfig = {
   };
   outpatientVisitTypeUuid: string;
   inPatientVisitTypeUuid: string;
+  defaultFacilityUrl: string;
+  offlineVisitTypeUuid: string;
+  showRecommendedVisitTypeTab: boolean;
+  visitTypeResourceUrl: string;
+  disableChangingVisitLocation: boolean;
+  restrictByVisitLocationTag: boolean;
+  visitAttributeTypes: Array<{
+    displayInThePatientBanner: boolean;
+    required: boolean;
+    showWhenExpression?: string;
+    uuid: string;
+  }>;
+  showUpcomingAppointments: boolean;
 };

@@ -1,0 +1,18 @@
+import { type VisitType, useConfig } from '@openmrs/esm-framework';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ExpressWorkflowConfig } from '../../../../config-schema';
+
+export const useOfflineVisitType = () => {
+  const config = useConfig() as ExpressWorkflowConfig;
+  const { t } = useTranslation();
+  const [visitTypes, setVisitTypes] = useState<Array<VisitType>>([]);
+
+  useEffect(() => {
+    setVisitTypes([
+      { uuid: config.offlineVisitTypeUuid, name: 'Offline Visit', display: t('offlineVisit', 'Offline Visit') },
+    ]);
+  }, [t, config.offlineVisitTypeUuid]);
+
+  return visitTypes;
+};
