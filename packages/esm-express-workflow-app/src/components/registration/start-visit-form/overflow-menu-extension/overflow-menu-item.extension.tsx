@@ -44,7 +44,7 @@ const CustomStartVisitOverflowMenuItem: React.FC<CustomStartVisitOverflowMenuIte
     !isDeceased && (
       <OverflowMenuItem
         className={styles.menuitem}
-        itemText={t('customCheckin', 'Check-in patient')}
+        itemText={t('customCheckin', 'Check in')}
         onClick={handleLaunchModal}
         closeMenu={closeMenu}
       />

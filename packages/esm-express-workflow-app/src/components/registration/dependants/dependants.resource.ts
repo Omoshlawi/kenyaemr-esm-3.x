@@ -1,8 +1,17 @@
-import { getSessionLocation, launchWorkspace, openmrsFetch, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
+import {
+  getSessionLocation,
+  launchWorkspace2,
+  launchWorkspaceGroup2,
+  openmrsFetch,
+  restBaseUrl,
+  showSnackbar,
+  type Visit,
+} from '@openmrs/esm-framework';
 import { DependentPayload, HIEPatient } from '../type';
 import { generateIdentifier, getIdentifierTypeUUID, sanitizeName } from '../helper';
 import { openmrsId, openmrsIdSource } from '../constant';
 import { useEffect, useState } from 'react';
+import { VisitFormProps } from '../start-visit-form/visit-form-workspace/visit-form.workspace';
 
 export interface PatientRegistrationPayload {
   name: string;
@@ -12,18 +21,34 @@ export interface PatientRegistrationPayload {
   type: 'hie-patient' | 'dependent';
 }
 
+interface AddressPayload {
+  address1: string;
+  address2?: string;
+  cityVillage: string;
+  country: string;
+  postalCode: string;
+  stateProvince: string;
+  countyDistrict?: string;
+}
+
 export async function createPatient(payload: PatientRegistrationPayload, t: any) {
   try {
-    const { patientData, type, name, gender, birthDate } = payload;
-    const locationUuid = (await getSessionLocation()).uuid;
+    const { patientData, type, gender, birthDate } = payload;
+    const sessionLocation = await getSessionLocation();
+    const locationUuid = sessionLocation?.uuid ?? '';
 
-    let identifiers = [];
+    let identifiers: Array<{
+      identifier: string;
+      identifierType: string;
+      location: string;
+      preferred: boolean;
+    }> = [];
     let givenName = '';
     let middleName = '';
     let familyName = '';
     let patientBirthDate = birthDate;
     let patientGender = gender;
-    let addresses = [];
+    let addresses: AddressPayload[] = [];
 
     if (type === 'hie-patient') {
       const hiePatient = patientData as HIEPatient;
@@ -37,13 +62,13 @@ export async function createPatient(payload: PatientRegistrationPayload, t: any)
             preferred: false,
           }))
           .filter((identifier) => identifier.identifierType) || [];
-      const crIdentifier = {
+
+      identifiers.push({
         identifier: hiePatient?.id,
         identifierType: getIdentifierTypeUUID('sha-id-number'),
         location: locationUuid,
         preferred: false,
-      };
-      identifiers.push(crIdentifier);
+      });
 
       const patientName = hiePatient.name?.[0];
       if (patientName) {
@@ -85,13 +110,13 @@ export async function createPatient(payload: PatientRegistrationPayload, t: any)
             preferred: false,
           }))
           .filter((identifier: any) => identifier.identifierType) || [];
-      const crIdentifier = {
+
+      identifiers.push({
         identifier: dependentInfo?.id,
         identifierType: getIdentifierTypeUUID('sha-id-number'),
         location: locationUuid,
         preferred: false,
-      };
-      identifiers.push(crIdentifier);
+      });
 
       const birthdate = dependentInfo.extension?.find(
         (ext: any) => ext.url === 'https://ts.kenya-hie.health/fhir/StructureDefinition/date_of_birth',
@@ -129,7 +154,7 @@ export async function createPatient(payload: PatientRegistrationPayload, t: any)
       identifiers[0].preferred = true;
     }
 
-    const phoneAttributes = [];
+    const phoneAttributes: Array<{ attributeType: string; value: string }> = [];
     if (type === 'hie-patient') {
       const phoneContact = patientData.telecom?.find((t: any) => t.system === 'phone');
       if (phoneContact?.value) {
@@ -139,6 +164,14 @@ export async function createPatient(payload: PatientRegistrationPayload, t: any)
         });
       }
     }
+
+    const defaultAddress: AddressPayload = {
+      address1: '',
+      cityVillage: '',
+      country: '',
+      postalCode: '',
+      stateProvince: '',
+    };
 
     const registrationPayload = {
       person: {
@@ -154,18 +187,7 @@ export async function createPatient(payload: PatientRegistrationPayload, t: any)
         birthdate: patientBirthDate || null,
         birthdateEstimated: !patientBirthDate,
         attributes: phoneAttributes,
-        addresses:
-          addresses.length > 0
-            ? addresses
-            : [
-                {
-                  address1: '',
-                  cityVillage: '',
-                  country: '',
-                  postalCode: '',
-                  stateProvince: '',
-                },
-              ],
+        addresses: addresses.length > 0 ? addresses : [defaultAddress],
       },
       identifiers: [...identifiers],
     };
@@ -173,6 +195,10 @@ export async function createPatient(payload: PatientRegistrationPayload, t: any)
     try {
       const identifierResponse = await generateIdentifier(openmrsIdSource);
       const location = await getSessionLocation();
+
+      if (!location?.uuid) {
+        throw new Error('Could not determine session location');
+      }
 
       const openmrsIdentifier = {
         identifier: identifierResponse.data.identifier,
@@ -199,7 +225,7 @@ export async function createPatient(payload: PatientRegistrationPayload, t: any)
       throw new Error('No valid identifiers found for the patient');
     }
 
-    const response = await openmrsFetch(`${restBaseUrl}/patient`, {
+    const response = await openmrsFetch<{ uuid: string }>(`${restBaseUrl}/patient`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -217,7 +243,7 @@ export async function createPatient(payload: PatientRegistrationPayload, t: any)
     });
 
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating patient:', error);
 
     const patientType = payload.type === 'hie-patient' ? 'Patient' : 'Dependent';
@@ -243,6 +269,25 @@ export async function createPatient(payload: PatientRegistrationPayload, t: any)
   }
 }
 
+async function launchCheckInWorkspace(patient: any, patientUuid: string) {
+  await launchWorkspaceGroup2('ewf-patient-chart', {
+    patient,
+    patientUuid,
+    visitContext: null as unknown as Visit,
+    mutateVisitContext: () => {},
+  });
+
+  launchWorkspace2<VisitFormProps, {}, {}>(
+    'custom-start-visit-workspace-form',
+    {
+      openedFrom: 'registration-check-in',
+      showPatientHeader: false,
+    },
+    {},
+    null,
+  );
+}
+
 export async function createDependentPatient(dependent: DependentPayload, t: any) {
   const payload: PatientRegistrationPayload = {
     name: dependent.name,
@@ -252,14 +297,7 @@ export async function createDependentPatient(dependent: DependentPayload, t: any
   };
 
   const result = await createPatient(payload, t);
-
-  launchWorkspace('start-visit-workspace-form', {
-    patientUuid: result.uuid,
-    workspaceTitle: t('startVisitWorkspaceTitle', 'Start Visit for {{patientName}}', {
-      patientName: dependent.name,
-    }),
-  });
-
+  await launchCheckInWorkspace(result, result.uuid);
   return result;
 }
 
@@ -278,14 +316,7 @@ export async function createHIEPatient(hiePatient: HIEPatient, t: any) {
   };
 
   const result = await createPatient(payload, t);
-
-  launchWorkspace('start-visit-workspace-form', {
-    patientUuid: result.uuid,
-    workspaceTitle: t('startVisitWorkspaceTitle', 'Start Visit for {{patientName}}', {
-      patientName: patientName,
-    }),
-  });
-
+  await launchCheckInWorkspace(result, result.uuid);
   return result;
 }
 
@@ -321,11 +352,9 @@ export const getDependentsFromContacts = (patient: HIEPatient) => {
     const shaIdNumber = identifierExtensions.find(
       (ext) => ext.valueIdentifier?.type?.coding?.[0]?.code === 'sha-id-number',
     )?.valueIdentifier?.value;
-
     const nationalId = identifierExtensions.find(
       (ext) => ext.valueIdentifier?.type?.coding?.[0]?.code === 'national-id',
     )?.valueIdentifier?.value;
-
     const birthCertificate = identifierExtensions.find(
       (ext) => ext.valueIdentifier?.type?.coding?.[0]?.code === 'birth-certificate',
     )?.valueIdentifier?.value;
@@ -372,7 +401,7 @@ export const useActiveVisit = (patientUuid: string | null) => {
         const data = await response.json();
         const visits = data?.results || [];
         setActiveVisit(visits.length > 0 ? visits[0] : null);
-      } catch (err) {
+      } catch (err: any) {
         console.warn(`Error fetching active visit for patient ${patientUuid}:`, err);
         setError(err);
         setActiveVisit(null);
