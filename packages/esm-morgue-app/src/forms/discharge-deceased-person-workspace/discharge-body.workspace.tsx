@@ -46,6 +46,7 @@ import { getCurrentTime } from '../../utils/utils';
 import { dischargeFormSchema } from '../../schemas';
 import { ConfigObject } from '../../config-schema';
 import { PatientInfo } from '../../types';
+
 interface DischargeFormProps {
   closeWorkspace: () => void;
   patientUuid: string;
@@ -71,6 +72,7 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
     personAttributes,
     isLoading: isLoadingAttributes,
   } = usePersonAttributes(patientUuid);
+
   const { isDischargeBlocked, blockingMessage, isLoadingBills } = useBlockDischargeWithPendingBills({
     patientUuid,
     actionType: 'discharge',
@@ -146,7 +148,7 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
     }
 
     try {
-      await dischargeBody(activeVisit, queueEntry, bedId, data);
+      await dischargeBody(patientUuid, activeVisit, queueEntry, bedId, data);
 
       const attributeUpdates = [
         {
@@ -172,7 +174,7 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
       ].filter((attr) => attr.value !== undefined && attr.value !== null && attr.value !== '');
 
       const patientInfo: PatientInfo = {
-        uuid: activeVisit.patient.uuid,
+        uuid: patientUuid,
         attributes: personAttributes || [],
       };
 
@@ -312,7 +314,6 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
                       )}
                     />
                   </Column>
-
                   <Column>
                     <div className={styles.dateTimeSection}>
                       <ResponsiveWrapper>

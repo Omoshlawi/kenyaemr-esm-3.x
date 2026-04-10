@@ -149,7 +149,7 @@ const SwapForm: React.FC<Workspace2DefinitionProps<SwapFormProps, object, object
         }
 
         mutate();
-        navigate({ to: window.getOpenmrsSpaBase() + `home/morgue` });
+        navigate({ to: window.getOpenmrsSpaBase() + `home/mortuary` });
         closeWorkspace();
       } else {
         showSnackbar({

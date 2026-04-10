@@ -24,7 +24,7 @@ const DeceasedInfo: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
   return (
     <Tile className={styles.patientInfo}>
       <div className={styles.patientAvatar} role="img">
-        <PatientPhoto patientUuid={patient.id} patientName={formattedName} />
+        <PatientPhoto patientUuid={patient?.id} patientName={formattedName} />
       </div>
       <div className={styles.patientDetails}>
         <h2 className={styles.patientName}>{formattedName}</h2>
