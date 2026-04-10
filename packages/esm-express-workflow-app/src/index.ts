@@ -1,4 +1,4 @@
-import { defineConfigSchema, getAsyncLifecycle } from '@openmrs/esm-framework';
+import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 
 const moduleName = '@kenyaemr/esm-express-workflow-app';
@@ -36,9 +36,21 @@ export const checkinFormExtraExtension = getAsyncLifecycle(
   () => import('./components/registration/checkin-form-extra/checkin-form-extra.extension'),
   options,
 );
-
 export const patientSummaryDashboard = getAsyncLifecycle(
   () => import('./shared/patient-chart/patient-summary-dashboard/patient-summary-dashboard.component'),
+  options,
+);
+
+export const customStartVisitOverflowMenuItem = getAsyncLifecycle(
+  () => import('./components/registration/start-visit-form/overflow-menu-extension/overflow-menu-item.extension'),
+  {
+    featureName: 'patient-actions-slot-deceased-button',
+    moduleName,
+  },
+);
+
+export const visitFormWorkspace = getAsyncLifecycle(
+  () => import('./components/registration/start-visit-form/visit-form-workspace/visit-form.workspace'),
   options,
 );
 
