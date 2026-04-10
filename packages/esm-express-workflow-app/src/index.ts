@@ -36,24 +36,21 @@ export const checkinFormExtraExtension = getAsyncLifecycle(
   () => import('./components/registration/checkin-form-extra/checkin-form-extra.extension'),
   options,
 );
-
-export const customStartVisitPatientSearchActionButton = getAsyncLifecycle(
-  () =>
-    import('./components/registration/start-visit-form/start-visit-overflow-menu/custom-start-visit-button.component'),
-  {
-    featureName: 'custom-patient-action-start-visit',
-    moduleName,
-  },
-);
-export const customStartVisitWorkspace = getAsyncLifecycle(
-  () => import('./components/registration/start-visit-form/start-visit-workspace/start-visit-form.workspace'),
-  {
-    featureName: 'custom-start-visit-form',
-    moduleName,
-  },
-);
 export const patientSummaryDashboard = getAsyncLifecycle(
   () => import('./shared/patient-chart/patient-summary-dashboard/patient-summary-dashboard.component'),
+  options,
+);
+
+export const customStartVisitOverflowMenuItem = getAsyncLifecycle(
+  () => import('./components/registration/start-visit-form/overflow-menu-extension/overflow-menu-item.extension'),
+  {
+    featureName: 'patient-actions-slot-deceased-button',
+    moduleName,
+  },
+);
+
+export const visitFormWorkspace = getAsyncLifecycle(
+  () => import('./components/registration/start-visit-form/visit-form-workspace/visit-form.workspace'),
   options,
 );
 

@@ -4,9 +4,10 @@
 
 .container {
   margin: layout.$spacing-05;
+  margin-right: 4rem;
 
   & section {
-    margin: layout.$spacing-05 0 layout.$spacing-03;
+    margin: layout.$spacing-03 0 layout.$spacing-03;
 
     &:first-of-type {
       margin-top: 0;
@@ -55,14 +56,13 @@
   flex-direction: column;
   justify-content: start;
   height: 100%;
-  right: 13rem;
 }
 
 .buttonSet {
   margin-top: auto;
   justify-self: end;
+  margin-right: 3rem;
 }
-
 .button {
   height: layout.$spacing-10;
   display: flex;

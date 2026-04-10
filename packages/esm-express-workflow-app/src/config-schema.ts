@@ -181,6 +181,69 @@ export const configSchema = {
     _description: 'The UUID of the in-patient visit type.',
     _default: 'a73e2ac6-263b-47fc-99fc-e0f2c09fc914',
   },
+  defaultFacilityUrl: {
+    _type: Type.String,
+    _default: '',
+    _description: 'Custom URL to load default facility if it is not in the session',
+  },
+  offlineVisitTypeUuid: {
+    _type: Type.UUID,
+    _description: 'The UUID of the visit type to be used for the automatically created offline visits.',
+    _default: '',
+  },
+  showRecommendedVisitTypeTab: {
+    _type: Type.Boolean,
+    _description: 'Whether start visit form should display recommended visit type tab. Requires `visitTypeResourceUrl`',
+    _default: false,
+  },
+  visitTypeResourceUrl: {
+    _type: Type.String,
+    _default: '',
+    _description: 'Custom URL to load resources required for showing recommended visit types',
+  },
+  disableChangingVisitLocation: {
+    _type: Type.Boolean,
+    _description: 'Whether the visit location field in the Start Visit form should be view-only.',
+    _default: false,
+  },
+  visitAttributeTypes: {
+    _type: Type.Array,
+    _elements: {
+      _type: Type.Object,
+      uuid: {
+        _type: Type.UUID,
+        _description: 'UUID of the visit attribute type',
+      },
+      required: {
+        _type: Type.Boolean,
+        _description: 'Whether the attribute type field is required or not',
+        _default: false,
+      },
+      displayInThePatientBanner: {
+        _type: Type.Boolean,
+        _description: "Whether we should show this visit attribute's value in the patient banner",
+        _default: true,
+      },
+    },
+    _description: 'List of visit attribute types shown when filling the visit form',
+    _default: [
+      {
+        uuid: '',
+        required: false,
+        displayInThePatientBanner: true,
+      },
+      {
+        uuid: '',
+        required: false,
+        displayInThePatientBanner: true,
+      },
+    ],
+  },
+  showUpcomingAppointments: {
+    _type: Type.Boolean,
+    _description: 'Whether start visit form should display upcoming appointments',
+    _default: false,
+  },
 };
 
 export type ExpressWorkflowConfig = {
@@ -237,7 +300,7 @@ export type ExpressWorkflowConfig = {
   };
   outpatientVisitTypeUuid: string;
   inPatientVisitTypeUuid: string;
-  defaultFacilityUrl: string;
+  defaultFacilityUrl: string; //done
   offlineVisitTypeUuid: string;
   showRecommendedVisitTypeTab: boolean;
   visitTypeResourceUrl: string;
@@ -248,6 +311,6 @@ export type ExpressWorkflowConfig = {
     required: boolean;
     showWhenExpression?: string;
     uuid: string;
-  }>;
-  showUpcomingAppointments: boolean;
+  }>; // done
+  showUpcomingAppointments: boolean; //done
 };

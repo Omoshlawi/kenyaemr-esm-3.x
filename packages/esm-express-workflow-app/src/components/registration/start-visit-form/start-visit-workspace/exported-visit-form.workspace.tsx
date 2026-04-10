@@ -62,7 +62,6 @@ import {
 import { useVisitAttributeTypes } from '../hooks/useVisitAttributeType';
 import BaseVisitType from './base-visit-type.component';
 import LocationSelector from './location-selector.component';
-import VisitAttributeTypeFields from './visit-attribute-type.component';
 import VisitDateTimeSection from './visit-date-time.component';
 import styles from './visit-form.scss';
 import { ExpressWorkflowConfig } from '../../../../config-schema';
@@ -117,7 +116,6 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
   const { activePatientEnrollment, isLoading } = useActivePatientEnrollment(patientUuid);
   const { activeVisit, isLoading: isLoadingVisit } = useVisit(patientUuid);
   const { allowOverlappingVisits, isLoading: isLoadingOverlapSetting } = useAllowOverlappingVisits();
-
   const { mutate: globalMutate } = useSWRConfig();
   const allVisitTypes = useConditionalVisitTypes();
   const { earliestAllowedStartDate, isLoading: isLoadingBirthdateCheck } =
@@ -183,7 +181,6 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
     (visitAttributes: { [p: string]: string }, visitUuid: string) => {
       const existingVisitAttributeTypes =
         visitToEdit?.attributes?.map((attribute) => attribute.attributeType.uuid) || [];
-
       const promises: Array<Promise<unknown>> = [];
 
       for (const [attributeType, value] of Object.entries(visitAttributes)) {
@@ -191,7 +188,6 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
           const attributeToEdit = (visitToEdit?.attributes as Array<VisitAttributeResource> | undefined)?.find(
             (attr) => attr.attributeType.uuid === attributeType,
           );
-
           if (attributeToEdit) {
             const isSameValue =
               typeof attributeToEdit.value === 'object' &&
@@ -199,11 +195,9 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
               'uuid' in (attributeToEdit.value as object)
                 ? (attributeToEdit.value as { uuid: string }).uuid === value
                 : attributeToEdit.value === value;
-
             if (isSameValue) {
               continue;
             }
-
             if (value) {
               promises.push(
                 updateVisitAttribute(visitUuid, attributeToEdit.uuid, value).catch((error) => {
@@ -252,7 +246,6 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
           }
         }
       }
-
       return Promise.all(promises);
     },
     [getErrorDescription, visitToEdit, t, visitAttributeTypes],
@@ -286,11 +279,9 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
         : [];
 
       const formAttributeTypes = new Set(formAttributes.map((attr) => attr.attributeType));
-
       const deduplicatedExtraAttributes = (extraAttributes ?? []).filter(
         (attr: VisitAttribute) => attr?.attributeType && !formAttributeTypes.has(attr.attributeType),
       );
-
       const inlineAttributes = !visitToEdit
         ? [...formAttributes, ...deduplicatedExtraAttributes].filter(
             (attr: VisitAttribute) => attr?.attributeType?.length > 0 && attr?.value?.length > 0,
@@ -298,9 +289,8 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
         : [];
 
       const locationUuid = visitLocation?.uuid ?? '';
-
       const payload: NewVisitPayload = {
-        visitType: visitType,
+        visitType,
         location: locationUuid,
         startDatetime: (hasStartTime ? startDatetime : null) as Date,
         stopDatetime: (hasStopTime ? stopDatetime : null) as Date,
@@ -345,7 +335,6 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
           })
           .then(async (response) => {
             const visit = response.data;
-
             invalidateVisitAndEncounterData(globalMutate as any, patientUuid);
             invalidateCurrentVisit(globalMutate as any, patientUuid);
 
@@ -433,14 +422,7 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
       <FormProvider {...methods}>
         <Form className={styles.form} onSubmit={handleSubmit(onSubmit)} data-openmrs-role="Start Visit Form">
           {showPatientHeader && patient && (
-            <ExtensionSlot
-              name="patient-header-slot"
-              state={{
-                patient,
-                patientUuid: patientUuid,
-                hideActionsOverflow: true,
-              }}
-            />
+            <ExtensionSlot name="patient-header-slot" state={{ patient, patientUuid, hideActionsOverflow: true }} />
           )}
           {errorFetchingResources && (
             <InlineNotification
@@ -461,7 +443,7 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                 />
               </Row>
             )}
-            <Stack gap={4} className={styles.container}>
+            <Stack gap={1} className={styles.container}>
               <section>
                 <FormGroup legendText={t('theVisitIs', 'The visit is')}>
                   <Controller
@@ -471,7 +453,6 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                       const validVisitStatuses = visitToEdit ? ['ongoing', 'past'] : visitStatuses;
                       const idx = validVisitStatuses.indexOf(value);
                       const selectedIndex = idx >= 0 ? idx : 0;
-
                       return visitToEdit ? (
                         <ContentSwitcher
                           selectedIndex={selectedIndex}
@@ -521,9 +502,7 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                       </div>
                     </section>
                   )}
-
                   <LocationSelector control={control} />
-
                   {config.showRecommendedVisitTypeTab && (
                     <section>
                       <h1 className={styles.sectionTitle}>{t('program', 'Program')}</h1>
@@ -559,7 +538,6 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                       </FormGroup>
                     </section>
                   )}
-
                   {!emrConfiguration?.atFacilityVisitType && (
                     <section>
                       <h1 className={styles.sectionTitle}>{t('visitType_title', 'Visit Type')}</h1>
@@ -594,7 +572,6 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                           <BaseVisitType visitTypes={allVisitTypes} />
                         )}
                       </div>
-
                       {errors?.visitType && (
                         <section>
                           <div className={styles.sectionField}>
@@ -609,18 +586,9 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                           </div>
                         </section>
                       )}
+                      <ExtensionSlot state={{ patientUuid, setExtraVisitInfo }} name="extra-visit-attribute-slot" />
                     </section>
                   )}
-
-                  <ExtensionSlot state={{ patientUuid, setExtraVisitInfo }} name="extra-visit-attribute-slot" />
-
-                  <section>
-                    <h1 className={styles.sectionTitle}>{isTablet && t('visitAttributes', 'Visit attributes')}</h1>
-                    <div className={styles.sectionField}>
-                      <VisitAttributeTypeFields setErrorFetchingResources={setErrorFetchingResourcesAdapter} />
-                    </div>
-                  </section>
-
                   <section>
                     <div className={styles.sectionField}>
                       <VisitFormExtensionSlot
@@ -692,7 +660,6 @@ type VisitFormExtensionState = {
 const VisitFormExtensionSlot: React.FC<VisitFormExtensionSlotProps> = React.memo(
   ({ name, patientUuid, visitFormOpenedFrom, setVisitFormCallbacks }) => {
     const config = useConfig<ExpressWorkflowConfig>();
-
     return (
       <ExtensionSlot name={name}>
         {(extension: AssignedExtension) => {
