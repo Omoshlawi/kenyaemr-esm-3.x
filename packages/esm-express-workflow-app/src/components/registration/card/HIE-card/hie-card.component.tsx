@@ -7,13 +7,21 @@ import styles from '../card.scss';
 import DependentsComponent from '../../dependants/dependants.component';
 import { LocalResponse, type HIEBundleResponse, type EligibilityResponse } from '../../type';
 import { hasDependents } from '../../helper';
-import { launchWorkspace, PatientPhoto, showModal, navigate, closeWorkspace } from '@openmrs/esm-framework';
+import {
+  launchWorkspace2,
+  launchWorkspaceGroup2,
+  PatientPhoto,
+  showModal,
+  navigate,
+  type Visit,
+} from '@openmrs/esm-framework';
 import { EnhancedPatientBannerPatientInfo } from '../../patient-banner/patient-banner.component';
 import { findExistingLocalPatient, registerOrLaunchHIEPatient } from '../../search-bar/search-bar.resource';
 import { launchOtpVerificationModal } from '../../../../shared/otp-verification';
 import { otpManager, useOtpSource, cleanupAllOTPs } from './hie-card.resource';
 import { useMultipleActiveVisits } from '../../dependants/dependants.resource';
 import { sanitizePhoneNumber } from '../../../../shared/utils';
+import { VisitFormProps } from '../../start-visit-form/visit-form-workspace/visit-form.workspace';
 
 interface HIEDisplayCardProps {
   bundle: HIEBundleResponse;
@@ -140,6 +148,25 @@ const HIEDisplayCard: React.FC<HIEDisplayCardProps> = ({
     return '254700000000';
   };
 
+  const launchCheckInWorkspace = async (patient: any, patientUuid: string) => {
+    await launchWorkspaceGroup2('ewf-patient-chart', {
+      patient,
+      patientUuid,
+      visitContext: null as unknown as Visit,
+      mutateVisitContext: () => {},
+    });
+
+    launchWorkspace2<VisitFormProps, {}, {}>(
+      'custom-start-visit-workspace-form',
+      {
+        openedFrom: 'registration-check-in',
+        showPatientHeader: false,
+      },
+      {},
+      null,
+    );
+  };
+
   const handleOTPRequest = (patientUuid: string) => {
     setOtpRequestedFor((prev) => new Set(prev).add(patientUuid));
   };
@@ -170,9 +197,7 @@ const HIEDisplayCard: React.FC<HIEDisplayCardProps> = ({
           if (!otpSource) {
             throw new Error('OTP source not configured. Please contact your administrator.');
           }
-
           otpManager.setOtpSource(otpSource);
-
           await otpManager.requestOTP(sanitizedPhone, patientName, otpExpiryMinutes, searchedNationalId, patientUuid);
         } catch (error) {
           throw error;
@@ -184,9 +209,7 @@ const HIEDisplayCard: React.FC<HIEDisplayCardProps> = ({
           if (!otpSource) {
             throw new Error('OTP source not configured. Please contact your administrator.');
           }
-
           otpManager.setOtpSource(otpSource);
-
           const isValid = await otpManager.verifyOTP(sanitizedPhone, otp, patientUuid);
           if (!isValid) {
             throw new Error('OTP verification failed');
@@ -312,21 +335,7 @@ const HIEDisplayCard: React.FC<HIEDisplayCardProps> = ({
                         <Button
                           kind="secondary"
                           size="sm"
-                          onClick={() => {
-                            const localPatientName =
-                              localPatient?.person?.personName?.display ||
-                              `${localPatient?.person?.personName?.givenName || ''} ${
-                                localPatient?.person?.personName?.middleName || ''
-                              } ${localPatient?.person?.personName?.familyName || ''}`.trim() ||
-                              patientName;
-
-                            launchWorkspace('start-visit-workspace-form', {
-                              patientUuid: localPatient.uuid,
-                              workspaceTitle: t('startVisitWorkspaceTitle', 'Start Visit for {{patientName}}', {
-                                patientName: localPatientName,
-                              }),
-                            });
-                          }}>
+                          onClick={() => launchCheckInWorkspace(localPatient, localPatient.uuid)}>
                           {t('checkIn', 'Check In')}
                         </Button>
                       )}
@@ -345,27 +354,8 @@ const HIEDisplayCard: React.FC<HIEDisplayCardProps> = ({
                           kind="secondary"
                           size="sm"
                           onClick={async () => {
-                            const localPatient = await registerOrLaunchHIEPatient(patient, t);
-                            launchWorkspace('start-visit-workspace-form', {
-                              patientUuid: localPatient.uuid,
-                              workspaceTitle: t('checkInPatientWorkspaceTitle', 'Check in patient'),
-                              closeWorkspace: () => {
-                                closeWorkspace('start-visit-workspace-form', {
-                                  onWorkspaceClose: () => {
-                                    navigate({ to: `\${openmrsSpaBase}/patient/${localPatient.uuid}/chart` });
-                                  },
-                                  ignoreChanges: true,
-                                });
-                              },
-                              closeWorkspaceWithSavedChanges: () => {
-                                closeWorkspace('start-visit-workspace-form', {
-                                  onWorkspaceClose: () => {
-                                    navigate({ to: `\${openmrsSpaBase}/patient/${localPatient.uuid}/chart` });
-                                  },
-                                  ignoreChanges: true,
-                                });
-                              },
-                            });
+                            const registeredPatient = await registerOrLaunchHIEPatient(patient, t);
+                            await launchCheckInWorkspace(registeredPatient, registeredPatient.uuid);
                           }}>
                           {t('checkIn', 'Check In')}
                         </Button>
@@ -376,9 +366,7 @@ const HIEDisplayCard: React.FC<HIEDisplayCardProps> = ({
                           iconDescription={showDependents ? 'Hide dependents' : 'Show dependents'}
                           kind="tertiary"
                           size="sm"
-                          onClick={() => {
-                            toggleDependentsVisibility(patientKey);
-                          }}
+                          onClick={() => toggleDependentsVisibility(patientKey)}
                           renderIcon={showDependents ? ChevronUp : ChevronDown}>
                           {showDependents
                             ? t('hideDependents', 'Hide dependents')

@@ -2,16 +2,17 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { DataTable, Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Button, Tag } from '@carbon/react';
 import { TwoFactorAuthentication } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
-import { launchWorkspace, showSnackbar, showModal, navigate, Visit } from '@openmrs/esm-framework';
+import { launchWorkspace2, launchWorkspaceGroup2, showSnackbar, showModal, type Visit } from '@openmrs/esm-framework';
 import capitalize from 'lodash/capitalize';
 import styles from './dependants.scss';
 import { maskName } from '../helper';
 import { findExistingLocalPatient, registerOrLaunchDependent } from '../search-bar/search-bar.resource';
 import { getDependentsFromContacts, useMultipleActiveVisits } from './dependants.resource';
-import { DependentWithPhone, HIEBundleResponse, HIEPatient, LocalPatient } from '../type';
+import { DependentWithPhone, HIEPatient } from '../type';
 import { otpManager, useOtpSource, cleanupAllOTPs } from '../card/HIE-card/hie-card.resource';
 import { launchOtpVerificationModal } from '../../../shared/otp-verification';
 import { sanitizePhoneNumber } from '../../../shared/utils';
+import { VisitFormProps } from '../start-visit-form/visit-form-workspace/visit-form.workspace';
 
 type DependentProps = {
   patient: HIEPatient;
@@ -28,12 +29,11 @@ const DependentsComponent: React.FC<DependentProps> = ({
   const [submittingStates, setSubmittingStates] = useState<Record<string, boolean>>({});
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
   const [localPatientCache, setLocalPatientCache] = useState<Map<string, any>>(new Map());
-
   const [verifiedSpouses, setVerifiedSpouses] = useState<Set<string>>(new Set());
   const [otpRequestedForSpouse, setOtpRequestedForSpouse] = useState<Set<string>>(new Set());
   const [activePhoneNumbers, setActivePhoneNumbers] = useState<Map<string, string>>(new Map());
 
-  const { otpSource, isLoading: isLoadingOtpSource, error: otpSourceError } = useOtpSource();
+  const { otpSource, isLoading: isLoadingOtpSource } = useOtpSource();
 
   useEffect(() => {
     if (otpSource) {
@@ -74,7 +74,7 @@ const DependentsComponent: React.FC<DependentProps> = ({
   }, []);
 
   const getDependentPhoneNumber = useCallback(
-    (dependent: HIEPatient | DependentWithPhone): string | undefined => {
+    (dependent: HIEPatient | DependentWithPhone): string => {
       if ('contact' in dependent && dependent.contact && Array.isArray(dependent.contact)) {
         for (const contact of dependent.contact) {
           if (contact.telecom && Array.isArray(contact.telecom)) {
@@ -82,7 +82,6 @@ const DependentsComponent: React.FC<DependentProps> = ({
               (telecom) =>
                 telecom.system === 'phone' && telecom.value && telecom.value !== 'N/A' && telecom.value.trim() !== '',
             );
-
             if (phoneTelecom) {
               return sanitizePhoneNumber(phoneTelecom.value);
             }
@@ -99,7 +98,6 @@ const DependentsComponent: React.FC<DependentProps> = ({
             attr.value.trim() !== '' &&
             attr.value.trim().length > 0,
         );
-
         if (phoneAttribute?.value) {
           return sanitizePhoneNumber(phoneAttribute.value);
         }
@@ -152,16 +150,12 @@ const DependentsComponent: React.FC<DependentProps> = ({
       return {
         onRequestOtp: async (phoneNumber: string): Promise<void> => {
           const sanitizedPhone = sanitizePhoneNumber(phoneNumber);
-
           try {
             if (!otpSource) {
               throw new Error('OTP source not configured. Please contact your administrator.');
             }
-
             otpManager.setOtpSource(otpSource);
-
             setActivePhoneNumbers((prev) => new Map(prev.set(dependentId, sanitizedPhone)));
-
             await otpManager.requestOTP(sanitizedPhone, dependentName, otpExpiryMinutes, null, dependentId);
           } catch (error) {
             throw error;
@@ -172,12 +166,9 @@ const DependentsComponent: React.FC<DependentProps> = ({
             if (!otpSource) {
               throw new Error('OTP source not configured. Please contact your administrator.');
             }
-
             otpManager.setOtpSource(otpSource);
-
             const activePhone = activePhoneNumbers.get(dependentId) || initialPhone;
             const sanitizedPhone = sanitizePhoneNumber(activePhone);
-
             const isValid = await otpManager.verifyOTP(sanitizedPhone, otp, dependentId);
             if (!isValid) {
               throw new Error('OTP verification failed');
@@ -211,20 +202,24 @@ const DependentsComponent: React.FC<DependentProps> = ({
       }
 
       if (localPatient) {
-        const localPatientName =
-          localPatient.person?.personName?.display ||
-          `${localPatient.person?.personName?.givenName || ''} ${localPatient.person?.personName?.middleName || ''} ${
-            localPatient.person?.personName?.familyName || ''
-          }`.trim() ||
-          dependent.name;
-
-        launchWorkspace('start-visit-workspace-form', {
+        await launchWorkspaceGroup2('ewf-patient-chart', {
+          patient: localPatient,
           patientUuid: localPatient.uuid,
-          workspaceTitle: t('checkInPatientWorkspaceTitle', 'Check in patient'),
+          visitContext: null as unknown as Visit,
+          mutateVisitContext: () => {},
         });
+
+        launchWorkspace2<VisitFormProps, {}, {}>(
+          'custom-start-visit-workspace-form',
+          {
+            openedFrom: 'dependants-check-in',
+            showPatientHeader: false,
+          },
+          {},
+          null,
+        );
       } else {
         setSubmittingStates((prev) => ({ ...prev, [dependent.id]: true }));
-
         try {
           await registerOrLaunchDependent(dependent, t);
         } catch (error) {
@@ -246,34 +241,13 @@ const DependentsComponent: React.FC<DependentProps> = ({
 
   const headers = useMemo(
     () => [
-      {
-        key: 'name',
-        header: t('name', 'Name'),
-      },
-      {
-        key: 'relationship',
-        header: t('relationship', 'Relationship'),
-      },
-      {
-        key: 'gender',
-        header: t('gender', 'Gender'),
-      },
-      {
-        key: 'birthDate',
-        header: t('birthDate', 'Birth Date'),
-      },
-      {
-        key: 'identifiers',
-        header: t('identifiers', 'Identifiers'),
-      },
-      {
-        key: 'status',
-        header: t('status', 'Status'),
-      },
-      {
-        key: 'actions',
-        header: t('actions', 'Actions'),
-      },
+      { key: 'name', header: t('name', 'Name') },
+      { key: 'relationship', header: t('relationship', 'Relationship') },
+      { key: 'gender', header: t('gender', 'Gender') },
+      { key: 'birthDate', header: t('birthDate', 'Birth Date') },
+      { key: 'identifiers', header: t('identifiers', 'Identifiers') },
+      { key: 'status', header: t('status', 'Status') },
+      { key: 'actions', header: t('actions', 'Actions') },
     ],
     [t],
   );
@@ -475,18 +449,16 @@ const DependentsComponent: React.FC<DependentProps> = ({
           <Table {...getTableProps()}>
             <TableHead>
               <TableRow>
-                {headers.map((header, index) => (
-                  <TableHeader key={index} {...getHeaderProps({ header })}>
-                    {header.header}
-                  </TableHeader>
+                {headers.map((header) => (
+                  <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
                 ))}
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.map((row, index) => (
-                <TableRow key={index} {...getRowProps({ row })}>
-                  {row.cells.map((cell, cellIndex) => (
-                    <TableCell key={cellIndex}>{cell.value}</TableCell>
+              {rows.map((row) => (
+                <TableRow {...getRowProps({ row })}>
+                  {row.cells.map((cell) => (
+                    <TableCell key={cell.id}>{cell.value}</TableCell>
                   ))}
                 </TableRow>
               ))}

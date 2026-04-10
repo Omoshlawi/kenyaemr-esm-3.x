@@ -62,6 +62,7 @@ import {
 import { useVisitAttributeTypes } from '../hooks/useVisitAttributeType';
 import BaseVisitType from './base-visit-type.component';
 import LocationSelector from './location-selector.component';
+import VisitAttributeTypeFields from './visit-attribute-type.component';
 import VisitDateTimeSection from './visit-date-time.component';
 import styles from './visit-form.scss';
 import { ExpressWorkflowConfig } from '../../../../config-schema';
@@ -335,8 +336,22 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
           })
           .then(async (response) => {
             const visit = response.data;
+
+            // mutate all SWR keys to refresh the page data
             invalidateVisitAndEncounterData(globalMutate as any, patientUuid);
             invalidateCurrentVisit(globalMutate as any, patientUuid);
+
+            // mutate all keys matching patient or visit patterns
+            globalMutate(
+              (key) =>
+                typeof key === 'string' &&
+                (key.includes(`/visit?patient=${patientUuid}`) ||
+                  key.includes(`/patient/${patientUuid}`) ||
+                  key.includes('/queue') ||
+                  key.includes('/visit/')),
+              undefined,
+              { revalidate: true },
+            );
 
             const visitAttributesRequest = visitToEdit
               ? handleVisitAttributes(visitAttributes, response.data.uuid).then((visitAttributesResponses) => {
@@ -373,6 +388,17 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
           async (visit) => {
             invalidateVisitAndEncounterData(globalMutate as any, patientUuid);
             invalidateCurrentVisit(globalMutate as any, patientUuid);
+
+            globalMutate(
+              (key) =>
+                typeof key === 'string' &&
+                (key.includes(`/visit?patient=${patientUuid}`) ||
+                  key.includes(`/patient/${patientUuid}`) ||
+                  key.includes('/queue')),
+              undefined,
+              { revalidate: true },
+            );
+
             showSnackbar({
               isLowContrast: true,
               kind: 'success',
@@ -443,7 +469,7 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                 />
               </Row>
             )}
-            <Stack gap={1} className={styles.container}>
+            <Stack gap={4} className={styles.container}>
               <section>
                 <FormGroup legendText={t('theVisitIs', 'The visit is')}>
                   <Controller
@@ -586,9 +612,15 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                           </div>
                         </section>
                       )}
-                      <ExtensionSlot state={{ patientUuid, setExtraVisitInfo }} name="extra-visit-attribute-slot" />
                     </section>
                   )}
+                  <ExtensionSlot state={{ patientUuid, setExtraVisitInfo }} name="extra-visit-attribute-slot" />
+                  <section>
+                    <h1 className={styles.sectionTitle}>{isTablet && t('visitAttributes', 'Visit attributes')}</h1>
+                    <div className={styles.sectionField}>
+                      <VisitAttributeTypeFields setErrorFetchingResources={setErrorFetchingResourcesAdapter} />
+                    </div>
+                  </section>
                   <section>
                     <div className={styles.sectionField}>
                       <VisitFormExtensionSlot

@@ -4,8 +4,9 @@ import { Layer, RadioButton, RadioButtonGroup, Search, StructuredListSkeleton, T
 import { useTranslation } from 'react-i18next';
 import { useFormContext, Controller } from 'react-hook-form';
 import { PatientChartPagination } from '@openmrs/esm-patient-common-lib';
-import { useDebounce, useLayoutType, usePagination, type VisitType } from '@openmrs/esm-framework';
+import { useConfig, useDebounce, useLayoutType, usePagination, type VisitType } from '@openmrs/esm-framework';
 import { type VisitFormData } from './visit-form.resource';
+import { type ExpressWorkflowConfig } from '../../../../config-schema';
 import styles from './base-visit-type.scss';
 
 interface BaseVisitTypeProps {
@@ -18,14 +19,20 @@ const BaseVisitType: React.FC<BaseVisitTypeProps> = ({ visitTypes }) => {
   const isTablet = useLayoutType() === 'tablet';
   const [searchTerm, setSearchTerm] = useState<string>('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const config = useConfig<ExpressWorkflowConfig>();
+
+  const filteredVisitTypes = useMemo(() => {
+    const excluded = config?.excludedVisitTypeUuids;
+    return visitTypes.filter((visitType) => !excluded.includes(visitType.uuid));
+  }, [visitTypes, config?.excludedVisitTypeUuids]);
 
   const searchResults = useMemo(() => {
     if (!debouncedSearchTerm.trim()) {
-      return visitTypes;
+      return filteredVisitTypes;
     }
     const lowercasedTerm = debouncedSearchTerm.toLowerCase();
-    return visitTypes.filter((visitType) => visitType.display.toLowerCase().includes(lowercasedTerm));
-  }, [debouncedSearchTerm, visitTypes]);
+    return filteredVisitTypes.filter((visitType) => visitType.display.toLowerCase().includes(lowercasedTerm));
+  }, [debouncedSearchTerm, filteredVisitTypes]);
 
   const { results, currentPage, goTo } = usePagination(searchResults, 5);
   const hasNoMatchingSearchResults = debouncedSearchTerm.trim() !== '' && searchResults.length === 0;
@@ -41,7 +48,6 @@ const BaseVisitType: React.FC<BaseVisitTypeProps> = ({ visitTypes }) => {
     }
   }, [searchResults, setValue]);
 
-  // Reset pagination to page 1 when search term changes
   useEffect(() => {
     if (prevSearchTermRef.current !== debouncedSearchTerm && currentPage !== 1) {
       goTo(1);
@@ -60,7 +66,7 @@ const BaseVisitType: React.FC<BaseVisitTypeProps> = ({ visitTypes }) => {
 
   return (
     <div className={classNames(styles.visitTypeOverviewWrapper, isTablet ? styles.tablet : styles.desktop)}>
-      {visitTypes.length ? (
+      {filteredVisitTypes.length ? (
         <>
           {isTablet ? <Layer>{searchComponent}</Layer> : searchComponent}
 

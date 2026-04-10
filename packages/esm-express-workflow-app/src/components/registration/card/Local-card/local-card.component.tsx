@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import classNames from 'classnames';
 import styles from '../card.scss';
 import { LocalResponse, type HIEBundleResponse, type EligibilityResponse } from '../../type';
-import { launchWorkspace, PatientPhoto, showModal, closeWorkspace, navigate } from '@openmrs/esm-framework';
+import { launchWorkspace2, launchWorkspaceGroup2, PatientPhoto, showModal, type Visit } from '@openmrs/esm-framework';
 import { EnhancedPatientBannerPatientInfo } from '../../patient-banner/patient-banner.component';
 import { convertLocalPatientToFHIR, getNationalIdFromPatient, hasDependents } from '../../helper';
 import { launchOtpVerificationModal } from '../../../../shared/otp-verification';
@@ -13,6 +13,7 @@ import DependentsComponent from '../../dependants/dependants.component';
 import { useMultipleActiveVisits } from '../../dependants/dependants.resource';
 import { otpManager, useOtpSource, cleanupAllOTPs } from '../HIE-card/hie-card.resource';
 import { sanitizePhoneNumber } from '../../../../shared/utils';
+import { VisitFormProps } from '../../start-visit-form/visit-form-workspace/visit-form.workspace';
 
 interface LocalPatientCardProps {
   localSearchResults: LocalResponse;
@@ -46,7 +47,6 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
     }
   }, [otpSource]);
 
-  // Clean up OTPs when component unmounts
   useEffect(() => {
     return () => {
       cleanupAllOTPs();
@@ -114,6 +114,25 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
     return '254700000000';
   }, []);
 
+  const launchCheckInWorkspace = async (patient: any, patientUuid: string) => {
+    await launchWorkspaceGroup2('ewf-patient-chart', {
+      patient,
+      patientUuid,
+      visitContext: null as unknown as Visit,
+      mutateVisitContext: () => {},
+    });
+
+    launchWorkspace2<VisitFormProps, {}, {}>(
+      'custom-start-visit-workspace-form',
+      {
+        openedFrom: 'registration-check-in',
+        showPatientHeader: false,
+      },
+      {},
+      null,
+    );
+  };
+
   const handleOTPRequest = useCallback((patientUuid: string) => {
     setOtpRequestedFor((prev) => new Set(prev).add(patientUuid));
   }, []);
@@ -141,9 +160,7 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
             if (!otpSource) {
               throw new Error('OTP source not configured. Please contact your administrator.');
             }
-
             otpManager.setOtpSource(otpSource);
-
             await otpManager.requestOTP(sanitizedPhone, patientName, otpExpiryMinutes, searchedNationalId, patientUuid);
           } catch (error) {
             throw error;
@@ -155,9 +172,7 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
             if (!otpSource) {
               throw new Error('OTP source not configured. Please contact your administrator.');
             }
-
             otpManager.setOtpSource(otpSource);
-
             const isValid = await otpManager.verifyOTP(sanitizedPhone, otp, patientUuid);
             if (!isValid) {
               throw new Error('OTP verification failed');
@@ -207,7 +222,6 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
         const hasActiveVisit = !!activeVisit;
 
         const hiePatientData: any = findHIEPatientData(localPatient);
-
         const patientHasDependents: boolean = hiePatientData ? hasDependents(hiePatientData) : false;
         const showDependents: boolean = showDependentsForPatient.has(patientUuid);
 
@@ -230,7 +244,6 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
                 <div className={styles.patientAvatar} role="img">
                   <PatientPhoto patientUuid={patientUuid} patientName={patientName} />
                 </div>
-
                 <EnhancedPatientBannerPatientInfo
                   patient={fhirPatient}
                   renderedFrom="local-search"
@@ -291,22 +304,7 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
                         <Button
                           kind="primary"
                           size="sm"
-                          onClick={() => {
-                            launchWorkspace('start-visit-workspace-form', {
-                              patientUuid: patientUuid,
-                              workspaceTitle: t('checkInPatientWorkspaceTitle', 'Check in patient'),
-                              closeWorkspace: () => {
-                                closeWorkspace('start-visit-workspace-form', {
-                                  ignoreChanges: true,
-                                });
-                              },
-                              closeWorkspaceWithSavedChanges: () => {
-                                closeWorkspace('start-visit-workspace-form', {
-                                  ignoreChanges: true,
-                                });
-                              },
-                            });
-                          }}>
+                          onClick={() => launchCheckInWorkspace(localPatient, patientUuid)}>
                           {t('checkIn', 'Check In')}
                         </Button>
                       )}
