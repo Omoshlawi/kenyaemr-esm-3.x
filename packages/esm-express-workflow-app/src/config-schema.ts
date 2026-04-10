@@ -244,6 +244,14 @@ export const configSchema = {
     _description: 'Whether start visit form should display upcoming appointments',
     _default: false,
   },
+  excludedVisitTypeUuids: {
+    _type: Type.Array,
+    _elements: {
+      _type: Type.UUID,
+    },
+    _default: ['02b67c47-6071-4091-953d-ad21452e830c'],
+    _description: 'List of visit type UUIDs to exclude from the start visit form',
+  },
 };
 
 export type ExpressWorkflowConfig = {
@@ -313,4 +321,5 @@ export type ExpressWorkflowConfig = {
     uuid: string;
   }>; // done
   showUpcomingAppointments: boolean; //done
+  excludedVisitTypeUuids: Array<string>;
 };
