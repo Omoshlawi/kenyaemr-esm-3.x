@@ -27,8 +27,36 @@ export interface SHAFacility {
   shaFacilityLicenseNumber: string;
   facilityRegistryCode: string;
   source: string;
+  officialName: string;
+  facilityType: string;
+  facilityOwnership: string;
+  fidCode: string;
+  isHub: string;
+  facilityLicenseStatus: string;
+  facilityLicenseStartDate: string;
+  regulatoryBody: string;
+  shaContractStatus: string;
+  shaContractStartDate: string;
+  shaContractEndDate: string;
+  facilityPhoneNumber: string;
+  facilityEmail: string;
+  facilityAdministratorName: string;
+  facilityAdministratorPhone: string;
+  facilityAdministratorEmail: string;
+  county: string;
+  subCounty: string;
+  town: string;
+  physicalLocation: string;
+  postalAddress: string;
+  latitude: string;
+  longitude: string;
+  totalBeds: string;
+  normalBeds: string;
+  icuBeds: string;
+  hduBeds: string;
+  dialysisBeds: string;
+  shaContractedServices: string;
 }
-
 export interface DefaultFacility {
   locationId: number;
   uuid: string;
