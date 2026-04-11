@@ -264,6 +264,11 @@
       "window": "kenyaemr-custom-form-entry-workspace-window"
     },
     {
+      "name": "custom-form-entry-workspace",
+      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "window": "custom-form-entry-workspace-window"
+    },
+    {
       "name": "contact-list-update-form",
       "component": "contactListUpdateForm",
       "window": "patient-clinical-view-workspace-window"
@@ -292,6 +297,13 @@
       "canMaximize": true,
       "canHide": true,
       "group": "patient-clinical-view-workspace-group",
+      "width": "extra-wide"
+    },
+    {
+      "name": "custom-form-entry-workspace-window",
+      "canMaximize": true,
+      "canHide": true,
+      "group": "patient-chart",
       "width": "extra-wide"
     }
   ],
