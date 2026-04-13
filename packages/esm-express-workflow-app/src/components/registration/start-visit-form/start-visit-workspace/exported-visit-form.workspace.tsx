@@ -521,6 +521,7 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                       <div className={styles.sectionField}>
                         <VisitFormExtensionSlot
                           name="visit-form-top-slot"
+                          visitStatus={visitStatus}
                           patientUuid={patientUuid}
                           visitFormOpenedFrom={openedFrom}
                           setVisitFormCallbacks={setVisitFormCallbacks}
@@ -625,6 +626,7 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                     <div className={styles.sectionField}>
                       <VisitFormExtensionSlot
                         name="visit-form-bottom-slot"
+                        visitStatus={visitStatus}
                         patientUuid={patientUuid}
                         visitFormOpenedFrom={openedFrom}
                         setVisitFormCallbacks={setVisitFormCallbacks}
@@ -678,6 +680,7 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
 interface VisitFormExtensionSlotProps {
   name: string;
   patientUuid: string;
+  visitStatus: string;
   visitFormOpenedFrom: string;
   setVisitFormCallbacks: React.Dispatch<React.SetStateAction<Map<string, VisitFormCallbacks>>>;
 }
@@ -686,11 +689,12 @@ type VisitFormExtensionState = {
   patientUuid: string;
   setVisitFormCallbacks: (callbacks: VisitFormCallbacks) => void;
   visitFormOpenedFrom: string;
+  visitStatus: string;
   patientChartConfig: ExpressWorkflowConfig;
 };
 
 const VisitFormExtensionSlot: React.FC<VisitFormExtensionSlotProps> = React.memo(
-  ({ name, patientUuid, visitFormOpenedFrom, setVisitFormCallbacks }) => {
+  ({ name, patientUuid, visitFormOpenedFrom, setVisitFormCallbacks, visitStatus }) => {
     const config = useConfig<ExpressWorkflowConfig>();
     return (
       <ExtensionSlot name={name}>
@@ -701,6 +705,7 @@ const VisitFormExtensionSlot: React.FC<VisitFormExtensionSlotProps> = React.memo
               setVisitFormCallbacks((old) => new Map(old).set(extension.id, callbacks));
             },
             visitFormOpenedFrom,
+            visitStatus,
             patientChartConfig: config,
           };
           return <Extension state={state} />;
