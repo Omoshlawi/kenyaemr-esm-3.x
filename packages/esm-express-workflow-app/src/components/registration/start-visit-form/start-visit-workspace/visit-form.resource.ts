@@ -152,6 +152,17 @@ export function useAllowOverlappingVisits() {
 
 export interface VisitFormCallbacks {
   onVisitCreatedOrUpdated: (visit: Visit) => Promise<any>;
+  /**
+   * Called BEFORE the visit is saved.
+   * Return true to proceed with saving, false to abort.
+   * Used by the SHA billing extension to launch the OTP modal before checkin.
+   */
+  onBeforeVisitSave?: () => Promise<boolean>;
+  /**
+   * When true, signals ExportedVisitForm to change the submit button label
+   * from "Start Visit" to "Send OTP & Start Visit".
+   */
+  isSHAVisit?: boolean;
 }
 
 export function useVisitFormCallbacks() {

@@ -1,93 +1,137 @@
-import React, { useEffect, useMemo } from 'react';
-import { InlineLoading, InlineNotification, MultiSelect } from '@carbon/react';
+import { InlineLoading, InlineNotification, MultiSelect, Tag } from '@carbon/react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { z } from 'zod';
-import { InterventionsFilter, useInterventions } from '../../hooks/useInterventions';
-import { eligibilityRequestShema } from '../benefits-package.resources';
-import { usePatient } from '@openmrs/esm-framework';
-
-type EligibilityRequest = z.infer<typeof eligibilityRequestShema>;
+import styles from './packages-and-interventions-form.scss';
+import { useSHAInterventions } from '../../billing-form/social-health-authority/sha-virtual-claim.resource';
+import { type SHAIntervention } from '../../billing-form/social-health-authority/type';
+import { formatCurrency } from '../../helpers/currency';
 
 type PackageInterventionsProps = {
-  categories: Array<string>;
+  patientCRId: string;
+  subBenefitCode: string;
   patientUuid: string;
+  selectedPackages: Array<string>;
 };
-const PackageInterventions: React.FC<PackageInterventionsProps> = ({ categories, patientUuid }) => {
-  const { error: patientError, isLoading: isPatientLoading, patient } = usePatient(patientUuid);
-  const filters: InterventionsFilter = {
-    package_code: categories.join(','),
-    applicable_gender: patient?.gender === 'male' ? 'MALE' : 'FEMALE',
-  };
-  const { error, interventions, isLoading, allInterventions } = useInterventions(filters);
 
-  const form = useFormContext<{ packages: Array<string>; interventions: Array<string> }>();
+const PackageInterventions: React.FC<PackageInterventionsProps> = ({
+  patientCRId,
+  subBenefitCode,
+  selectedPackages,
+}) => {
   const { t } = useTranslation();
-  const selectedInterventionsObservable = form.watch('interventions');
+  const form = useFormContext<{ packages: Array<string>; interventions: Array<string> }>();
+  const selectedInterventionsObservable = form.watch('interventions') ?? [];
+
+  const { interventions, isLoading, error } = useSHAInterventions(patientCRId, subBenefitCode);
+
+  const [cachedInterventions, setCachedInterventions] = useState<Record<string, SHAIntervention>>({});
+
+  useEffect(() => {
+    if (interventions.length > 0) {
+      setCachedInterventions((prev) => {
+        const updated = { ...prev };
+        interventions.forEach((i) => {
+          updated[i.code] = i;
+        });
+        return updated;
+      });
+    }
+  }, [interventions]);
 
   const interventions_ = useMemo(() => {
+    const base = interventions.length > 0 ? interventions : Object.values(cachedInterventions);
+
     const additionalInterventions = selectedInterventionsObservable.reduce((prev, curr) => {
-      const interventionContainedInOptions = interventions.some((i) => i.interventionCode === curr);
-      if (!interventionContainedInOptions) {
-        const intervention = allInterventions.find((i) => i.interventionCode === curr);
-        if (intervention) {
-          prev.push(intervention);
-        }
+      const contained = base.some((i) => i.code === curr);
+      if (!contained && cachedInterventions[curr]) {
+        prev.push(cachedInterventions[curr]);
       }
       return prev;
-    }, [] as typeof allInterventions);
+    }, [] as Array<SHAIntervention>);
 
-    return [...interventions, ...additionalInterventions];
-  }, [allInterventions, interventions, selectedInterventionsObservable]);
+    return [...base, ...additionalInterventions];
+  }, [interventions, cachedInterventions, selectedInterventionsObservable]);
 
-  if (isLoading || isPatientLoading) {
+  if (isLoading) {
     return (
       <InlineLoading
+        className={styles.loader}
         status="active"
-        iconDescription="Loading"
-        description={t('loadingInterventions', 'Loading interventions') + '...'}
+        iconDescription={t('loading', 'Loading')}
+        description={t('loadingInterventions', 'Loading interventions...')}
       />
     );
   }
 
-  if (error || patientError) {
+  if (error) {
     return (
       <InlineNotification
         aria-label="closes notification"
         kind="error"
-        lowContrast={true}
+        lowContrast
         statusIconDescription="notification"
         title={t('failure', 'Error loading interventions')}
-        subtitle={error?.message ?? patientError?.message}
+        subtitle={error?.message}
       />
     );
   }
 
   return (
-    <Controller
-      control={form.control}
-      name="interventions"
-      render={({ field }) => (
-        <MultiSelect
-          ref={field.ref}
-          disabled={!categories || categories.length === 0}
-          invalid={!!form.formState.errors[field.name]?.message}
-          invalidText={form.formState.errors[field.name]?.message}
-          id="interventions"
-          titleText={t('interventions', 'Interventions')}
-          onChange={(e) => {
-            field.onChange(e.selectedItems);
-          }}
-          selectedItems={field.value}
-          label={t('chooseInterventions', 'Choose interventions')}
-          items={interventions_.map((r) => r.interventionCode)}
-          itemToString={(item) => {
-            const _intervention = interventions_.find((r) => r.interventionCode === item);
-            return _intervention?.interventionName ?? '';
-          }}
-        />
+    <div className={styles.interventionsWrapper}>
+      <p className={styles.sectionTitle}>{t('shaInterventions', 'SHA Interventions')}</p>
+      <Controller
+        control={form.control}
+        name="interventions"
+        render={({ field }) => (
+          <MultiSelect
+            ref={field.ref}
+            id="sha-interventions"
+            disabled={!subBenefitCode || selectedPackages.length === 0}
+            titleText={t('interventions', 'Interventions')}
+            label={t('chooseInterventions', 'Choose interventions')}
+            items={interventions_.map((i) => i.code)}
+            itemToString={(code) => {
+              const intervention = interventions_.find((i) => i.code === code);
+              if (!intervention) {
+                return code ?? '';
+              }
+              const preauth = intervention.needs_preauth
+                ? ` — ${t('preauthRequired', 'Preauth required')}`
+                : ` — ${t('noPreauthNeeded', 'No preauth')}`;
+              return `${intervention.name}${preauth}`;
+            }}
+            selectedItems={field.value ?? []}
+            onChange={(e) => field.onChange(e.selectedItems)}
+            invalid={!!form.formState.errors[field.name]?.message}
+            invalidText={form.formState.errors[field.name]?.message}
+          />
+        )}
+      />
+
+      {selectedInterventionsObservable.length > 0 && (
+        <div className={styles.tagsContainer}>
+          {selectedInterventionsObservable.map((code) => {
+            const intervention = cachedInterventions[code];
+            const name = intervention?.name ?? code;
+            const needsPreauth = intervention?.needs_preauth ?? false;
+            const tariff = intervention?.tariff ? ` - ${formatCurrency(Number(intervention.tariff))}` : '';
+
+            return needsPreauth ? (
+              <Tag key={code} type="red" size="lg" className={styles.tag}>
+                {name}
+                {tariff}: {t('preauthRequired', 'Preauth required')}
+              </Tag>
+            ) : (
+              <Tag key={code} type="green" size="lg" className={styles.tag}>
+                {name}
+                {tariff}: {t('noPreauthNeeded', 'No preauth needed')}
+              </Tag>
+            );
+          })}
+        </div>
       )}
-    />
+    </div>
   );
 };
 

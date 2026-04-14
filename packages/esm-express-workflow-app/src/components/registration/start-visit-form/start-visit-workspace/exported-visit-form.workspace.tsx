@@ -155,7 +155,13 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
   } = methods;
 
   const visitStatus = useWatch({ control, name: 'visitStatus' });
+  const visitType = useWatch({ control, name: 'visitType' });
   const hasActiveVisitConflict = !visitToEdit && visitStatus !== 'past' && !!activeVisit && !allowOverlappingVisits;
+
+  const isSHAVisit = useMemo(
+    () => [...visitFormCallbacks.values()].some((cb) => cb.isSHAVisit === true),
+    [visitFormCallbacks],
+  );
 
   useEffect(() => {
     reset(defaultValues, {
@@ -301,6 +307,15 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
 
       const abortController = new AbortController();
       if (isOnline) {
+        for (const [, callbacks] of visitFormCallbacks) {
+          if (typeof callbacks.onBeforeVisitSave === 'function') {
+            const canProceed = await callbacks.onBeforeVisitSave();
+            if (!canProceed) {
+              return;
+            }
+          }
+        }
+
         const visitRequest = visitToEdit?.uuid
           ? updateVisit(visitToEdit.uuid, payload, abortController)
           : saveVisit(payload, abortController);
@@ -337,11 +352,9 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
           .then(async (response) => {
             const visit = response.data;
 
-            // mutate all SWR keys to refresh the page data
             invalidateVisitAndEncounterData(globalMutate as any, patientUuid);
             invalidateCurrentVisit(globalMutate as any, patientUuid);
 
-            // mutate all keys matching patient or visit patterns
             globalMutate(
               (key) =>
                 typeof key === 'string' &&
@@ -630,6 +643,7 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                         patientUuid={patientUuid}
                         visitFormOpenedFrom={openedFrom}
                         setVisitFormCallbacks={setVisitFormCallbacks}
+                        visitTypeUuid={visitType}
                       />
                     </div>
                   </section>
@@ -663,11 +677,19 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                   description={
                     visitToEdit
                       ? t('updatingVisit', 'Updating visit') + '...'
+                      : isSHAVisit
+                      ? t('sendingOtp', 'Sending OTP') + '...'
                       : t('startingVisit', 'Starting visit') + '...'
                   }
                 />
               ) : (
-                <span>{visitToEdit ? t('updateVisit', 'Update visit') : t('startVisit', 'Start visit')}</span>
+                <span>
+                  {visitToEdit
+                    ? t('updateVisit', 'Update visit')
+                    : isSHAVisit
+                    ? t('sendOtpAndStartVisit', 'Send OTP & Start Visit')
+                    : t('startVisit', 'Start visit')}
+                </span>
               )}
             </Button>
           </ButtonSet>
@@ -683,6 +705,7 @@ interface VisitFormExtensionSlotProps {
   visitStatus: string;
   visitFormOpenedFrom: string;
   setVisitFormCallbacks: React.Dispatch<React.SetStateAction<Map<string, VisitFormCallbacks>>>;
+  visitTypeUuid?: string;
 }
 
 type VisitFormExtensionState = {
@@ -691,10 +714,11 @@ type VisitFormExtensionState = {
   visitFormOpenedFrom: string;
   visitStatus: string;
   patientChartConfig: ExpressWorkflowConfig;
+  visitTypeUuid?: string;
 };
 
 const VisitFormExtensionSlot: React.FC<VisitFormExtensionSlotProps> = React.memo(
-  ({ name, patientUuid, visitFormOpenedFrom, setVisitFormCallbacks, visitStatus }) => {
+  ({ name, patientUuid, visitFormOpenedFrom, setVisitFormCallbacks, visitStatus, visitTypeUuid }) => {
     const config = useConfig<ExpressWorkflowConfig>();
     return (
       <ExtensionSlot name={name}>
@@ -707,6 +731,7 @@ const VisitFormExtensionSlot: React.FC<VisitFormExtensionSlotProps> = React.memo
             visitFormOpenedFrom,
             visitStatus,
             patientChartConfig: config,
+            visitTypeUuid,
           };
           return <Extension state={state} />;
         }}

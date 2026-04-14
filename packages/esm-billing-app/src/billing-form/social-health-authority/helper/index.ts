@@ -2,6 +2,7 @@ import { formatDate } from '@openmrs/esm-framework';
 import { isWithinInterval, parseISO } from 'date-fns';
 import { CoverageStatus, MemberType } from '../constant';
 import { Scheme } from '../../hie.resource';
+import dayjs from 'dayjs';
 
 /**
  * Checks if a scheme's coverage status is active
@@ -95,3 +96,5 @@ export const formatCoverageDate = (dateString: string): string => {
     return dateString;
   }
 };
+
+export const toSavannahISO = (date: Date): string => `${dayjs(date).format('YYYY-MM-DD')}T08:00:00+03:00`;

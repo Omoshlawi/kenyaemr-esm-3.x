@@ -1,0 +1,67 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  margin-top: layout.$spacing-05;
+}
+
+.column {
+  padding: 0;
+  width: 100%;
+}
+
+.sectionTitle {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-03;
+}
+
+.loader {
+  margin: layout.$spacing-05 0;
+}
+
+.interventionsWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.tagsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+  margin-top: layout.$spacing-03;
+}
+
+.tag {
+  max-width: 100%;
+  font-weight: 500;
+
+  :global(.cds--tag__label) {
+    white-space: normal;
+    word-break: break-word;
+  }
+}
+
+.dateInput {
+  width: 100%;
+}
+
+.numberInput {
+  width: 100%;
+}
+
+.inpatientSection {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-04;
+  background-color: colors.$blue-10;
+  border-left: 3px solid colors.$blue-40;
+  border-radius: layout.$spacing-02;
+  margin-top: layout.$spacing-03;
+}
