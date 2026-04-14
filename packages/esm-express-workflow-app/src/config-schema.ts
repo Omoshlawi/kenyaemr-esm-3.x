@@ -226,18 +226,7 @@ export const configSchema = {
       },
     },
     _description: 'List of visit attribute types shown when filling the visit form',
-    _default: [
-      {
-        uuid: '',
-        required: false,
-        displayInThePatientBanner: true,
-      },
-      {
-        uuid: '',
-        required: false,
-        displayInThePatientBanner: true,
-      },
-    ],
+    _default: [],
   },
   showUpcomingAppointments: {
     _type: Type.Boolean,
@@ -251,6 +240,11 @@ export const configSchema = {
     },
     _default: ['02b67c47-6071-4091-953d-ad21452e830c'],
     _description: 'List of visit type UUIDs to exclude from the start visit form',
+  },
+  isDHAWorkflow: {
+    _type: Type.Boolean,
+    _description: 'Whether the workflow is DHA Workflow',
+    _default: true,
   },
 };
 
@@ -322,4 +316,5 @@ export type ExpressWorkflowConfig = {
   }>; // done
   showUpcomingAppointments: boolean; //done
   excludedVisitTypeUuids: Array<string>;
+  isDHAWorkflow: boolean;
 };

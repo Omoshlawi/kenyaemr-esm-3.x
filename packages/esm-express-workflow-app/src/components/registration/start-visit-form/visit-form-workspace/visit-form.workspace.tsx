@@ -1,6 +1,6 @@
 import React from 'react';
 import { type KeyedMutator, useSWRConfig } from 'swr';
-import { launchWorkspaceGroup2, useVisit, type Visit } from '@openmrs/esm-framework';
+import { useVisit, type Visit } from '@openmrs/esm-framework';
 import {
   invalidateVisitByUuid,
   type PatientWorkspace2DefinitionProps,
@@ -27,13 +27,6 @@ const VisitForm: React.FC<PatientWorkspace2DefinitionProps<VisitFormProps, {}>> 
     const mutateSavedOrUpdatedVisit = () => invalidateVisitByUuid(boundMutate, visit.uuid);
     mutateActiveVisit();
     setVisitContext?.(visit, mutateSavedOrUpdatedVisit);
-
-    launchWorkspaceGroup2('ewf-patient-chart', {
-      patient,
-      patientUuid,
-      visitContext: visit,
-      mutateVisitContext: mutateSavedOrUpdatedVisit,
-    });
   };
 
   return (

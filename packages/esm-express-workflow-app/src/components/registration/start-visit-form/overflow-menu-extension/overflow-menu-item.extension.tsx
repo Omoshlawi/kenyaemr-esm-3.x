@@ -1,9 +1,10 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { OverflowMenuItem } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
-import { launchWorkspace2, launchWorkspaceGroup2, type Visit } from '@openmrs/esm-framework';
+import { launchWorkspace2 } from '@openmrs/esm-framework';
 import styles from './overflow-menu-item.scss';
 import { type VisitFormProps } from '../visit-form-workspace/visit-form.workspace';
+import { usePatientChartStore } from '@openmrs/esm-patient-common-lib/src';
 
 interface CustomStartVisitOverflowMenuItemProps {
   patientUuid?: string;
@@ -18,17 +19,18 @@ const CustomStartVisitOverflowMenuItem: React.FC<CustomStartVisitOverflowMenuIte
 }) => {
   const { t } = useTranslation();
   const isDeceased = Boolean(patient?.deceasedDateTime);
+  const { visitContext, mutateVisitContext } = usePatientChartStore(patientUuid);
+  const workspaceGroupsProps = useMemo(
+    () => ({
+      patient,
+      patientUuid,
+      visitContext,
+      mutateVisitContext,
+    }),
+    [patient, patientUuid, visitContext, mutateVisitContext],
+  );
 
   const handleLaunchModal = useCallback(async () => {
-    const resolvedPatientUuid = patient?.id ?? patientUuid ?? '';
-
-    await launchWorkspaceGroup2('ewf-patient-chart', {
-      patient,
-      patientUuid: resolvedPatientUuid,
-      visitContext: null as unknown as Visit,
-      mutateVisitContext: () => {},
-    });
-
     launchWorkspace2<VisitFormProps, {}, {}>(
       'custom-start-visit-workspace-form',
       {
@@ -36,9 +38,9 @@ const CustomStartVisitOverflowMenuItem: React.FC<CustomStartVisitOverflowMenuIte
         showPatientHeader: false,
       },
       {},
-      null,
+      workspaceGroupsProps,
     );
-  }, [patient, patientUuid]);
+  }, [workspaceGroupsProps]);
 
   return (
     !isDeceased && (

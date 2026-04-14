@@ -1,12 +1,4 @@
-import {
-  InlineNotification,
-  RadioButton,
-  RadioButtonGroup,
-  RadioButtonSkeleton,
-  Select,
-  SelectItem,
-  SelectSkeleton,
-} from '@carbon/react';
+import { InlineNotification, RadioButton, RadioButtonGroup, Select, SelectItem, SelectSkeleton } from '@carbon/react';
 import { ResponsiveWrapper, showSnackbar, useConfig, useSession, type Visit } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +8,7 @@ import { ExpressWorkflowConfig } from '../../../config-schema';
 
 export interface QueueFieldsProps {
   setOnSubmit(onSubmit: (visit: Visit) => Promise<any>);
+  visitStatus: string;
 }
 
 const PATIENT_CATEGORIES = [
@@ -26,11 +19,10 @@ const PATIENT_CATEGORIES = [
 /**
  * This component contains form fields for starting a patient's queue entry.
  */
-const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
+const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit, visitStatus }) => {
   const { t } = useTranslation();
   const { queueRooms, isLoading: isLoadingQueueRooms } = useQueueRooms();
   const { sessionLocation } = useSession();
-
   const {
     visitQueueNumberAttributeUuid,
     triageServiceConceptUuid,
@@ -84,7 +76,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
 
   const onSubmit = useCallback(
     (visit: Visit) => {
-      if (selectedQueueRoom) {
+      if (selectedQueueRoom && visitStatus !== 'past') {
         const selectedRoom = filteredQueueRooms.find((room) => room.uuid === selectedQueueRoom);
         const queueUuid = selectedRoom?.queue?.uuid;
 
@@ -140,6 +132,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
       sessionLocation.uuid,
       filteredQueueRooms,
       t,
+      visitStatus,
     ],
   );
 
@@ -156,6 +149,10 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
       setSelectedQueueRoom(filteredQueueRooms[0].uuid);
     }
   }, [filteredQueueRooms, selectedQueueRoom]);
+
+  if (visitStatus === 'past') {
+    return null;
+  }
 
   return (
     <div>
@@ -218,4 +215,4 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
   );
 };
 
-export default QueueFields;
+export default React.memo(QueueFields);

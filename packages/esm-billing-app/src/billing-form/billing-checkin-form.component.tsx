@@ -1,7 +1,6 @@
 import { FilterableMultiSelect, InlineLoading, InlineNotification } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { showModal, showSnackbar, useConfig, useFeatureFlag, usePatient, type Visit } from '@openmrs/esm-framework';
-import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +32,7 @@ type BillingCheckInFormProps = {
   setVisitFormCallbacks: (callbacks: VisitFormCallbacks) => void;
   visitFormOpenedFrom?: string;
   visitTypeUuid?: string;
+  visitStatus: string;
 };
 
 type BillingCheckInFormValue = VisitAttributesFormValue & {
@@ -43,6 +43,7 @@ type BillingCheckInFormValue = VisitAttributesFormValue & {
 const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   patientUuid,
   setVisitFormCallbacks,
+  visitStatus,
   visitTypeUuid,
 }) => {
   const { t } = useTranslation();
@@ -240,6 +241,10 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
 
   useEffect(() => {
     const onVisitCreatedOrUpdated = async (visit: Visit) => {
+      if (visitStatus === 'past') {
+        return visit;
+      }
+
       if (attributes.length > 0) {
         try {
           await Promise.all(attributes.map((attr) => createVisitAttribute(visit.uuid, attr.attributeType, attr.value)));
@@ -321,18 +326,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
       onBeforeVisitSave: launchSHAOtpFlow,
       isSHAVisit: !!(hieFeatureFlags && isInsuranceSchemeSha),
     });
-  }, [
-    attributes,
-    selectedBillingServices,
-    createBillPayload,
-    handleCreateBill,
-    hieFeatureFlags,
-    isInsuranceSchemeSha,
-    launchSHAOtpFlow,
-    patientUuid,
-    setVisitFormCallbacks,
-    t,
-  ]);
+  }, [selectedBillingServices, attributes, createBillPayload, handleCreateBill, setVisitFormCallbacks, t, visitStatus]);
 
   if (isLoadingLineItems || isLoadingCashPoints) {
     return (
@@ -353,6 +347,10 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         subtitle={t('errorLoadingBillServices', 'Error loading bill services')}
       />
     );
+  }
+
+  if (visitStatus === 'past') {
+    return null;
   }
 
   return (

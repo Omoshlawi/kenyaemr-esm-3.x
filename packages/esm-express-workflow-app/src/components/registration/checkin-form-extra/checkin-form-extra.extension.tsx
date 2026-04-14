@@ -13,6 +13,7 @@ export interface CheckinFormExtraExtensionProps {
     isDHAWorkflow: boolean;
   };
   patientUuid: string;
+  visitStatus: string;
 }
 
 /**
@@ -20,9 +21,14 @@ export interface CheckinFormExtraExtensionProps {
  * It is used slotted into the patient-chart's start visit form
  */
 const CheckinFormExtraExtension: React.FC<CheckinFormExtraExtensionProps> = (props) => {
-  const { setVisitFormCallbacks, visitFormOpenedFrom, patientChartConfig } = props;
+  const { setVisitFormCallbacks, visitFormOpenedFrom, patientChartConfig, visitStatus } = props;
   if (patientChartConfig.isDHAWorkflow || visitFormOpenedFrom == 'service-queues-add-patient') {
-    return <QueueFields setOnSubmit={(onSubmit) => setVisitFormCallbacks({ onVisitCreatedOrUpdated: onSubmit })} />;
+    return (
+      <QueueFields
+        setOnSubmit={(onSubmit) => setVisitFormCallbacks({ onVisitCreatedOrUpdated: onSubmit })}
+        visitStatus={visitStatus}
+      />
+    );
   } else {
     return <></>;
   }
