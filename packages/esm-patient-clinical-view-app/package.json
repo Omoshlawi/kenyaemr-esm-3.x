@@ -41,7 +41,8 @@
     "@openmrs/esm-framework": "9.x",
     "react": "^18.1.0",
     "react-i18next": "11.x",
-    "react-router-dom": "6.x"
+    "react-router-dom": "6.x",
+    "swr": "2.x"
   },
   "publishConfig": {
     "access": "public"

@@ -199,6 +199,7 @@
   "selectWalkInRoom": "Select a walk-in room",
   "sendingOtp": "Sending OTP...",
   "sendOtp": "Send OTP",
+  "sendOtpAndStartVisit": "Send OTP & Start Visit",
   "sendOtpCode": "Send OTP Code",
   "showDependents": "Show dependents",
   "specialClinics": "Special Clinics",

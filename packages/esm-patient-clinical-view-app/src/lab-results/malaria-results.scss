@@ -84,3 +84,9 @@
   color: colors.$red-60;
   margin-left: layout.$spacing-01;
 }
+
+.speciesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}

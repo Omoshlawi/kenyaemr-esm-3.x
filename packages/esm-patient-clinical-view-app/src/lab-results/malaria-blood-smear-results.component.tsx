@@ -42,7 +42,7 @@ const MalariaBloodSmearResultsForm: React.FC<Props> = ({ order, closeWorkspace, 
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const abortController = useAbortController();
-  const { mutateOrderData, mutateObstreeData, mutateEncounterData } = useMalariaResultsInvalidation(order);
+  const { mutateLabOrder } = useMalariaResultsInvalidation(order);
 
   const {
     control,
@@ -141,9 +141,7 @@ const MalariaBloodSmearResultsForm: React.FC<Props> = ({ order, closeWorkspace, 
     try {
       await saveMalariaLabResults(order, obs, abortController);
 
-      mutateOrderData();
-      mutateObstreeData();
-      mutateEncounterData();
+      mutateLabOrder();
 
       showSnackbar({
         title: t('saveLabResults', 'Save lab results'),

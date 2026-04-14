@@ -441,6 +441,15 @@ export const configSchema = {
     _description: 'Case manager/Client relationship type UUID',
     _default: '9065e3c6-b2f5-4f99-9cbf-f67fd9f82ec5',
   },
+  stockItemInventoryConceptUuids: {
+    _type: Type.Array,
+    _elements: {
+      _type: Type.UUID,
+      _description: 'Stock item inventory concept UUID',
+    },
+    _description: 'List of stock item inventory concept UUIDs',
+    _default: ['eace7ad4-17da-498c-94e2-66d3e0105230'],
+  },
 };
 
 // Fetal Heart Rate Graph
@@ -633,6 +642,7 @@ export interface ConfigObject {
     durationConceptUuid: string;
     onsetConceptUuid: string;
   };
+  stockItemInventoryConceptUuids: Array<string>;
 }
 
 export interface PartograpyComponents {

@@ -2,6 +2,49 @@ import { z } from 'zod';
 
 const PLASMODIUM_FALCIPARUM_UUID = 'b82a629a-8a85-45f0-8957-713635c36a56';
 
+export const stockItemInventoryLinkSchema = z.object({
+  rel: z.string(),
+  uri: z.string(),
+  resourceAlias: z.string(),
+});
+
+export type StockItemInventoryLink = z.infer<typeof stockItemInventoryLinkSchema>;
+
+export const stockItemInventoryResultSchema = z.object({
+  partyUuid: z.string(),
+  locationUuid: z.string(),
+  partyName: z.string(),
+  stockItemUuid: z.string(),
+  drugId: z.number().nullable(),
+  drugUuid: z.string().nullable(),
+  drugStrength: z.string().nullable(),
+  conceptId: z.number().nullable(),
+  conceptUuid: z.string().nullable(),
+  stockBatchUuid: z.string(),
+  batchNumber: z.string(),
+  quantity: z.number(),
+  quantityUoM: z.string(),
+  quantityFactor: z.number(),
+  quantityUoMUuid: z.string(),
+  expiration: z.string(),
+  commonName: z.string().nullable(),
+  acronym: z.string().nullable(),
+  drugName: z.string().nullable(),
+  conceptName: z.string().nullable(),
+  links: z.array(stockItemInventoryLinkSchema),
+  resourceVersion: z.string(),
+});
+
+export type StockItemInventoryResult = z.infer<typeof stockItemInventoryResultSchema>;
+
+export const stockItemInventoryResponseSchema = z.object({
+  results: z.array(stockItemInventoryResultSchema),
+  totalCount: z.number().nullable(),
+  total: z.number(),
+});
+
+export type StockItemInventoryResponse = z.infer<typeof stockItemInventoryResponseSchema>;
+
 export const malariaResultSchema = z
   .object({
     malariaResult: z.enum(['2b8f98e3-eda1-4464-9ef7-d74b4eb2a5f5', 'e037886b-7fb7-4cec-b8b5-c1d7de46ccc7'], {
@@ -66,6 +109,9 @@ export const malariaRapidTestSchema = z
       },
     ),
     speciesUuid: z.string().optional().nullable(),
+    stockItem: stockItemInventoryResultSchema.refine((val) => val !== null && val !== undefined, {
+      message: 'Stock item is required',
+    }),
   })
   .superRefine((data, ctx) => {
     if (data.rapidTestResult === '703AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' && !data.speciesUuid) {

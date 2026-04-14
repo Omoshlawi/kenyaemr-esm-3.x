@@ -1,5 +1,3 @@
-import { useCallback } from 'react';
-import { useSWRConfig } from 'swr';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { type Order } from '@openmrs/esm-patient-common-lib';
 
@@ -11,38 +9,10 @@ export interface MalariaObsPayload {
 }
 
 export function useMalariaResultsInvalidation(order: Order) {
-  const { mutate } = useSWRConfig();
-  const patientUuid = order.patient.uuid;
+  // Using mutate here does not work because the order is not in the cache
+  const mutateLabOrder = () => globalThis.location.reload();
 
-  const mutateOrderData = useCallback(() => {
-    mutate(
-      (key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/order?patient=${patientUuid}`),
-      undefined,
-      { revalidate: true },
-    );
-  }, [mutate, patientUuid]);
-
-  const mutateObstreeData = useCallback(() => {
-    mutate(
-      (key) => {
-        if (typeof key === 'string') {
-          const obstreePattern = `${restBaseUrl}/obstree?patient=${patientUuid}`;
-          return key.startsWith(obstreePattern) || key.startsWith(`$inf$${obstreePattern}`);
-        }
-        return false;
-      },
-      undefined,
-      { revalidate: true },
-    );
-  }, [mutate, patientUuid]);
-
-  const mutateEncounterData = useCallback(() => {
-    mutate((key) => typeof key === 'string' && key.includes(`/encounter/${order.encounter.uuid}`), undefined, {
-      revalidate: true,
-    });
-  }, [mutate, order.encounter.uuid]);
-
-  return { mutateOrderData, mutateObstreeData, mutateEncounterData };
+  return { mutateLabOrder };
 }
 
 export async function saveMalariaLabResults(
@@ -89,4 +59,101 @@ export async function saveMalariaLabResults(
     signal: abortController.signal,
     body: JSON.stringify({ fulfillerStatus: 'COMPLETED', fulfillerComment: 'Test Results Entered' }),
   });
+}
+
+type RestFieldErrorItem = { code?: string; message?: string };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function getInvalidSubmissionSlice(body: unknown): {
+  message?: string;
+  fieldErrors?: Record<string, RestFieldErrorItem[]>;
+  globalErrors?: RestFieldErrorItem[];
+} | null {
+  if (!isRecord(body)) {
+    return null;
+  }
+  const inner = isRecord(body.error) ? body.error : body;
+  const fieldErrors = inner.fieldErrors;
+  const globalErrors = inner.globalErrors;
+  const message = typeof inner.message === 'string' ? inner.message : undefined;
+
+  const hasFieldErrors = isRecord(fieldErrors) && Object.keys(fieldErrors).length > 0;
+  const hasGlobalErrors = Array.isArray(globalErrors) && globalErrors.length > 0;
+  const hasMessage = Boolean(message);
+
+  if (!hasFieldErrors && !hasGlobalErrors && !hasMessage) {
+    return null;
+  }
+
+  return {
+    message,
+    fieldErrors: hasFieldErrors ? (fieldErrors as Record<string, RestFieldErrorItem[]>) : undefined,
+    globalErrors: hasGlobalErrors ? (globalErrors as RestFieldErrorItem[]) : undefined,
+  };
+}
+
+function joinFieldErrorMessages(fieldErrors: Record<string, RestFieldErrorItem[]>): string {
+  return Object.values(fieldErrors)
+    .flat()
+    .map((e) => (typeof e?.message === 'string' ? e.message : ''))
+    .filter(Boolean)
+    .join(' ');
+}
+
+function messageFromInvalidSubmissionSlice(
+  slice: NonNullable<ReturnType<typeof getInvalidSubmissionSlice>>,
+): string | undefined {
+  if (slice.fieldErrors && Object.keys(slice.fieldErrors).length > 0) {
+    const fromFields = joinFieldErrorMessages(slice.fieldErrors);
+    if (fromFields) {
+      return fromFields;
+    }
+  }
+  const fromGlobal = slice.globalErrors
+    ?.map((g) => (typeof g?.message === 'string' ? g.message : ''))
+    .filter(Boolean)
+    .join(' ');
+  if (fromGlobal) {
+    return fromGlobal;
+  }
+  return slice.message;
+}
+
+function getErrorResponseData(error: Record<string, unknown>): unknown {
+  if (error.responseBody !== undefined) {
+    return error.responseBody;
+  }
+  const response = error.response;
+  if (isRecord(response) && isRecord(response.data)) {
+    return response.data;
+  }
+  return undefined;
+}
+
+/**
+ * Builds a user-facing message from OpenMRS REST error bodies, including invalid submission payloads
+ * with top-level or nested `fieldErrors` / `globalErrors`.
+ */
+export function getOpenmrsRestErrorMessage(error: unknown): string | undefined {
+  if (!isRecord(error)) {
+    return undefined;
+  }
+
+  const responseData = getErrorResponseData(error);
+  const slice = getInvalidSubmissionSlice(responseData);
+  if (slice) {
+    const fromSlice = messageFromInvalidSubmissionSlice(slice);
+    if (fromSlice) {
+      return fromSlice;
+    }
+  }
+
+  if (isRecord(responseData) && isRecord(responseData.error) && typeof responseData.error.message === 'string') {
+    return responseData.error.message;
+  }
+
+  return typeof error.message === 'string' && error.message ? error.message : undefined;
 }
