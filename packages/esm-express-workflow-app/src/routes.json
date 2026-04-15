@@ -312,6 +312,20 @@
       "component": "customStartVisitOverflowMenuItem",
       "online": true,
       "offline": true
+    },
+    {
+      "name": "procedure-queues",
+      "component": "procedureQueues",
+      "slot": "procedure-orders-dashboard-slot",
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "procedure-form-extras",
+      "component": "procedureFormExtras",
+      "slot": "procedure-order-form-extras-slot",
+      "online": true,
+      "offline": false
     }
   ],
   "workspaces2": [
