@@ -28,7 +28,7 @@ const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({ onClose, patient,
       setPrintError(null);
     },
     onPrintError: (_, error) => {
-      setPrintError(error?.message || 'An error occurred while printing');
+      setPrintError(error?.message || t('errorOccurredWhilePrinting', 'An error occurred while printing'));
     },
     pageStyle: `
       @page {
