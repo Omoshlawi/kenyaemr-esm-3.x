@@ -32,13 +32,13 @@ export function startupApp() {
 }
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
-
+// t("mortuary", "Morgue")
 export const morgueDashboardLink = getAsyncLifecycle(
   () =>
     import('./left-panel/morgue-left-panel-link.component').then((m) => ({
       default: m.createLeftPanelLink({
         name: 'morgue',
-        title: 'Mortuary',
+        title: 'mortuary',
       }),
     })),
   options,
