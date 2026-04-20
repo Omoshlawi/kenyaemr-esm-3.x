@@ -19,6 +19,9 @@
   align-items: center;
   min-height: layout.$spacing-12;
   min-width: 8.5rem;
+  max-width: 8.5rem;
+  padding: 0 layout.$spacing-02;
+  align-items: center;
   height: 7rem;
   justify-content: center;
   background-color: colors.$cool-gray-10;
@@ -28,6 +31,7 @@
 
   & > span {
     @include type.type-style('body-01');
+    text-align: center;
   }
 
   &:hover {
