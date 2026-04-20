@@ -1,5 +1,5 @@
 export const mortuaryDashboardMeta = {
   name: 'mortuary',
-  title: 'Mortuary',
+  title: 'mortuary',
   path: 'mortuary',
 };
