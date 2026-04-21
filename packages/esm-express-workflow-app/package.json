@@ -23,7 +23,7 @@
     "build": "rspack --mode=production",
     "coverage": "echo \"Jest has been removed; no unit test runner is configured\" && exit 0",
     "debug": "npm run serve",
-    "extract-translations": "i18next 'src/**/*.component.tsx' 'src/**/*.extension.tsx' 'src/**/*modal.tsx' 'src/**/*.workspace.tsx' 'src/index.ts' --config ../../tools/i18next-parser.config.js",
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' --config ../../tools/i18next-parser.config.js",
     "lint": "cross-env eslint src --ext ts,tsx",
     "serve": "rspack serve --mode=development",
     "start": "openmrs develop",
