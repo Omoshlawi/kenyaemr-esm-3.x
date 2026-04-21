@@ -43,9 +43,7 @@ export const requeueLabManifestConfirmModal = getAsyncLifecycle(
   options,
 );
 
-// t('labManifestSideNav', 'Lab ManifestSideNav')
 export const labManifestSideNav = getAsyncLifecycle(() => import('./side-menu/side-menu.component'), options);
-// t('labManifestDashboard', 'Lab Manifest Dashboard')
 export const labsManifestsDashboardLink = getAsyncLifecycle(
   () =>
     import('./nav/left-panel-link.component').then((m) => ({
@@ -53,7 +51,6 @@ export const labsManifestsDashboardLink = getAsyncLifecycle(
     })),
   options,
 );
-// t('manifestOverviewDashboard', 'Manifest Overview Dashboard')
 export const manifestOverviewDashboardLink = getAsyncLifecycle(
   () =>
     import('./nav/left-panel-link.component').then((m) => ({
@@ -61,7 +58,6 @@ export const manifestOverviewDashboardLink = getAsyncLifecycle(
     })),
   options,
 );
-// t('labManifestComponent', 'Lab Manifest Component')
 export const labManifestComponent = getAsyncLifecycle(() => import('./component/lab-manifest.component'), options);
 export const labManifestDetail = getAsyncLifecycle(() => import('./component/lab-manifest-detail.component'), options);
 export const labManifestOverview = getAsyncLifecycle(

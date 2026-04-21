@@ -1,9 +1,11 @@
 import { FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR, { useSWRConfig } from 'swr';
-import { extractLabManifest, LabManifestFilters } from '../lab-manifest.resources';
+import { extractLabManifest, useLabManifestFilters } from '../lab-manifest.resources';
 import { LabManifest } from '../types';
 
 const useLabManifestAggregates = (statuses: Array<string>) => {
+  const LabManifestFilters = useLabManifestFilters();
+
   const statuses_ = statuses.map((status) => LabManifestFilters.find((s) => s.value === status)?.params);
   const { cache } = useSWRConfig();
 

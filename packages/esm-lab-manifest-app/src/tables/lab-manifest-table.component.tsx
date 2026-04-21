@@ -34,19 +34,20 @@ import LabManifestTableFilterHeader from '../header/lab-manifest-table-filters-h
 import { useLabManifests } from '../hooks';
 import {
   editableManifestStatus,
-  LabManifestFilters,
   printableManifestStatus,
   printManifest,
   resubmittableManifestStatus,
+  useLabManifestFilters,
 } from '../lab-manifest.resources';
 import { MappedLabManifest } from '../types';
 import styles from './lab-manifest-table.scss';
 
 const LabManifestsTable = () => {
+  const LabManifestFilters = useLabManifestFilters();
   const { t } = useTranslation();
   const [pageSize, setPageSize] = useState(10);
   const [currFilter, setCurrFilter] = useState('Draft');
-  const headerTitle = t('lab Manifest', 'Lab Manifest');
+  const headerTitle = t('labManifest', 'Lab Manifest');
   const layout = useLayoutType();
   const { manifests, error, isLoading } = useLabManifests(currFilter);
   const { results, totalPages, currentPage, goTo } = usePagination(manifests, pageSize);
