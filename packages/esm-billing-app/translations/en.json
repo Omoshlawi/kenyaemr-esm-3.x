@@ -55,6 +55,7 @@
   "benefits": "Benefits",
   "bill": "Bill",
   "billableExemptionAdministration": "Exemption Administration",
+  "billableExemptions": "Billable Exemptions",
   "billableServicesError": "Billable services error",
   "billAction": "{{action}} Bill",
   "billActionWithDetails": "{{action}} Bill - {{receiptNumber}} ({{status}}, {{amount}})",

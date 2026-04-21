@@ -55,6 +55,7 @@
   "benefits": "Avantages",
   "bill": "Facture",
   "billableExemptionAdministration": "Administration des exonérations",
+  "billableExemptions": "Exonérations facturables",
   "billableServicesError": "Erreur des services facturables",
   "billAction": "Facture {{action}}",
   "billActionWithDetails": "Facture {{action}} - {{receiptNumber}} ({{status}}, {{amount}})",
