@@ -86,7 +86,7 @@ const MalariaRapidTestResultsForm: React.FC<Props> = ({ order, closeWorkspace })
     }
 
     try {
-      const responsiblePersonUuid = session.user?.uuid;
+      const responsiblePersonUuid = session.currentProvider?.uuid ?? session.user?.uuid;
       if (responsiblePersonUuid) {
         await updateStockItemUsage({
           sourceUuid: data.stockItem.partyUuid,

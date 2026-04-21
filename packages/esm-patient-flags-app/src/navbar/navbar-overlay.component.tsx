@@ -41,15 +41,17 @@ const NavBarOverlay: React.FC<NavBarOverlayProps> = ({ setSearchTerm, modules, s
   // Add logic to render module links based on user privileges
   const renderModuleLinks = useMemo(
     () =>
-      modules.map((item, index) =>
-        item?.privilege ? (
-          <UserHasAccess key={index} privilege={item.privilege}>
-            <NavBarLink key={index} {...item} hideOverlay={hideOverlay} />
+      modules.map((item) => {
+        const key = item.url ?? item.label;
+
+        return item?.privilege ? (
+          <UserHasAccess key={key} privilege={item.privilege}>
+            <NavBarLink {...item} hideOverlay={hideOverlay} />
           </UserHasAccess>
         ) : (
-          <NavBarLink key={index} {...item} hideOverlay={hideOverlay} />
-        ),
-      ),
+          <NavBarLink key={key} {...item} hideOverlay={hideOverlay} />
+        );
+      }),
     [modules, hideOverlay],
   );
 
