@@ -28,33 +28,35 @@ export const userRoleScopeWorkspace = getAsyncLifecycle(
     ),
   options,
 );
-
+// t("manageUsers", "Manage Users")
 export const userManagementLeftPannelLink = getAsyncLifecycle(
   () =>
     import('./left-pannel-link.component').then((m) => ({
-      default: m.createLeftPanelLink({ title: 'Manage Users', name: 'user-management' }),
+      default: m.createLeftPanelLink({ title: 'manageUsers', name: 'user-management' }),
     })),
   options,
 );
-
+// t("etlAdministration", "ETL Administration")
 export const etlAdministrationLeftPannelLink = getAsyncLifecycle(
   () =>
     import('./left-pannel-link.component').then((m) => ({
-      default: m.createLeftPanelLink({ title: 'ETL Administration', name: 'etl-administration' }),
+      default: m.createLeftPanelLink({ title: 'etlAdministration', name: 'etl-administration' }),
     })),
   options,
 );
+// t("locations", "Locations")
 export const locationsLeftPanelLink = getAsyncLifecycle(
   () =>
     import('./left-pannel-link.component').then((m) => ({
-      default: m.createLeftPanelLink({ title: 'Locations', name: 'locations' }),
+      default: m.createLeftPanelLink({ title: 'locations', name: 'locations' }),
     })),
   options,
 );
+// t("facilityDetails", "Facility Details")
 export const facilitySetupLeftPanelLink = getAsyncLifecycle(
   () =>
     import('./left-pannel-link.component').then((m) => ({
-      default: m.createLeftPanelLink({ title: 'Facility Details', name: 'facility-setup' }),
+      default: m.createLeftPanelLink({ title: 'facilityDetails', name: 'facility-setup' }),
     })),
   options,
 );

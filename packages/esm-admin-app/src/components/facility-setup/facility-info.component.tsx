@@ -121,7 +121,7 @@ const FacilityInfo: React.FC = () => {
                   <StatusTag value={shaFacility.shaContractStatus} />
                 ) : (
                   <Tag type="gray" size="sm">
-                    Not contracted
+                    {t('notContracted', 'Not contracted')}
                   </Tag>
                 )
               }
