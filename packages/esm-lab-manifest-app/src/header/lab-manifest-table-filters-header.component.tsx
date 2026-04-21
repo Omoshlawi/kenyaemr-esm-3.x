@@ -2,8 +2,8 @@ import { Dropdown } from '@carbon/react';
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LabManifestFilters } from '../lab-manifest.resources';
 import styles from './lab-manifest-header.scss';
+import { useLabManifestFilters } from '../lab-manifest.resources';
 
 type LabManifestTableFilterHeaderProps = {
   title: string;
@@ -12,6 +12,7 @@ type LabManifestTableFilterHeaderProps = {
 };
 
 const LabManifestTableFilterHeader: FC<LabManifestTableFilterHeaderProps> = ({ title, onFilterChange, filter }) => {
+  const LabManifestFilters = useLabManifestFilters();
   const { t } = useTranslation();
   return (
     <CardHeader title={title}>

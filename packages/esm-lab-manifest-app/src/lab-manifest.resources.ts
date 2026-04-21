@@ -2,6 +2,7 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { mutate } from 'swr';
 import { z } from 'zod';
 import { LabManifest, ManifestMetricYearSummary, MappedLabManifest, TransformedData } from './types';
+import { useTranslation } from 'react-i18next';
 
 export const printableManifestStatus = ['Submitted', 'Complete results'];
 export const editableManifestStatus = ['Draft', 'On Hold', 'Ready to send'];
@@ -16,53 +17,56 @@ export const resubmittableManifestStatus = [
 export const READY_TO_SEND_MANIFEST_STATUS = 'Ready to send';
 export const DRAFT_MANIFEST_STATUS = 'Draft';
 
-export const LabManifestFilters = [
-  {
-    label: 'Draft',
-    value: 'Draft',
-    params: 'Draft',
-  },
-  {
-    label: 'Ready To send',
-    value: 'Ready to send',
-    params: 'Ready to send',
-  },
-  {
-    label: 'On Hold',
-    value: 'On Hold',
-    params: 'On Hold',
-  },
-  {
-    label: 'Sending',
-    value: 'Sending',
-    params: 'Sending',
-  },
-  {
-    label: 'Submitted',
-    value: 'Submitted',
-    params: 'Submitted',
-  },
-  {
-    label: 'Incomplete with Errors',
-    value: 'Incomplete errors',
-    params: 'Incomplete results&withErrors=true',
-  },
-  {
-    label: 'Incomplete With Results',
-    value: 'Incomplete results',
-    params: 'Incomplete results&withErrors=false',
-  },
-  {
-    label: 'Complete with Errors',
-    value: 'Complete errors',
-    params: 'Complete results&withErrors=true',
-  },
-  {
-    label: 'Complete with Results',
-    value: 'Complete results',
-    params: 'Complete results&withErrors=false',
-  },
-];
+export const useLabManifestFilters = () => {
+  const { t } = useTranslation();
+  return [
+    {
+      label: t('draft', 'Draft'),
+      value: 'Draft',
+      params: 'Draft',
+    },
+    {
+      label: t('readyToSend', 'Ready To send'),
+      value: 'Ready to send',
+      params: 'Ready to send',
+    },
+    {
+      label: t('onHold', 'On Hold'),
+      value: 'On Hold',
+      params: 'On Hold',
+    },
+    {
+      label: t('sending', 'Sending'),
+      value: 'Sending',
+      params: 'Sending',
+    },
+    {
+      label: t('submitted', 'Submitted'),
+      value: 'Submitted',
+      params: 'Submitted',
+    },
+    {
+      label: t('incompleteWithErrors', 'Incomplete with Errors'),
+      value: 'Incomplete errors',
+      params: 'Incomplete results&withErrors=true',
+    },
+    {
+      label: t('incompleteWithResults', 'Incomplete With Results'),
+      value: 'Incomplete results',
+      params: 'Incomplete results&withErrors=false',
+    },
+    {
+      label: t('completeWithErrors', 'Complete with Errors'),
+      value: 'Complete errors',
+      params: 'Complete results&withErrors=true',
+    },
+    {
+      label: t('completeWithResults', 'Complete with Results'),
+      value: 'Complete results',
+      params: 'Complete results&withErrors=false',
+    },
+  ];
+};
 
 const PHONE_NUMBER_REGEX = /^(\+?254|0)((7|1)\d{8})$/;
 
