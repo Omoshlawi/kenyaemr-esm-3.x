@@ -86,6 +86,7 @@
   "billPayment": "Paiement de la facture",
   "billPaymentRequiredMessage": "Le patient actuel a une facture en attente. Conseillez au patient de régler la facture.",
   "billsList": "Liste des factures",
+  "billableExemptions": "Exonérations facturables",
   "billStatement": "Relevé de facture",
   "billsToday": "Factures aujourd'hui",
   "billTo": "FACTURER À",

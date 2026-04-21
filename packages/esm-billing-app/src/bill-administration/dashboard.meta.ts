@@ -1,48 +1,42 @@
+// t("billDeposit", "Bill Deposit")
 export const billDepositDashboardMeta = {
   path: 'bill-deposit',
-  title: 'Bill Deposit',
-  titleKey: 'billDeposit',
+  title: 'billDeposit',
   icon: 'omrs-icon-activity',
 } as const;
-
+// t("billableExemptions", "Billable Exemptions")
 export const billableExemptionsDashboardMeta = {
   path: 'billable-exemptions',
-  title: 'Billable Exemptions',
-  titleKey: 'billableExemptions',
+  title: 'billableExemptions',
   icon: 'omrs-icon-view-off',
 } as const;
-
+// t("paymentModes", "Payment Modes")
 export const paymentModeDashboardMeta = {
   path: 'payment-modes',
-  title: 'Payment Modes',
-  titleKey: 'paymentModes',
+  title: 'paymentModes',
   icon: 'omrs-icon-sticky-note-add',
 } as const;
-
+// t("clinicalCharges", "Clinical Charges")
 export const clinicalChargesDashboardMeta = {
   path: 'clinical-charges',
-  title: 'Clinical Charges',
-  titleKey: 'clinicalCharges',
+  title: 'clinicalCharges',
   icon: 'omrs-icon-programs',
 } as const;
-
+// t("paymentHistory", "Payment History")
 export const paymentHistoryDashboardMeta = {
   path: 'payment-history',
-  title: 'Payment History',
-  titleKey: 'paymentHistory',
+  title: 'paymentHistory',
   icon: 'omrs-icon-report',
 } as const;
-
+// t("patientBilling", "Patient Billing")
 export const patientBillingDashboardMeta = {
   path: 'patient-billing',
-  title: 'Patient Billing',
-  titleKey: 'patientBilling',
+  title: 'patientBilling',
   icon: 'omrs-icon-user-avatar',
 } as const;
-
+// t("paymentPoints", "Payment Points")
 export const paymentPointsDashboardMeta = {
   path: 'cashier-points',
-  title: 'Payment Points',
-  titleKey: 'paymentPoints',
+  title: 'paymentPoints',
   icon: 'omrs-icon-location',
 } as const;
