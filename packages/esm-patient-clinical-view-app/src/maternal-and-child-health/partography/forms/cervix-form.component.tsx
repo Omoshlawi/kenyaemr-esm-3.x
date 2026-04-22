@@ -114,7 +114,10 @@ const CervixForm: React.FC<CervixFormProps> = ({
       return t('firstEntryHelp', 'Select the hour for this first cervical measurement');
     }
     const nextHour = latestHour + 1;
-    return t('progressiveEntryHelp', `Select hour ${nextHour} or later (latest entry: ${latestHour})`);
+    return t('progressiveEntryHelp', 'Select hour {{nextHour}} or later (latest entry: {{latestHour}})', {
+      nextHour,
+      latestHour,
+    });
   };
 
   // Clear any errors when form opens

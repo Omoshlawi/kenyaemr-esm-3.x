@@ -240,7 +240,9 @@ const MembraneAmnioticFluidForm: React.FC<MembraneAmnioticFluidFormProps> = ({
                   invalidText={fieldState.error?.message}
                   helperText={
                     latestUsedHour !== null
-                      ? t('timeSlotInfo', `Select a time after ${latestUsedHour}hr`)
+                      ? t('timeSlotInfo', 'Select a time after {{latestUsedHour}}hr', {
+                          latestUsedHour: latestUsedHour,
+                        })
                       : t('timeSlotInfoInitial', 'Select a time slot')
                   }
                   value={field.value}

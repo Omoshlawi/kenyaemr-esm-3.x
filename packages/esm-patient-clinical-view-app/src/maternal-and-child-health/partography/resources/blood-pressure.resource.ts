@@ -16,10 +16,10 @@ export function transformBloodPressureEncounterToChartData(
     });
     encounter.obs?.forEach((obs) => {
       if (obs.concept.uuid === PARTOGRAPHY_CONCEPTS['systolic-bp']) {
-        chartData.push({ group: t('Systolic'), time: encounterTime, value: parseFloat(obs.value) });
+        chartData.push({ group: t('systolic', 'Systolic'), time: encounterTime, value: parseFloat(obs.value) });
       }
       if (obs.concept.uuid === PARTOGRAPHY_CONCEPTS['diastolic-bp']) {
-        chartData.push({ group: t('Diastolic'), time: encounterTime, value: parseFloat(obs.value) });
+        chartData.push({ group: t('diastolic', 'Diastolic'), time: encounterTime, value: parseFloat(obs.value) });
       }
     });
   });
@@ -46,9 +46,12 @@ export function transformBloodPressureEncounterToTableData(
         tableData.push({
           id: `blood-pressure-${index}-${obsIndex}`,
           dateTime,
-          measurement: obs.concept.uuid === PARTOGRAPHY_CONCEPTS['systolic-bp'] ? t('Systolic') : t('Diastolic'),
+          measurement:
+            obs.concept.uuid === PARTOGRAPHY_CONCEPTS['systolic-bp']
+              ? t('systolic', 'Systolic')
+              : t('diastolic', 'Diastolic'),
           value: parseFloat(obs.value),
-          unit: t('mmHg'),
+          unit: t('mmHg', 'mmHg'),
         });
       }
     });
@@ -61,7 +64,7 @@ export function useBloodPressureData(patientUuid: string) {
   const { encounters, isLoading, error, mutate } = usePartographyEncounters(patientUuid, 'blood-pressure');
   let localizedError = error;
   if (error) {
-    localizedError = t('Failed to load blood pressure data');
+    localizedError = t('failedToLoadBloodPressureData', 'Failed to load blood pressure data');
   }
   return { data: encounters, isLoading, error: localizedError, mutate };
 }

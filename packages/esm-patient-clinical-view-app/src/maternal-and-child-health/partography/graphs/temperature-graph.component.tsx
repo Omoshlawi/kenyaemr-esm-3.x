@@ -100,9 +100,11 @@ const TemperatureGraph: React.FC<TemperatureGraphProps> = ({
       <div className={styles.fetalHeartRateContainer}>
         <div className={styles.fetalHeartRateHeader}>
           <div className={styles.fetalHeartRateHeaderLeft}>
-            <h3 className={styles.fetalHeartRateTitle}>Temperature</h3>
+            <h3 className={styles.fetalHeartRateTitle}>{t('temperature', 'Temperature')}</h3>
             <div className={styles.fetalHeartRateControls}>
-              <span className={styles.legendText}>Normal: 36.1-37.2°C | Low: &lt;36.1°C | High: &gt;37.2°C</span>
+              <span className={styles.legendText}>
+                {t('temperatureLegend', 'Normal: 36.1-37.2°C | Low: <36.1°C | High: >37.2°C')}
+              </span>
             </div>
           </div>
           <div className={styles.fetalHeartRateHeaderRight}>
@@ -135,7 +137,7 @@ const TemperatureGraph: React.FC<TemperatureGraphProps> = ({
                 disabled={isAddButtonDisabled}
                 onClick={onAddData}
                 className={styles.addButton}>
-                Add
+                {t('add', 'Add')}
               </Button>
             </div>
           </div>

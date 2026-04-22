@@ -1411,7 +1411,7 @@ export async function saveFetalHeartRateData(
     console.error('Error saving fetal heart rate data:', error);
     return {
       success: false,
-      message: error?.message || 'Failed to save fetal heart rate data',
+      message: error?.message,
     };
   }
 }
@@ -1443,7 +1443,7 @@ export async function saveDrugOrderData(
     console.error('Error saving drug order data:', error);
     return {
       success: false,
-      message: error?.message || 'Failed to save drug order data',
+      message: error?.message,
     };
   }
 }

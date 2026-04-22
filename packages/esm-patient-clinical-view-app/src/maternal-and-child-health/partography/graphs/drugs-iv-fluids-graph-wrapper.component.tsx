@@ -101,7 +101,7 @@ const DrugsIVFluidsGraphWrapper: React.FC<DrugsIVFluidsGraphWrapperProps> = ({
               disabled={isAddButtonDisabled}
               onClick={handleAddData}
               className={styles.addButton}>
-              Add
+              {t('add', 'Add')}
             </Button>
           </div>
         </div>

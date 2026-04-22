@@ -82,7 +82,7 @@ export function useMembraneAmnioticFluidData(patientUuid: string) {
 
   let localizedError = error;
   if (error) {
-    localizedError = t('Failed to load membrane amniotic fluid data');
+    localizedError = t('failedToLoadMembraneAmnioticFluidData', 'Failed to load membrane amniotic fluid data');
   }
 
   return {
@@ -222,13 +222,15 @@ export async function saveMembraneAmnioticFluidData(
     } else {
       return {
         success: false,
-        message: result?.message || t('Failed to save membrane amniotic fluid data'),
+        message:
+          result?.message || t('failedToSaveMembraneAmnioticFluidData', 'Failed to save membrane amniotic fluid data'),
       };
     }
   } catch (error) {
     return {
       success: false,
-      message: error?.message || t('Failed to save membrane amniotic fluid data'),
+      message:
+        error?.message || t('failedToSaveMembraneAmnioticFluidData', 'Failed to save membrane amniotic fluid data'),
     };
   }
 }

@@ -115,7 +115,7 @@ export function useOxytocinData(patientUuid: string) {
 
   let localizedError = error;
   if (error) {
-    localizedError = t('Failed to load oxytocin data');
+    localizedError = t('failedToLoadOxytocinData', 'Failed to load oxytocin data');
   }
 
   // Transform data for TimePickerDropdown component (format: Array<{ hour: number; time: string }>)
@@ -165,10 +165,18 @@ export async function saveOxytocinFormData(
   const finalProviderUuid = providerUuid || session?.currentProvider?.uuid;
   const finalLocationUuid = locationUuid || session?.sessionLocation?.uuid;
   if (!finalProviderUuid) {
-    return { success: false, message: t('Provider information is required'), error: 'NO_PROVIDER' };
+    return {
+      success: false,
+      message: t('providerInformationRequired', 'Provider information is required'),
+      error: 'NO_PROVIDER',
+    };
   }
   if (!finalLocationUuid) {
-    return { success: false, message: t('Location information is required'), error: 'NO_LOCATION' };
+    return {
+      success: false,
+      message: t('locationInformationRequired', 'Location information is required'),
+      error: 'NO_LOCATION',
+    };
   }
   // Use utility to ensure encounterDatetime is always in the past
   // Import getValidEncounterDatetime from types/index if not already imported
