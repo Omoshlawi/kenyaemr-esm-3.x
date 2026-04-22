@@ -227,6 +227,11 @@ export function startupApp() {
     'Health Information Exchange (HIE)',
     'HIE feature flag, this enables and disables the HIE feature',
   );
+  registerFeatureFlag(
+    'savannahInformaticsInformationExchange',
+    'Savannah Informatics Exchange (HIE)',
+    'Savannah feature flag, this enables and disables the Savannah Informatics Exchange feature',
+  );
 }
 
 export const paymentWorkspace = getAsyncLifecycle(

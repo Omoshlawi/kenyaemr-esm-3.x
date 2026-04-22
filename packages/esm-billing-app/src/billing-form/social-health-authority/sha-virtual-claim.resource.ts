@@ -2,7 +2,7 @@ import { openmrsFetch, restBaseUrl, type FetchResponse } from '@openmrs/esm-fram
 import useSWR from 'swr';
 import { OTPResponse, PreauthQueueItem, SHAIntervention, SHASubBenefit, VirtualClaimResponse } from './type';
 
-const VIRTUAL_CLAIM_BASE = `${restBaseUrl}/virtualclaim`;
+const VIRTUAL_CLAIM_BASE = `${restBaseUrl}/virtualclaims`;
 
 export const useSHASubBenefits = (patientCRId: string) => {
   const url = patientCRId ? `${VIRTUAL_CLAIM_BASE}/sub-benefits?patient_id=${patientCRId}` : null;
