@@ -63,6 +63,7 @@
   "billClosedFailed": "Bill closing failed",
   "billClosedSuccessfully": "Bill {{action}} successfully",
   "billClosedSuccessfullySubtitle": "The bill has been {{action}} successfully",
+  "billCode": "Bill code",
   "billCreationDate": "Bill creation date",
   "billDate": "Date",
   "billDelete": "Bill delete",

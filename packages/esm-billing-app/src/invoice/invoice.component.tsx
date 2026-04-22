@@ -155,7 +155,7 @@ export function InvoiceSummary({
             label={t('dateAndTime', 'Date And Time')}
             value={formatDatetime(parseDate(bill.dateCreated), { mode: 'standard', noToday: true })}
           />
-          <InvoiceSummaryItem label={t('invoiceStatus', 'Invoice Status')} value={bill?.status} />
+          <InvoiceSummaryItem label={t('invoiceStatus', 'Invoice Status')} value={bill?.status ? t(bill.status) : ''} />
           <InvoiceSummaryItem label={t('cashPoint', 'Cash Point')} value={bill?.cashPointName} />
           <InvoiceSummaryItem label={t('cashier', 'Cashier')} value={capitalize(bill?.cashier?.display)} />
         </div>

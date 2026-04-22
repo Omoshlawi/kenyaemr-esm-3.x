@@ -52,13 +52,13 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ bill, isSelectable = true, 
   }, [debouncedSearchTerm, lineItems]);
 
   const tableHeaders = [
-    { header: 'No', key: 'no' },
-    { header: 'Bill item', key: 'billItem' },
-    { header: 'Bill code', key: 'billCode' },
-    { header: 'Status', key: 'status' },
-    { header: 'Quantity', key: 'quantity' },
-    { header: 'Price', key: 'price' },
-    { header: 'Total', key: 'total' },
+    { header: t('no', 'No'), key: 'no' },
+    { header: t('billItem', 'Bill item'), key: 'billItem' },
+    { header: t('billCode', 'Bill code'), key: 'billCode' },
+    { header: t('status', 'Status'), key: 'status' },
+    { header: t('quantity', 'Quantity'), key: 'quantity' },
+    { header: t('price', 'Price'), key: 'price' },
+    { header: t('total', 'Total'), key: 'total' },
   ];
   const processBillItem = (item) => (item?.item || item?.billableService)?.split(':')[1];
 
@@ -72,7 +72,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ bill, isSelectable = true, 
           id: `${item.uuid}`,
           billItem: processBillItem(item),
           billCode: bill.receiptNumber,
-          status: item.paymentStatus,
+          status: t(item.paymentStatus),
           quantity: item.quantity,
           price: item.price,
           total: item.price * item.quantity,
