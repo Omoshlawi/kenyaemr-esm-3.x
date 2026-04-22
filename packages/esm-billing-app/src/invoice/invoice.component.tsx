@@ -18,12 +18,13 @@ import InvoiceTable from './invoice-table.component';
 import styles from './invoice.scss';
 import capitalize from 'lodash-es/capitalize';
 import { InvoiceActions } from './invoice-actions.component';
-import { formatCurrency, useCurrencyFormatting } from '../helpers/currency';
+import { useCurrencyFormatting } from '../helpers/currency';
 import PaymentHistory from './payments/payment-history/payment-history.component';
 import { ArrowRight } from '@carbon/react/icons';
 
 const Invoice: React.FC = () => {
   const { t } = useTranslation();
+  const { format: formatCurrency } = useCurrencyFormatting();
   const { billUuid, patientUuid } = useParams();
   const { patient, isLoading: isLoadingPatient, error: patientError } = usePatient(patientUuid);
   const { bill, isLoading: isLoadingBill, error: billingError } = useBill(billUuid);
@@ -154,7 +155,7 @@ export function InvoiceSummary({
             label={t('dateAndTime', 'Date And Time')}
             value={formatDatetime(parseDate(bill.dateCreated), { mode: 'standard', noToday: true })}
           />
-          <InvoiceSummaryItem label={t('invoiceStatus', 'Invoice Status')} value={bill?.status} />
+          <InvoiceSummaryItem label={t('invoiceStatus', 'Invoice Status')} value={bill?.status ? t(bill.status) : ''} />
           <InvoiceSummaryItem label={t('cashPoint', 'Cash Point')} value={bill?.cashPointName} />
           <InvoiceSummaryItem label={t('cashier', 'Cashier')} value={capitalize(bill?.cashier?.display)} />
         </div>
