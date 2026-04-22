@@ -18,12 +18,13 @@ import InvoiceTable from './invoice-table.component';
 import styles from './invoice.scss';
 import capitalize from 'lodash-es/capitalize';
 import { InvoiceActions } from './invoice-actions.component';
-import { formatCurrency, useCurrencyFormatting } from '../helpers/currency';
+import { useCurrencyFormatting } from '../helpers/currency';
 import PaymentHistory from './payments/payment-history/payment-history.component';
 import { ArrowRight } from '@carbon/react/icons';
 
 const Invoice: React.FC = () => {
   const { t } = useTranslation();
+  const { format: formatCurrency } = useCurrencyFormatting();
   const { billUuid, patientUuid } = useParams();
   const { patient, isLoading: isLoadingPatient, error: patientError } = usePatient(patientUuid);
   const { bill, isLoading: isLoadingBill, error: billingError } = useBill(billUuid);
