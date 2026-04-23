@@ -13,7 +13,7 @@ import { maternalAndChildHealthDashboardMeta } from './maternal-and-child-health
 import { hivCareAndTreatmentDashboardMeta } from './specialized-clinics/hiv-care-and-treatment-services/hiv-care-and-treatment-dashboard.meta';
 
 import { configSchema } from './config-schema';
-
+export * from './specialized-clinics/hiv-care-and-treatment-services';
 const moduleName = '@kenyaemr/esm-patient-clinical-view-app';
 
 const options = {
