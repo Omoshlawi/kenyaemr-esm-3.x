@@ -211,7 +211,51 @@
       "order": 0,
       "online": true,
       "offline": false
-    }
+    },
+    {
+      "name": "hiv-defaulter-tracing",
+      "slot": "hiv-care-and-treatment-tabs-extension-slot",
+      "component": "hiveCareAndTreamnentDefaulterTracing",
+      "order": 0,
+      "online": true,
+      "offline": false,
+      "meta": {
+        "title": "Defaulter Tracing"
+      }
+    },
+    {
+      "name": "hiv-testing-services",
+      "slot": "hiv-care-and-treatment-tabs-extension-slot",
+      "component": "hivCareAndTreatmentHTS",
+      "order": 0,
+      "online": true,
+      "offline": false,
+      "meta": {
+        "title": "HIV Testing Services"
+      }
+      },
+      {
+        "name": "hiv-patient-summary",
+        "slot": "hiv-care-and-treatment-tabs-extension-slot",
+        "component": "hivCareAndTreatmentPatientSummary",
+        "order": 0,
+        "online": true,
+        "offline": false,
+        "meta": {
+          "title": "HIV Patient Summary"
+        }
+      },
+      {
+        "name": "hiv-case-management",
+        "slot": "hiv-care-and-treatment-tabs-extension-slot",
+        "component": "hivCareAndTreatmentCaseManagement",
+        "order": 0,
+        "online": true,
+        "offline": false,
+        "meta": {
+          "title": "Case Management"
+        }
+      }
   ],
   "modals": [
     {
@@ -231,12 +275,27 @@
       "component": "formEntryModal"
     }
   ],
-  
+
   "workspaces2": [
     {
       "name": "contact-list-form",
       "component": "contactListForm",
-      "window": "contact-list-workspace-window"
+      "window": "patient-clinical-view-workspace-window"
+    },
+    {
+      "name": "family-relationship-form",
+      "component": "familyRelationshipForm",
+      "window": "patient-clinical-view-workspace-window"
+    },
+    {
+      "name": "contact-list-update-form",
+      "component": "contactListUpdateForm",
+      "window": "patient-clinical-view-workspace-window"
+    },
+    {
+      "name": "end-relationship-form",
+      "component": "endRelationshipWorkspace",
+      "window": "patient-clinical-view-workspace-window"
     },
     {
       "name": "case-management-form",
@@ -246,11 +305,6 @@
     {
       "name": "add-patient-case-form",
       "component": "addPatientCaseForm",
-      "window": "case-management-workspace-window"
-    },
-    {
-      "name": "family-relationship-form",
-      "component": "familyRelationshipForm",
       "window": "case-management-workspace-window"
     },
     {
@@ -268,16 +322,7 @@
       "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
       "window": "custom-form-entry-workspace-window"
     },
-    {
-      "name": "contact-list-update-form",
-      "component": "contactListUpdateForm",
-      "window": "patient-clinical-view-workspace-window"
-    },
-    {
-      "name": "end-relationship-form",
-      "component": "endRelationshipWorkspace",
-      "window": "patient-clinical-view-workspace-window"
-    },
+
     {
       "name": "exported-patient-clinical-view-lab-results-form",
       "component": "exportedLabResultsForm",

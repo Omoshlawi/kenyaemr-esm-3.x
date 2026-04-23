@@ -20,7 +20,7 @@ export function LinkExtension({ config }: { config: LinkConfig }) {
   const location = useLocation();
   const spaBasePath = window.getOpenmrsSpaBase() + 'home';
 
-  let urlSegment = useMemo(() => decodeURIComponent(last(location.pathname.split('/'))), [location.pathname]);
+  let urlSegment = useMemo(() => decodeURIComponent(last(location.pathname.split('/')) || ''), [location.pathname]);
   const IconComp = typeof icon !== 'string' ? (icon as CarbonIconType) : null;
 
   const isActive = nameSegment === urlSegment;
