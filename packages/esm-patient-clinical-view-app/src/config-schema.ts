@@ -450,6 +450,23 @@ export const configSchema = {
     _description: 'List of stock item inventory concept UUIDs',
     _default: ['eace7ad4-17da-498c-94e2-66d3e0105230'],
   },
+  hivCareAndTreatment: {
+    _type: Type.Object,
+    _description: 'HIV care and treatment module configuration',
+    _default: {
+      encounters: {
+        artTherapyEncounterUuid: 'ec2a91e5-444a-4ca0-87f1-f71ddfaf57eb',
+      },
+      forms: {
+        artTherapyFormUuid: '9d65e3cf-0763-3def-bff0-12ac720ef5b5',
+      },
+      concepts: {
+        therapyPlanConceptUuid: '1255AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        regimenLineConceptUuid: '164515AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        regimentConceptUuid: '164432AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
+    },
+  },
 };
 
 // Fetal Heart Rate Graph
@@ -659,5 +676,21 @@ export interface ConfigPartographyObject {
     fetalHeartRateUuid: string;
     cervicalDilationUiid: string;
     descentOfHead: string;
+  };
+}
+
+export interface HivCareAndTreatmentConfig {
+  hivCareAndTreatment: {
+    encounters: {
+      artTherapyEncounterUuid: string;
+    };
+    forms: {
+      artTherapyFormUuid: string;
+    };
+    concepts: {
+      therapyPlanConceptUuid: string;
+      regimenLineConceptUuid: string;
+      regimentConceptUuid: string;
+    };
   };
 }

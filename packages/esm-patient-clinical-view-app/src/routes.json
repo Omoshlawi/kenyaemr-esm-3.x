@@ -255,6 +255,17 @@
         "meta": {
           "title": "Case Management"
         }
+      },
+      {
+        "name": "hiv-program-management",
+        "slot": "hiv-care-and-treatment-tabs-extension-slot",
+        "component": "hivCareAndTreatmentProgramManagement",
+        "order": 0,
+        "online": true,
+        "offline": false,
+        "meta": {
+          "title": "Program Management"
+        }
       }
   ],
   "modals": [
