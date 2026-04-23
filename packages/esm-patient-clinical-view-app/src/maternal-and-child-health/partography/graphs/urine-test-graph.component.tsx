@@ -101,9 +101,11 @@ const UrineTestGraph: React.FC<UrineTestGraphProps> = ({
       <div className={styles.fetalHeartRateContainer}>
         <div className={styles.fetalHeartRateHeader}>
           <div className={styles.fetalHeartRateHeaderLeft}>
-            <h3 className={styles.fetalHeartRateTitle}>Urine Test</h3>
+            <h3 className={styles.fetalHeartRateTitle}>{t('urineTest', 'Urine Test')}</h3>
             <div className={styles.fetalHeartRateControls}>
-              <span className={styles.legendText}>Protein & Acetone: 0, +, ++, +++ | Volume in ml</span>
+              <span className={styles.legendText}>
+                {t('urineTestLegend', 'Protein & Acetone: 0, +, ++, +++ | Volume in ml')}
+              </span>
             </div>
           </div>
           <div className={styles.fetalHeartRateHeaderRight}>
@@ -136,7 +138,7 @@ const UrineTestGraph: React.FC<UrineTestGraphProps> = ({
                 disabled={isAddButtonDisabled}
                 onClick={onAddData}
                 className={styles.addButton}>
-                Add
+                {t('add', 'Add')}
               </Button>
             </div>
           </div>

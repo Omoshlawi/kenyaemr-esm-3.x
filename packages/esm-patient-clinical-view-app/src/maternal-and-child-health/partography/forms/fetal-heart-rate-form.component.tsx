@@ -120,7 +120,7 @@ const FetalHeartRateForm: React.FC<FetalHeartRateFormProps> = ({
     if (latestHour === null) {
       return t('firstEntryHelp', 'Select the hour for this first measurement');
     }
-    return t('progressiveEntryHelp', `Select an hour after ${latestHour}hr (latest entry)`);
+    return t('progressiveEntryHelp', 'Select an hour after {{latestHour}}hr (latest entry)', { latestHour });
   };
 
   const handleFormSubmit = async (data: FetalHeartRateFormData) => {

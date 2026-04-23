@@ -16,7 +16,11 @@ export function transformMaternalPulseEncounterToChartData(
     });
     encounter.obs?.forEach((obs) => {
       if (obs.concept.uuid === PARTOGRAPHY_CONCEPTS['maternal-pulse']) {
-        chartData.push({ group: t('Maternal Pulse'), time: encounterTime, value: parseFloat(obs.value) });
+        chartData.push({
+          group: t('maternalPulse', 'Maternal Pulse'),
+          time: encounterTime,
+          value: parseFloat(obs.value),
+        });
       }
     });
   });
@@ -41,7 +45,7 @@ export function transformMaternalPulseEncounterToTableData(
           id: `maternal-pulse-${index}-${obsIndex}`,
           dateTime,
           value: parseFloat(obs.value),
-          unit: t('BPM'),
+          unit: t('bpm', 'BPM'),
         });
       }
     });

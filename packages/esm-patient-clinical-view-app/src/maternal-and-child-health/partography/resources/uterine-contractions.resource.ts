@@ -69,7 +69,7 @@ export function transformUterineContractionsEncounterToChartData(
     encounter.obs?.forEach((obs) => {
       if (obs.concept.uuid === PARTOGRAPHY_CONCEPTS['uterine-contractions']) {
         chartData.push({
-          group: t('Uterine Contractions'),
+          group: t('uterineContractions', 'Uterine Contractions'),
           time: encounterTime,
           value: parseFloat(obs.value),
         });
@@ -188,7 +188,7 @@ export function useUterineContractionsData(patientUuid: string) {
   const { encounters, isLoading, error, mutate } = usePartographyEncounters(patientUuid, 'uterine-contractions');
   let localizedError = error;
   if (error) {
-    localizedError = t('Failed to load uterine contractions data');
+    localizedError = t('failedToLoadUterineContractionsData', 'Failed to load uterine contractions data');
   }
   return { data: encounters, isLoading, error: localizedError, mutate };
 }

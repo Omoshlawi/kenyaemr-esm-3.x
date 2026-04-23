@@ -113,11 +113,13 @@ const UterineContractionsGraph: React.FC<UterineContractionsGraphProps> = ({
       <div className={styles.fetalHeartRateContainer}>
         <div className={styles.fetalHeartRateHeader}>
           <div className={styles.fetalHeartRateHeaderLeft}>
-            <h3 className={styles.fetalHeartRateTitle}>Uterine Contractions</h3>
+            <h3 className={styles.fetalHeartRateTitle}>{t('uterineContractions', 'Uterine Contractions')}</h3>
             <div className={styles.fetalHeartRateControls}>
               <span className={styles.legendText}>
-                {}
-                Contractions per 10 min | Bar Heights: 0=None, 2=Mild, 3=Moderate, 5=Strong
+                {t(
+                  'uterineContractionKey',
+                  'Contractions per 10 min | Bar Heights: 0=None, 2=Mild, 3=Moderate, 5=Strong',
+                )}
               </span>
             </div>
           </div>

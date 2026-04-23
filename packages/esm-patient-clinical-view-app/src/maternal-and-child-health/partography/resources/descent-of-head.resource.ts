@@ -66,7 +66,7 @@ export function useDescentOfHeadData(patientUuid: string) {
   }, [data]);
   let localizedError = error;
   if (error) {
-    localizedError = t('Failed to load descent of head data');
+    localizedError = t('failedToLoadDescentOfHeadData', 'Failed to load descent of head data');
   }
   return {
     descentOfHeadData,
@@ -95,7 +95,7 @@ export async function saveDescentOfHeadData(
   } catch (error) {
     return {
       success: false,
-      message: error?.message || t('Failed to save descent of head data'),
+      message: error?.message || t('failedToSaveDescentOfHeadData', 'Failed to save descent of head data'),
     };
   }
 }

@@ -83,6 +83,7 @@ export const contractionLevelOptions = [
     title: 'Strong',
   },
 ];
+import { TFunction } from 'i18next';
 import {
   configSchema,
   MOULDING_NONE_CONCEPT,
@@ -1020,10 +1021,7 @@ export const getMeasurementLabel = (
   }
   return fallbackTitle || graphType;
 };
-export const getFieldLabel = (
-  fieldKey: keyof typeof FIELD_LABELS,
-  t: (key: string, fallback: string) => string,
-): string => {
+export const getFieldLabel = (fieldKey: keyof typeof FIELD_LABELS, t: TFunction): string => {
   const labelConfig = FIELD_LABELS[fieldKey];
   return t(labelConfig.key, labelConfig.default);
 };
@@ -1210,32 +1208,6 @@ export const getDefaultProcessor = (graphType: string): GraphDataProcessor => ({
 
 export const getGraphDataProcessor = (graphType: string): GraphDataProcessor => {
   return GRAPH_DATA_PROCESSORS[graphType] || getDefaultProcessor(graphType);
-};
-
-export const CERVIX_CHART_OPTIONS = {
-  title: 'Cervical Dilation',
-  axes: {
-    bottom: {
-      title: 'Time (Hours)',
-      scaleType: 'time',
-    },
-    left: {
-      title: 'Dilation (cm)',
-      mapsTo: 'value',
-      domain: [0, 10],
-      ticks: {
-        values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-      },
-      scaleType: 'linear',
-    },
-  },
-  data: {
-    groups: {
-      'Alert Line': { stroke: 'orange', dashed: true, line: { strokeDasharray: '4 4' } },
-      'Action Line': { stroke: 'red', dashed: true, line: { strokeDasharray: '4 4' } },
-    },
-  },
-  curve: 'curveLinear',
 };
 
 export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg' as const;

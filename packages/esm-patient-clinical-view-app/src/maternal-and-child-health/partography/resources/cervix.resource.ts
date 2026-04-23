@@ -1,7 +1,6 @@
 export type UseCervixDataResult = ReturnType<typeof useCervixData>;
 import { openmrsFetch, restBaseUrl, toOmrsIsoString } from '@openmrs/esm-framework';
 import useSWR from 'swr';
-import { useTranslation } from 'react-i18next';
 export { MCH_PARTOGRAPHY_ENCOUNTER_UUID } from '../types';
 import { CERVIX_FORM_CONCEPTS, MCH_PARTOGRAPHY_ENCOUNTER_UUID, DESCENT_OF_HEAD_OPTIONS } from '../types';
 import { ENCOUNTER_ROLE } from '../../../config-schema';
@@ -55,21 +54,23 @@ export async function saveCervixFormData(
     const observations = buildCervixObservations(formData);
     const missingFields = [];
     if (!formData.hour || isNaN(parseFloat(formData.hour))) {
-      missingFields.push(t('Hour'));
+      missingFields.push(t('hour', 'Hour'));
     }
     if (!formData.time || formData.time.trim() === '') {
-      missingFields.push(t('Time'));
+      missingFields.push(t('time', 'Time'));
     }
     if (!formData.cervicalDilation || isNaN(parseFloat(formData.cervicalDilation))) {
-      missingFields.push(t('Cervical Dilation'));
+      missingFields.push(t('cervicalDilation', 'Cervical Dilation'));
     }
     if (!formData.descent || isNaN(parseFloat(formData.descent))) {
-      missingFields.push(t('Descent of Head'));
+      missingFields.push(t('descentofHead', 'Descent of Head'));
     }
     if (missingFields.length > 0) {
       return {
         success: false,
-        message: t(`Missing or invalid fields: ${missingFields.join(', ')}`),
+        message: t('missingOrInvalidFields', `Missing or invalid fields: {{fields}}`, {
+          fields: missingFields.join(', '),
+        }),
         error: 'INVALID_FIELDS',
       };
     }
@@ -77,10 +78,18 @@ export async function saveCervixFormData(
     const finalProviderUuid = providerUuid || session?.currentProvider?.uuid;
     const finalLocationUuid = locationUuid || session?.sessionLocation?.uuid;
     if (!finalProviderUuid) {
-      return { success: false, message: t('Provider information is required'), error: 'NO_PROVIDER' };
+      return {
+        success: false,
+        message: t('providerInformationRequired', 'Provider information is required'),
+        error: 'NO_PROVIDER',
+      };
     }
     if (!finalLocationUuid) {
-      return { success: false, message: t('Location information is required'), error: 'NO_LOCATION' };
+      return {
+        success: false,
+        message: t('locationInformationRequired', 'Location information is required'),
+        error: 'NO_LOCATION',
+      };
     }
     const now = new Date();
     now.setMinutes(now.getMinutes() - 3);
@@ -104,21 +113,28 @@ export async function saveCervixFormData(
     });
     if (!response.ok) {
       const errorText = await response.text();
-      let errorMessage = t(`Failed to save cervix data: ${response.status} ${response.statusText}`);
+      let errorMessage = t('failedToSaveCervixData', 'Failed to save cervix data: {{status}} {{statusText}}', {
+        status: response.status,
+        statusText: response.statusText,
+      });
       try {
         const errorData = JSON.parse(errorText);
         if (errorData.error?.message) {
-          errorMessage = t(`Failed to save cervix data: ${errorData.error.message}`);
+          errorMessage = t('failedToSaveCervixData', 'Failed to save cervix data: {{message}}', {
+            message: errorData.error.message,
+          });
         }
       } catch (e) {}
       return { success: false, message: errorMessage, error: 'SAVE_FAILED' };
     }
     const encounter = await response.json();
-    return { success: true, message: t('Cervix data saved successfully'), encounter };
+    return { success: true, message: t('cervixDataSavedSuccessfully', 'Cervix data saved successfully'), encounter };
   } catch (error) {
     return {
       success: false,
-      message: t(`Failed to save cervix data: ${error instanceof Error ? error.message : t('Unknown error')}`),
+      message: t('failedToSaveCervixData', 'Failed to save cervix data: {{message}}', {
+        message: error instanceof Error ? error.message : t('Unknown error'),
+      }),
       error: 'EXCEPTION',
     };
   }
@@ -348,33 +364,4 @@ export function useCervixData(patientUuid: string) {
     error,
     mutate,
   };
-}
-
-export async function deleteCervixEncounter(encounterUuid: string): Promise<SaveCervixDataResponse> {
-  const { t } = require('react-i18next');
-  try {
-    const response = await openmrsFetch(`${restBaseUrl}/encounter/${encounterUuid}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    if (!response.ok) {
-      return {
-        success: false,
-        message: t('Failed to delete encounter: {{status}} {{statusText}}', {
-          status: response.status,
-          statusText: response.statusText,
-        }),
-        error: 'DELETE_FAILED',
-      };
-    }
-    return { success: true, message: t('Encounter deleted successfully') };
-  } catch (error) {
-    return {
-      success: false,
-      message: t('Failed to delete encounter: {{message}}', {
-        message: error instanceof Error ? error.message : t('Unknown error'),
-      }),
-      error: 'EXCEPTION',
-    };
-  }
 }

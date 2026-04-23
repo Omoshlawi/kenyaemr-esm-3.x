@@ -16,7 +16,7 @@ export function usePulseBpCombinedData(patientUuid: string) {
   const bp = useBloodPressureData(patientUuid);
   let localizedError = pulse.error || bp.error;
   if (pulse.error || bp.error) {
-    localizedError = t('Failed to load pulse or blood pressure data');
+    localizedError = t('failedToLoadPulseBpData', 'Failed to load pulse or blood pressure data');
   }
   return {
     pulse,

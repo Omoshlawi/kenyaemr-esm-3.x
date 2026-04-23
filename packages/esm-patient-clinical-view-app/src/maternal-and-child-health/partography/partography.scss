@@ -71,7 +71,6 @@
 .content {
   padding: layout.$spacing-04;
   background-color: colors.$white;
-  border-radius: layout.$spacing-02;
   border: 1px solid colors.$gray-20;
 }
 
@@ -89,7 +88,6 @@
   overflow-wrap: anywhere;
   padding: layout.$spacing-04;
   background-color: colors.$white;
-  border-radius: layout.$spacing-02;
   margin-bottom: layout.$spacing-04;
   border: 2px solid colors.$gray-40;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -108,7 +106,6 @@
     right: 0;
     height: 4px;
     background: linear-gradient(90deg, colors.$blue-60, colors.$green-50, colors.$blue-60);
-    border-radius: layout.$spacing-02 layout.$spacing-02 0 0;
   }
 
   position: relative;
@@ -140,7 +137,6 @@
   .viewSwitcher {
     display: flex;
     border: 1px solid colors.$gray-30;
-    border-radius: layout.$spacing-02;
     overflow: hidden;
 
     .viewButton {
@@ -200,7 +196,6 @@
 .chartContainer {
   background-color: colors.$white;
   padding: 0;
-  border-radius: layout.$spacing-02;
   border: 2px solid colors.$gray-40;
   margin-bottom: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -208,7 +203,6 @@
   // Medical chart styling
   .cds--chart-wrapper {
     border: 1px solid colors.$gray-30;
-    border-radius: layout.$spacing-02;
     overflow: hidden;
 
     // Enhanced grid lines for medical chart appearance
@@ -265,7 +259,6 @@
   gap: layout.$spacing-04;
   background-color: rgba(255, 255, 255, 0.95);
   padding: layout.$spacing-05;
-  border-radius: layout.$spacing-02;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   text-align: center;
 
@@ -281,7 +274,6 @@
   gap: layout.$spacing-05;
   padding: layout.$spacing-03;
   background-color: colors.$gray-20;
-  border-radius: layout.$spacing-02;
 }
 
 .statItem {
@@ -303,7 +295,6 @@
 .chartPlaceholder {
   background-color: colors.$white;
   padding: layout.$spacing-06;
-  border-radius: layout.$spacing-02;
   text-align: center;
   border: 2px dashed colors.$gray-30;
   min-height: layout.$spacing-13;
@@ -365,7 +356,6 @@
 
 .tableContainer {
   background-color: colors.$white;
-  border-radius: layout.$spacing-02;
   border: 1px solid colors.$gray-20;
   margin-bottom: layout.$spacing-04;
 
@@ -410,7 +400,6 @@
 .tableStats {
   padding: layout.$spacing-03;
   background-color: colors.$gray-20;
-  border-radius: 0 0 layout.$spacing-02 layout.$spacing-02;
   text-align: center;
 }
 
@@ -472,7 +461,6 @@
   gap: layout.$spacing-03;
   padding: layout.$spacing-03;
   background-color: colors.$gray-10;
-  border-radius: layout.$spacing-02;
 
   span {
     @include type.type-style('body-compact-01');
@@ -498,7 +486,6 @@
 .skeletonContainer {
   padding: layout.$spacing-04;
   background-color: colors.$white;
-  border-radius: layout.$spacing-02;
   border: 1px solid colors.$gray-20;
 }
 
@@ -508,7 +495,6 @@
     background: linear-gradient(90deg, colors.$gray-20 25%, colors.$gray-10 50%, colors.$gray-20 75%);
     background-size: 200% 100%;
     animation: skeletonLoading 1.5s infinite;
-    border-radius: layout.$spacing-02;
     margin-bottom: layout.$spacing-04;
   }
 
@@ -523,7 +509,6 @@
     background-size: 200% 100%;
     animation: skeletonLoading 1.5s infinite;
     height: layout.$spacing-05;
-    border-radius: layout.$spacing-02;
   }
 }
 
@@ -533,7 +518,6 @@
     background-size: 200% 100%;
     animation: skeletonLoading 1.5s infinite;
     height: layout.$spacing-05;
-    border-radius: layout.$spacing-02;
     margin-bottom: layout.$spacing-04;
   }
 
@@ -547,7 +531,6 @@
       background-size: 200% 100%;
       animation: skeletonLoading 1.5s infinite;
       height: layout.$spacing-04;
-      border-radius: layout.$spacing-02;
     }
   }
 
@@ -556,7 +539,6 @@
     background-size: 200% 100%;
     animation: skeletonLoading 1.5s infinite;
     height: layout.$spacing-04;
-    border-radius: layout.$spacing-02;
     margin-top: layout.$spacing-04;
   }
 }
@@ -809,7 +791,6 @@
 
 .fetalHeartRateContainer {
   background-color: colors.$white;
-  border-radius: layout.$spacing-03;
   border: 2px solid colors.$gray-20;
   padding: layout.$spacing-06;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
@@ -876,7 +857,6 @@
 
   :global(.cds--cc--chart-svg) {
     border: 1px solid colors.$gray-30;
-    border-radius: layout.$spacing-02;
     min-height: 600px;
   }
 
@@ -961,7 +941,6 @@
   margin-top: layout.$spacing-04;
   background: colors.$white;
   border: 1px solid colors.$gray-30;
-  border-radius: layout.$spacing-02;
   overflow-x: auto;
   max-height: 300px;
   max-width: 1540px;
@@ -1042,7 +1021,6 @@
   justify-content: flex-start;
   align-items: flex-start;
   background-color: colors.$gray-10;
-  border-radius: layout.$spacing-02;
   border: 1px solid colors.$gray-30;
   margin: layout.$spacing-02 0;
   flex-wrap: wrap;
@@ -1058,7 +1036,6 @@
   transition: all 0.3s ease;
   text-align: center;
   padding: layout.$spacing-01;
-  border-radius: layout.$spacing-02;
 
   &:hover {
     transform: translateY(-2px);
@@ -1096,7 +1073,6 @@
   align-items: center;
   justify-content: center;
   border: 2px solid colors.$gray-40;
-  border-radius: layout.$spacing-02;
   font-size: 28px;
   font-weight: bold;
   transition: all 0.3s ease;
@@ -1200,7 +1176,6 @@
   .cds--dropdown {
     background-color: colors.$white;
     border: 2px solid colors.$gray-30;
-    border-radius: layout.$spacing-02;
 
     &:hover {
       border-color: colors.$blue-40;
@@ -1385,7 +1360,6 @@
   position: absolute;
   top: 0;
   left: 0;
-  border-radius: 2px;
   opacity: 0.8;
   transition: opacity 0.2s ease;
 
@@ -1456,7 +1430,6 @@
       left: 2px;
       right: 2px;
       bottom: 2px;
-      border-radius: 1px;
       background: inherit;
       z-index: 1;
     }
@@ -1483,7 +1456,6 @@
 .contractionsTable {
   background-color: colors.$white;
   border: 1px solid colors.$gray-30;
-  border-radius: layout.$spacing-02;
   overflow: hidden;
 }
 
@@ -1515,7 +1487,6 @@
   display: inline-flex;
   align-items: center;
   padding: layout.$spacing-01 layout.$spacing-02;
-  border-radius: layout.$spacing-01;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
@@ -1638,14 +1609,12 @@
   .chartContainer {
     background-color: colors.$white;
     padding: layout.$spacing-04;
-    border-radius: layout.$spacing-02;
     border: 2px solid colors.$gray-40;
     margin-bottom: layout.$spacing-04;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     min-height: 650px;
     :global(.cds--chart-wrapper) {
       border: 1px solid colors.$gray-30;
-      border-radius: layout.$spacing-02;
       overflow: hidden;
       :global(.cds--chart) {
         background-color: colors.$white;
@@ -1683,7 +1652,6 @@
     gap: 1px;
     background-color: colors.$gray-30;
     border: 1px solid colors.$gray-30;
-    border-radius: layout.$spacing-02;
   }
 
   .hoursRow,

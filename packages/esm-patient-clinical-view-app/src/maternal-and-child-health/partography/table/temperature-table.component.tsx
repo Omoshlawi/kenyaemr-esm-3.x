@@ -10,6 +10,7 @@ import {
   TableCell,
   Pagination,
 } from '@carbon/react';
+import { useTranslation } from 'react-i18next';
 
 interface TemperatureTableRow {
   id: string;
@@ -39,14 +40,15 @@ const TemperatureTable: React.FC<TemperatureTableProps> = ({
   onPageSizeChange,
 }) => {
   // Calculate pagination
+  const { t } = useTranslation();
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const paginatedData = tableData.slice(startIndex, endIndex);
 
   const tableHeaders = [
-    { key: 'date', header: 'Date' },
-    { key: 'exactTime', header: 'Time' },
-    { key: 'temperature', header: 'Temperature (°C)' },
+    { key: 'date', header: t('date', 'Date') },
+    { key: 'exactTime', header: t('time', 'Time') },
+    { key: 'temperature', header: t('temperature', 'Temperature (°C)') },
   ];
 
   return (

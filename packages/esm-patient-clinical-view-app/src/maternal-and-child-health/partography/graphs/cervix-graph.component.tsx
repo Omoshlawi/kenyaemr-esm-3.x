@@ -81,7 +81,6 @@ const CERVIX_CHART_OPTIONS = {
       },
     },
     left: {
-      title: 'Cervical Dilation (cm) / Descent of Head (5=high → 1=descended)',
       mapsTo: 'value',
       domain: [0, 10],
       ticks: {
@@ -142,40 +141,47 @@ const CervixGraph: React.FC<CervixGraphProps> = ({
   const EXPECTED_LABOR_DURATION_HOURS = 6;
 
   const staticLinesData: ChartDataPoint[] = [
-    { hour: 0, value: ALERT_START_CM, group: 'Alert Line' },
-    { hour: EXPECTED_LABOR_DURATION_HOURS, value: CERVIX_DILATION_MAX, group: 'Alert Line' },
-    { hour: ALERT_ACTION_DIFFERENCE_HOURS, value: ALERT_START_CM, group: 'Action Line' },
+    { hour: 0, value: ALERT_START_CM, group: t('alertLine', 'Alert Line') },
+    { hour: EXPECTED_LABOR_DURATION_HOURS, value: CERVIX_DILATION_MAX, group: t('alertLine', 'Alert Line') },
+    { hour: ALERT_ACTION_DIFFERENCE_HOURS, value: ALERT_START_CM, group: t('actionLine', 'Action Line') },
     {
       hour: ALERT_ACTION_DIFFERENCE_HOURS + EXPECTED_LABOR_DURATION_HOURS,
       value: CERVIX_DILATION_MAX,
-      group: 'Action Line',
+      group: t('actionLine', 'Action Line'),
     },
   ];
 
   const cervicalDilationData: ChartDataPoint[] = cervixFormData.map((data) => ({
     hour: data.hour,
     value: data.cervicalDilation,
-    group: 'Cervical Dilation',
+    group: t('cervicalDilation', 'Cervical Dilation'),
     time: data.time,
   }));
 
   const descentOfHeadData: ChartDataPoint[] = cervixFormData.map((data) => ({
     hour: data.hour,
     value: data.descentOfHead,
-    group: 'Descent of Head',
+    group: t('descentOfHead', 'Descent of Head'),
     time: data.time,
   }));
 
   const finalChartData = [...staticLinesData, ...cervicalDilationData, ...descentOfHeadData];
   const chartOptions = {
     ...CERVIX_CHART_OPTIONS,
-    title: 'Cervical Dilation and Descent of Head',
+    axes: {
+      ...CERVIX_CHART_OPTIONS.axes,
+      left: {
+        ...CERVIX_CHART_OPTIONS.axes.left,
+        title: t('cervicalDilationLeftTitle', 'Cervical Dilation (cm) / Descent of Head (5=high → 1=descended)'),
+      },
+    },
+    title: t('cervicalDilationAndDescentOfHead', 'Cervical Dilation and Descent of Head'),
     color: {
       scale: {
-        'Alert Line': getColorForGraph('yellow'),
-        'Action Line': getColorForGraph('red'),
-        'Cervical Dilation': getColorForGraph('green'),
-        'Descent of Head': getColorForGraph('blue'),
+        [t('alertLine', 'Alert Line')]: getColorForGraph('yellow'),
+        [t('actionLine', 'Action Line')]: getColorForGraph('red'),
+        [t('cervicalDilation', 'Cervical Dilation')]: getColorForGraph('green'),
+        [t('descentOfHead', 'Descent of Head')]: getColorForGraph('blue'),
       },
     },
   };
@@ -367,8 +373,8 @@ const CervixGraph: React.FC<CervixGraphProps> = ({
     <div className={styles.graphContainer}>
       <div className={styles.graphHeader}>
         <div className={styles.graphHeaderLeft}>
-          <h6>Cervical Dilation and Descent of Head</h6>
-          <Tag type="outline">Normal progression varies</Tag>
+          <h6>{t('cervicalDilationAndDescentOfHead', 'Cervical Dilation and Descent of Head')}</h6>
+          <Tag type="outline">{t('normalProgressionVaries', 'Normal progression varies')}</Tag>
         </div>
         <div className={styles.graphHeaderRight}>
           <div className={styles.viewSwitcher}>
