@@ -457,16 +457,21 @@ export const configSchema = {
       encounters: {
         artTherapyEncounterUuid: 'ec2a91e5-444a-4ca0-87f1-f71ddfaf57eb',
         serviceDeliveryEncounterUuid: 'e87aa2ad-6886-422e-9dfd-064e3bfe3aad',
+        transferOutEncounterUuid: 'b93ae0fc-9b57-4c79-936b-596553aab8b0',
       },
       forms: {
         artTherapyFormUuid: '9d65e3cf-0763-3def-bff0-12ac720ef5b5',
         serviceDeliveryModelFormUuid: '1e14f841-b42b-3273-93db-807927ca9a82',
+        transferOutFormUuid: 'a969288d-6605-361b-b01c-42f6ef25c0f5',
       },
       concepts: {
         therapyPlanConceptUuid: '1255AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         regimenLineConceptUuid: '164515AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         regimentConceptUuid: '164432AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         differenciatedServiceDeliveryModelConceptUuid: '166448AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        transferOutDateConceptUuid: '160649AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        receivingFacilityConceptUuid: '162724AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        tranferOutVerifiedConceptUuid: '5d617329-2aa7-413a-abc4-e231bab65a6e',
       },
     },
   },
@@ -687,16 +692,21 @@ export interface HivCareAndTreatmentConfig {
     encounters: {
       artTherapyEncounterUuid: string;
       serviceDeliveryEncounterUuid: string;
+      transferOutEncounterUuid: string;
     };
     forms: {
       artTherapyFormUuid: string;
       serviceDeliveryModelFormUuid: string;
+      transferOutFormUuid: string;
     };
     concepts: {
       therapyPlanConceptUuid: string;
       regimenLineConceptUuid: string;
       regimentConceptUuid: string;
       differenciatedServiceDeliveryModelConceptUuid: string;
+      transferOutDateConceptUuid: string;
+      receivingFacilityConceptUuid: string;
+      tranferOutVerifiedConceptUuid: string;
     };
   };
 }
