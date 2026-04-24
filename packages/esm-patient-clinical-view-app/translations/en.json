@@ -134,6 +134,7 @@
   "drugOrderSavedSuccessfully": "Drug order has been saved successfully",
   "drugsAndIVFluidsGiven": "Drugs given and IV fluids",
   "drugsIVFluids": "Drugs and IV Fluids Given",
+  "dsdModel": "DSD Model",
   "duplicateHour": "",
   "duplicateTimeEntry": "This time already exists",
   "duration": "Duration",
