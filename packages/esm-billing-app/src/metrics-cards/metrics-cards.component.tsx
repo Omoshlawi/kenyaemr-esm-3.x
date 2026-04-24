@@ -9,12 +9,13 @@ import styles from './metrics-cards.scss';
 import { useBillSummary } from './metrics.resource';
 import { Renew } from '@carbon/react/icons';
 import { useCurrencyFormatting } from '../helpers/currency';
+import { formatDate } from '@openmrs/esm-framework';
 
 export default function MetricsCards() {
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
   const { data: billSummary, isLoading, error, mutate } = useBillSummary();
-  const sectionDate = dayjs().format('dddd, MMMM D, YYYY');
+  const sectionDate = formatDate(dayjs().toDate());
   const cards = useMemo(
     () => [
       { title: t('totalBillsLabel', 'Total Bills'), count: formatCurrency(billSummary?.totalBills) },
