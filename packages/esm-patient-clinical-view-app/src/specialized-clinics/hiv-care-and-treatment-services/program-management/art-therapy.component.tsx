@@ -40,12 +40,7 @@ const ARTTherappy: FC<ARTTherappyProps> = ({ patientUuid, patient }) => {
     mutate,
     concepts: { therapyPlanConceptUuid, regimenLineConceptUuid, regimentConceptUuid },
   } = useArtTherapy(patientUuid);
-  const {
-    formSchema,
-    error: formSchemaError,
-    isLoading: formSchemaIsLoading,
-    getAnswerLabel,
-  } = useFormSchema(artTherapyFormUuid);
+  const { error: formSchemaError, isLoading: formSchemaIsLoading, getAnswerLabel } = useFormSchema(artTherapyFormUuid);
   const groupProps = useMemo(
     () => ({
       patient,

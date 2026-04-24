@@ -3,6 +3,8 @@ import { HivCareAndTreatmentConfig } from '../../../config-schema';
 import useSWR from 'swr';
 import useSWRImmutable from 'swr/immutable';
 import { useCallback, useMemo } from 'react';
+const rep =
+  'custom:(uuid,encounterDatetime,encounterType,location:(uuid,name),patient:(uuid,display,age,identifiers,person),encounterProviders:(uuid,provider:(uuid,name)),obs:(uuid,obsDatetime,voided,groupMembers,concept:(uuid,name:(uuid,name)),value:(uuid,name:(uuid,name),names:(uuid,conceptNameType,name))),form:(uuid,name,resources),visit:(uuid,startDatetime,stopDatetime,visitType:(uuid,display)))';
 
 type FormPage = {
   label: string;
@@ -93,8 +95,6 @@ export const useArtTherapy = (patientUuid: string) => {
     },
   } = useConfig<HivCareAndTreatmentConfig>();
 
-  const rep =
-    'custom:(uuid,encounterDatetime,encounterType,location:(uuid,name),patient:(uuid,display,age,identifiers,person),encounterProviders:(uuid,provider:(uuid,name)),obs:(uuid,obsDatetime,voided,groupMembers,concept:(uuid,name:(uuid,name)),value:(uuid,name:(uuid,name),names:(uuid,conceptNameType,name))),form:(uuid,name,resources),visit:(uuid,startDatetime,stopDatetime,visitType:(uuid,display)))';
   const url = `${restBaseUrl}/encounter?encounterType=${artTherapyEncounterUuid}&patient=${patientUuid}&v=${rep}&totalCount=true&limit=10&startIndex=0`;
 
   const { data, error, isLoading, mutate } = useSWR<FetchResponse<{ results: Array<Encounter>; totalCount: number }>>(
@@ -109,6 +109,32 @@ export const useArtTherapy = (patientUuid: string) => {
     error,
     mutate,
     artTherapyFormUuid,
+    concepts,
+  };
+};
+
+export const useServiceDelivertModel = (patientUuid: string) => {
+  const {
+    hivCareAndTreatment: {
+      encounters: { serviceDeliveryEncounterUuid },
+      forms: { serviceDeliveryModelFormUuid },
+      concepts,
+    },
+  } = useConfig<HivCareAndTreatmentConfig>();
+  const url = `${restBaseUrl}/encounter?encounterType=${serviceDeliveryEncounterUuid}&patient=${patientUuid}&v=${rep}&totalCount=true&limit=10&startIndex=0`;
+
+  const { data, error, isLoading, mutate } = useSWR<FetchResponse<{ results: Array<Encounter>; totalCount: number }>>(
+    url,
+    openmrsFetch,
+  );
+
+  return {
+    serviceDeliveryEncounters: data?.data.results,
+    totalCount: data?.data.totalCount,
+    isLoading,
+    error,
+    mutate,
+    serviceDeliveryModelFormUuid,
     concepts,
   };
 };
