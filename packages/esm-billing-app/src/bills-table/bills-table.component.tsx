@@ -121,7 +121,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '', i
     department: '--',
     billedItems: setBilledItems(bill),
     billingPrice: '--',
-    status: bill.status,
+    status: t(bill.status),
   }));
 
   const handleSearch = useCallback(
