@@ -52,7 +52,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ bill, isSelectable = true, 
   }, [debouncedSearchTerm, lineItems]);
 
   const tableHeaders = [
-    { header: t('no', 'No'), key: 'no' },
+    { header: t('numberAbbr', 'No'), key: 'no' },
     { header: t('billItem', 'Bill item'), key: 'billItem' },
     { header: t('billCode', 'Bill code'), key: 'billCode' },
     { header: t('status', 'Status'), key: 'status' },
