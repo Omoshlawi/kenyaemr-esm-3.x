@@ -19,7 +19,7 @@ import { mutate } from 'swr';
 import { z } from 'zod';
 
 import { usePaymentModes } from '../../../billing.resource';
-import { formatCurrency } from '../../../helpers/currency';
+import { useCurrencyFormatting } from '../../../helpers/currency';
 import { PaymentMode, PaymentStatus, type LineItem, type MappedBill } from '../../../types';
 import { extractErrorMessagesFromResponse } from '../../../utils';
 import { makePayment } from '../payments.resource';
@@ -80,6 +80,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
   workspaceProps: { selectedLineItems, bill },
   closeWorkspace,
 }) => {
+  const { format: formatCurrency } = useCurrencyFormatting();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -196,7 +197,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
                   itemToString={(item) => (item ? item.name : '')}
                   items={paymentModes}
                   onChange={({ selectedItem }) => field.onChange(selectedItem)}
-                  titleText="Payment Mode"
+                  titleText={t('paymentMode', 'Payment Mode')}
                   invalid={!!errors.paymentMode}
                   invalidText={errors.paymentMode?.message}
                 />
@@ -235,7 +236,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
                     labelText={t('referenceCode', 'Reference Code')}
                     maxCount={10}
                     onChange={field.onChange}
-                    placeholder="Enter reference code"
+                    placeholder={t('enterReferenceCode', 'Enter reference code')}
                     size="md"
                     type="text"
                     value={field.value}
