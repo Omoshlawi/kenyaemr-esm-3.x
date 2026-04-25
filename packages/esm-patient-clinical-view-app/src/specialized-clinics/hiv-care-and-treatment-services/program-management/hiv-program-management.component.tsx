@@ -8,6 +8,7 @@ import TransferOut from './transfer-out.component';
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import { FHIRResource } from '@openmrs/esm-framework';
 import PatientTracing from '../defaulter-tracing/patient-tracing.component';
+import ClinicalVisits from './clinic-visits.component';
 type HIVProgramManagmentProps = {
   patientUuid: string;
   patient: FHIRResource;
@@ -24,6 +25,7 @@ const HIVProgramManagment: FC<HIVProgramManagmentProps> = ({ patientUuid, patien
         <Tabs>
           <TabList scrollDebounceWait={200} contained>
             <Tab>{t('artTherapy', 'ART Therapy')}</Tab>
+            <Tab>{t('clinicVisit', 'Clinic Visit')}</Tab>
             <Tab>{t('serviceDeliveryModel', 'Service delivery model')}</Tab>
             <Tab>{t('transferOut', 'Transfer out')}</Tab>
             <Tab>{t('patientTracing', 'Patient tracing')}</Tab>
@@ -31,6 +33,9 @@ const HIVProgramManagment: FC<HIVProgramManagmentProps> = ({ patientUuid, patien
           <TabPanels>
             <TabPanel>
               <ARTTherappy patientUuid={patientUuid} patient={patient} />
+            </TabPanel>
+            <TabPanel>
+              <ClinicalVisits patientUuid={patientUuid} patient={patient} />
             </TabPanel>
             <TabPanel>
               <ServiceDeliveryModel patientUuid={patientUuid} patient={patient} />

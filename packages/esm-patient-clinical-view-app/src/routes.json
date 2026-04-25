@@ -266,6 +266,26 @@
         "meta": {
           "title": "Program Management"
         }
+      },{
+        "name": "hiv-general-counseling",
+        "slot": "hiv-care-and-treatment-tabs-extension-slot",
+        "component": "hivCareAndTreatmentGeneralCounseling",
+        "order": 0,
+        "online": true,
+        "offline": false,
+        "meta": {
+          "title": "General Counseling"
+        }
+      },{
+        "name": "hiv-partner-notification-services",
+        "slot": "hiv-care-and-treatment-tabs-extension-slot",
+        "component": "hivCareAndTreatmentPartnerNotificationServices",
+        "order": 0,
+        "online": true,
+        "offline": false,
+        "meta": {
+          "title": "Partner Notification Services"
+        }
       }
   ],
   "modals": [
