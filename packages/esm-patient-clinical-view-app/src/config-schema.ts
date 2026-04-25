@@ -458,11 +458,13 @@ export const configSchema = {
         artTherapyEncounterUuid: 'ec2a91e5-444a-4ca0-87f1-f71ddfaf57eb',
         serviceDeliveryEncounterUuid: 'a0034eee-1940-4e35-847f-97537a35d05e',
         transferOutEncounterUuid: 'b93ae0fc-9b57-4c79-936b-596553aab8b0',
+        patientTracingEncounterUuid: '1495edf8-2df2-11e9-b210-d663bd873d93',
       },
       forms: {
         artTherapyFormUuid: '9d65e3cf-0763-3def-bff0-12ac720ef5b5',
         serviceDeliveryModelFormUuid: '1e14f841-b42b-3273-93db-807927ca9a82',
         transferOutFormUuid: 'a969288d-6605-361b-b01c-42f6ef25c0f5',
+        patientTracingFormUuid: '71f3febd-dd11-322b-9c18-2a8a07d87af1', // For DRC
       },
       concepts: {
         therapyPlanConceptUuid: '1255AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
@@ -472,6 +474,9 @@ export const configSchema = {
         transferOutDateConceptUuid: '160649AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         receivingFacilityConceptUuid: '162724AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         tranferOutVerifiedConceptUuid: '5d617329-2aa7-413a-abc4-e231bab65a6e',
+        contactDateConceptUuid: '160753AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        contactMethodConceptUuid: '166456AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        tracingOutcomeConceptUuid: '167011AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       },
     },
   },
@@ -693,11 +698,13 @@ export interface HivCareAndTreatmentConfig {
       artTherapyEncounterUuid: string;
       serviceDeliveryEncounterUuid: string;
       transferOutEncounterUuid: string;
+      patientTracingEncounterUuid: string;
     };
     forms: {
       artTherapyFormUuid: string;
       serviceDeliveryModelFormUuid: string;
       transferOutFormUuid: string;
+      patientTracingFormUuid: string;
     };
     concepts: {
       therapyPlanConceptUuid: string;
@@ -707,6 +714,9 @@ export interface HivCareAndTreatmentConfig {
       transferOutDateConceptUuid: string;
       receivingFacilityConceptUuid: string;
       tranferOutVerifiedConceptUuid: string;
+      contactDateConceptUuid: string;
+      contactMethodConceptUuid: string;
+      tracingOutcomeConceptUuid: string;
     };
   };
 }

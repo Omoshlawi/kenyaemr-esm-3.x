@@ -165,3 +165,30 @@ export const useTransferOut = (patientUuid: string) => {
     concepts,
   };
 };
+
+export const usePatientTracing = (patientUuid: string) => {
+  const {
+    hivCareAndTreatment: {
+      encounters: { patientTracingEncounterUuid },
+      forms: { patientTracingFormUuid },
+      concepts,
+    },
+  } = useConfig<HivCareAndTreatmentConfig>();
+
+  const url = `${restBaseUrl}/encounter?encounterType=${patientTracingEncounterUuid}&patient=${patientUuid}&v=${rep}&totalCount=true&limit=10&startIndex=0`;
+
+  const { data, error, isLoading, mutate } = useSWR<FetchResponse<{ results: Array<Encounter>; totalCount: number }>>(
+    url,
+    openmrsFetch,
+  );
+
+  return {
+    patientTracingEncounters: data?.data.results,
+    totalCount: data?.data.totalCount,
+    isLoading,
+    error,
+    mutate,
+    patientTracingFormUuid,
+    concepts,
+  };
+};

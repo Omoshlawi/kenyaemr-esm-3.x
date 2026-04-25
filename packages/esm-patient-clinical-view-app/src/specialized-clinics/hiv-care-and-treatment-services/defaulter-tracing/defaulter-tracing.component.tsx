@@ -155,19 +155,14 @@ const DefaulterTracing: React.FC<PatientTracingProps> = ({ patientUuid, patient 
           {t('add', 'Add')}
         </Button>
       </CardHeader>
-      <DataTable
-        useZebraStyles
-        size="sm"
-        rows={tableRows}
-        headers={tableHeader}
-        render={({ rows, headers, getHeaderProps, getRowProps, getTableProps, getTableContainerProps }) => (
+      <DataTable useZebraStyles size="sm" rows={tableRows} headers={tableHeader}>
+        {({ rows, headers, getHeaderProps, getRowProps, getTableProps, getTableContainerProps }) => (
           <TableContainer {...getTableContainerProps()}>
-            <Table size="sm" {...getTableProps()} aria-label={t('defaulterTracing', 'Defaulter tracing')}>
+            <Table {...getTableProps()} aria-label={t('defaulterTracing', 'Defaulter tracing')}>
               <TableHead>
                 <TableRow>
                   {headers.map((header, i) => (
                     <TableHeader
-                      key={i}
                       {...getHeaderProps({
                         header,
                       })}>
@@ -180,7 +175,6 @@ const DefaulterTracing: React.FC<PatientTracingProps> = ({ patientUuid, patient 
               <TableBody>
                 {rows.map((row, index) => (
                   <TableRow
-                    key={row.id}
                     {...getRowProps({
                       row,
                     })}>
@@ -201,7 +195,7 @@ const DefaulterTracing: React.FC<PatientTracingProps> = ({ patientUuid, patient 
             </Table>
           </TableContainer>
         )}
-      />
+      </DataTable>
     </div>
   );
 };
