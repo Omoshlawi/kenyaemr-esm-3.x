@@ -3,8 +3,6 @@ import {
   DataTable,
   DataTableSkeleton,
   Layer,
-  OverflowMenu,
-  OverflowMenuItem,
   Table,
   TableBody,
   TableCell,

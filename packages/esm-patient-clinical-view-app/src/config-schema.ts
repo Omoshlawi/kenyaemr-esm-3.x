@@ -456,7 +456,7 @@ export const configSchema = {
     _default: {
       encounters: {
         artTherapyEncounterUuid: 'ec2a91e5-444a-4ca0-87f1-f71ddfaf57eb',
-        serviceDeliveryEncounterUuid: 'e87aa2ad-6886-422e-9dfd-064e3bfe3aad',
+        serviceDeliveryEncounterUuid: 'a0034eee-1940-4e35-847f-97537a35d05e',
         transferOutEncounterUuid: 'b93ae0fc-9b57-4c79-936b-596553aab8b0',
       },
       forms: {
