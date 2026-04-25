@@ -6,7 +6,7 @@ import {
 } from '@openmrs/esm-patient-common-lib/src';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFormSchema, useServiceDelivertModel } from './program-management.resource';
+import { useServiceDelivertModel } from './program-management.resource';
 import {
   Button,
   DataTable,
@@ -20,6 +20,7 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add, Edit } from '@carbon/react/icons';
+import { useFormSchema } from '../hiv-care-and-treatment.resource';
 
 type ServiceDeliveryModelProps = {
   patientUuid: string;

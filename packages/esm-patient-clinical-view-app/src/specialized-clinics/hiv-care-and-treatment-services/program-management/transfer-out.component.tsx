@@ -21,7 +21,8 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFormSchema, useTransferOut } from './program-management.resource';
+import { useTransferOut } from './program-management.resource';
+import { useFormSchema } from '../hiv-care-and-treatment.resource';
 type TransferOutProps = {
   patientUuid: string;
   patient: FHIRResource;

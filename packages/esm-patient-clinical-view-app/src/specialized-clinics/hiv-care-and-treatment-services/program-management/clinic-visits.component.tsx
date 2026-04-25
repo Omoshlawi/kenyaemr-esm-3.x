@@ -2,7 +2,7 @@ import { CardHeader, ErrorState, FHIRResource, formatDate, Obs, parseDate } from
 import { EmptyState, useLaunchWorkspaceRequiringVisit, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
 import React, { FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useClinicalVisit, useFormSchema } from './program-management.resource';
+import { useClinicalVisit } from './program-management.resource';
 import {
   Button,
   DataTable,
@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add, Edit } from '@carbon/react/icons';
+import { useFormSchema } from '../hiv-care-and-treatment.resource';
 type ClinicVisitsProps = {
   patientUuid: string;
   patient: FHIRResource;
@@ -69,7 +70,7 @@ const ClinicalVisits: FC<ClinicVisitsProps> = ({ patient, patientUuid }) => {
   const headers = [
     { key: 'encounterDate', header: t('encounterDate', 'EncounterDate') },
     { key: 'visitType', header: t('visitType', 'Visit Type') },
-    { key: 'tbScreening', header: t('tbScreening', 'TB Screening') },
+    { key: 'tbScreening', header: t('tbScreeningOutcome', 'TB Screening outcome') },
     { key: 'nextAppointmentDate', header: t('nextAppointmentDate', 'Next Appointment Date') },
     { key: 'actions', header: t('actions', 'Actions') },
   ];

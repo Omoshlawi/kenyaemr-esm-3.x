@@ -20,7 +20,8 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import React, { FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useArtTherapy, useFormSchema } from './program-management.resource';
+import { useArtTherapy } from './program-management.resource';
+import { useFormSchema } from '../hiv-care-and-treatment.resource';
 type ARTTherappyProps = {
   patientUuid: string;
   patient: FHIRResource;

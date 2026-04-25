@@ -7,7 +7,7 @@ import ServiceDeliveryModel from './service-delivery-model.component';
 import TransferOut from './transfer-out.component';
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import { FHIRResource } from '@openmrs/esm-framework';
-import PatientTracing from '../defaulter-tracing/patient-tracing.component';
+import PatientTracing from './patient-tracing.component';
 import ClinicalVisits from './clinic-visits.component';
 type HIVProgramManagmentProps = {
   patientUuid: string;

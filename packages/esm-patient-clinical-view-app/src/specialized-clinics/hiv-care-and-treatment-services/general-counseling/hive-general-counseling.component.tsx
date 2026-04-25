@@ -2,6 +2,8 @@ import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import { CardHeader, FHIRResource } from '@openmrs/esm-framework';
 import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
+import MentalHealthAssesment from './mental-health-assesment.component';
+import Disclosure from './disclosure.component';
 type HIVGeneralCounselingProps = {
   patientUuid: string;
   patient: FHIRResource;
@@ -22,10 +24,10 @@ const HIVGeneralCounseling: FC<HIVGeneralCounselingProps> = ({ patient, patientU
           </TabList>
           <TabPanels>
             <TabPanel>
-              <div>Mental Health Assessment</div>
+              <MentalHealthAssesment patient={patient} patientUuid={patientUuid} />
             </TabPanel>
             <TabPanel>
-              <div>Disclosure</div>
+              <Disclosure patient={patient} patientUuid={patientUuid} />
             </TabPanel>
           </TabPanels>
         </Tabs>

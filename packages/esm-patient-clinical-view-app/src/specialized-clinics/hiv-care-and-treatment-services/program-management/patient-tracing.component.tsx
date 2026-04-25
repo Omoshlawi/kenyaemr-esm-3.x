@@ -2,11 +2,6 @@
  * implementation of the defaulter tracing component for DRC Implementation
  */
 
-import { CardHeader, ErrorState, FHIRResource, formatDate, Obs, parseDate } from '@openmrs/esm-framework';
-import { EmptyState, useLaunchWorkspaceRequiringVisit, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
-import React, { FC, useCallback, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useFormSchema, usePatientTracing } from '../program-management/program-management.resource';
 import {
   Button,
   DataTable,
@@ -20,6 +15,12 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add, Edit } from '@carbon/react/icons';
+import { CardHeader, ErrorState, FHIRResource, Obs } from '@openmrs/esm-framework';
+import { EmptyState, useLaunchWorkspaceRequiringVisit, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
+import React, { FC, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useFormSchema } from '../hiv-care-and-treatment.resource';
+import { usePatientTracing } from './program-management.resource';
 type PatientTracingProps = {
   patientUuid: string;
   patient: FHIRResource;
