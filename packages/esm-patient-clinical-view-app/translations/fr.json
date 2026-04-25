@@ -442,6 +442,7 @@
   "systolicBP": "TA systolique",
   "tableView": "Vue tableau",
   "tbScreening": "Résultat du dépistage TB",
+  "tbScreeningOutcome": "Résultat du dépistage de la tuberculose",
   "temperature": "Temp °C",
   "temperatureLegend": "Normal : 36,1-37,2°C | Bas : <36,1°C | Élevé : >37,2°C",
   "temperatureValidation": "Veuillez entrer une température valide (30-45°C)",

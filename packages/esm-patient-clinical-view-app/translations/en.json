@@ -442,6 +442,7 @@
   "systolicBP": "BP Systolic",
   "tableView": "Table View",
   "tbScreening": "TB screening outcome",
+  "tbScreeningOutcome": "TB Screening outcome",
   "temperature": "Temp °C",
   "temperatureLegend": "Normal: 36.1-37.2°C | Low: <36.1°C | High: >37.2°C",
   "temperatureValidation": "Please enter a valid temperature (30-45°C)",
