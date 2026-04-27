@@ -492,12 +492,12 @@ export const configSchema = {
     _type: Type.Object,
     _description: 'Partner Notification Services contact form configuration',
     _default: {
-      hideMaritalStatus: true,
-      hideLivingWithContact: true,
-      alwaysShowIPVRelatedFields: true,
-      hideIPVOutcome: true,
-      hidePNSAproach: true,
-      hideComments: false,
+      hideMaritalStatus: false,
+      hideLivingWithContact: false,
+      alwaysShowIPVRelatedFields: false,
+      hideIPVOutcome: false,
+      hidePNSAproach: false,
+      hideComments: true,
     },
   },
 };
