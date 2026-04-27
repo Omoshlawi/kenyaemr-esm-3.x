@@ -77,8 +77,8 @@ const Disclosure: FC<DisclosureProps> = ({ patient, patientUuid }) => {
 
       return {
         id: encounter.uuid,
-        disclosureDate: (disclosureDateObs.value as any)?.name?.name ?? '--',
-        disclosureState: (disclosureStageObs.value as any)?.name?.name ?? '--',
+        disclosureDate: (disclosureDateObs?.value as any)?.name?.name ?? '--',
+        disclosureState: (disclosureStageObs?.value as any)?.name?.name ?? '--',
         actions: (
           <Button
             hasIconOnly
