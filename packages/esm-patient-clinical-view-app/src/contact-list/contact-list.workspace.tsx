@@ -1,5 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, ButtonSet, Column, DatePicker, DatePickerInput, Dropdown, Form, Stack } from '@carbon/react';
+import {
+  Accordion,
+  Button,
+  ButtonSet,
+  Column,
+  DatePicker,
+  DatePickerInput,
+  Dropdown,
+  Form,
+  Stack,
+  TextArea,
+} from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -15,7 +26,7 @@ import {
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 
-import { ConfigObject } from '../config-schema';
+import { ConfigObject, PNSContactFormConfig } from '../config-schema';
 import { useMappedRelationshipTypes } from '../family-partner-history/relationships.resource';
 import usePersonAttributes from '../hooks/usePersonAttributes';
 import RelationshipBaselineInfoFormSection from '../relationships/forms/baseline-info-form-section.component';
@@ -49,7 +60,7 @@ const ContactListForm: React.FC<Workspace2DefinitionProps<ContactListFormProps, 
   const personUuid = form.watch('personB');
   const { attributes } = usePersonAttributes(personUuid);
 
-  const config = useConfig<ConfigObject>();
+  const config = useConfig<ConfigObject & PNSContactFormConfig>();
   const { data } = useMappedRelationshipTypes();
   const pnsRelationships = useMemo(
     () => config.relationshipTypesList.filter((rl) => rl.category.some((c) => c === 'pns')),
@@ -179,6 +190,24 @@ const ContactListForm: React.FC<Workspace2DefinitionProps<ContactListFormProps, 
             </Column>
 
             <RelationshipBaselineInfoFormSection patientAgeMonths={patientAgeMonths} patientUuid={personUuid} />
+            {config.pnsContactFormConfig.hideComments === false && (
+              <Column>
+                <Controller
+                  control={form.control}
+                  name="comments"
+                  render={({ field, fieldState: { error } }) => (
+                    <TextArea
+                      id={field.name}
+                      invalid={!!error?.message}
+                      invalidText={error?.message}
+                      {...field}
+                      placeholder={t('commentsPlaceholder', 'Comments')}
+                      labelText={t('comments', 'Comments')}
+                    />
+                  )}
+                />
+              </Column>
+            )}
           </Stack>
 
           <ButtonSet className={styles.buttonSet}>

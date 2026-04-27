@@ -3,6 +3,9 @@ import DefaulterTracing from './defaulter-tracing/defaulter-tracing.component';
 import HivTestingEncountersList from './hiv-testing-services/views/hiv-testing/hiv-testing-services.component';
 import HivPatientSummary from './hiv-patient-summary/hiv-patient-summary.component';
 import HivCaseManagement from './hiv-case-management/hiv-case-management.component';
+import HIVProgramManagment from './program-management/hiv-program-management.component';
+import HIVGeneralCounseling from './general-counseling/hive-general-counseling.component';
+import HivPatnerNoficationService from './patner-notification-service/hiv-patner-notification-services.component';
 
 const options = {
   featureName: 'patient-clinical-view-app',
@@ -17,3 +20,9 @@ export const hivCareAndTreatmentHTS = getSyncLifecycle(HivTestingEncountersList,
 export const hivCareAndTreatmentPatientSummary = getSyncLifecycle(HivPatientSummary, options);
 // t("Case Management", "Case Management")
 export const hivCareAndTreatmentCaseManagement = getSyncLifecycle(HivCaseManagement, options);
+// t("Program Management", "Program Management")
+export const hivCareAndTreatmentProgramManagement = getSyncLifecycle(HIVProgramManagment, options);
+// t("General Counseling", "General Counseling")
+export const hivCareAndTreatmentGeneralCounseling = getSyncLifecycle(HIVGeneralCounseling, options);
+// t("Partner Notification Services", "Partner Notification Services")
+export const hivCareAndTreatmentPartnerNotificationServices = getSyncLifecycle(HivPatnerNoficationService, options);

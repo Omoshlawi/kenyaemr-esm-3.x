@@ -4,7 +4,7 @@ import React, { FC, useEffect, useMemo } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import { ConfigObject } from '../../config-schema';
+import { ConfigObject, PNSContactFormConfig } from '../../config-schema';
 import { contactListConceptMap } from '../../contact-list/contact-list-concept-map';
 import {
   contactIPVOutcomeOptions,
@@ -42,7 +42,7 @@ const RelationshipBaselineInfoFormSection: FC<RelationshipBaselineInfoFormSectio
   const hivStatusPersonB = getHivStatusBasedOnEnrollmentAndHTSEncounters(encounters, enrollment);
 
   const { t } = useTranslation();
-  const config = useConfig<ConfigObject>();
+  const config = useConfig<ConfigObject & PNSContactFormConfig>();
   const { setValue } = form;
   const { attributes, isLoading } = usePersonAttributes(patientUuid);
 
@@ -181,35 +181,37 @@ const RelationshipBaselineInfoFormSection: FC<RelationshipBaselineInfoFormSectio
 
   return (
     <>
-      <Column>
-        <Controller
-          control={form.control}
-          name="livingWithClient"
-          render={({ field, fieldState: { error } }) => (
-            <>
-              {isLoading || encounterLoading || enrollmentLoading ? (
-                <SelectSkeleton />
-              ) : (
-                <Dropdown
-                  ref={field.ref}
-                  invalid={!!error?.message}
-                  invalidText={error?.message}
-                  id="livingWithClient"
-                  titleText={t('livingWithClient', 'Living with client')}
-                  onChange={(e: { selectedItem: string }) => {
-                    field.onChange(e.selectedItem);
-                  }}
-                  selectedItem={field.value}
-                  label="Select"
-                  items={contactLivingWithPatient.map((r) => r.value)}
-                  itemToString={(item: string) => contactLivingWithPatient.find((r) => r.value === item)?.label ?? ''}
-                />
-              )}
-            </>
-          )}
-        />
-      </Column>
-      {showIPVRelatedFields && (
+      {config.pnsContactFormConfig.hideLivingWithContact === false && (
+        <Column>
+          <Controller
+            control={form.control}
+            name="livingWithClient"
+            render={({ field, fieldState: { error } }) => (
+              <>
+                {isLoading || encounterLoading || enrollmentLoading ? (
+                  <SelectSkeleton />
+                ) : (
+                  <Dropdown
+                    ref={field.ref}
+                    invalid={!!error?.message}
+                    invalidText={error?.message}
+                    id="livingWithClient"
+                    titleText={t('livingWithClient', 'Living with client')}
+                    onChange={(e: { selectedItem: string }) => {
+                      field.onChange(e.selectedItem);
+                    }}
+                    selectedItem={field.value}
+                    label={t('select', 'Select')}
+                    items={contactLivingWithPatient.map((r) => r.value)}
+                    itemToString={(item: string) => contactLivingWithPatient.find((r) => r.value === item)?.label ?? ''}
+                  />
+                )}
+              </>
+            )}
+          />
+        </Column>
+      )}
+      {(showIPVRelatedFields || config.pnsContactFormConfig.alwaysShowIPVRelatedFields) && (
         <>
           <span className={styles.sectionHeader}>{t('ipvQuestions', 'IPV Questions')}</span>
           <Column>
@@ -272,37 +274,41 @@ const RelationshipBaselineInfoFormSection: FC<RelationshipBaselineInfoFormSectio
               )}
             />
           </Column>
-          <span className={styles.sectionHeader}>{t('ipvOutcome', 'IPV Outcome')}</span>
-          <Column>
-            <Controller
-              control={form.control}
-              name="ipvOutCome"
-              render={({ field, fieldState: { error } }) => (
-                <>
-                  {isLoading || encounterLoading || enrollmentLoading ? (
-                    <SelectSkeleton />
-                  ) : (
-                    <Dropdown
-                      ref={field.ref}
-                      invalid={!!error?.message}
-                      invalidText={error?.message}
-                      id="ipvOutCome"
-                      titleText={t('ipvOutCome', 'IPV Outcome')}
-                      onChange={(e) => {
-                        field.onChange(e.selectedItem);
-                      }}
-                      selectedItem={field.value}
-                      label="Choose option"
-                      items={contactIPVOutcomeOptions.map((r) => r.value)}
-                      itemToString={(item) => {
-                        return contactIPVOutcomeOptions.find((r) => r.value === item)?.label ?? '';
-                      }}
-                    />
+          {!config.pnsContactFormConfig.hideIPVOutcome && (
+            <>
+              <span className={styles.sectionHeader}>{t('ipvOutcome', 'IPV Outcome')}</span>
+              <Column>
+                <Controller
+                  control={form.control}
+                  name="ipvOutCome"
+                  render={({ field, fieldState: { error } }) => (
+                    <>
+                      {isLoading || encounterLoading || enrollmentLoading ? (
+                        <SelectSkeleton />
+                      ) : (
+                        <Dropdown
+                          ref={field.ref}
+                          invalid={!!error?.message}
+                          invalidText={error?.message}
+                          id="ipvOutCome"
+                          titleText={t('ipvOutCome', 'IPV Outcome')}
+                          onChange={(e) => {
+                            field.onChange(e.selectedItem);
+                          }}
+                          selectedItem={field.value}
+                          label={t('chooseOption', 'Choose option')}
+                          items={contactIPVOutcomeOptions.map((r) => r.value)}
+                          itemToString={(item) => {
+                            return contactIPVOutcomeOptions.find((r) => r.value === item)?.label ?? '';
+                          }}
+                        />
+                      )}
+                    </>
                   )}
-                </>
-              )}
-            />
-          </Column>
+                />
+              </Column>
+            </>
+          )}
         </>
       )}
 
@@ -326,7 +332,7 @@ const RelationshipBaselineInfoFormSection: FC<RelationshipBaselineInfoFormSectio
                     field.onChange(e.selectedItem);
                   }}
                   selectedItem={field.value}
-                  label="Select HIV Status"
+                  label={t('selectHivStatus', 'Select HIV Status')}
                   items={hivStatus.map((r) => r.value)}
                   itemToString={(item: string) => hivStatus.find((r) => r.value === item)?.label ?? ''}
                 />
@@ -335,34 +341,36 @@ const RelationshipBaselineInfoFormSection: FC<RelationshipBaselineInfoFormSectio
           )}
         />
       </Column>
-      <Column>
-        <Controller
-          control={form.control}
-          name="preferedPNSAproach"
-          render={({ field, fieldState: { error } }) => (
-            <>
-              {isLoading || encounterLoading || enrollmentLoading ? (
-                <SelectSkeleton />
-              ) : (
-                <Dropdown
-                  ref={field.ref}
-                  invalid={!!error?.message}
-                  invalidText={error?.message}
-                  id="preferedPNSAproach"
-                  titleText={t('preferedPNSAproach', 'Prefered PNS Aproach')}
-                  onChange={(e: { selectedItem: string }) => {
-                    field.onChange(e.selectedItem);
-                  }}
-                  selectedItem={field.value}
-                  label="Select Aproach"
-                  items={pnsAproach.map((r) => r.value)}
-                  itemToString={(item: string) => pnsAproach.find((r) => r.value === item)?.label ?? ''}
-                />
-              )}
-            </>
-          )}
-        />
-      </Column>
+      {!config.pnsContactFormConfig.hidePNSAproach && (
+        <Column>
+          <Controller
+            control={form.control}
+            name="preferedPNSAproach"
+            render={({ field, fieldState: { error } }) => (
+              <>
+                {isLoading || encounterLoading || enrollmentLoading ? (
+                  <SelectSkeleton />
+                ) : (
+                  <Dropdown
+                    ref={field.ref}
+                    invalid={!!error?.message}
+                    invalidText={error?.message}
+                    id="preferedPNSAproach"
+                    titleText={t('preferedPNSAproach', 'Prefered PNS Aproach')}
+                    onChange={(e: { selectedItem: string }) => {
+                      field.onChange(e.selectedItem);
+                    }}
+                    selectedItem={field.value}
+                    label={t('selectPnsApproach', 'Select PNS Approach')}
+                    items={pnsAproach.map((r) => r.value)}
+                    itemToString={(item: string) => pnsAproach.find((r) => r.value === item)?.label ?? ''}
+                  />
+                )}
+              </>
+            )}
+          />
+        </Column>
+      )}
     </>
   );
 };

@@ -23,18 +23,22 @@ import { fetchPerson, relationshipFormSchema } from '../relationship.resources';
 import styles from './form.scss';
 import { MARITAL_STATUS_CONCEPT_UUID } from '../relationships-constants';
 import PatientSearchInfo from '../../autosuggest/patient-search-info.component';
-import { ConfigObject } from '../../config-schema';
+import { ConfigObject, PNSContactFormConfig } from '../../config-schema';
 
 type PatientSearchCreateProps = {};
 
 const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
   const form = useFormContext<z.infer<typeof relationshipFormSchema>>();
+  const config = useConfig<PNSContactFormConfig>();
   const { t } = useTranslation();
   const searchPatient = async (query: string) => {
     const abortController = new AbortController();
     return await fetchPerson(query, abortController);
   };
-  const { requireMaritalStatusOnAgeGreaterThanOrEqualTo } = useConfig<ConfigObject>();
+  const {
+    requireMaritalStatusOnAgeGreaterThanOrEqualTo,
+    pnsContactFormConfig: { hideMaritalStatus = false },
+  } = useConfig<ConfigObject & PNSContactFormConfig>();
 
   const handleAdd = () => form.setValue('mode', 'create');
   const maritalStatus = useMemo(
@@ -80,8 +84,8 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
                 let { index, name, text } = value;
                 field.onChange(name);
               }}>
-              <Switch name="search" text="Search patient" />
-              <Switch name="create" text="Create patient" />
+              <Switch name="search" text={t('searchPatient', 'Search patient')} />
+              <Switch name="create" text={t('createPatient', 'Create patient')} />
             </ContentSwitcher>
           )}
         />
@@ -133,7 +137,7 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
                   invalid={!!error?.message}
                   invalidText={error?.message}
                   {...field}
-                  placeholder="First name"
+                  placeholder={t('firstNamePlaceholder', 'First name')}
                   labelText={t('firstName', 'First name')}
                 />
               )}
@@ -149,7 +153,7 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
                   invalid={!!error?.message}
                   invalidText={error?.message}
                   {...field}
-                  placeholder="Middle name"
+                  placeholder={t('middleNamePlaceholder', 'Middle name')}
                   labelText={t('middleName', 'Middle name')}
                 />
               )}
@@ -165,7 +169,7 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
                   invalid={!!error?.message}
                   invalidText={error?.message}
                   {...field}
-                  placeholder="Last name"
+                  placeholder={t('lastNamePlaceholder', 'Last name')}
                   labelText={t('lastName', 'Last name')}
                 />
               )}
@@ -203,7 +207,7 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
                     id={field.name}
                     invalid={!!error?.message}
                     invalidText={error?.message}
-                    placeholder="mm/dd/yyyy"
+                    placeholder={t('dateOfBirthPlaceholder', 'mm/dd/yyyy')}
                     labelText={t('dateOfBirth', 'Date of birth')}
                     size="lg"
                   />
@@ -214,7 +218,7 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
               {t('fromAge', 'From Age')}
             </Button>
           </Column>
-          {age && Number(age) >= requireMaritalStatusOnAgeGreaterThanOrEqualTo && (
+          {age && Number(age) >= requireMaritalStatusOnAgeGreaterThanOrEqualTo && !hideMaritalStatus && (
             <Column>
               <Controller
                 control={form.control}
@@ -249,7 +253,7 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
                   invalid={!!error?.message}
                   invalidText={error?.message}
                   {...field}
-                  placeholder="Physical Address/Landmark"
+                  placeholder={t('physicalAddress', 'Physical Address/Landmark')}
                   labelText={t('address', 'Address')}
                 />
               )}
@@ -265,7 +269,7 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
                   id={field.name}
                   invalid={!!error?.message}
                   invalidText={error?.message}
-                  placeholder="Phone number"
+                  placeholder={t('phoneNumberPlaceholder', 'Phone number')}
                   labelText={t('phoneNumber', 'Phone number')}
                 />
               )}
