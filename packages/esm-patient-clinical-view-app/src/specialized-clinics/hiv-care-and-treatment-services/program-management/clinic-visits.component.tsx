@@ -85,9 +85,9 @@ const ClinicalVisits: FC<ClinicVisitsProps> = ({ patient, patientUuid }) => {
       return {
         id: encounter.uuid,
         encounterDate: encounter.encounterDatetime ? formatDate(parseDate(encounter.encounterDatetime)) : '--',
-        nextAppointmentDate: (nextAppointmentDateObs.value as any)?.name?.name ?? '--',
-        visitType: (visitTypeObs.value as any)?.name?.name ?? '--',
-        tbScreening: (tbScreeningObs.value as any)?.name?.name ?? '--',
+        nextAppointmentDate: (nextAppointmentDateObs?.value as any)?.name?.name ?? '--',
+        visitType: (visitTypeObs?.value as any)?.name?.name ?? '--',
+        tbScreening: (tbScreeningObs?.value as any)?.name?.name ?? '--',
         actions: (
           <Button
             hasIconOnly

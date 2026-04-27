@@ -2,6 +2,7 @@ import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import { CardHeader, FHIRResource } from '@openmrs/esm-framework';
 import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
+import ContactList from '../../../contact-list/contact-list.component';
 
 type PatnerNoficationServiceProps = {
   patientUuid: string;
@@ -9,6 +10,10 @@ type PatnerNoficationServiceProps = {
 };
 const HivPatnerNoficationService: FC<PatnerNoficationServiceProps> = ({ patient, patientUuid }) => {
   const { t } = useTranslation();
+
+  return <ContactList patientUuid={patientUuid} />;
+  /*
+
   return (
     <Layer>
       <CardHeader title={t('patnerNotificationServices', 'Partner Notification Services')}>
@@ -23,7 +28,7 @@ const HivPatnerNoficationService: FC<PatnerNoficationServiceProps> = ({ patient,
           </TabList>
           <TabPanels>
             <TabPanel>
-              <div>Partner Notification Services</div>
+              <ContactList patientUuid={patientUuid} />
             </TabPanel>
             <TabPanel>
               <div>Contact Tracing</div>
@@ -33,6 +38,8 @@ const HivPatnerNoficationService: FC<PatnerNoficationServiceProps> = ({ patient,
       </Layer>
     </Layer>
   );
+
+   */
 };
 
 export default HivPatnerNoficationService;

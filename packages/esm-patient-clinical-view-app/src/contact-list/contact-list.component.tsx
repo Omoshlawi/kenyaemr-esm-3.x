@@ -32,7 +32,7 @@ import { CardHeader, EmptyDataIllustration, usePaginationInfo } from '@openmrs/e
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
-import { ConfigObject } from '../config-schema';
+import { ConfigObject, PNSContactFormConfig } from '../config-schema';
 import useContacts from '../hooks/useContacts';
 import { deleteRelationship } from '../relationships/relationship.resources';
 import styles from './contact-list.scss';
@@ -56,7 +56,8 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
   const { pageSizes } = usePaginationInfo(pageSize, totalPages, currentPage, results.length);
   const {
     formsList: { htsClientTracingFormUuid },
-  } = useConfig<ConfigObject>();
+    pnsContactFormConfig: { hideIPVOutcome, hideLivingWithContact, hidePNSAproach },
+  } = useConfig<ConfigObject & PNSContactFormConfig>();
   const headers = [
     {
       header: t('listingDate', 'Listing date'),
@@ -97,14 +98,17 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
     {
       header: t('livingWithClient', 'Living with client'),
       key: 'livingWithClient',
+      hide: hideLivingWithContact,
     },
     {
       header: t('pnsAproach', 'PNS Aproach'),
       key: 'pnsAproach',
+      hide: hidePNSAproach,
     },
     {
       header: t('ipvOutcome', 'IPV Outcome'),
       key: 'ipvOutcome',
+      hide: hideIPVOutcome,
     },
     { header: t('actions', 'Actions'), key: 'actions' },
   ];
@@ -204,10 +208,8 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
           {t('add', 'Add')}
         </Button>
       </CardHeader>
-      <DataTable
-        rows={tableRows ?? []}
-        headers={headers}
-        render={({
+      <DataTable rows={tableRows ?? []} headers={headers.filter((h) => !h.hide)}>
+        {({
           rows,
           headers,
           getHeaderProps,
@@ -258,7 +260,7 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
             </Table>
           </TableContainer>
         )}
-      />
+      </DataTable>
       <Pagination
         page={currentPage}
         pageSize={pageSize}

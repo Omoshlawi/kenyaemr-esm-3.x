@@ -85,7 +85,7 @@ const ARTTherappy: FC<ARTTherappyProps> = ({ patientUuid, patient }) => {
       return {
         id: encounter.uuid,
         therapyPlan: getAnswerLabel(therapyPlanConceptUuid, (therapyPlanObs?.value as any)?.uuid as string) ?? '--',
-        regimenLine: (regimenLineObs.value as any)?.name?.name ?? '--',
+        regimenLine: (regimenLineObs?.value as any)?.name?.name ?? '--',
         regimen: getAnswerLabel(regimentConceptUuid, (regimentObs?.value as any)?.uuid as string) ?? '--',
         date: encounter.encounterDatetime ? formatDate(parseDate(encounter.encounterDatetime)) : '--',
         actions: (

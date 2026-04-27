@@ -74,7 +74,7 @@ const PatientTracing: FC<PatientTracingProps> = ({ patient, patientUuid }) => {
   const headers = [
     { key: 'contactDate', header: t('contactDate', 'Contact Date') },
     { key: 'contactMethod', header: t('contactMethod', 'Contact Method') },
-    { key: 'contactOutcome', header: t('contactOutcome', 'Contact Outcome') },
+    { key: 'contactOutcome', header: t('contactOutcome', 'Contact Outcome success') },
     { key: 'actions', header: t('actions', 'Actions') },
   ];
   const tableRows = useMemo(() => {
@@ -87,8 +87,8 @@ const PatientTracing: FC<PatientTracingProps> = ({ patient, patientUuid }) => {
       return {
         id: encounter.uuid,
         contactDate: contactDateObs?.value ?? '--',
-        contactMethod: contactMethodObs?.value ?? '--',
-        contactOutcome: tracingOutcomeObs?.value ?? '--',
+        contactMethod: (contactMethodObs?.value as any)?.name?.name ?? '--',
+        contactOutcome: (tracingOutcomeObs?.value as any)?.name?.name ?? '--',
         actions: (
           <Button
             hasIconOnly

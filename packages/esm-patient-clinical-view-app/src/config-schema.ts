@@ -1,12 +1,5 @@
-export const FETAL_HEART_RATE_GRAPH_UUIDS = {
-  fetalHeartRate: 'FETAL_HEART_RATE_CONCEPT',
-  fetalHeartRateHour: 'FETAL_HEART_RATE_HOUR_CONCEPT',
-  fetalHeartRateTime: 'FETAL_HEART_RATE_TIME_CONCEPT',
-  fetalHeartRateNew: 'FETAL_HEART_RATE_NEW_CONCEPT',
-};
 import { Type } from '@openmrs/esm-framework';
-import _default from 'react-hook-form/dist/logic/appendErrors';
-
+export * from './constants';
 export const configSchema = {
   malariaConceptUuids: {
     _type: Type.Array,
@@ -435,7 +428,6 @@ export const configSchema = {
       },
     },
   },
-
   caseManagerRelationshipType: {
     _type: Type.UUID,
     _description: 'Case manager/Client relationship type UUID',
@@ -460,6 +452,8 @@ export const configSchema = {
         transferOutEncounterUuid: 'b93ae0fc-9b57-4c79-936b-596553aab8b0',
         patientTracingEncounterUuid: '1495edf8-2df2-11e9-b210-d663bd873d93',
         clinicalVisitEncounterUuid: 'a0034eee-1940-4e35-847f-97537a35d05e',
+        mentalHealthAssessmentEncounterUuid: 'a0034eee-1940-4e35-847f-97537a35d05e',
+        closureEncounterUuid: 'ec2a91e5-444a-4ca0-87f1-f71ddfaf57eb',
       },
       forms: {
         artTherapyFormUuid: '9d65e3cf-0763-3def-bff0-12ac720ef5b5',
@@ -467,6 +461,8 @@ export const configSchema = {
         transferOutFormUuid: 'a969288d-6605-361b-b01c-42f6ef25c0f5',
         patientTracingFormUuid: '71f3febd-dd11-322b-9c18-2a8a07d87af1', // For DRC
         clinicalVisitFormUuid: '22c68f86-bbf0-49ba-b2d1-23fa7ccf0259',
+        mentalHealthAssesmentFormUuid: '5fe533ee-0c40-4a1f-a071-dc4d0fbb0c17',
+        closureFormUuid: 'cb30cea5-3166-3e88-befb-9141e5f3769d',
       },
       concepts: {
         therapyPlanConceptUuid: '1255AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
@@ -482,92 +478,29 @@ export const configSchema = {
         visitTypeConceptUuid: '8a9809e9-8a0b-4e0e-b1f6-80b0cbbe361b',
         nextAppointmentDateConceptUuid: '5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         tbScreeningDoneConceptUuid: 'f8868467-bd15-4576-9da8-bfb8ef64ea17',
+        disclosureDateConceptUuid: 'f8868467-bd15-4576-9da8-bfb8ef64ea17',
+        disclosureStageConceptUuid: 'f8868467-bd15-4576-9da8-bfb8ef64ea17',
+        screeningDateConceptUuid: 'f8868467-bd15-4576-9da8-bfb8ef64ea17',
+        disInterestInThingsConceptUuid: 'f8868467-bd15-4576-9da8-bfb8ef64ea17',
+        depresssedConceptUuid: 'f8868467-bd15-4576-9da8-bfb8ef64ea17',
+        poorAppetiteConceptUuid: 'f8868467-bd15-4576-9da8-bfb8ef64ea17',
+        concentrationProblemConceptUuid: 'f8868467-bd15-4576-9da8-bfb8ef64ea17',
       },
     },
   },
+  pnsContactFormConfig: {
+    _type: Type.Object,
+    _description: 'Partner Notification Services contact form configuration',
+    _default: {
+      hideMaritalStatus: true,
+      hideLivingWithContact: true,
+      alwaysShowIPVRelatedFields: true,
+      hideIPVOutcome: true,
+      hidePNSAproach: true,
+      hideComments: false,
+    },
+  },
 };
-
-// Fetal Heart Rate Graph
-export const FETAL_HEART_RATE_CONCEPT = '1440AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const FETAL_HEART_RATE_TIME_CONCEPT = 'bb3724c9-fbcc-49c5-9702-6cde0be325ca';
-export const FETAL_HEART_RATE_HOUR_CONCEPT = '160632AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-
-// Membrane Amniotic Fluid Graph
-export const AMNIOTIC_FLUID_CONCEPT = '162653AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const RUPTURED_MEMBRANES_CONCEPT = '164900AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const AMNIOTIC_CLEAR_LIQUOR_CONCEPT = '159484AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const AMNIOTIC_MECONIUM_STAINED_CONCEPT = '134488AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const AMNIOTIC_ABSENT_CONCEPT = '163747AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const AMNIOTIC_BLOOD_STAINED_CONCEPT = '1077AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const AMNIOTIC_MEMBRANE_INTACT_CONCEPT = 'd1787a76-7310-4223-a645-9fd410d418c1';
-
-//Contractions Graph
-export const UTERINE_CONTRACTIONS_CONCEPT = '163750AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const CONTRACTION_LEVEL_MILD_CONCEPT = '1498AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const CONTRACTION_LEVEL_MODERATE_CONCEPT = '1499AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const CONTRACTION_LEVEL_STRONG_CONCEPT = '166788AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const UTERINE_CONTRACTION_FREQUENCY_CONCEPT = '166529AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const UTERINE_CONTRACTION_DURATION_CONCEPT = '159368AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-
-// Oxytocin Graph
-
-export const OXYTOCIN_TIME_CONCEPT = 'bb3724c9-fbcc-49c5-9702-6cde0be325ca';
-export const OXYTOCIN_DROPS_PER_MINUTE_CONCEPT = '1d109b10-7b30-4bfa-8a7c-6ecb73357fc2';
-export const OXYTOCIN_DOSE_CONCEPT = '81369AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const ROUTE_CONCEPT = '8878f9c0-a1ce-47ec-a88f-69ef0f6576ba';
-export const FREQUENCY_CONCEPT = 'fd9f82fd-f327-4502-ac8e-5d9144dbd504';
-
-// Drugs IV Fluids Graph
-export const MEDICATION_CONCEPT = 'c3082af8-f935-40c5-aa5b-74c684e81aea';
-export const IV_FLUIDS_CONCEPT = '161911AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const DOSAGE_CONCEPT = 'b71ddb80-2d7f-4bde-a44b-236e62d4c1b6';
-export const DRUG_DOSE_CONCEPT = '162384AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-
-// Pulse BP Graph
-export const MATERNAL_PULSE_CONCEPT = '5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const SYSTOLIC_BP_CONCEPT = '5085AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const DIASTOLIC_BP_CONCEPT = '5086AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const PULSE_BP_TIME_CONCEPT = 'bb3724c9-fbcc-49c5-9702-6cde0be325ca';
-
-// Urine Test Graph
-export const PROTEIN_LEVEL_CONCEPT = '161442AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const GLUCOSE_LEVEL_CONCEPT = '887AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const KETONE_LEVEL_CONCEPT = '165438AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const URINE_VOLUME_CONCEPT = '159660AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const URINE_CHARACTERISTICS_CONCEPT = '56AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const TIME_RESULTS_RETURNED = '67c3d4c6-465e-4c12-9b7f-d8587ca90603';
-export const TIME_SAMPLE_COLLECTED = 'c554f157-2e16-4585-af29-c48f5e765ce0';
-
-// Cervix / Cervical Monitoring During Labor
-export const CERVIX_CONCEPT = '162261AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const DESCENT_OF_HEAD_CONCEPT = '1810AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const STATION_0_CONCEPT = '160769AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const STATION_1_CONCEPT = '162135AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const STATION_2_CONCEPT = '166065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const STATION_3_CONCEPT = '166066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const STATION_4_CONCEPT = '166067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const STATION_5_CONCEPT = '163734AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-
-export const DRUG_ORDER_TYPE_UUID = '131168f4-15f5-102d-96e4-000c29c2a5d7';
-export const ENCOUNTER_ROLE = '240b26f9-dd88-4172-823d-4a8bfeb7841f';
-export const MOULDING_NONE_CONCEPT = '1107AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const MOULDING_SLIGHT_CONCEPT = '1362AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const MOULDING_MODERATE_CONCEPT = '1363AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const MOULDING_SEVERE_CONCEPT = '1364AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const TEMPERATURE_CONCEPT = '5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const CONTRACTION_COUNT_CONCEPT = '159682AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const MEDICATION_NAME_CONCEPT = '164231AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const EVENT_TYPE_CONCEPT = '162879AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const EVENT_DESCRIPTION_CONCEPT = '160632AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const MOULDING_CONCEPT = '166527AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const BLOOD_GROUP_CONCEPT = '300AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const TIME_SLOT_CONCEPT = '163286AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const LABOR_PATTERN_CONCEPT = '164135AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const HOURS_SINCE_RUPTURE_CONCEPT = '167149AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const DATE_OF_ADMISSION_CONCEPT = '1640AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const GESTATION_WEEKS_CONCEPT = '1789AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const ESTIMATED_DELIVERY_DATE_CONCEPT = '5596AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-export const LAST_MENSTRUAL_PERIOD_CONCEPT = '1427AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
 export interface ConfigObject {
   malariaConceptUuids: Array<string>;
@@ -705,6 +638,8 @@ export interface HivCareAndTreatmentConfig {
       transferOutEncounterUuid: string;
       patientTracingEncounterUuid: string;
       clinicalVisitEncounterUuid: string;
+      mentalHealthAssessmentEncounterUuid: string;
+      closureEncounterUuid: string;
     };
     forms: {
       artTherapyFormUuid: string;
@@ -712,6 +647,8 @@ export interface HivCareAndTreatmentConfig {
       transferOutFormUuid: string;
       patientTracingFormUuid: string;
       clinicalVisitFormUuid: string;
+      mentalHealthAssesmentFormUuid: string;
+      closureFormUuid: string;
     };
     concepts: {
       therapyPlanConceptUuid: string;
@@ -727,6 +664,24 @@ export interface HivCareAndTreatmentConfig {
       tbScreeningDoneConceptUuid: string;
       visitTypeConceptUuid: string;
       nextAppointmentDateConceptUuid: string;
+      disclosureDateConceptUuid: string;
+      disclosureStageConceptUuid: string;
+      screeningDateConceptUuid: string;
+      disInterestInThingsConceptUuid: string;
+      depresssedConceptUuid: string;
+      poorAppetiteConceptUuid: string;
+      concentrationProblemConceptUuid: string;
     };
+  };
+}
+
+export interface PNSContactFormConfig {
+  pnsContactFormConfig: {
+    hideMaritalStatus: boolean;
+    hideLivingWithContact: boolean;
+    alwaysShowIPVRelatedFields: boolean;
+    hideIPVOutcome: boolean;
+    hidePNSAproach: boolean;
+    hideComments: boolean;
   };
 }

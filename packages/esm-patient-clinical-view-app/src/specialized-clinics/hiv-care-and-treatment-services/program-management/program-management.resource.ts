@@ -1,5 +1,5 @@
-import { Encounter, FetchResponse, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
-import useSWR from 'swr';
+import { Encounter, restBaseUrl, useConfig, useOpenmrsFetchAll } from '@openmrs/esm-framework';
+import { useMemo } from 'react';
 import { HivCareAndTreatmentConfig } from '../../../config-schema';
 import { defaultEncounterRepresentation } from '../hiv-care-and-treatment.resource';
 
@@ -12,16 +12,16 @@ export const useArtTherapy = (patientUuid: string) => {
     },
   } = useConfig<HivCareAndTreatmentConfig>();
 
-  const url = `${restBaseUrl}/encounter?encounterType=${artTherapyEncounterUuid}&patient=${patientUuid}&v=${defaultEncounterRepresentation}&totalCount=true&limit=10&startIndex=0`;
+  const url = `${restBaseUrl}/encounter?encounterType=${artTherapyEncounterUuid}&patient=${patientUuid}&form=${artTherapyFormUuid}&v=${defaultEncounterRepresentation}&totalCount=true&limit=10&startIndex=0`;
 
-  const { data, error, isLoading, mutate } = useSWR<FetchResponse<{ results: Array<Encounter>; totalCount: number }>>(
-    url,
-    openmrsFetch,
-  );
+  const { data, error, isLoading, totalCount, mutate } = useOpenmrsFetchAll<Encounter>(url);
+  const artTherapyEncounters = useMemo(() => {
+    return data?.filter((encounter) => encounter.form.uuid === artTherapyFormUuid);
+  }, [artTherapyFormUuid, data]);
 
   return {
-    artTherapyEncounters: data?.data.results,
-    totalCount: data?.data.totalCount,
+    artTherapyEncounters,
+    totalCount,
     isLoading,
     error,
     mutate,
@@ -38,16 +38,16 @@ export const useServiceDelivertModel = (patientUuid: string) => {
       concepts,
     },
   } = useConfig<HivCareAndTreatmentConfig>();
-  const url = `${restBaseUrl}/encounter?encounterType=${serviceDeliveryEncounterUuid}&patient=${patientUuid}&v=${defaultEncounterRepresentation}&totalCount=true&limit=10&startIndex=0`;
+  const url = `${restBaseUrl}/encounter?encounterType=${serviceDeliveryEncounterUuid}&patient=${patientUuid}&form=${serviceDeliveryModelFormUuid}&v=${defaultEncounterRepresentation}&totalCount=true&limit=10&startIndex=0`;
 
-  const { data, error, isLoading, mutate } = useSWR<FetchResponse<{ results: Array<Encounter>; totalCount: number }>>(
-    url,
-    openmrsFetch,
-  );
+  const { data, error, isLoading, totalCount, mutate } = useOpenmrsFetchAll<Encounter>(url);
+  const serviceDeliveryEncounters = useMemo(() => {
+    return data?.filter((encounter) => encounter.form.uuid === serviceDeliveryModelFormUuid);
+  }, [serviceDeliveryModelFormUuid, data]);
 
   return {
-    serviceDeliveryEncounters: data?.data.results,
-    totalCount: data?.data.totalCount,
+    serviceDeliveryEncounters,
+    totalCount,
     isLoading,
     error,
     mutate,
@@ -65,16 +65,16 @@ export const useTransferOut = (patientUuid: string) => {
     },
   } = useConfig<HivCareAndTreatmentConfig>();
 
-  const url = `${restBaseUrl}/encounter?encounterType=${transferOutEncounterUuid}&patient=${patientUuid}&v=${defaultEncounterRepresentation}&totalCount=true&limit=10&startIndex=0`;
+  const url = `${restBaseUrl}/encounter?encounterType=${transferOutEncounterUuid}&patient=${patientUuid}&form=${transferOutFormUuid}&v=${defaultEncounterRepresentation}&totalCount=true&limit=10&startIndex=0`;
 
-  const { data, error, isLoading, mutate } = useSWR<FetchResponse<{ results: Array<Encounter>; totalCount: number }>>(
-    url,
-    openmrsFetch,
-  );
+  const { data, error, isLoading, totalCount, mutate } = useOpenmrsFetchAll<Encounter>(url);
+  const transferOutEncounters = useMemo(() => {
+    return data?.filter((encounter) => encounter.form.uuid === transferOutFormUuid);
+  }, [transferOutFormUuid, data]);
 
   return {
-    transferOutEncounters: data?.data.results,
-    totalCount: data?.data.totalCount,
+    transferOutEncounters,
+    totalCount,
     isLoading,
     error,
     mutate,
@@ -92,16 +92,16 @@ export const usePatientTracing = (patientUuid: string) => {
     },
   } = useConfig<HivCareAndTreatmentConfig>();
 
-  const url = `${restBaseUrl}/encounter?encounterType=${patientTracingEncounterUuid}&patient=${patientUuid}&v=${defaultEncounterRepresentation}&totalCount=true&limit=10&startIndex=0`;
+  const url = `${restBaseUrl}/encounter?encounterType=${patientTracingEncounterUuid}&patient=${patientUuid}&form=${patientTracingFormUuid}&v=${defaultEncounterRepresentation}&totalCount=true&limit=10&startIndex=0`;
 
-  const { data, error, isLoading, mutate } = useSWR<FetchResponse<{ results: Array<Encounter>; totalCount: number }>>(
-    url,
-    openmrsFetch,
-  );
+  const { data, error, isLoading, totalCount, mutate } = useOpenmrsFetchAll<Encounter>(url);
+  const patientTracingEncounters = useMemo(() => {
+    return data?.filter((encounter) => encounter.form.uuid === patientTracingFormUuid);
+  }, [patientTracingFormUuid, data]);
 
   return {
-    patientTracingEncounters: data?.data.results,
-    totalCount: data?.data.totalCount,
+    patientTracingEncounters,
+    totalCount,
     isLoading,
     error,
     mutate,
@@ -118,16 +118,15 @@ export const useClinicalVisit = (patientUuid: string) => {
     },
   } = useConfig<HivCareAndTreatmentConfig>();
 
-  const url = `${restBaseUrl}/encounter?encounterType=${clinicalVisitEncounterUuid}&patient=${patientUuid}&v=${defaultEncounterRepresentation}&totalCount=true&limit=10&startIndex=0`;
-
-  const { data, error, isLoading, mutate } = useSWR<FetchResponse<{ results: Array<Encounter>; totalCount: number }>>(
-    url,
-    openmrsFetch,
-  );
+  const url = `${restBaseUrl}/encounter?encounterType=${clinicalVisitEncounterUuid}&patient=${patientUuid}&form=${clinicalVisitFormUuid}&v=${defaultEncounterRepresentation}&totalCount=true&limit=10&startIndex=0`;
+  const { data, error, isLoading, totalCount, mutate } = useOpenmrsFetchAll<Encounter>(url);
+  const clinicalVisitEncounters = useMemo(() => {
+    return data?.filter((encounter) => encounter.form.uuid === clinicalVisitFormUuid);
+  }, [clinicalVisitFormUuid, data]);
 
   return {
-    clinicalVisitEncounters: data?.data.results,
-    totalCount: data?.data.totalCount,
+    clinicalVisitEncounters,
+    totalCount,
     isLoading,
     error,
     mutate,
