@@ -75,7 +75,6 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
   const { time: defaultTime, period: defaultPeriod } = getCurrentTime();
   const config = useConfig<ConfigObject>();
 
-  // On success: clear dirty flag first so closeWorkspace() won't trigger discard warning
   const closeWorkspaceWithSavedChanges = () => {
     setHasUnsavedChanges(false);
     closeWorkspace();
