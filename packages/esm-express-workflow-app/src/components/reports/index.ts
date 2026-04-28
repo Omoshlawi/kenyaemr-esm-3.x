@@ -15,6 +15,7 @@ export const reportsDashboardLink = getAsyncLifecycle(
       default: m.createLeftPanelLink({
         name: 'reports',
         title: 'reports',
+        basePath: '',
       }),
     })),
   options,
