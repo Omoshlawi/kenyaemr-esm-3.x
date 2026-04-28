@@ -11,11 +11,11 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add, Edit } from '@carbon/react/icons';
-import { CardHeader, ErrorState, FHIRResource, Obs } from '@openmrs/esm-framework';
+import { CardHeader, ErrorState, FHIRResource } from '@openmrs/esm-framework';
 import { EmptyState, useLaunchWorkspaceRequiringVisit, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
 import React, { FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFormSchema } from '../hiv-care-and-treatment.resource';
+import { getObsDisplayByConcept } from '../hiv-care-and-treatment.resource';
 import { useClosure } from './general-counseling.resource';
 
 type DisclosureProps = {
@@ -35,7 +35,6 @@ const Disclosure: FC<DisclosureProps> = ({ patient, patientUuid }) => {
     mutate,
     concepts: { disclosureStageConceptUuid, disclosureDateConceptUuid },
   } = useClosure(patientUuid);
-  const { error: formSchemaError, isLoading: formSchemaIsLoading, getAnswerLabel } = useFormSchema(closureFormUuid);
   const groupProps = useMemo(
     () => ({
       patient,
@@ -71,14 +70,10 @@ const Disclosure: FC<DisclosureProps> = ({ patient, patientUuid }) => {
   ];
   const tableRows = useMemo(() => {
     return closureEncounters?.map((encounter) => {
-      const observations = encounter.obs?.filter((obs) => !obs.voided) || [];
-      const disclosureDateObs = observations.find((obs) => obs.concept?.uuid === disclosureDateConceptUuid) as Obs;
-      const disclosureStageObs = observations.find((obs) => obs.concept?.uuid === disclosureStageConceptUuid) as Obs;
-
       return {
         id: encounter.uuid,
-        disclosureDate: (disclosureDateObs?.value as any)?.name?.name ?? '--',
-        disclosureState: (disclosureStageObs?.value as any)?.name?.name ?? '--',
+        disclosureDate: getObsDisplayByConcept(encounter?.obs, disclosureDateConceptUuid) ?? '--',
+        disclosureState: getObsDisplayByConcept(encounter?.obs, disclosureStageConceptUuid) ?? '--',
         actions: (
           <Button
             hasIconOnly
@@ -93,11 +88,11 @@ const Disclosure: FC<DisclosureProps> = ({ patient, patientUuid }) => {
     });
   }, [closureEncounters, t, disclosureDateConceptUuid, disclosureStageConceptUuid, handleLaunchForm]);
 
-  if (isLoading || formSchemaIsLoading) {
+  if (isLoading) {
     return <DataTableSkeleton />;
   }
-  if (error || formSchemaError) {
-    return <ErrorState headerTitle={title} error={error ?? formSchemaError} />;
+  if (error) {
+    return <ErrorState headerTitle={title} error={error} />;
   }
 
   if (closureEncounters?.length === 0) {

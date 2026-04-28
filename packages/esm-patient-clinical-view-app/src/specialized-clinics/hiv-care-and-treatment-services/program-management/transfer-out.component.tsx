@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add, Edit } from '@carbon/react/icons';
-import { FHIRResource, Obs } from '@openmrs/esm-framework';
+import { FHIRResource } from '@openmrs/esm-framework';
 import {
   CardHeader,
   EmptyState,
@@ -21,8 +21,8 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getObsDisplayByConcept } from '../hiv-care-and-treatment.resource';
 import { useTransferOut } from './program-management.resource';
-import { useFormSchema } from '../hiv-care-and-treatment.resource';
 type TransferOutProps = {
   patientUuid: string;
   patient: FHIRResource;
@@ -40,7 +40,6 @@ const TransferOut: React.FC<TransferOutProps> = ({ patientUuid, patient }) => {
     mutate,
     concepts: { tranferOutVerifiedConceptUuid, transferOutDateConceptUuid, receivingFacilityConceptUuid },
   } = useTransferOut(patientUuid);
-  const { error: formSchemaError, isLoading: formSchemaIsLoading, getAnswerLabel } = useFormSchema(transferOutFormUuid);
   const groupProps = useMemo(
     () => ({
       patient,
@@ -75,20 +74,11 @@ const TransferOut: React.FC<TransferOutProps> = ({ patientUuid, patient }) => {
   ];
   const tableRows = useMemo(() => {
     return transferOutEncounters?.map((encounter) => {
-      const observations = encounter.obs?.filter((obs) => !obs.voided) || [];
-      const transferOutDateObs = observations.find((obs) => obs.concept?.uuid === transferOutDateConceptUuid) as Obs;
-      const receivingFacilityObs = observations.find(
-        (obs) => obs.concept?.uuid === receivingFacilityConceptUuid,
-      ) as Obs;
-      const transferOutVerifiedObs = observations.find(
-        (obs) => obs.concept?.uuid === tranferOutVerifiedConceptUuid,
-      ) as Obs;
-
       return {
         id: encounter.uuid,
-        transferDate: transferOutDateObs?.value ?? '--',
-        receivingFacility: receivingFacilityObs?.value ?? '--',
-        checked: (transferOutVerifiedObs?.value as any)?.name?.name ?? '--',
+        transferDate: getObsDisplayByConcept(encounter.obs, transferOutDateConceptUuid) ?? '--',
+        receivingFacility: getObsDisplayByConcept(encounter.obs, receivingFacilityConceptUuid) ?? '--',
+        checked: getObsDisplayByConcept(encounter.obs, tranferOutVerifiedConceptUuid) ?? '--',
         actions: (
           <Button
             hasIconOnly
@@ -110,11 +100,11 @@ const TransferOut: React.FC<TransferOutProps> = ({ patientUuid, patient }) => {
     handleLaunchForm,
   ]);
 
-  if (isLoading || formSchemaIsLoading) {
+  if (isLoading) {
     return <DataTableSkeleton />;
   }
-  if (error || formSchemaError) {
-    return <ErrorState headerTitle={title} error={error ?? formSchemaError} />;
+  if (error) {
+    return <ErrorState headerTitle={title} error={error} />;
   }
 
   if (transferOutEncounters?.length === 0) {

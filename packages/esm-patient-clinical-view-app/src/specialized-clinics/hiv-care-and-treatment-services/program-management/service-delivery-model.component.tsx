@@ -1,12 +1,3 @@
-import { CardHeader, ErrorState, FHIRResource, formatDate, Obs, parseDate } from '@openmrs/esm-framework';
-import {
-  EmptyState,
-  useLaunchWorkspaceRequiringVisit,
-  usePatientChartStore,
-} from '@openmrs/esm-patient-common-lib/src';
-import React, { useCallback, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useServiceDelivertModel } from './program-management.resource';
 import {
   Button,
   DataTable,
@@ -20,7 +11,16 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add, Edit } from '@carbon/react/icons';
-import { useFormSchema } from '../hiv-care-and-treatment.resource';
+import { CardHeader, ErrorState, FHIRResource, formatDate, parseDate } from '@openmrs/esm-framework';
+import {
+  EmptyState,
+  useLaunchWorkspaceRequiringVisit,
+  usePatientChartStore,
+} from '@openmrs/esm-patient-common-lib/src';
+import React, { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { getObsDisplayByConcept } from '../hiv-care-and-treatment.resource';
+import { useServiceDelivertModel } from './program-management.resource';
 
 type ServiceDeliveryModelProps = {
   patientUuid: string;
@@ -39,11 +39,6 @@ const ServiceDeliveryModel: React.FC<ServiceDeliveryModelProps> = ({ patientUuid
     concepts: { differenciatedServiceDeliveryModelConceptUuid },
   } = useServiceDelivertModel(patientUuid);
   const title = t('serviceDeliveryModel', 'Service delivery model');
-  const {
-    error: formSchemaError,
-    isLoading: formSchemaIsLoading,
-    getAnswerLabel,
-  } = useFormSchema(serviceDeliveryModelFormUuid);
   const groupProps = useMemo(
     () => ({
       patient,
@@ -78,15 +73,9 @@ const ServiceDeliveryModel: React.FC<ServiceDeliveryModelProps> = ({ patientUuid
   ];
   const tableRows = useMemo(() => {
     return serviceDeliveryEncounters?.map((encounter) => {
-      const observations = encounter.obs?.filter((obs) => !obs.voided) || [];
-      const dsdObs = observations.find(
-        (obs) => obs.concept?.uuid === differenciatedServiceDeliveryModelConceptUuid,
-      ) as Obs;
-
       return {
         id: encounter.uuid,
-        dsdModel:
-          getAnswerLabel(differenciatedServiceDeliveryModelConceptUuid, (dsdObs?.value as any)?.uuid as string) ?? '--',
+        dsdModel: getObsDisplayByConcept(encounter.obs, differenciatedServiceDeliveryModelConceptUuid) ?? '--',
         date: encounter.encounterDatetime ? formatDate(parseDate(encounter.encounterDatetime)) : '--',
         actions: (
           <Button
@@ -100,13 +89,13 @@ const ServiceDeliveryModel: React.FC<ServiceDeliveryModelProps> = ({ patientUuid
         ),
       };
     });
-  }, [serviceDeliveryEncounters, getAnswerLabel, differenciatedServiceDeliveryModelConceptUuid, t, handleLaunchForm]);
+  }, [serviceDeliveryEncounters, differenciatedServiceDeliveryModelConceptUuid, t, handleLaunchForm]);
 
-  if (isLoading || formSchemaIsLoading) {
+  if (isLoading) {
     return <DataTableSkeleton />;
   }
-  if (error || formSchemaError) {
-    return <ErrorState headerTitle={title} error={error ?? formSchemaError} />;
+  if (error) {
+    return <ErrorState headerTitle={title} error={error} />;
   }
 
   if (serviceDeliveryEncounters?.length === 0) {

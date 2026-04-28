@@ -1,9 +1,3 @@
-import { CardHeader, ErrorState, FHIRResource, Obs } from '@openmrs/esm-framework';
-import { EmptyState, useLaunchWorkspaceRequiringVisit, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
-import React, { FC, useCallback, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useMentallHealthAsesments } from './general-counseling.resource';
-import { useFormSchema } from '../hiv-care-and-treatment.resource';
 import {
   Button,
   DataTable,
@@ -17,6 +11,12 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add, Edit } from '@carbon/react/icons';
+import { CardHeader, ErrorState, FHIRResource, Obs } from '@openmrs/esm-framework';
+import { EmptyState, useLaunchWorkspaceRequiringVisit, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
+import React, { FC, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { getObsDisplayByConcept } from '../hiv-care-and-treatment.resource';
+import { useMentallHealthAsesments } from './general-counseling.resource';
 
 type MentalHealthAssesmentProps = {
   patientUuid: string;
@@ -42,11 +42,6 @@ const MentalHealthAssesment: FC<MentalHealthAssesmentProps> = ({ patient, patien
       concentrationProblemConceptUuid,
     },
   } = useMentallHealthAsesments(patientUuid);
-  const {
-    error: formSchemaError,
-    isLoading: formSchemaIsLoading,
-    getAnswerLabel,
-  } = useFormSchema(mentalHealthAssesmentFormUuid);
   const groupProps = useMemo(
     () => ({
       patient,
@@ -86,11 +81,6 @@ const MentalHealthAssesment: FC<MentalHealthAssesmentProps> = ({ patient, patien
   const tableRows = useMemo(() => {
     return mentalHealthAssesments?.map((encounter) => {
       const observations = encounter.obs?.filter((obs) => !obs.voided) || [];
-      const screeningDateObs = observations.find((obs) => obs.concept?.uuid === screeningDateConceptUuid) as Obs;
-      const disinterestInThingsObs = observations.find(
-        (obs) => obs.concept?.uuid === disInterestInThingsConceptUuid,
-      ) as Obs;
-      const depressedObs = observations.find((obs) => obs.concept?.uuid === depresssedConceptUuid) as Obs;
       const poorAppetiteObs = observations.find((obs) => obs.concept?.uuid === poorAppetiteConceptUuid) as Obs;
       const concentrationProblemsObs = observations.find(
         (obs) => obs.concept?.uuid === concentrationProblemConceptUuid,
@@ -98,9 +88,9 @@ const MentalHealthAssesment: FC<MentalHealthAssesmentProps> = ({ patient, patien
 
       return {
         id: encounter.uuid,
-        screeningDate: screeningDateObs?.value ?? '--',
-        disinterestInThings: (disinterestInThingsObs?.value as any)?.name?.name ?? '--',
-        depressed: (depressedObs?.value as any)?.name?.name ?? '--',
+        screeningDate: getObsDisplayByConcept(encounter?.obs, screeningDateConceptUuid) ?? '--',
+        disinterestInThings: getObsDisplayByConcept(encounter.obs, disInterestInThingsConceptUuid) ?? '--',
+        depressed: getObsDisplayByConcept(encounter.obs, depresssedConceptUuid) ?? '--',
         poorAppetite: (poorAppetiteObs?.value as any)?.name?.name ?? '--',
         concentrationProblems: (concentrationProblemsObs?.value as any)?.name?.name ?? '--',
         actions: (
@@ -126,11 +116,11 @@ const MentalHealthAssesment: FC<MentalHealthAssesmentProps> = ({ patient, patien
     handleLaunchForm,
   ]);
 
-  if (isLoading || formSchemaIsLoading) {
+  if (isLoading) {
     return <DataTableSkeleton />;
   }
-  if (error || formSchemaError) {
-    return <ErrorState headerTitle={title} error={error ?? formSchemaError} />;
+  if (error) {
+    return <ErrorState headerTitle={title} error={error} />;
   }
 
   if (mentalHealthAssesments?.length === 0) {

@@ -15,11 +15,11 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add, Edit } from '@carbon/react/icons';
-import { CardHeader, ErrorState, FHIRResource, Obs } from '@openmrs/esm-framework';
+import { CardHeader, ErrorState, FHIRResource } from '@openmrs/esm-framework';
 import { EmptyState, useLaunchWorkspaceRequiringVisit, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
 import React, { FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFormSchema } from '../hiv-care-and-treatment.resource';
+import { getObsDisplayByConcept } from '../hiv-care-and-treatment.resource';
 import { usePatientTracing } from './program-management.resource';
 type PatientTracingProps = {
   patientUuid: string;
@@ -38,11 +38,6 @@ const PatientTracing: FC<PatientTracingProps> = ({ patient, patientUuid }) => {
     mutate,
     concepts: { contactDateConceptUuid, contactMethodConceptUuid, tracingOutcomeConceptUuid },
   } = usePatientTracing(patientUuid);
-  const {
-    error: formSchemaError,
-    isLoading: formSchemaIsLoading,
-    getAnswerLabel,
-  } = useFormSchema(patientTracingFormUuid);
   const groupProps = useMemo(
     () => ({
       patient,
@@ -79,16 +74,11 @@ const PatientTracing: FC<PatientTracingProps> = ({ patient, patientUuid }) => {
   ];
   const tableRows = useMemo(() => {
     return patientTracingEncounters?.map((encounter) => {
-      const observations = encounter.obs?.filter((obs) => !obs.voided) || [];
-      const contactDateObs = observations.find((obs) => obs.concept?.uuid === contactDateConceptUuid) as Obs;
-      const contactMethodObs = observations.find((obs) => obs.concept?.uuid === contactMethodConceptUuid) as Obs;
-      const tracingOutcomeObs = observations.find((obs) => obs.concept?.uuid === tracingOutcomeConceptUuid) as Obs;
-
       return {
         id: encounter.uuid,
-        contactDate: contactDateObs?.value ?? '--',
-        contactMethod: (contactMethodObs?.value as any)?.name?.name ?? '--',
-        contactOutcome: (tracingOutcomeObs?.value as any)?.name?.name ?? '--',
+        contactDate: getObsDisplayByConcept(encounter.obs, contactDateConceptUuid) ?? '--',
+        contactMethod: getObsDisplayByConcept(encounter.obs, contactMethodConceptUuid) ?? '--',
+        contactOutcome: getObsDisplayByConcept(encounter.obs, tracingOutcomeConceptUuid) ?? '--',
         actions: (
           <Button
             hasIconOnly
@@ -110,11 +100,11 @@ const PatientTracing: FC<PatientTracingProps> = ({ patient, patientUuid }) => {
     handleLaunchForm,
   ]);
 
-  if (isLoading || formSchemaIsLoading) {
+  if (isLoading) {
     return <DataTableSkeleton />;
   }
-  if (error || formSchemaError) {
-    return <ErrorState headerTitle={title} error={error ?? formSchemaError} />;
+  if (error) {
+    return <ErrorState headerTitle={title} error={error} />;
   }
 
   if (patientTracingEncounters?.length === 0) {

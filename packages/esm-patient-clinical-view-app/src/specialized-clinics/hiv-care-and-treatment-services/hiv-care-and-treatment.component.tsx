@@ -1,12 +1,5 @@
 import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs, TabsSkeleton } from '@carbon/react';
-import {
-  AssignedExtension,
-  ErrorState,
-  Extension,
-  ExtensionSlot,
-  useAssignedExtensions,
-  usePatient,
-} from '@openmrs/esm-framework';
+import { AssignedExtension, ErrorState, Extension, useAssignedExtensions, usePatient } from '@openmrs/esm-framework';
 import { ComponentContext } from '@openmrs/esm-framework/src/internal';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';

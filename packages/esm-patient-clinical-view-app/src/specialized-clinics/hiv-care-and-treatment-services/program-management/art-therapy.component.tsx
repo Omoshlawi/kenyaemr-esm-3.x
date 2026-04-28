@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add, Edit } from '@carbon/react/icons';
-import { ErrorState, FHIRResource, formatDate, Obs, parseDate } from '@openmrs/esm-framework';
+import { ErrorState, FHIRResource, formatDate, parseDate } from '@openmrs/esm-framework';
 import {
   CardHeader,
   EmptyState,
@@ -20,8 +20,8 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import React, { FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getObsDisplayByConcept } from '../hiv-care-and-treatment.resource';
 import { useArtTherapy } from './program-management.resource';
-import { useFormSchema } from '../hiv-care-and-treatment.resource';
 type ARTTherappyProps = {
   patientUuid: string;
   patient: FHIRResource;
@@ -39,7 +39,6 @@ const ARTTherappy: FC<ARTTherappyProps> = ({ patientUuid, patient }) => {
     mutate,
     concepts: { therapyPlanConceptUuid, regimenLineConceptUuid, regimentConceptUuid },
   } = useArtTherapy(patientUuid);
-  const { error: formSchemaError, isLoading: formSchemaIsLoading, getAnswerLabel } = useFormSchema(artTherapyFormUuid);
   const groupProps = useMemo(
     () => ({
       patient,
@@ -77,16 +76,11 @@ const ARTTherappy: FC<ARTTherappyProps> = ({ patientUuid, patient }) => {
   ];
   const tableRows = useMemo(() => {
     return artTherapyEncounters?.map((encounter) => {
-      const observations = encounter.obs?.filter((obs) => !obs.voided) || [];
-      const therapyPlanObs = observations.find((obs) => obs.concept?.uuid === therapyPlanConceptUuid) as Obs;
-      const regimenLineObs = observations.find((obs) => obs.concept?.uuid === regimenLineConceptUuid) as Obs;
-      const regimentObs = observations.find((obs) => obs.concept?.uuid === regimentConceptUuid) as Obs;
-
       return {
         id: encounter.uuid,
-        therapyPlan: getAnswerLabel(therapyPlanConceptUuid, (therapyPlanObs?.value as any)?.uuid as string) ?? '--',
-        regimenLine: (regimenLineObs?.value as any)?.name?.name ?? '--',
-        regimen: getAnswerLabel(regimentConceptUuid, (regimentObs?.value as any)?.uuid as string) ?? '--',
+        therapyPlan: getObsDisplayByConcept(encounter.obs, therapyPlanConceptUuid) ?? '--',
+        regimenLine: getObsDisplayByConcept(encounter.obs, regimenLineConceptUuid) ?? '--',
+        regimen: getObsDisplayByConcept(encounter.obs, regimentConceptUuid) ?? '--',
         date: encounter.encounterDatetime ? formatDate(parseDate(encounter.encounterDatetime)) : '--',
         actions: (
           <Button
@@ -100,21 +94,13 @@ const ARTTherappy: FC<ARTTherappyProps> = ({ patientUuid, patient }) => {
         ),
       };
     });
-  }, [
-    artTherapyEncounters,
-    getAnswerLabel,
-    handleLaunchForm,
-    regimenLineConceptUuid,
-    regimentConceptUuid,
-    t,
-    therapyPlanConceptUuid,
-  ]);
+  }, [artTherapyEncounters, handleLaunchForm, regimenLineConceptUuid, regimentConceptUuid, t, therapyPlanConceptUuid]);
 
-  if (isLoading || formSchemaIsLoading) {
+  if (isLoading) {
     return <DataTableSkeleton />;
   }
-  if (error || formSchemaError) {
-    return <ErrorState headerTitle={title} error={error ?? formSchemaError} />;
+  if (error) {
+    return <ErrorState headerTitle={title} error={error} />;
   }
 
   if (artTherapyEncounters?.length === 0) {
