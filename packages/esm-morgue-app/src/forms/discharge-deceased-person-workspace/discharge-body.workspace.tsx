@@ -62,6 +62,13 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
   const isTablet = useLayoutType() === 'tablet';
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // On success: clear dirty flag first so closeWorkspace() won't trigger discard warning
+  const closeWorkspaceWithSavedChanges = () => {
+    setHasUnsavedChanges(false);
+    closeWorkspace();
+  };
+
   const { activeVisit, currentVisitIsRetrospective } = useVisit(patientUuid);
   const { queueEntry } = useVisitQueueEntry(patientUuid, activeVisit?.uuid);
   const { dischargeBody } = useMortuaryOperation();
@@ -143,7 +150,7 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
 
     if (currentVisitIsRetrospective) {
       setCurrentVisit(null, null);
-      closeWorkspace();
+      closeWorkspaceWithSavedChanges();
       return;
     }
 
@@ -180,15 +187,8 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
 
       for (const attr of attributeUpdates) {
         try {
-          const attributeData: any = {
-            attributeType: attr.uuid,
-            value: attr.value,
-          };
-
-          if (attr.existingUuid) {
-            attributeData.uuid = attr.existingUuid;
-          }
-
+          const attributeData: any = { attributeType: attr.uuid, value: attr.value };
+          if (attr.existingUuid) attributeData.uuid = attr.existingUuid;
           await createOrUpdatePersonAttribute(patientUuid, attributeData, patientInfo);
         } catch (error) {
           showSnackbar({
@@ -214,7 +214,7 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
       });
 
       mutate();
-      closeWorkspace();
+      closeWorkspaceWithSavedChanges();
     } catch (error) {
       let errorMessage = t('dischargeUnknownError', 'An unknown error occurred');
       if (error?.message) {
@@ -224,7 +224,6 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
       } else if (error?.responseBody?.error?.globalErrors) {
         errorMessage = error.responseBody.error.globalErrors[0]?.message || errorMessage;
       }
-
       setSubmissionError(errorMessage);
       showSnackbar({
         title: t('dischargeError', 'Discharge Error'),
@@ -237,7 +236,7 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
 
   useEffect(() => {
     setHasUnsavedChanges(isDirty);
-  }, [isDirty, setHasUnsavedChanges]);
+  }, [isDirty]);
 
   return (
     <Workspace2 title={t('dischargeForm', 'Discharge form')} hasUnsavedChanges={hasUnsavedChanges}>
@@ -293,9 +292,7 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
                           datePickerType="single"
                           className={styles.formAdmissionDatepicker}
                           onChange={(event) => {
-                            if (event.length) {
-                              field.onChange(event[0]);
-                            }
+                            if (event.length) field.onChange(event[0]);
                           }}
                           value={field.value ? new Date(field.value) : null}>
                           <DatePickerInput

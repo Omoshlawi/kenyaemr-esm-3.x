@@ -75,6 +75,11 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
   const { time: defaultTime, period: defaultPeriod } = getCurrentTime();
   const config = useConfig<ConfigObject>();
 
+  const closeWorkspaceWithSavedChanges = () => {
+    setHasUnsavedChanges(false);
+    closeWorkspace();
+  };
+
   const { data: visitTypes, isLoading: isLoadingVisitTypes } = useVisitType();
   const { lineItems, isLoading: isLoadingLineItems } = useBillableItems();
   const { admitBody } = useMortuaryOperation(mortuaryLocation?.ward?.uuid);
@@ -157,12 +162,8 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
   const isBodyEmbalmmentSelected = deadBodyPreservation === bodyEmbalmmentOption?.concept;
 
   const filteredBeds = useMemo(() => {
-    if (!mortuaryLocation?.bedLayouts) {
-      return [];
-    }
-    if (!searchTerm) {
-      return mortuaryLocation.bedLayouts;
-    }
+    if (!mortuaryLocation?.bedLayouts) return [];
+    if (!searchTerm) return mortuaryLocation.bedLayouts;
     return mortuaryLocation.bedLayouts.filter(
       (bed) =>
         bed.bedNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -186,9 +187,8 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
       }));
 
     try {
-      if (isSubmitting) {
-        return;
-      }
+      if (isSubmitting) return;
+
       const { admissionEncounter, compartment } = await admitBody(patientUuid, data);
 
       if (admissionEncounter && compartment) {
@@ -215,7 +215,7 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
         kind: 'success',
       });
       mutated();
-      closeWorkspace();
+      closeWorkspaceWithSavedChanges();
     } catch (error) {
       showSnackbar({
         title: t('error', 'Error'),
@@ -227,7 +227,7 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
 
   useEffect(() => {
     setHasUnsavedChanges(isDirty);
-  }, [isDirty, setHasUnsavedChanges]);
+  }, [isDirty]);
 
   return (
     <Workspace2 title={t('admitDeceasedPerson', 'Admit deceased person')} hasUnsavedChanges={hasUnsavedChanges}>
@@ -394,9 +394,7 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                             titleText={t('searchServices', 'Search services *')}
                             items={availableServices.map((service) => service.uuid)}
                             itemToString={(item) => availableServices.find((i) => i.uuid === item)?.name ?? ''}
-                            onChange={({ selectedItems }) => {
-                              field.onChange(selectedItems);
-                            }}
+                            onChange={({ selectedItems }) => field.onChange(selectedItems)}
                             placeholder={t('Service', 'Service')}
                             initialSelectedItems={field.value}
                             invalid={!!errors.services}
@@ -418,6 +416,7 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                 />
               </Column>
             )}
+
             <ResponsiveWrapper>
               <Controller
                 name="placeOfDeath"
@@ -472,9 +471,7 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                             datePickerType="single"
                             className={styles.formAdmissionDatepicker}
                             onChange={(event) => {
-                              if (event.length) {
-                                field.onChange(event[0]);
-                              }
+                              if (event.length) field.onChange(event[0]);
                             }}
                             value={field.value ? new Date(field.value) : null}>
                             <DatePickerInput
@@ -498,18 +495,16 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                           <Controller
                             name="timeOfDeath"
                             control={control}
-                            render={({ field }) => {
-                              return (
-                                <TimePicker
-                                  {...field}
-                                  id="time-of-death-picker"
-                                  labelText={t('timeAdmission', 'Time of admission *')}
-                                  className={styles.formAdmissionTimepicker}
-                                  invalid={!!errors.timeOfDeath}
-                                  invalidText={errors.timeOfDeath?.message}
-                                />
-                              );
-                            }}
+                            render={({ field }) => (
+                              <TimePicker
+                                {...field}
+                                id="time-of-death-picker"
+                                labelText={t('timeAdmission', 'Time of admission *')}
+                                className={styles.formAdmissionTimepicker}
+                                invalid={!!errors.timeOfDeath}
+                                invalidText={errors.timeOfDeath?.message}
+                              />
+                            )}
                           />
                           <Controller
                             name="period"
@@ -539,8 +534,7 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                   control={control}
                   render={({ field }) => {
                     const yesOption = deathConfirmationTypes.find((type) => type.label === 'Yes');
-                    const noOption = deathConfirmationTypes.find((type) => type.label === 'No');
-
+                    const noOption  = deathConfirmationTypes.find((type) => type.label === 'No');
                     return (
                       <RadioButtonGroup
                         name="deathConfirmed"
@@ -549,11 +543,7 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                         onChange={field.onChange}
                         invalid={!!errors.deathConfirmed}
                         invalidText={errors.deathConfirmed?.message}>
-                        <RadioButton
-                          className={styles.radioButton}
-                          value={yesOption?.concept}
-                          labelText={t('yes', 'Yes')}
-                        />
+                        <RadioButton className={styles.radioButton} value={yesOption?.concept} labelText={t('yes', 'Yes')} />
                         <RadioButton value={noOption?.concept} labelText={t('no', 'No')} />
                       </RadioButtonGroup>
                     );
@@ -603,7 +593,6 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                     </Column>
                   </FormGroup>
                 </ResponsiveWrapper>
-
                 <ResponsiveWrapper>
                   <FormGroup legendText="">
                     <Column>
@@ -653,8 +642,7 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                   control={control}
                   render={({ field }) => {
                     const yesOption = deathConfirmationTypes.find((type) => type.label === 'Yes');
-                    const noOption = deathConfirmationTypes.find((type) => type.label === 'No');
-
+                    const noOption  = deathConfirmationTypes.find((type) => type.label === 'No');
                     return (
                       <RadioButtonGroup
                         name="autopsyPermission"
@@ -663,16 +651,8 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                         onChange={field.onChange}
                         invalid={!!errors.autopsyPermission}
                         invalidText={errors.autopsyPermission?.message}>
-                        <RadioButton
-                          className={styles.radioButton}
-                          value={yesOption?.concept}
-                          labelText={t('yes', 'Yes')}
-                        />
-                        <RadioButton
-                          className={styles.radioButton}
-                          value={noOption?.concept}
-                          labelText={t('no', 'No')}
-                        />
+                        <RadioButton className={styles.radioButton} value={yesOption?.concept} labelText={t('yes', 'Yes')} />
+                        <RadioButton className={styles.radioButton} value={noOption?.concept}  labelText={t('no',  'No')}  />
                       </RadioButtonGroup>
                     );
                   }}
@@ -757,7 +737,6 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                     </Column>
                   </FormGroup>
                 </ResponsiveWrapper>
-
                 <ResponsiveWrapper>
                   <FormGroup legendText="">
                     <Column>
@@ -777,7 +756,6 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                     </Column>
                   </FormGroup>
                 </ResponsiveWrapper>
-
                 <ResponsiveWrapper>
                   <FormGroup legendText="">
                     <Column>
@@ -800,6 +778,7 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                 </ResponsiveWrapper>
               </>
             )}
+
             <FormGroup
               className={styles.supportingDocuments}
               legendText={t('supportingDocuments', 'Supporting Documents')}>
