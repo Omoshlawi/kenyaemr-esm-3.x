@@ -117,7 +117,7 @@ const Invoice: React.FC = () => {
               <span className={styles.summaryValue}>{formatCurrency(selectedLineItemsAmountDue ?? 0)}</span>
             </div>
             <Button
-              disabled={unPaidLineItems?.length === 0}
+              disabled={unPaidLineItems?.length === 0 || bill.balance <= 0}
               className={styles.addPaymentButton}
               renderIcon={ArrowRight}
               onClick={handleOpenPayments}>
