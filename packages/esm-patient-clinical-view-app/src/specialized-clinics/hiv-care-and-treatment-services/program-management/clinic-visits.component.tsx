@@ -1,8 +1,3 @@
-import { CardHeader, ErrorState, FHIRResource, formatDate, Obs, parseDate } from '@openmrs/esm-framework';
-import { EmptyState, useLaunchWorkspaceRequiringVisit, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
-import React, { FC, useCallback, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useClinicalVisit } from './program-management.resource';
 import {
   Button,
   DataTable,
@@ -16,7 +11,12 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add, Edit } from '@carbon/react/icons';
-import { useFormSchema } from '../hiv-care-and-treatment.resource';
+import { CardHeader, ErrorState, FHIRResource, formatDate, parseDate } from '@openmrs/esm-framework';
+import { EmptyState, useLaunchWorkspaceRequiringVisit, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
+import React, { FC, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { getObsDisplayByConcept } from '../hiv-care-and-treatment.resource';
+import { useClinicalVisit } from './program-management.resource';
 type ClinicVisitsProps = {
   patientUuid: string;
   patient: FHIRResource;
@@ -34,11 +34,6 @@ const ClinicalVisits: FC<ClinicVisitsProps> = ({ patient, patientUuid }) => {
     mutate,
     concepts: { nextAppointmentDateConceptUuid, tbScreeningDoneConceptUuid, visitTypeConceptUuid },
   } = useClinicalVisit(patientUuid);
-  const {
-    error: formSchemaError,
-    isLoading: formSchemaIsLoading,
-    getAnswerLabel,
-  } = useFormSchema(clinicalVisitFormUuid);
   const groupProps = useMemo(
     () => ({
       patient,
@@ -76,18 +71,12 @@ const ClinicalVisits: FC<ClinicVisitsProps> = ({ patient, patientUuid }) => {
   ];
   const tableRows = useMemo(() => {
     return clinicalVisitEncounters?.map((encounter) => {
-      const observations = encounter.obs?.filter((obs) => !obs.voided) || [];
-      const visitTypeObs = observations.find((obs) => obs.concept?.uuid === visitTypeConceptUuid) as Obs;
-      const tbScreeningObs = observations.find((obs) => obs.concept?.uuid === tbScreeningDoneConceptUuid) as Obs;
-      const nextAppointmentDateObs = observations.find(
-        (obs) => obs.concept?.uuid === nextAppointmentDateConceptUuid,
-      ) as Obs;
       return {
         id: encounter.uuid,
         encounterDate: encounter.encounterDatetime ? formatDate(parseDate(encounter.encounterDatetime)) : '--',
-        nextAppointmentDate: (nextAppointmentDateObs?.value as any)?.name?.name ?? '--',
-        visitType: (visitTypeObs?.value as any)?.name?.name ?? '--',
-        tbScreening: (tbScreeningObs?.value as any)?.name?.name ?? '--',
+        nextAppointmentDate: getObsDisplayByConcept(encounter?.obs, nextAppointmentDateConceptUuid) ?? '--',
+        visitType: getObsDisplayByConcept(encounter?.obs, visitTypeConceptUuid) ?? '--',
+        tbScreening: getObsDisplayByConcept(encounter?.obs, tbScreeningDoneConceptUuid) ?? '--',
         actions: (
           <Button
             hasIconOnly
@@ -109,11 +98,11 @@ const ClinicalVisits: FC<ClinicVisitsProps> = ({ patient, patientUuid }) => {
     visitTypeConceptUuid,
   ]);
 
-  if (isLoading || formSchemaIsLoading) {
+  if (isLoading) {
     return <DataTableSkeleton />;
   }
-  if (error || formSchemaError) {
-    return <ErrorState headerTitle={title} error={error ?? formSchemaError} />;
+  if (error) {
+    return <ErrorState headerTitle={title} error={error} />;
   }
 
   if (clinicalVisitEncounters?.length === 0) {

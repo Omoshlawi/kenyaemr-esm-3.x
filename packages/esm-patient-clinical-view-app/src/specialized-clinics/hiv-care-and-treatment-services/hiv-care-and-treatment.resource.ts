@@ -1,7 +1,7 @@
 import useSWR from 'swr';
 import useSWRImmutable from 'swr/immutable';
 import { useCallback, useMemo } from 'react';
-import { FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { type FetchResponse, type Obs, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 export const defaultEncounterRepresentation =
   'custom:(uuid,encounterDatetime,encounterType,location:(uuid,name),patient:(uuid,display,age,identifiers,person),encounterProviders:(uuid,provider:(uuid,name)),obs:(uuid,obsDatetime,voided,groupMembers,concept:(uuid,name:(uuid,name)),value:(uuid,name:(uuid,name),names:(uuid,conceptNameType,name))),form:(uuid,name,resources),visit:(uuid,startDatetime,stopDatetime,visitType:(uuid,display)))';
@@ -84,4 +84,19 @@ export const useFormSchema = (formUuid: string) => {
     getQuestion,
     getAnswerLabel,
   };
+};
+
+export const getObsDisplay = (obs?: Obs): string | undefined => {
+  const obsValue = obs?.value;
+  if (typeof obsValue === 'string') {
+    return obsValue;
+  }
+  if (typeof obsValue === 'object') {
+    return obsValue?.name?.name;
+  }
+};
+
+export const getObsDisplayByConcept = (obs: Obs[] = [], conceptUuid: string) => {
+  const conceptObs = obs.find((ob) => ob.concept?.uuid === conceptUuid);
+  return getObsDisplay(conceptObs);
 };
