@@ -162,8 +162,12 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
   const isBodyEmbalmmentSelected = deadBodyPreservation === bodyEmbalmmentOption?.concept;
 
   const filteredBeds = useMemo(() => {
-    if (!mortuaryLocation?.bedLayouts) return [];
-    if (!searchTerm) return mortuaryLocation.bedLayouts;
+    if (!mortuaryLocation?.bedLayouts) {
+      return [];
+    }
+    if (!searchTerm) {
+      return mortuaryLocation.bedLayouts;
+    }
     return mortuaryLocation.bedLayouts.filter(
       (bed) =>
         bed.bedNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -187,7 +191,9 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
       }));
 
     try {
-      if (isSubmitting) return;
+      if (isSubmitting) {
+        return;
+      }
 
       const { admissionEncounter, compartment } = await admitBody(patientUuid, data);
 
@@ -471,7 +477,9 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                             datePickerType="single"
                             className={styles.formAdmissionDatepicker}
                             onChange={(event) => {
-                              if (event.length) field.onChange(event[0]);
+                              if (event.length) {
+                                field.onChange(event[0]);
+                              }
                             }}
                             value={field.value ? new Date(field.value) : null}>
                             <DatePickerInput
@@ -534,7 +542,7 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                   control={control}
                   render={({ field }) => {
                     const yesOption = deathConfirmationTypes.find((type) => type.label === 'Yes');
-                    const noOption  = deathConfirmationTypes.find((type) => type.label === 'No');
+                    const noOption = deathConfirmationTypes.find((type) => type.label === 'No');
                     return (
                       <RadioButtonGroup
                         name="deathConfirmed"
@@ -543,7 +551,11 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                         onChange={field.onChange}
                         invalid={!!errors.deathConfirmed}
                         invalidText={errors.deathConfirmed?.message}>
-                        <RadioButton className={styles.radioButton} value={yesOption?.concept} labelText={t('yes', 'Yes')} />
+                        <RadioButton
+                          className={styles.radioButton}
+                          value={yesOption?.concept}
+                          labelText={t('yes', 'Yes')}
+                        />
                         <RadioButton value={noOption?.concept} labelText={t('no', 'No')} />
                       </RadioButtonGroup>
                     );
@@ -642,7 +654,7 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                   control={control}
                   render={({ field }) => {
                     const yesOption = deathConfirmationTypes.find((type) => type.label === 'Yes');
-                    const noOption  = deathConfirmationTypes.find((type) => type.label === 'No');
+                    const noOption = deathConfirmationTypes.find((type) => type.label === 'No');
                     return (
                       <RadioButtonGroup
                         name="autopsyPermission"
@@ -651,8 +663,16 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
                         onChange={field.onChange}
                         invalid={!!errors.autopsyPermission}
                         invalidText={errors.autopsyPermission?.message}>
-                        <RadioButton className={styles.radioButton} value={yesOption?.concept} labelText={t('yes', 'Yes')} />
-                        <RadioButton className={styles.radioButton} value={noOption?.concept}  labelText={t('no',  'No')}  />
+                        <RadioButton
+                          className={styles.radioButton}
+                          value={yesOption?.concept}
+                          labelText={t('yes', 'Yes')}
+                        />
+                        <RadioButton
+                          className={styles.radioButton}
+                          value={noOption?.concept}
+                          labelText={t('no', 'No')}
+                        />
                       </RadioButtonGroup>
                     );
                   }}

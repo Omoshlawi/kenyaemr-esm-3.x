@@ -188,7 +188,9 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
       for (const attr of attributeUpdates) {
         try {
           const attributeData: any = { attributeType: attr.uuid, value: attr.value };
-          if (attr.existingUuid) attributeData.uuid = attr.existingUuid;
+          if (attr.existingUuid) {
+            attributeData.uuid = attr.existingUuid;
+          }
           await createOrUpdatePersonAttribute(patientUuid, attributeData, patientInfo);
         } catch (error) {
           showSnackbar({
@@ -292,7 +294,9 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
                           datePickerType="single"
                           className={styles.formAdmissionDatepicker}
                           onChange={(event) => {
-                            if (event.length) field.onChange(event[0]);
+                            if (event.length) {
+                              field.onChange(event[0]);
+                            }
                           }}
                           value={field.value ? new Date(field.value) : null}>
                           <DatePickerInput
