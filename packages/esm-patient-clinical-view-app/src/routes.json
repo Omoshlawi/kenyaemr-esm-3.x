@@ -233,60 +233,59 @@
       "meta": {
         "title": "HIV Testing Services"
       }
-      },
-      {
-        "name": "hiv-patient-summary",
-        "slot": "hiv-care-and-treatment-tabs-extension-slot",
-        "component": "hivCareAndTreatmentPatientSummary",
-        "order": 0,
-        "online": true,
-        "offline": false,
-        "meta": {
-          "title": "HIV Patient Summary"
-        }
-      },
-      {
-        "name": "hiv-case-management",
-        "slot": "hiv-care-and-treatment-tabs-extension-slot",
-        "component": "hivCareAndTreatmentCaseManagement",
-        "order": 0,
-        "online": true,
-        "offline": false,
-        "meta": {
-          "title": "Case Management"
-        }
-      },
-      {
-        "name": "hiv-program-management",
-        "slot": "hiv-care-and-treatment-tabs-extension-slot",
-        "component": "hivCareAndTreatmentProgramManagement",
-        "order": 0,
-        "online": true,
-        "offline": false,
-        "meta": {
-          "title": "Program Management"
-        }
-      },{
-        "name": "hiv-general-counseling",
-        "slot": "hiv-care-and-treatment-tabs-extension-slot",
-        "component": "hivCareAndTreatmentGeneralCounseling",
-        "order": 0,
-        "online": true,
-        "offline": false,
-        "meta": {
-          "title": "General Counseling"
-        }
-      },{
-        "name": "hiv-partner-notification-services",
-        "slot": "hiv-care-and-treatment-tabs-extension-slot",
-        "component": "hivCareAndTreatmentPartnerNotificationServices",
-        "order": 0,
-        "online": true,
-        "offline": false,
-        "meta": {
-          "title": "Partner Notification Services"
-        }
+    },
+    {
+      "name": "hiv-patient-summary",
+      "slot": "hiv-care-and-treatment-tabs-extension-slot",
+      "component": "hivCareAndTreatmentPatientSummary",
+      "order": 0,
+      "online": true,
+      "offline": false,
+      "meta": {
+        "title": "HIV Patient Summary"
       }
+    },
+    {
+      "name": "hiv-case-management",
+      "slot": "hiv-care-and-treatment-tabs-extension-slot",
+      "component": "hivCareAndTreatmentCaseManagement",
+      "order": 0,
+      "online": true,
+      "offline": false,
+      "meta": {
+        "title": "Case Management"
+      }
+    },
+    {
+      "name": "hiv-program-management",
+      "component": "hivCareAndTreatmentProgramManagement",
+      "order": 0,
+      "online": true,
+      "offline": false,
+      "meta": {
+        "title": "Program Management"
+      }
+    },
+    {
+      "name": "hiv-general-counseling",
+      "component": "hivCareAndTreatmentGeneralCounseling",
+      "order": 0,
+      "online": true,
+      "offline": false,
+      "meta": {
+        "title": "General Counseling"
+      }
+    },
+    {
+      "name": "hiv-partner-notification-services",
+      "component": "hivCareAndTreatmentPartnerNotificationServices",
+      "order": 0,
+      "online": true,
+      "offline": false,
+      "meta": {
+        "title": "Partner Notification Services"
+      }
+    }
   ],
   "modals": [
     {
@@ -306,7 +305,6 @@
       "component": "formEntryModal"
     }
   ],
-
   "workspaces2": [
     {
       "name": "contact-list-form",
@@ -353,7 +351,6 @@
       "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
       "window": "custom-form-entry-workspace-window"
     },
-
     {
       "name": "exported-patient-clinical-view-lab-results-form",
       "component": "exportedLabResultsForm",
