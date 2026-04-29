@@ -89,7 +89,7 @@ const PromptPaymentModal: React.FC = () => {
                     <StructuredListCell>{extractString(lineItem.billableService || lineItem.item)}</StructuredListCell>
                     <StructuredListCell>{lineItem.quantity}</StructuredListCell>
                     <StructuredListCell>{formatCurrency(lineItem.price)}</StructuredListCell>
-                    <StructuredListCell>{lineItem.paymentStatus}</StructuredListCell>
+                    <StructuredListCell>{t(lineItem.paymentStatus)}</StructuredListCell>
                     <StructuredListCell>{formatCurrency(lineItem.quantity * lineItem.price)}</StructuredListCell>
                   </StructuredListRow>
                 );
