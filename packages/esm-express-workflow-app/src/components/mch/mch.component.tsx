@@ -18,9 +18,7 @@ const MCH: React.FC<MchProps> = ({ dashboardTitle }) => {
     <div>
       <PageHeader className={styles.pageHeader}>
         <PageHeaderContent
-          title={`${toUpper(dashboardTitle)} ${
-            selectedIndex === 0 ? t('triage', 'Triage') : t('consultation', 'Consultation')
-          }`}
+          title={selectedIndex === 0 ? t('mchTriage', 'MCH Triage') : t('mchConsultation', 'MCH Consultation')}
           illustration={<HomePictogram />}
         />
 
