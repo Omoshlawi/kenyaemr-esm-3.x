@@ -23,13 +23,6 @@ import { EmptyDataIllustration, usePaginationInfo } from '@openmrs/esm-patient-c
 import { usePaginatedBills } from '../billing.resource';
 import styles from './bills-table.scss';
 
-const filterItems = [
-  { id: '', text: 'All bills' },
-  { id: 'PENDING', text: 'Pending bills' },
-  { id: 'PAID', text: 'Paid bills' },
-  { id: 'POSTED', text: 'Posted bills' },
-];
-
 type BillTableProps = {
   defaultBillPaymentStatus?: string;
   isOnActiveTab?: boolean;
@@ -41,6 +34,12 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '', i
   const config = useConfig();
   const layout = useLayoutType();
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
+  const filterItems = [
+    { id: '', text: t('allBills', 'All bills') },
+    { id: 'PENDING', text: t('pendingBills', 'Pending bills') },
+    { id: 'PAID', text: t('paidBills', 'Paid bills') },
+    { id: 'POSTED', text: t('postedBills', 'Posted bills') },
+  ];
   const [billPaymentStatus, setBillPaymentStatus] = useState(defaultBillPaymentStatus);
   const [pageSize, setPageSize] = useState(config?.bills?.pageSize ?? 10);
   const { bills, isLoading, isValidating, error, pagination } = usePaginatedBills(isOnActiveTab, {

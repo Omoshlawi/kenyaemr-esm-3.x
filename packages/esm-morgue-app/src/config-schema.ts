@@ -289,6 +289,11 @@ export const configSchema = {
     _default: 'dfacd928-0370-4315-99d7-6ec1c9f7ae76',
     _description: 'UUID for the patient Opennmrs identifier type to display',
   },
+  paymentMethods: {
+    _type: Type.Array,
+    _description: 'List of payment methods used when printing gatepass',
+    _default: ['Cash', 'Cheque', 'SHA', 'Scheme', 'M.R.M'],
+  },
 };
 
 export interface BillingConfig {
@@ -362,4 +367,5 @@ export type ConfigObject = {
   mortuaryNotUrgentPriorityUuid: string;
   mortalityEncounterTypeUuid: string;
   patientIdentifierTypeUuid: string;
+  paymentMethods: Array<string>;
 };
