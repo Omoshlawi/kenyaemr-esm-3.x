@@ -39,8 +39,8 @@ export function useLabOrderAction(order?: Order) {
     if (shouldShowBillModal) {
       return t('bill', 'Bill');
     }
-
-    return t('pickLabRequest', 'Pick {{orderType}}', { orderType: getOrderType() ?? 'Lab Request' });
+    const orderType = t(getOrderType() ?? 'Lab Request');
+    return t('pickLabRequest', 'Pick {{orderType}}', { orderType });
   };
 
   return {
