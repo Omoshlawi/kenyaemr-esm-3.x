@@ -309,12 +309,12 @@
     {
       "name": "contact-list-form",
       "component": "contactListForm",
-      "window": "patient-clinical-view-workspace-window"
+      "window": "familily-relationship-window"
     },
     {
       "name": "family-relationship-form",
       "component": "familyRelationshipForm",
-      "window": "patient-clinical-view-workspace-window"
+      "window": "familily-relationship-window"
     },
     {
       "name": "contact-list-update-form",
@@ -378,6 +378,12 @@
       "canHide": true,
       "group": "patient-chart",
       "width": "extra-wide"
+    },
+    {
+      "name": "familily-relationship-window",
+      "canMaximize": true,
+      "width":"wider",
+      "group":"patient-chart"
     }
   ],
   "workspaceGroups2": [

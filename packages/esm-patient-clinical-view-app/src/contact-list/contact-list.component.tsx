@@ -28,7 +28,12 @@ import {
   useLayoutType,
   usePagination,
 } from '@openmrs/esm-framework';
-import { CardHeader, EmptyDataIllustration, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
+import {
+  CardHeader,
+  EmptyDataIllustration,
+  usePaginationInfo,
+  usePatientChartStore,
+} from '@openmrs/esm-patient-common-lib';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
@@ -58,6 +63,7 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
     formsList: { htsClientTracingFormUuid },
     pnsContactFormConfig: { hideIPVOutcome, hideLivingWithContact, hidePNSAproach },
   } = useConfig<ConfigObject & PNSContactFormConfig>();
+  const { patient, visitContext, mutateVisitContext } = usePatientChartStore(patientUuid);
   const headers = [
     {
       header: t('listingDate', 'Listing date'),
@@ -114,7 +120,7 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
   ];
 
   const handleAddContact = () => {
-    launchWorkspace2('contact-list-form', { patientUuid });
+    launchWorkspace2('contact-list-form', { patientUuid }, { patient, patientUuid, visitContext });
   };
 
   const handleLaunchContactTracingForm = (contactUuid: string) => {

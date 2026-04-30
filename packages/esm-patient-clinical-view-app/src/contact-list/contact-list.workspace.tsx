@@ -1,16 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Accordion,
-  Button,
-  ButtonSet,
-  Column,
-  DatePicker,
-  DatePickerInput,
-  Dropdown,
-  Form,
-  Stack,
-  TextArea,
-} from '@carbon/react';
+import { Button, ButtonSet, Column, DatePicker, DatePickerInput, Dropdown, Form, Stack, TextArea } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -113,7 +102,7 @@ const ContactListForm: React.FC<Workspace2DefinitionProps<ContactListFormProps, 
   return (
     <Workspace2 title={t('contactListForm', 'Contact List Form')} hasUnsavedChanges={hasUnsavedChanges}>
       <FormProvider {...form}>
-        <Form onSubmit={form.handleSubmit(onSubmit)} className={styles.form}>
+        <Form onSubmit={form.handleSubmit(onSubmit, (e) => console.error(e))} className={styles.form}>
           <Stack gap={4} className={styles.grid}>
             <PatientSearchCreate />
             <span className={styles.sectionHeader}>{t('relationship', 'Relationship')}</span>
