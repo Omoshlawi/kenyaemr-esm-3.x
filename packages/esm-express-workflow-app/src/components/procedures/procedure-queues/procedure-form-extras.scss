@@ -1,8 +1,5 @@
+@use "@carbon/layout";
 
 .gridRow {
-  padding: 0px;
-
-  :global(.cds--number) {
-    display: inline-block;
-  }
+  padding: layout.$spacing-03;
 }

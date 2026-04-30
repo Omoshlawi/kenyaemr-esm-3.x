@@ -312,7 +312,6 @@
     {
       "name": "procedure-queues",
       "component": "procedureQueues",
-      "slot": "procedure-orders-dashboard-slot",
       "online": true,
       "offline": false
     },
