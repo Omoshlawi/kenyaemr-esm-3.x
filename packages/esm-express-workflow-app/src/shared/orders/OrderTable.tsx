@@ -2,7 +2,7 @@ import React from 'react';
 import { DataTable, Table, TableHead, TableRow, TableHeader, TableBody, TableCell, Layer, Button } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
-import { parseDate, formatDatetime } from '@openmrs/esm-framework';
+import { parseDate, formatDatetime, translateFrom } from '@openmrs/esm-framework';
 import { PriorityPill, StatusPill } from './OrderPills';
 import { type Order } from '../../types/order/order';
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
@@ -15,6 +15,7 @@ type OrderTableProps = {
   tableCellClassName: string;
   priorityPillClassName: string;
   statusPillClassName: string;
+  module: string;
 };
 
 const defaultHeaders = (t: (k: string, d: string) => string) => [
@@ -34,6 +35,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
   tableCellClassName,
   priorityPillClassName,
   statusPillClassName,
+  module,
 }) => {
   const { t } = useTranslation();
 
@@ -42,9 +44,21 @@ export const OrderTable: React.FC<OrderTableProps> = ({
     orderNo: order.orderNumber,
     dateOrdered: formatDatetime(parseDate(order.dateActivated), { mode: 'standard' }),
     order: order.concept?.display?.replace('_', ' ') ?? '--',
-    priority: <PriorityPill value={order.urgency} className={priorityPillClassName} dataAttrName="priority" />,
+    priority: (
+      <PriorityPill
+        value={translateFrom(module, order.urgency, order.urgency)}
+        className={priorityPillClassName}
+        dataAttrName="priority"
+      />
+    ),
     orderBy: order.orderer?.display ?? '--',
-    status: <StatusPill value={order.fulfillerStatus} className={statusPillClassName} dataAttrName="status" />,
+    status: (
+      <StatusPill
+        value={translateFrom(module, order.fulfillerStatus, order.fulfillerStatus)}
+        className={statusPillClassName}
+        dataAttrName="status"
+      />
+    ),
   }));
 
   if (orders?.length === 0) {

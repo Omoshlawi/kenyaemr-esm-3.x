@@ -70,6 +70,7 @@ const RadiologyAndImagingTable: React.FC<RadiologyAndImagingTableProps> = ({ ord
       tableCellClassName={styles.tableCell}
       priorityPillClassName={styles.priorityPill}
       statusPillClassName={styles.statusPill}
+      module="@kenyaemr/esm-imaging-orders-app"
     />
   );
 };
