@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Button,
   ButtonSet,
@@ -71,14 +71,8 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const [searchTerm, setSearchTerm] = useState('');
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const { time: defaultTime, period: defaultPeriod } = getCurrentTime();
   const config = useConfig<ConfigObject>();
-
-  const closeWorkspaceWithSavedChanges = () => {
-    setHasUnsavedChanges(false);
-    closeWorkspace();
-  };
 
   const { data: visitTypes, isLoading: isLoadingVisitTypes } = useVisitType();
   const { lineItems, isLoading: isLoadingLineItems } = useBillableItems();
@@ -145,6 +139,10 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
       availableCompartment: 0,
     },
   });
+
+  const closeWorkspaceWithSavedChanges = () => {
+    closeWorkspace({ discardUnsavedChanges: true });
+  };
 
   const placeOfDeath = watch('placeOfDeath');
   const deadBodyPreservation = watch('deadBodyPreservation');
@@ -231,12 +229,8 @@ const AdmitDeceasedPerson: React.FC<Workspace2DefinitionProps<AdmitDeceasedPerso
     }
   };
 
-  useEffect(() => {
-    setHasUnsavedChanges(isDirty);
-  }, [isDirty]);
-
   return (
-    <Workspace2 title={t('admitDeceasedPerson', 'Admit deceased person')} hasUnsavedChanges={hasUnsavedChanges}>
+    <Workspace2 title={t('admitDeceasedPerson', 'Admit deceased person')} hasUnsavedChanges={isDirty}>
       <Form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
         <div className={styles.formContainer}>
           <Stack gap={3}>

@@ -13,7 +13,7 @@ import {
   Tile,
   FormGroup,
 } from '@carbon/react';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import DeceasedInfo from '../../deceased-patient-header/deceasedInfo/deceased-info.component';
 import styles from './swap-unit.scss';
@@ -62,7 +62,6 @@ const SwapForm: React.FC<Workspace2DefinitionProps<SwapFormProps, object, object
   const { currentVisit } = useVisit(patientUuid);
   const { assignDeceasedToCompartment, removeDeceasedFromCompartment, createEncounterForCompartmentSwap } =
     useMortuaryOperation();
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   const {
@@ -75,6 +74,10 @@ const SwapForm: React.FC<Workspace2DefinitionProps<SwapFormProps, object, object
       availableCompartment: '',
     },
   });
+
+  const closeWorkspaceWithSavedChanges = () => {
+    closeWorkspace({ discardUnsavedChanges: true });
+  };
 
   const currentBed = mortuaryLocation?.bedLayouts?.find((bed) =>
     bed.patients?.some((patient) => patient.uuid === patientUuid),
@@ -150,7 +153,7 @@ const SwapForm: React.FC<Workspace2DefinitionProps<SwapFormProps, object, object
 
         mutate();
         navigate({ to: window.getOpenmrsSpaBase() + `home/mortuary` });
-        closeWorkspace();
+        closeWorkspaceWithSavedChanges();
       } else {
         showSnackbar({
           kind: 'error',
@@ -167,12 +170,8 @@ const SwapForm: React.FC<Workspace2DefinitionProps<SwapFormProps, object, object
     }
   };
 
-  useEffect(() => {
-    setHasUnsavedChanges(isDirty);
-  }, [isDirty, setHasUnsavedChanges]);
-
   return (
-    <Workspace2 title={t('swapCompartment', 'Swap compartment')} hasUnsavedChanges={hasUnsavedChanges}>
+    <Workspace2 title={t('swapCompartment', 'Swap compartment')} hasUnsavedChanges={isDirty}>
       <Form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
         <div className={styles.formContainer}>
           <Stack gap={3}>
@@ -262,15 +261,11 @@ const SwapForm: React.FC<Workspace2DefinitionProps<SwapFormProps, object, object
             </ResponsiveWrapper>
           </Stack>
         </div>
-        <ButtonSet
-          className={classNames({
-            [styles.tablet]: isTablet,
-            [styles.desktop]: !isTablet,
-          })}>
-          <Button className={styles.buttonContainer} kind="secondary" onClick={() => closeWorkspace()}>
+        <ButtonSet className={classNames(styles.buttonSet, { [styles.tablet]: isTablet })}>
+          <Button kind="secondary" onClick={() => closeWorkspace()}>
             {t('cancel', 'Cancel')}
           </Button>
-          <Button className={styles.buttonContainer} disabled={isSubmitting || !isDirty} kind="primary" type="submit">
+          <Button disabled={isSubmitting || !isDirty} kind="primary" type="submit">
             {isSubmitting ? (
               <span className={styles.inlineLoading}>
                 {t('submitting', 'Submitting' + '...')}

@@ -61,13 +61,6 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const [submissionError, setSubmissionError] = useState<string | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
-  // On success: clear dirty flag first so closeWorkspace() won't trigger discard warning
-  const closeWorkspaceWithSavedChanges = () => {
-    setHasUnsavedChanges(false);
-    closeWorkspace();
-  };
 
   const { activeVisit, currentVisitIsRetrospective } = useVisit(patientUuid);
   const { queueEntry } = useVisitQueueEntry(patientUuid, activeVisit?.uuid);
@@ -115,23 +108,11 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
     },
   });
 
-  const selectedDischargeType = watch('dischargeType');
+  const closeWorkspaceWithSavedChanges = () => {
+    closeWorkspace({ discardUnsavedChanges: true });
+  };
 
-  useEffect(() => {
-    if (personAttributes?.length) {
-      setValue('nextOfKinNames', getAttributeValue(nextOfKinNameUuid));
-      setValue('relationshipType', getAttributeValue(nextOfKinRelationshipUuid));
-      setValue('nextOfKinContact', getAttributeValue(nextOfKinPhoneUuid));
-      setValue('nextOfKinNationalId', getAttributeValue(nextOfKinNationalIdUuid));
-    }
-  }, [
-    personAttributes,
-    setValue,
-    nextOfKinNameUuid,
-    nextOfKinRelationshipUuid,
-    nextOfKinPhoneUuid,
-    nextOfKinNationalIdUuid,
-  ]);
+  const selectedDischargeType = watch('dischargeType');
 
   const getAttributeValue = useCallback(
     (attributeTypeUuid: string) =>
@@ -144,6 +125,23 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
       personAttributes?.find((attr) => attr.attributeType.uuid === attributeTypeUuid)?.uuid || null,
     [personAttributes],
   );
+
+  useEffect(() => {
+    if (personAttributes?.length) {
+      setValue('nextOfKinNames', getAttributeValue(nextOfKinNameUuid));
+      setValue('relationshipType', getAttributeValue(nextOfKinRelationshipUuid));
+      setValue('nextOfKinContact', getAttributeValue(nextOfKinPhoneUuid));
+      setValue('nextOfKinNationalId', getAttributeValue(nextOfKinNationalIdUuid));
+    }
+  }, [
+    personAttributes,
+    setValue,
+    getAttributeValue,
+    nextOfKinNameUuid,
+    nextOfKinRelationshipUuid,
+    nextOfKinPhoneUuid,
+    nextOfKinNationalIdUuid,
+  ]);
 
   const onSubmit = async (data) => {
     setSubmissionError(null);
@@ -236,12 +234,8 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
     }
   };
 
-  useEffect(() => {
-    setHasUnsavedChanges(isDirty);
-  }, [isDirty]);
-
   return (
-    <Workspace2 title={t('dischargeForm', 'Discharge form')} hasUnsavedChanges={hasUnsavedChanges}>
+    <Workspace2 title={t('dischargeForm', 'Discharge form')} hasUnsavedChanges={isDirty}>
       <Form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
         <div className={styles.formContainer}>
           {isLoadingBills && <InlineLoading description={t('loadingBills', 'Loading bills...')} />}
