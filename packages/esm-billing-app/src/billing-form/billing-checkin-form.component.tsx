@@ -1,4 +1,12 @@
-import { FilterableMultiSelect, InlineLoading, InlineNotification } from '@carbon/react';
+import {
+  FilterableMultiSelect,
+  InlineLoading,
+  InlineNotification,
+  RadioButton,
+  RadioButtonGroup,
+  Tag,
+  TextInput,
+} from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { showModal, showSnackbar, useConfig, useFeatureFlag, usePatient, type Visit } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -15,16 +23,21 @@ import VisitAttributesForm from './visit-attributes/visit-attributes-form.compon
 import SHABenefitPackagesAndInterventions from '../benefits-package/forms/packages-and-interventions-form.component';
 import {
   createSHAVirtualClaim,
-  getPatientCRNumber,
+  linkVisitToClaim,
   sendSHAOtp,
+  useElectiveCheckin,
   usePatientPhone,
 } from './social-health-authority/sha-virtual-claim.resource';
-import { toSavannahISO } from './social-health-authority/helper';
+import { getPatientCRNumber, toSavannahISO } from './social-health-authority/helper';
+import { VirtualClaimResponse } from './social-health-authority/type';
+import { extractFetchError, extractUpstreamError } from '../claims/claims-management/table/virtual-claim-preauth/utils';
+import { formatCurrency } from '../helpers/currency';
 
 export interface VisitFormCallbacks {
   onVisitCreatedOrUpdated: (visit: Visit) => Promise<any>;
   onBeforeVisitSave?: () => Promise<boolean>;
   isSHAVisit?: boolean;
+  isElectiveNotApproved?: boolean;
 }
 
 type BillingCheckInFormProps = {
@@ -62,12 +75,25 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   const [attributes, setAttributes] = useState<Array<{ attributeType: string; value: string }>>([]);
   const [selectedBillingServices, setSelectedBillingServices] = useState<Array<any>>([]);
 
+  const [isElectiveVisit, setIsElectiveVisit] = useState<'yes' | 'no'>('no');
+  const [electiveConsentToken, setElectiveConsentToken] = useState('');
+
+  const {
+    electiveRecord,
+    isLoading: isLoadingElective,
+    isApproved,
+    isAlreadyUsed,
+  } = useElectiveCheckin(isElectiveVisit === 'yes' ? electiveConsentToken : null);
+
+  const isElectiveNotApproved = isElectiveVisit === 'yes' && (!electiveRecord || !isApproved || isAlreadyUsed);
+
   const verifiedOtpRef = useRef<string | null>(null);
   const patientCRIdRef = useRef<string | null>(null);
   const interventionCodesRef = useRef<string[]>([]);
   const serviceTypeRef = useRef<string>('OUTPATIENT');
   const admissionDateRef = useRef<Date | null>(null);
   const estimatedDaysRef = useRef<number | null>(null);
+  const shaClaimResponseRef = useRef<VirtualClaimResponse | null>(null);
 
   const formMethods = useForm<BillingCheckInFormValue>({
     mode: 'all',
@@ -99,7 +125,6 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   useEffect(() => {
     admissionDateRef.current = admissionDate ?? null;
   }, [admissionDate]);
-
   useEffect(() => {
     estimatedDaysRef.current = estimatedDays ?? null;
   }, [estimatedDays]);
@@ -141,7 +166,6 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
       const billStatus = hasPatientBeenExempted(attributes, isPatientExempted)
         ? EXEMPTED_PAYMENT_STATUS
         : PENDING_PAYMENT_STATUS;
-
       const lineItemsData = selectedItems.map((item, index) => {
         const priceForPaymentMode =
           item.servicePrices.find((p) => p.paymentMode?.uuid === paymentMethod) || item?.servicePrices[0];
@@ -155,7 +179,6 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
           paymentStatus: billStatus,
         };
       });
-
       return {
         lineItems: lineItemsData,
         cashPoint: cashPointUuid,
@@ -171,11 +194,6 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     setSelectedBillingServices(selectedItems);
   }, []);
 
-  /**
-   * Launched BEFORE the visit saves when SHA is selected.
-   * Opens OTP modal → user sends OTP → enters code → stores verified OTP.
-   * Returns true to proceed with visit save, false if user cancels.
-   */
   const launchSHAOtpFlow = useCallback((): Promise<boolean> => {
     return new Promise((resolve) => {
       if (!hieFeatureFlags || !isInsuranceSchemeSha) {
@@ -184,7 +202,6 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
       }
 
       const patientCRId = getPatientCRNumber(patient as fhir.Patient, shaIdentificationNumberUUID);
-
       if (!patientCRId) {
         showSnackbar({
           title: t('shaVirtualClaim', 'SHA Virtual Claim'),
@@ -195,85 +212,121 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         return;
       }
 
-      const codes = selectedInterventions.length > 0 ? selectedInterventions : ['SHA-18-002'];
+      if (isElectiveVisit === 'yes') {
+        if (!electiveRecord) {
+          showSnackbar({
+            title: t('shaElectiveCheckin', 'Elective Check-in'),
+            subtitle: t('electiveRecordNotFound', 'Elective preauth not found. Please verify the authorization code.'),
+            kind: 'error',
+          });
+          resolve(false);
+          return;
+        }
+        if (!isApproved) {
+          showSnackbar({
+            title: t('shaElectiveCheckin', 'Elective Check-in'),
+            subtitle: t(
+              'electivePreauthNotApproved',
+              'Elective preauth is not yet approved ({{state}}). Cannot check in.',
+              { state: electiveRecord.workflow_state },
+            ),
+            kind: 'warning',
+          });
+          resolve(false);
+          return;
+        }
+
+        const electedCRId = electiveRecord.elective_patient_cr_id ?? patientCRId;
+        const codes = electiveRecord.elective_intervention_code
+          ? [electiveRecord.elective_intervention_code]
+          : electiveRecord.intervention_code
+          ? [electiveRecord.intervention_code]
+          : [''];
+
+        patientCRIdRef.current = electedCRId;
+        interventionCodesRef.current = codes;
+        serviceTypeRef.current = electiveRecord.service_type ?? 'OUTPATIENT';
+
+        let settled = false;
+        const dispose = showModal('otp-verification-modal', {
+          onClose: () => {
+            dispose();
+          },
+          phoneNumber,
+          otpLength: 6,
+          expiryMinutes: 5,
+          centerBoxes: true,
+          onRequestOtp: async (_phone: string) => {
+            const res = await sendSHAOtp(electedCRId, codes);
+            if (!res.success) {
+              throw new Error(extractUpstreamError(res as any, t('otpRequestFailed', 'Failed to send OTP')));
+            }
+          },
+          onVerify: async (enteredOtp: string) => {
+            const isInpatient = serviceTypeRef.current === 'INPATIENT';
+            const claimResponse = await createSHAVirtualClaim(
+              patientCRIdRef.current!,
+              enteredOtp,
+              serviceTypeRef.current,
+              interventionCodesRef.current,
+              '',
+              patientUuid,
+              isInpatient
+                ? {
+                    admission_date: admissionDateRef.current ? toSavannahISO(admissionDateRef.current) : undefined,
+                    estimated_days_of_admission: estimatedDaysRef.current ?? undefined,
+                  }
+                : undefined,
+            );
+            if (!claimResponse.success) {
+              throw new Error(
+                extractUpstreamError(claimResponse as any, t('virtualClaimFailed', 'SHA virtual claim failed.')),
+              );
+            }
+            verifiedOtpRef.current = enteredOtp;
+            shaClaimResponseRef.current = claimResponse;
+          },
+          onVerificationSuccess: () => {
+            settled = true;
+            dispose();
+            resolve(true);
+          },
+          onCleanup: () => {
+            if (!settled) {
+              resolve(false);
+            }
+          },
+        });
+        return;
+      }
+
+      const codes = selectedInterventions.length > 0 ? selectedInterventions : [''];
       patientCRIdRef.current = patientCRId;
       interventionCodesRef.current = codes;
 
-      let otpVerified = false;
-
+      let settled = false;
       const dispose = showModal('otp-verification-modal', {
         onClose: () => {
-          if (!otpVerified) {
-            resolve(false);
-          }
           dispose();
         },
         phoneNumber,
         otpLength: 6,
         expiryMinutes: 5,
         centerBoxes: true,
-
         onRequestOtp: async (_phone: string) => {
-          const response = await sendSHAOtp(patientCRId, codes);
-          if (!response.success) {
-            throw new Error(response.error ?? t('otpRequestFailed', 'Failed to send OTP'));
+          const res = await sendSHAOtp(patientCRId, codes);
+          if (!res.success) {
+            throw new Error(extractUpstreamError(res as any, t('otpRequestFailed', 'Failed to send OTP')));
           }
         },
-
         onVerify: async (enteredOtp: string) => {
-          verifiedOtpRef.current = enteredOtp;
-          otpVerified = true;
-        },
-
-        onVerificationSuccess: () => {
-          dispose();
-          resolve(true);
-        },
-
-        onCleanup: () => {
-          if (!otpVerified) {
-            resolve(false);
-          }
-        },
-      });
-    });
-  }, [hieFeatureFlags, isInsuranceSchemeSha, patient, phoneNumber, selectedInterventions, t]);
-
-  useEffect(() => {
-    const onVisitCreatedOrUpdated = async (visit: Visit) => {
-      if (visitStatus === 'past') {
-        return visit;
-      }
-
-      if (attributes.length > 0) {
-        try {
-          await Promise.all(attributes.map((attr) => createVisitAttribute(visit.uuid, attr.attributeType, attr.value)));
-        } catch (error) {
-          showSnackbar({
-            title: t('visitAttributesError', 'Visit Attributes Error'),
-            subtitle: t('errorSavingVisitAttributes', 'An error occurred while saving billing visit attributes.'),
-            kind: 'error',
-            isLowContrast: true,
-          });
-          throw error;
-        }
-      }
-
-      if (selectedBillingServices.length > 0) {
-        const billPayload = createBillPayload(selectedBillingServices);
-        await handleCreateBill(billPayload);
-      }
-
-      if (hieFeatureFlags && isInsuranceSchemeSha && verifiedOtpRef.current && patientCRIdRef.current) {
-        try {
           const isInpatient = serviceTypeRef.current === 'INPATIENT';
-
           const claimResponse = await createSHAVirtualClaim(
-            patientCRIdRef.current,
-            verifiedOtpRef.current,
+            patientCRIdRef.current!,
+            enteredOtp,
             serviceTypeRef.current,
             interventionCodesRef.current,
-            visit.uuid,
+            '',
             patientUuid,
             isInpatient
               ? {
@@ -282,51 +335,129 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
                 }
               : undefined,
           );
+          if (!claimResponse.success) {
+            throw new Error(
+              extractUpstreamError(claimResponse as any, t('virtualClaimFailed', 'SHA virtual claim failed.')),
+            );
+          }
+          verifiedOtpRef.current = enteredOtp;
+          shaClaimResponseRef.current = claimResponse;
+        },
+        onVerificationSuccess: () => {
+          settled = true;
+          dispose();
+          resolve(true);
+        },
+        onCleanup: () => {
+          if (!settled) {
+            resolve(false);
+          }
+        },
+      });
+    });
+  }, [
+    hieFeatureFlags,
+    isInsuranceSchemeSha,
+    patient,
+    phoneNumber,
+    selectedInterventions,
+    isElectiveVisit,
+    electiveRecord,
+    isApproved,
+    shaIdentificationNumberUUID,
+    patientUuid,
+    t,
+  ]);
 
-          if (claimResponse.success) {
-            const needsPreauth = claimResponse.claim?.interventions?.some((i: any) => i.needs_preauth);
+  useEffect(() => {
+    const onVisitCreatedOrUpdated = async (visit: Visit) => {
+      if (visitStatus === 'past') {
+        return visit;
+      }
+
+      try {
+        if (attributes.length > 0) {
+          try {
+            await Promise.all(
+              attributes.map((attr) => createVisitAttribute(visit.uuid, attr.attributeType, attr.value)),
+            );
+          } catch (error) {
             showSnackbar({
-              title: t('shaVirtualClaim', 'SHA Virtual Claim'),
-              subtitle: needsPreauth
+              title: t('visitAttributesError', 'Visit Attributes Error'),
+              subtitle: t('errorSavingVisitAttributes', 'An error occurred while saving billing visit attributes.'),
+              kind: 'error',
+              isLowContrast: true,
+            });
+            throw error;
+          }
+        }
+
+        if (selectedBillingServices.length > 0) {
+          const billPayload = createBillPayload(selectedBillingServices);
+          await handleCreateBill(billPayload);
+        }
+
+        if (hieFeatureFlags && isInsuranceSchemeSha && shaClaimResponseRef.current) {
+          const claimResponse = shaClaimResponseRef.current;
+          const authCode = claimResponse.authorization_code ?? claimResponse.claim?.authorization_code;
+
+          if (authCode && visit?.uuid) {
+            try {
+              await linkVisitToClaim(authCode, visit.uuid, patientUuid);
+            } catch (err) {
+              throw new Error(`Failed to link visit to claim: ${err instanceof Error ? err.message : String(err)}`);
+            }
+          }
+
+          const needsPreauth = claimResponse.claim?.interventions?.some((i: any) => i.needs_preauth);
+          showSnackbar({
+            title: t('shaVirtualClaim', 'SHA Virtual Claim'),
+            subtitle:
+              isElectiveVisit === 'yes'
+                ? t('electiveVisitClaimCreated', 'Elective visit claim created successfully.')
+                : needsPreauth
                 ? t(
                     'virtualClaimCreatedPreauthRequired',
                     'Virtual claim created. Preauth required — check the preauth queue.',
                   )
                 : t('virtualClaimCreated', 'Virtual claim created successfully.'),
-              kind: 'success',
-            });
-          } else {
-            showSnackbar({
-              title: t('shaVirtualClaimError', 'SHA Virtual Claim Error'),
-              subtitle: claimResponse.error ?? t('virtualClaimFailed', 'Failed to create virtual claim'),
-              kind: 'warning',
-            });
-          }
-        } catch (err) {
-          showSnackbar({
-            title: t('shaVirtualClaimError', 'SHA Virtual Claim Error'),
-            subtitle: (err as Error)?.message,
-            kind: 'error',
+            kind: 'success',
           });
-        } finally {
-          verifiedOtpRef.current = null;
-          patientCRIdRef.current = null;
-          interventionCodesRef.current = [];
-          serviceTypeRef.current = 'OUTPATIENT';
-          admissionDateRef.current = null;
-          estimatedDaysRef.current = null;
         }
-      }
 
-      return visit;
+        return visit;
+      } finally {
+        verifiedOtpRef.current = null;
+        patientCRIdRef.current = null;
+        interventionCodesRef.current = [];
+        serviceTypeRef.current = 'OUTPATIENT';
+        admissionDateRef.current = null;
+        estimatedDaysRef.current = null;
+        shaClaimResponseRef.current = null;
+      }
     };
 
     setVisitFormCallbacks({
       onVisitCreatedOrUpdated,
       onBeforeVisitSave: launchSHAOtpFlow,
       isSHAVisit: !!(hieFeatureFlags && isInsuranceSchemeSha),
+      isElectiveNotApproved,
     });
-  }, [selectedBillingServices, attributes, createBillPayload, handleCreateBill, setVisitFormCallbacks, t, visitStatus]);
+  }, [
+    attributes,
+    selectedBillingServices,
+    createBillPayload,
+    handleCreateBill,
+    hieFeatureFlags,
+    isInsuranceSchemeSha,
+    isElectiveVisit,
+    launchSHAOtpFlow,
+    patientUuid,
+    setVisitFormCallbacks,
+    t,
+    isElectiveNotApproved,
+    visitStatus,
+  ]);
 
   if (isLoadingLineItems || isLoadingCashPoints) {
     return (
@@ -357,9 +488,150 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     <FormProvider {...formMethods}>
       <VisitAttributesForm setAttributes={setAttributes} />
       {hieFeatureFlags && <SHANumberValidity paymentMethod={attributes} patientUuid={patientUuid} />}
+
       {hieFeatureFlags && isInsuranceSchemeSha && (
+        <section className={styles.sectionContainer}>
+          <div className={styles.sectionTitle}>{t('electiveVisitQuestion', 'Is this an elective visit?')}</div>
+          <RadioButtonGroup
+            name="is-elective-visit"
+            valueSelected={isElectiveVisit}
+            onChange={(val: string) => {
+              setIsElectiveVisit(val as 'yes' | 'no');
+              setElectiveConsentToken('');
+            }}>
+            <RadioButton labelText={t('notElective', 'No')} value="no" id="elective-no" />
+            <RadioButton labelText={t('isElective', 'Yes')} value="yes" id="elective-yes" />
+          </RadioButtonGroup>
+
+          {isElectiveVisit === 'yes' && (
+            <div className={styles.electiveAuthorizationContainer}>
+              <TextInput
+                id="elective-authorization-code"
+                className={styles.electiveAuthorizationInput}
+                labelText={t('authorizationCode', 'Authorization code')}
+                helperText={t('authorizationCodeHelper', 'Enter the code issued during the scheduled preauthorization')}
+                placeholder={t('authorizationCodePlaceholder', 'e.g. CMJ5RTHANG')}
+                value={electiveConsentToken}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                  setElectiveConsentToken(event.target.value.trim().toUpperCase())
+                }
+              />
+
+              {isLoadingElective && electiveConsentToken.length >= 6 && (
+                <InlineLoading
+                  className={styles.electiveAuthorizationFeedback}
+                  description={t('verifyingAuthorizationCode', 'Verifying authorization code…')}
+                />
+              )}
+
+              {!isLoadingElective && electiveRecord && (
+                <div className={styles.electiveAuthorizationFeedback}>
+                  <InlineNotification
+                    aria-label={t('preauthorizationStatus', 'Preauthorization status')}
+                    kind={isApproved ? 'success' : 'warning'}
+                    lowContrast
+                    title={
+                      isApproved
+                        ? t('preauthorizationApproved', 'Authorization verified — ready for check-in')
+                        : t('preauthorizationPending', 'Authorization pending SHA approval')
+                    }
+                    subtitle={
+                      isApproved
+                        ? t('preauthorizationApprovedSubtitle', 'SHA has approved this preauth. Proceed to send OTP.')
+                        : t(
+                            'preauthorizationPendingDetails',
+                            'Current status: {{state}}. Please wait for SHA approval before check-in.',
+                            { state: (electiveRecord.workflow_state ?? '').replace(/_/g, ' ') },
+                          )
+                    }
+                  />
+                  <div className={styles.electiveInterventionCard}>
+                    <div className={styles.electiveInterventionRow}>
+                      <span className={styles.electiveInterventionLabel}>{t('intervention', 'Intervention')}</span>
+                      <span className={styles.electiveInterventionValue}>
+                        {electiveRecord.intervention_name ||
+                          electiveRecord.elective_intervention_code ||
+                          electiveRecord.intervention_code ||
+                          '—'}
+                      </span>
+                    </div>
+                    <div className={styles.electiveInterventionRow}>
+                      <span className={styles.electiveInterventionLabel}>{t('code', 'Code')}</span>
+                      <span className={styles.electiveInterventionValueMono}>
+                        {electiveRecord.elective_intervention_code ?? electiveRecord.intervention_code ?? '—'}
+                      </span>
+                    </div>
+                    {electiveRecord.tariff && (
+                      <div className={styles.electiveInterventionRow}>
+                        <span className={styles.electiveInterventionLabel}>{t('tariff', 'Tariff')}</span>
+                        <span className={styles.electiveInterventionValue}>
+                          {formatCurrency(Number(electiveRecord.tariff))}
+                        </span>
+                      </div>
+                    )}
+                    {electiveRecord.service_type && (
+                      <div className={styles.electiveInterventionRow}>
+                        <span className={styles.electiveInterventionLabel}>{t('serviceType', 'Service type')}</span>
+                        <span className={styles.electiveInterventionValue}>
+                          <Tag type="blue" size="sm">
+                            {electiveRecord.service_type}
+                          </Tag>
+                        </span>
+                      </div>
+                    )}
+                    <div className={styles.electiveInterventionRow}>
+                      <span className={styles.electiveInterventionLabel}>{t('status', 'Status')}</span>
+                      <span className={styles.electiveInterventionValue}>
+                        <Tag
+                          type={
+                            isApproved
+                              ? 'green'
+                              : electiveRecord.workflow_state?.includes('REJECTED')
+                              ? 'red'
+                              : 'warm-gray'
+                          }
+                          size="sm">
+                          {(electiveRecord.workflow_state ?? '—').replace('ELECTIVE_', '')}
+                        </Tag>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!isLoadingElective && isAlreadyUsed && (
+                <InlineNotification
+                  aria-label={t('authCodeAlreadyUsed', 'Authorization code already used')}
+                  className={styles.electiveAuthorizationFeedback}
+                  kind="error"
+                  lowContrast
+                  title={t('authCodeAlreadyUsed', 'Authorization code already used')}
+                  subtitle={t(
+                    'authCodeAlreadyUsedSubtitle',
+                    'This code has already been used to create a claim. Each authorization code can only be used once.',
+                  )}
+                />
+              )}
+
+              {!isLoadingElective && !isAlreadyUsed && electiveConsentToken.length >= 6 && !electiveRecord && (
+                <InlineNotification
+                  aria-label={t('electiveRecordNotFound', 'Elective record not found')}
+                  className={styles.electiveAuthorizationFeedback}
+                  kind="error"
+                  lowContrast
+                  title={t('electiveNotFound', 'No elective record found')}
+                  subtitle={t('checkAuthorizationCode', 'Please verify the authorization code and try again.')}
+                />
+              )}
+            </div>
+          )}
+        </section>
+      )}
+
+      {hieFeatureFlags && isInsuranceSchemeSha && isElectiveVisit === 'no' && (
         <SHABenefitPackagesAndInterventions patientUuid={patientUuid} visitTypeUuid={visitTypeUuid} />
       )}
+
       {paymentMethod && (
         <section className={styles.sectionContainer}>
           <div className={styles.sectionTitle}>{t('chargeableService', 'Chargeable service')}</div>

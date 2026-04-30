@@ -426,6 +426,16 @@
       "name": "edit-drug-order",
       "component": "@openmrs/esm-patient-medications-app#exportedAddDrugOrderWorkspace",
       "window": "billing-workspace-window"
+    },
+    {
+      "name": "preauth-form-workspace",
+      "component": "preauthFormWorkspace",
+      "window": "billing-workspace-window"
+    },
+    {
+      "name": "elective-preauth-form-workspace",
+      "component": "electivePreauthFormWorkspace",
+      "window": "billing-workspace-window"
     }
   ],
   "workspaceWindows2": [

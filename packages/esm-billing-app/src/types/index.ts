@@ -90,9 +90,8 @@ export interface Patient {
   uuid: string;
   display: string;
   links: PatientLink[];
-  identifiers: Array<{ uuid: string; display: string }>;
+  identifiers: Array<PatientIdentifier>;
 }
-
 interface AttributeType {
   uuid?: string;
   name: string;

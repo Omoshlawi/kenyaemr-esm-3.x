@@ -150,15 +150,130 @@ export function sanitizePhoneNumber(phoneNumber: string): string {
  * @returns The masked phone number
  */
 export const maskPhoneNumber = (phoneNumber: string): string => {
+  if (!phoneNumber) {
+    return '';
+  }
   const digits = phoneNumber.replace(/\D/g, '');
-
   if (digits.length < 8) {
     return phoneNumber;
   }
-
   const firstPart = digits.slice(0, -6);
   const maskedPart = '*'.repeat(4);
   const lastPart = digits.slice(-2);
-
   return `${firstPart}${maskedPart}${lastPart}`;
 };
+
+/**
+ * Extracts the most meaningful error message from a Savannah IL / SHA upstream error response.
+ *
+ * Savannah errors come in several shapes:
+ *   { success: false, error: "...", upstream_error: { error: "Bad Request", message: "specific reason" } }
+ *   { success: false, error: "..." }
+ *   { error: "...", message: "..." }
+ *   "plain string"
+ */
+
+export interface UpstreamErrorBody {
+  error?: string;
+  message?: string;
+}
+
+export interface SavannahErrorResponse {
+  success?: boolean;
+  error?: string;
+  upstream_error?: UpstreamErrorBody;
+  message?: string;
+}
+
+/**
+ * Returns the most specific human-readable error message available.
+ * Priority: upstream_error.message > upstream_error.error > error > message > fallback
+ */
+export function extractUpstreamError(
+  response: SavannahErrorResponse | string | unknown,
+  fallback = 'An unexpected error occurred. Please try again.',
+): string {
+  if (!response) {
+    return fallback;
+  }
+
+  if (typeof response === 'string') {
+    return response || fallback;
+  }
+
+  const res = response as SavannahErrorResponse;
+
+  const upstreamMsg = res.upstream_error?.message?.trim();
+  if (upstreamMsg) {
+    return upstreamMsg;
+  }
+
+  const upstreamErr = res.upstream_error?.error?.trim();
+  if (upstreamErr && upstreamErr.toLowerCase() !== 'bad request') {
+    return upstreamErr;
+  }
+
+  const topError = res.error?.trim();
+  if (topError && !res.upstream_error) {
+    return topError;
+  }
+
+  const topMsg = res.message?.trim();
+  if (topMsg) {
+    return topMsg;
+  }
+
+  if (topError) {
+    return topError;
+  }
+
+  return fallback;
+}
+
+/**
+ * Extracts error from a caught Error/unknown in catch blocks.
+ * Handles: openmrsFetch errors (with .responseBody), Error objects, raw response objects.
+ *
+ * IMPORTANT: openmrsFetch errors are Error instances AND carry a .responseBody field.
+ * We must check responseBody FIRST, otherwise we'd fall into the Error branch and surface
+ * the raw "Server responded with 400..." technical message instead of the upstream message.
+ */
+export function extractFetchError(err: unknown, fallback = 'An unexpected error occurred. Please try again.'): string {
+  if (!err) {
+    return fallback;
+  }
+
+  if (typeof err === 'object' && err !== null) {
+    const e = err as Record<string, unknown>;
+
+    if (e.responseBody) {
+      return extractUpstreamError(e.responseBody as SavannahErrorResponse, fallback);
+    }
+
+    if (e.data) {
+      return extractUpstreamError(e.data as SavannahErrorResponse, fallback);
+    }
+  }
+
+  if (err instanceof Error) {
+    const msg = err.message;
+    if (msg) {
+      try {
+        const parsed = JSON.parse(msg);
+        return extractUpstreamError(parsed, msg);
+      } catch {
+        return msg;
+      }
+    }
+    return fallback;
+  }
+
+  if (typeof err === 'object' && err !== null) {
+    const e = err as Record<string, unknown>;
+    if ('upstream_error' in e || 'error' in e || 'message' in e) {
+      return extractUpstreamError(e as SavannahErrorResponse, fallback);
+    }
+  }
+
+  return fallback;
+}

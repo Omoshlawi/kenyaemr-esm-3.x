@@ -163,6 +163,12 @@ export interface VisitFormCallbacks {
    * from "Start Visit" to "Send OTP & Start Visit".
    */
   isSHAVisit?: boolean;
+  /**
+   * When true, disables the submit button and shows "Awaiting SHA approval".
+   * Set by BillingCheckInForm when elective visit is selected but the
+   * elective preauth has not yet been approved by SHA.
+   */
+  isElectiveNotApproved?: boolean;
 }
 
 export function useVisitFormCallbacks() {

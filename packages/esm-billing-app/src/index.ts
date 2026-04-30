@@ -116,6 +116,17 @@ export const orderActionButton = getAsyncLifecycle(
   options,
 );
 
+export const preauthFormWorkspace = getAsyncLifecycle(
+  () => import('./claims/claims-management/table/virtual-claim-preauth/pre-auth-workspace/pre-auth-form.workspace'),
+  options,
+);
+
+export const electivePreauthFormWorkspace = getAsyncLifecycle(
+  () =>
+    import('./claims/claims-management/table/virtual-claim-preauth/elective-auth-workspace/elective-auth.workspace'),
+  options,
+);
+
 // Benefits Components
 export const benefitsPackage = getAsyncLifecycle(
   () => import('./benefits-package/benefits-package.component'),
