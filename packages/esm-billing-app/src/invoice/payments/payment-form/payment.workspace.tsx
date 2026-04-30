@@ -25,6 +25,7 @@ import { extractErrorMessagesFromResponse } from '../../../utils';
 import { makePayment } from '../payments.resource';
 
 import styles from './payment.workspace.scss';
+import { TFunction } from 'i18next';
 
 type PaymentWorkspaceProps = {
   selectedLineItems: Array<LineItem>;
@@ -37,7 +38,7 @@ type PaymentModeFormData = {
   referenceCode?: string;
 };
 
-const paymentModeFormSchema = (amountDue: number) =>
+const paymentModeFormSchema = (amountDue: number, t: TFunction) =>
   z
     .object({
       paymentMode: z.object({
@@ -61,7 +62,7 @@ const paymentModeFormSchema = (amountDue: number) =>
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['amount'],
-          message: 'Amount must equal amount due',
+          message: t('amountMustEqualAmountDue', 'Amount must equal amount due'),
         });
       }
 
@@ -71,7 +72,7 @@ const paymentModeFormSchema = (amountDue: number) =>
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['referenceCode'],
-          message: 'Reference code is required for this payment mode',
+          message: t('referenceCodeRequiredForThisPaymentMode', 'Reference code is required for this payment mode'),
         });
       }
     });
@@ -91,7 +92,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
   const { paymentModes, isLoading: isLoadingPaymentModes } = usePaymentModes();
 
   const formMethods = useForm<PaymentModeFormData>({
-    resolver: zodResolver(paymentModeFormSchema(totalAmount)),
+    resolver: zodResolver(paymentModeFormSchema(totalAmount, t)),
     mode: 'all',
     defaultValues: {
       paymentMode: undefined,

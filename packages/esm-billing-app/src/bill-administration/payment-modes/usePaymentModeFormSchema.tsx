@@ -1,6 +1,8 @@
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 const usePaymentModeFormSchema = () => {
+  const { t } = useTranslation();
   const attributeTypeSchema = z
     .object({
       name: z.string(),
@@ -19,7 +21,7 @@ const usePaymentModeFormSchema = () => {
         return true;
       },
       {
-        message: 'Retired reason is required when attribute type is retired',
+        message: t('retiredReasonRequired', 'Retired reason is required when attribute type is retired'),
         path: ['retiredReason'],
       },
     );
@@ -27,19 +29,19 @@ const usePaymentModeFormSchema = () => {
   const paymentModeFormSchema = z.object({
     name: z
       .string({
-        required_error: 'Payment mode name is required',
-        invalid_type_error: 'Payment mode name is required',
+        required_error: t('paymentModeNameRequired', 'Payment mode name is required'),
+        invalid_type_error: t('paymentModeNameRequired', 'Payment mode name is required'),
       })
-      .min(1, 'Payment mode name is required'),
+      .min(1, t('paymentModeNameRequired', 'Payment mode name is required')),
     description: z
       .string({
-        required_error: 'Payment mode description is required',
-        invalid_type_error: 'Payment mode description is required',
+        required_error: t('paymentModeDescriptionRequired', 'Payment mode description is required'),
+        invalid_type_error: t('paymentModeDescriptionRequired', 'Payment mode description is required'),
       })
-      .min(1, 'Payment mode description is required'),
+      .min(1, t('paymentModeDescriptionRequired', 'Payment mode description is required')),
     retired: z
       .boolean({
-        invalid_type_error: 'Retired must be a boolean',
+        invalid_type_error: t('retiredMustBeBoolean', 'Retired must be a boolean'),
       })
       .optional()
       .default(false),
