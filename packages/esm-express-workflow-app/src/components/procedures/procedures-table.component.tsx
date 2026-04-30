@@ -81,6 +81,7 @@ const ProceduresTable: React.FC<ProceduresTableProps> = ({ orders, patientUuid, 
       tableCellClassName={styles.tableCell}
       priorityPillClassName={styles.priorityPill}
       statusPillClassName={styles.statusPill}
+      module="@kenyaemr/esm-procedure-orders-app"
     />
   );
 };

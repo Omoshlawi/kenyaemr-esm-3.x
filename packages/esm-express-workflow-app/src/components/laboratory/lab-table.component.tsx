@@ -53,6 +53,7 @@ const LabTable: React.FC<LabTableProps> = ({ orders, patientUuid, mutateOrders }
       tableCellClassName={styles.tableCell}
       priorityPillClassName={styles.priorityPill}
       statusPillClassName={styles.statusPill}
+      module="@openmrs/esm-laboratory-app"
     />
   );
 };
