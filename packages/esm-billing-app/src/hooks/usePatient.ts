@@ -3,8 +3,8 @@ import useSWR from 'swr';
 import { Patient } from '../types';
 
 const usePatient = (uuid: string) => {
-  const customePresentation = 'custom:(uuid,display,links)';
-  const url = `${restBaseUrl}/patient/${uuid}?v=${customePresentation}`;
+  const customPresentation = 'custom:(uuid,display,links,identifiers:(identifier,identifierType:(uuid,display)))';
+  const url = `${restBaseUrl}/patient/${uuid}?v=${customPresentation}`;
   const { isLoading, error, data } = useSWR<FetchResponse<Patient>>(url, openmrsFetch);
   return { isLoading, error, patient: data?.data };
 };

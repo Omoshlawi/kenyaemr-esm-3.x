@@ -31,7 +31,11 @@ const MalariaResultsWorkspace: React.FC<Workspace2DefinitionProps<MalariaResults
         />
       )}
       {order.concept.uuid === MALARIA_ORDER_TYPES.RAPID_TEST && (
-        <MalariaRapidTestResultsForm order={order} closeWorkspace={closeWorkspace} />
+        <MalariaRapidTestResultsForm
+          order={order}
+          closeWorkspace={closeWorkspace}
+          setHasUnsavedChanges={setHasUnsavedChanges}
+        />
       )}
     </Workspace2>
   );

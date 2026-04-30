@@ -14,7 +14,17 @@ import {
   TextInputSkeleton,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { navigate, showModal, showSnackbar, toOmrsIsoString, useConfig, useSession } from '@openmrs/esm-framework';
+import {
+  navigate,
+  openmrsFetch,
+  restBaseUrl,
+  showModal,
+  showSnackbar,
+  toOmrsIsoString,
+  useConfig,
+  useFeatureFlag,
+  useSession,
+} from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -29,7 +39,16 @@ import useProvider from '../../../hooks/useProvider';
 import useProviderList from '../../../hooks/useProviderList';
 import { ClaimSummary, LineItem, MappedBill, OTPVerificationModalOptions } from '../../../types';
 import ClaimExplanationAndJusificationInput from './claims-explanation-and-justification-form-input.component';
-import { ClaimsFormSchema, ClaimsFormSchemaBase, processClaims, useVisit } from './claims-form.resource';
+import {
+  ClaimsFormSchema,
+  ClaimsFormSchemaBase,
+  processClaims,
+  useVisit,
+  submitCombinedBills,
+  createBillsForItems,
+  submitDiagnoses,
+  uploadAttachments,
+} from './claims-form.resource';
 import { otpManager, useOtpSource } from '../../../hooks/useOTP';
 import { usePhoneNumberAttribute } from '../../../hooks/usePhoneNumber';
 import { formatDateTime } from '../../utils';
@@ -70,9 +89,11 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
   const [validationEnabled, setValidationEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [currentOtpPhoneNumber, setCurrentOtpPhoneNumber] = useState<string>('');
+  const [insuranceScheme, setInsuranceScheme] = useState<string | null>(null);
 
   const currentPhoneRef = useRef<string>('');
   const claimSummaryRef = useRef<ClaimSummary | null>(null);
+  const isSavannahProcessClaimsFormEnabled = useFeatureFlag('savannahInformaticsInformationExchange');
 
   const patientName = `${bill.patientName}`;
   const otpExpiryMinutes = 5;
@@ -152,6 +173,7 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
               ).value,
             ).interventions
           : [],
+
         provider: providerUuid,
       };
 
@@ -162,6 +184,13 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
       setTimeout(() => {
         setFormInitialized(true);
       }, 100);
+    }
+
+    if (recentVisit?.attributes) {
+      const insuranceSchemeAttribute = recentVisit?.attributes.find(
+        (attr) => attr.attributeType.uuid === visitAttributeTypes.insuranceScheme,
+      )?.value;
+      setInsuranceScheme(insuranceSchemeAttribute ?? null);
     }
   }, [
     diagnoses,
@@ -253,6 +282,36 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
     return dispose;
   };
 
+  const launchClaimPreviewModal = ({
+    title,
+    billNumber,
+    documentUrl,
+    visit_uuid,
+    receiptNumber,
+    patientUuid,
+  }: {
+    title: string;
+    billNumber?: string;
+    documentUrl?: string;
+    visit_uuid?: string;
+    receiptNumber?: string;
+    patientUuid?: string;
+  }) => {
+    const dispose = showModal('claim-preview-modal', {
+      title,
+      billNumber,
+      documentUrl,
+      visit_uuid,
+      receiptNumber,
+      patientUuid,
+      onClose: () => {
+        dispose();
+      },
+      size: 'lg',
+    });
+    return dispose;
+  };
+
   const handleOTPVerificationSuccess = async (): Promise<void> => {
     setOtpState(OTPState.VERIFIED);
   };
@@ -335,6 +394,85 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
     }
   };
 
+  const processSavannahClaim = async (data: z.infer<typeof ClaimsFormSchema>) => {
+    setLoading(true);
+
+    const defaultInterventionCode = data.interventions?.[0] ?? '';
+
+    const toBlob = (base64DataUrl: string, mimeType = 'application/octet-stream') => {
+      const base64 = base64DataUrl.includes(',') ? base64DataUrl.split(',')[1] : base64DataUrl;
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+
+      return new Blob([bytes], { type: mimeType });
+    };
+
+    try {
+      // delegate network operations to resource helpers
+      let hasSubmittedCombinedBills = false;
+      if (data.diagnoses?.length > 0 && data.supportingDocuments?.length > 0) {
+        await submitCombinedBills(
+          selectedLineItems,
+          data.supportingDocuments,
+          data.diagnoses,
+          defaultInterventionCode,
+          recentVisit?.uuid,
+        );
+        hasSubmittedCombinedBills = true;
+      }
+
+      if (!hasSubmittedCombinedBills) {
+        await createBillsForItems(selectedLineItems, defaultInterventionCode, recentVisit?.uuid);
+      }
+
+      if (!hasSubmittedCombinedBills && data.diagnoses?.length) {
+        await submitDiagnoses(data.diagnoses, defaultInterventionCode, recentVisit?.uuid);
+      }
+
+      if (!hasSubmittedCombinedBills && data.supportingDocuments?.length) {
+        await uploadAttachments(data.supportingDocuments, defaultInterventionCode, recentVisit?.uuid);
+      }
+
+      showSnackbar({
+        kind: 'success',
+        title: t('processClaim', 'Process Claim'),
+        subtitle: t('claimProcessedSuccessfully', 'Claim processed and sent successfully'),
+        timeoutInMs: 4000,
+        isLowContrast: true,
+      });
+
+      launchClaimPreviewModal({
+        title: t('claimPreview', 'Claim Preview'),
+        billNumber: billUuid,
+        visit_uuid: recentVisit?.uuid,
+        receiptNumber: bill.receiptNumber,
+        patientUuid: bill.patientUuid,
+      });
+    } catch (err: any) {
+      launchClaimPreviewModal({
+        title: t('claimPreview', 'Claim Preview'),
+        billNumber: billUuid,
+        visit_uuid: recentVisit?.uuid,
+        receiptNumber: bill.receiptNumber,
+        patientUuid: bill.patientUuid,
+      });
+
+      showSnackbar({
+        kind: 'error',
+        title: t('claimError', 'Claim Error'),
+        subtitle: err['upstream_error'] ?? t('sendSavanahClaimError', 'Request Failed, Please try later...'),
+        timeoutInMs: 2500,
+        isLowContrast: true,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInitiateOTPVerification = async (data: z.infer<typeof ClaimsFormSchema>) => {
     setValidationEnabled(true);
     const isFormValid = await trigger();
@@ -380,6 +518,9 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
   };
 
   const handleProcessVerifiedClaim = async () => {
+    if (isSavannahProcessClaimsFormEnabled) {
+      await processSavannahClaim(form.getValues());
+    }
     if (pendingClaimData && otpState === OTPState.VERIFIED) {
       await processClaim(pendingClaimData);
     }
@@ -424,6 +565,12 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
     });
   };
 
+  const closeButton = () => {
+    navigate({
+      to: window.getOpenmrsSpaBase() + `home/accounting/patient/${patientUuid}/${billUuid}`,
+    });
+  };
+
   if (visitLoading || diagnosisLoading || providerLoading) {
     return (
       <Layer className={styles.loading}>
@@ -457,6 +604,7 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
 
   const isFormValid = isValid && packages?.length > 0 && interventions?.length > 0 && selectedLineItems?.length > 0;
   const displayPhoneNumber = currentOtpPhoneNumber || phoneNumber;
+
   const isOtpDisabled = !isFormValid || !displayPhoneNumber || isLoadingOtpSource;
 
   return (
@@ -672,19 +820,50 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
           />
           <ClaimsSupportingDocumentsInput patientUuid={patientUuid} />
           <ButtonSet className={styles.buttonSet}>
-            <Button className={styles.button} kind="secondary" onClick={handleDiscardClaim}>
-              {t('discardClaim', 'Discard Claim')}
-            </Button>
-
+            {isSavannahProcessClaimsFormEnabled && (
+              <Button
+                className={styles.button}
+                kind="tertiary"
+                onClick={() =>
+                  launchClaimPreviewModal({
+                    title: t('claimPreview', 'Claim Preview'),
+                    billNumber: billUuid,
+                    visit_uuid: recentVisit?.uuid,
+                    receiptNumber: bill.receiptNumber,
+                    patientUuid: bill.patientUuid,
+                  })
+                }>
+                {t('previewClaim', 'Preview Claim')}
+              </Button>
+            )}
+            {isSavannahProcessClaimsFormEnabled ? (
+              <Button className={styles.button} kind="secondary" onClick={closeButton}>
+                {t('close', 'Close')}
+              </Button>
+            ) : (
+              <Button className={styles.button} kind="secondary" onClick={handleDiscardClaim}>
+                {t('discardClaim', 'Discard Claim')}{' '}
+              </Button>
+            )}
             {otpState === OTPState.NOT_STARTED && (
               <Button
                 className={styles.button}
                 kind="primary"
-                onClick={handleSubmit(handleInitiateOTPVerification)}
-                disabled={isOtpDisabled}
+                onClick={
+                  isSavannahProcessClaimsFormEnabled
+                    ? handleSubmit(handleProcessVerifiedClaim)
+                    : handleSubmit(handleInitiateOTPVerification)
+                }
+                disabled={isSavannahProcessClaimsFormEnabled ? !isFormValid || loading : isOtpDisabled}
                 tooltipPosition="top"
                 tooltipAlignment="center">
-                {isLoadingOtpSource ? t('loading', 'Loading...') : t('sendOtp', 'Send OTP')}
+                {isSavannahProcessClaimsFormEnabled
+                  ? loading
+                    ? t('processing', 'Processing claim...')
+                    : t('processClaim', 'Process Claim')
+                  : isLoadingOtpSource
+                  ? t('loading', 'Loading...')
+                  : t('sendOtp', 'Send OTP')}
               </Button>
             )}
 

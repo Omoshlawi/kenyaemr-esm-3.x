@@ -20,19 +20,7 @@ import styles from './claim-summary.scss';
 import upperCase from 'lodash-es/upperCase';
 import capitalize from 'lodash-es/capitalize';
 import { useCurrencyFormatting } from '../../../../helpers/currency';
-
-const SHA_INTERVENTION_LABELS: Record<string, string> = {
-  'SHA-12-001': 'Consultation',
-  'SHA-12-002': 'Laboratory Tests',
-  'SHA-12-003': 'Imaging & Procedures',
-  'SHA-12-004': 'Pharmacy',
-  'SHA-12-005': 'Other Outpatient Services',
-  'SHA-12-006': 'Screening',
-  'SHA-12-007': 'Daycare Procedures',
-  'SHA-12-008': 'Antenatal Care',
-  'SHA-12-009': 'Postnatal Care',
-  'SHA-12-010': 'Immunization',
-};
+import { SHA_INTERVENTION_LABELS } from '../../../../constants';
 
 type ExtendedClaim = FacilityClaim & {
   id: string;

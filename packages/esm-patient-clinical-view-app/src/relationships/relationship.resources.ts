@@ -56,8 +56,8 @@ export async function fetchPerson(query: string, abortController: AbortControlle
 }
 
 export const relationshipFormSchema = z.object({
-  personA: z.string().uuid('Invalid person'),
-  personB: z.string().uuid('Invalid person').optional(),
+  personA: z.string().uuid(),
+  personB: z.string().uuid().optional(),
   relationshipType: z.string().uuid(),
   startDate: z.date({ coerce: true }),
   endDate: z.date({ coerce: true }).optional(),
@@ -70,7 +70,7 @@ export const relationshipFormSchema = z.object({
   threatened: z.enum([BOOLEAN_YES, BOOLEAN_NO]).optional(),
   sexualAssault: z.enum([BOOLEAN_YES, BOOLEAN_NO]).optional(),
   ipvOutCome: z.enum(['True', 'False']).optional(),
-
+  comments: z.string().optional(),
   personBInfo: z
     .object({
       givenName: z.string().min(1, 'Given name required'),

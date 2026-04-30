@@ -11,16 +11,18 @@ export interface QueueFieldsProps {
   visitStatus: string;
 }
 
-const PATIENT_CATEGORIES = [
-  { id: 'triage', name: 'Triage' },
-  { id: 'walk-in', name: 'Walk-in' },
-];
-
 /**
  * This component contains form fields for starting a patient's queue entry.
  */
 const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit, visitStatus }) => {
   const { t } = useTranslation();
+  const patientCategory = useMemo(
+    () => [
+      { id: 'triage', name: t('triage', 'Triage') },
+      { id: 'walk-in', name: t('walkIn', 'Walk-in') },
+    ],
+    [t],
+  );
   const { queueRooms, isLoading: isLoadingQueueRooms } = useQueueRooms();
   const { sessionLocation } = useSession();
   const {
@@ -166,7 +168,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit, visitStatus }) =
             orientation="vertical"
             valueSelected={selectedCategory}
             onChange={(value) => setSelectedCategory(String(value))}>
-            {PATIENT_CATEGORIES.map((category) => (
+            {patientCategory.map((category) => (
               <RadioButton
                 key={category.id}
                 className={styles.radioButtonOption}

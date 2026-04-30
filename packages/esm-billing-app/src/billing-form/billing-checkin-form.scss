@@ -15,3 +15,111 @@
 .sectionContainer {
   margin-top: layout.$spacing-05;
 }
+
+.electiveAuthCodeSection {
+  margin-top: layout.$spacing-05;
+}
+
+.electiveInlineLoading {
+  margin-top: layout.$spacing-03;
+}
+
+.electiveInlineNotification {
+  margin-top: layout.$spacing-03;
+}
+
+.electiveRecordCard {
+  margin-top: layout.$spacing-03;
+}
+
+.electiveInterventionDetails {
+  background-color: var(--omrs-color-bg-high-contrast);
+  border: 1px solid var(--omrs-color-bg-medium-contrast);
+  border-top: none;
+  padding: layout.$spacing-04 layout.$spacing-05;
+}
+
+.interventionRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: layout.$spacing-02 0;
+  border-bottom: 1px solid var(--omrs-color-bg-medium-contrast);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.interventionLabel {
+  font-size: 0.75rem;
+  color: var(--omrs-color-ink-medium-contrast);
+  flex-shrink: 0;
+}
+
+.interventionValue {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--omrs-color-ink-high-contrast);
+  text-align: right;
+}
+
+.interventionValueMono {
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--omrs-color-ink-high-contrast);
+  text-align: right;
+}
+
+.electiveAuthorizationContainer {
+  margin-top: layout.$spacing-05;
+}
+
+.electiveAuthorizationInput {
+  width: 100%;
+}
+
+.electiveAuthorizationFeedback {
+  margin-top: layout.$spacing-03;
+}
+
+.electiveInterventionCard {
+  background-color: var(--omrs-color-bg-high-contrast);
+  border: 1px solid var(--omrs-color-bg-medium-contrast);
+  border-top: none;
+  padding: layout.$spacing-04 layout.$spacing-05;
+}
+
+.electiveInterventionRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: layout.$spacing-02 0;
+  border-bottom: 1px solid var(--omrs-color-bg-medium-contrast);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.electiveInterventionLabel {
+  font-size: 0.75rem;
+  color: var(--omrs-color-ink-medium-contrast);
+  flex-shrink: 0;
+}
+
+.electiveInterventionValue {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--omrs-color-ink-high-contrast);
+  text-align: right;
+}
+
+.electiveInterventionValueMono {
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--omrs-color-ink-high-contrast);
+  text-align: right;
+}

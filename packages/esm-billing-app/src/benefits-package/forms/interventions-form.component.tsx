@@ -6,6 +6,7 @@ import styles from './packages-and-interventions-form.scss';
 import { useSHAInterventions } from '../../billing-form/social-health-authority/sha-virtual-claim.resource';
 import { type SHAIntervention } from '../../billing-form/social-health-authority/type';
 import { formatCurrency } from '../../helpers/currency';
+import { InterventionItem } from '../../claims/claims-management/table/virtual-claim-preauth/type';
 
 type PackageInterventionsProps = {
   patientCRId: string;
@@ -39,7 +40,7 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
     }
   }, [interventions]);
 
-  const interventions_ = useMemo(() => {
+  const items: Array<InterventionItem> = useMemo(() => {
     const base = interventions.length > 0 ? interventions : Object.values(cachedInterventions);
 
     const additionalInterventions = selectedInterventionsObservable.reduce((prev, curr) => {
@@ -50,8 +51,34 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
       return prev;
     }, [] as Array<SHAIntervention>);
 
-    return [...base, ...additionalInterventions];
-  }, [interventions, cachedInterventions, selectedInterventionsObservable]);
+    const combined = [...base, ...additionalInterventions];
+
+    const built: Array<InterventionItem> = combined.map((intervention) => {
+      const isElective = Boolean((intervention as any).needs_manual_preauth_approval);
+      const tariff = intervention.tariff ? ` · ${formatCurrency(Number(intervention.tariff))}` : '';
+
+      let suffix: string;
+      if (isElective) {
+        suffix = ` — ${t('scheduledOnly', 'Scheduled only')}`;
+      } else if (intervention.needs_preauth) {
+        suffix = ` — ${t('preauthRequired', 'Preauth required')}`;
+      } else {
+        suffix = ` — ${t('noPreauthNeeded', 'No preauth')}`;
+      }
+
+      return {
+        id: `intervention-${intervention.code}`,
+        code: intervention.code,
+        text: `${intervention.name}${tariff}${suffix}`,
+        disabled: isElective,
+        isElective,
+      };
+    });
+
+    return built.sort((a, b) => Number(a.isElective) - Number(b.isElective));
+  }, [interventions, cachedInterventions, selectedInterventionsObservable, t]);
+
+  const electiveCount = useMemo(() => items.filter((i) => i.isElective).length, [items]);
 
   if (isLoading) {
     return (
@@ -59,7 +86,7 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
         className={styles.loader}
         status="active"
         iconDescription={t('loading', 'Loading')}
-        description={t('loadingInterventions', 'Loading interventions...')}
+        description={t('loadingInterventions', 'Loading interventions…')}
       />
     );
   }
@@ -67,10 +94,9 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
   if (error) {
     return (
       <InlineNotification
-        aria-label="closes notification"
+        aria-label={t('errorLoadingInterventions', 'Error loading interventions')}
         kind="error"
         lowContrast
-        statusIconDescription="notification"
         title={t('failure', 'Error loading interventions')}
         subtitle={error?.message}
       />
@@ -80,35 +106,41 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
   return (
     <div className={styles.interventionsWrapper}>
       <p className={styles.sectionTitle}>{t('shaInterventions', 'SHA Interventions')}</p>
+
       <Controller
         control={form.control}
         name="interventions"
-        render={({ field }) => (
-          <MultiSelect
-            ref={field.ref}
-            id="sha-interventions"
-            disabled={!subBenefitCode || selectedPackages.length === 0}
-            titleText={t('interventions', 'Interventions')}
-            label={t('chooseInterventions', 'Choose interventions')}
-            items={interventions_.map((i) => i.code)}
-            itemToString={(code) => {
-              const intervention = interventions_.find((i) => i.code === code);
-              if (!intervention) {
-                return code ?? '';
-              }
-              const preauth = intervention.needs_preauth
-                ? ` — ${t('preauthRequired', 'Preauth required')}`
-                : ` — ${t('noPreauthNeeded', 'No preauth')}`;
-              return `${intervention.name}${preauth}`;
-            }}
-            selectedItems={field.value ?? []}
-            onChange={(e) => field.onChange(e.selectedItems)}
-            invalid={!!form.formState.errors[field.name]?.message}
-            invalidText={form.formState.errors[field.name]?.message}
-          />
-        )}
-      />
+        render={({ field }) => {
+          const selectedItemObjects = items.filter((item) => (field.value ?? []).includes(item.code));
 
+          return (
+            <MultiSelect
+              ref={field.ref}
+              id="sha-interventions"
+              disabled={!subBenefitCode || selectedPackages.length === 0}
+              titleText={t('interventions', 'Interventions')}
+              label={t('chooseInterventions', 'Choose interventions')}
+              items={items}
+              helperText={
+                electiveCount > 0
+                  ? t('electiveInterventionsHint', 'Items disable require SHA pre-approval via the Preauth Queue.')
+                  : undefined
+              }
+              itemToString={(item: InterventionItem | null) => (item ? item.text : '')}
+              selectedItems={selectedItemObjects}
+              onChange={({ selectedItems }) => {
+                const codes = (selectedItems ?? [])
+                  .filter((item): item is InterventionItem => item !== null && !item.disabled)
+                  .map((item) => item.code);
+                field.onChange(codes);
+              }}
+              selectionFeedback="top-after-reopen"
+              invalid={!!form.formState.errors[field.name]?.message}
+              invalidText={form.formState.errors[field.name]?.message}
+            />
+          );
+        }}
+      />
       {selectedInterventionsObservable.length > 0 && (
         <div className={styles.tagsContainer}>
           {selectedInterventionsObservable.map((code) => {

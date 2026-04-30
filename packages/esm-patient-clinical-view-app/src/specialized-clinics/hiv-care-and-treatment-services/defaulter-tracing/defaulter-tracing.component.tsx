@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatDate, launchWorkspace, parseDate, useConfig } from '@openmrs/esm-framework';
+import { FHIRResource, formatDate, launchWorkspace, parseDate, useConfig } from '@openmrs/esm-framework';
 import {
   Contacted_UUID,
   MissedAppointmentDate_UUID,
@@ -9,7 +9,13 @@ import {
   TracingType_UUID,
 } from '../../../utils/constants';
 import { getObsFromEncounter } from '../../../ui/encounter-list/encounter-list-utils';
-import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import {
+  CardHeader,
+  EmptyState,
+  ErrorState,
+  useLaunchWorkspaceRequiringVisit,
+  usePatientChartStore,
+} from '@openmrs/esm-patient-common-lib';
 import {
   Button,
   DataTable,
@@ -30,9 +36,13 @@ import { Add } from '@carbon/react/icons';
 import styles from './defaulter-tracing.scss';
 interface PatientTracingProps {
   patientUuid: string;
+  patient: FHIRResource;
 }
 
-const DefaulterTracing: React.FC<PatientTracingProps> = ({ patientUuid }) => {
+const DefaulterTracing: React.FC<PatientTracingProps> = ({ patientUuid, patient }) => {
+  const { mutateVisitContext, visitContext } = usePatientChartStore(patientUuid);
+  const launchWorkspace2 = useLaunchWorkspaceRequiringVisit(patientUuid, 'patient-form-entry-workspace');
+
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const { formsList } = config ?? {};
@@ -41,18 +51,39 @@ const DefaulterTracing: React.FC<PatientTracingProps> = ({ patientUuid }) => {
     patientUuid,
     defaulterTracingEncounterUuid,
   );
-  const handleOpenOrEditDefaulterTracingForm = (encounterUUID = '') => {
-    launchWorkspace('patient-form-entry-workspace', {
-      workspaceTitle: 'Defaulter Tracing',
-      mutateForm: () => mutate(),
-      formInfo: {
-        encounterUuid: encounterUUID,
-        formUuid: formsList?.defaulterTracingFormUuid,
-        patientUuid,
-        visitTypeUuid: '',
-        visitUuid: '',
+  const groupProps = useMemo(
+    () => ({
+      patient,
+      patientUuid,
+      visitContext,
+      mutateVisitContext: () => {
+        mutateVisitContext();
+        mutate();
       },
-    });
+    }),
+    [patient, patientUuid, visitContext, mutateVisitContext, mutate],
+  );
+  const handleOpenOrEditDefaulterTracingForm = (encounterUUID = '') => {
+    // launchWorkspace('patient-form-entry-workspace', {
+    //   workspaceTitle: 'Defaulter Tracing',
+    //   mutateForm: () => mutate(),
+    //   formInfo: {
+    //     encounterUuid: encounterUUID,
+    //     formUuid: formsList?.defaulterTracingFormUuid,
+    //     patientUuid,
+    //     visitTypeUuid: '',
+    //     visitUuid: '',
+    //   },
+    // });
+    launchWorkspace2(
+      {
+        workspaceTitle: t('defaulterTracingForm', 'Defaulter Tracing Form'),
+        form: { uuid: formsList?.defaulterTracingFormUuid },
+        encounterUuid: encounterUUID,
+      },
+      {},
+      groupProps,
+    );
   };
   const tableHeader = [
     {
@@ -124,19 +155,14 @@ const DefaulterTracing: React.FC<PatientTracingProps> = ({ patientUuid }) => {
           {t('add', 'Add')}
         </Button>
       </CardHeader>
-      <DataTable
-        useZebraStyles
-        size="sm"
-        rows={tableRows}
-        headers={tableHeader}
-        render={({ rows, headers, getHeaderProps, getRowProps, getTableProps, getTableContainerProps }) => (
+      <DataTable useZebraStyles size="sm" rows={tableRows} headers={tableHeader}>
+        {({ rows, headers, getHeaderProps, getRowProps, getTableProps, getTableContainerProps }) => (
           <TableContainer {...getTableContainerProps()}>
-            <Table size="sm" {...getTableProps()} aria-label={t('defaulterTracing', 'Defaulter tracing')}>
+            <Table {...getTableProps()} aria-label={t('defaulterTracing', 'Defaulter tracing')}>
               <TableHead>
                 <TableRow>
                   {headers.map((header, i) => (
                     <TableHeader
-                      key={i}
                       {...getHeaderProps({
                         header,
                       })}>
@@ -149,7 +175,6 @@ const DefaulterTracing: React.FC<PatientTracingProps> = ({ patientUuid }) => {
               <TableBody>
                 {rows.map((row, index) => (
                   <TableRow
-                    key={row.id}
                     {...getRowProps({
                       row,
                     })}>
@@ -170,7 +195,7 @@ const DefaulterTracing: React.FC<PatientTracingProps> = ({ patientUuid }) => {
             </Table>
           </TableContainer>
         )}
-      />
+      </DataTable>
     </div>
   );
 };

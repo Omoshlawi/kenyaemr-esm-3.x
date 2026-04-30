@@ -33,7 +33,7 @@ export const useQueues = () => {
 export const useQueueEntries = (filters?: QueueEntryFilters, defaultPageSize: number = 10) => {
   const { outpatientVisitTypeUuid } = useConfig<ExpressWorkflowConfig>();
   const repString =
-    'custom:(uuid,queue:(uuid,display,name,location:(uuid,display)),status:(uuid,display),patient:(uuid,person:(uuid,display),identifiers:(uuid,display,identifier,identifierType:(uuid,display))),visit:(uuid,visitType:(uuid),attributes:(uuid,value,attributeType:(uuid))),priority:(uuid,display),priorityComment,startedAt,previousQueueEntry:(uuid,queue:(uuid,display)))';
+    'custom:(uuid,display,queue:(uuid,display,name,location:(uuid,display)),status:(uuid,display),patient:(uuid,person,identifiers:(uuid,display,identifier,identifierType:(uuid,display))),visit:(uuid,visitType:(uuid),attributes:(uuid,value,attributeType:(uuid))),priority:(uuid,display),priorityComment,startedAt,previousQueueEntry:(uuid,queue:(uuid,display)))';
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();

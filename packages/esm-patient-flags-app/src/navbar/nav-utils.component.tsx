@@ -26,7 +26,7 @@ const handleClearCache = async () => {
   });
   localStorage.clear();
   sessionStorage.clear();
-  window.location.reload();
+  globalThis.location.reload();
 };
 
 export const useModuleLinks = () => {
@@ -159,5 +159,5 @@ export const useModuleLinks = () => {
     },
   ];
 
-  return moduleLinks.filter((link) => !excludeLinks.some((excludeLink) => excludeLink === link.label));
+  return moduleLinks.filter((link) => !excludeLinks.includes(link.label));
 };

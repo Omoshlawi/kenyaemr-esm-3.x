@@ -37,6 +37,10 @@ export interface BillingConfig {
   localeCurrencyMapping: Record<string, string>;
   phoneNumberAttributeTypeUUID: string;
   nationalIdIdentifierTypeUUID: string;
+  icd11DataSourceUuid: string;
+  providerNationalIdUuid: string;
+  licenseNumberUuid: string;
+  licenseBodyUuid: string;
 }
 
 export const configSchema: ConfigSchema = {
@@ -53,7 +57,7 @@ export const configSchema: ConfigSchema = {
   shaIdentificationNumberUUID: {
     _type: Type.String,
     _description: 'Social Health Authority Identification Number',
-    _default: '24aedd37-b5be-4e08-8311-3721b8d5100d',
+    _default: '52c3c0c3-05b8-4b26-930e-2a6a54e14c90',
   },
   nationalIdUUID: {
     _type: Type.String,
@@ -232,5 +236,25 @@ export const configSchema: ConfigSchema = {
       'am-ET': 'ETB',
       'en-GB': 'KES',
     },
+  },
+  icd11DataSourceUuid: {
+    _type: Type.String,
+    _description: 'UUID for ICD-11 data source',
+    _default: '39ADDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD',
+  },
+  providerNationalIdUuid: {
+    _type: Type.String,
+    _description: 'The provider attribute type uuid for national id',
+    _default: '3d152c97-2293-4a2b-802e-e0f1009b7b15',
+  },
+  licenseNumberUuid: {
+    _type: Type.String,
+    _description: 'The provider attribute type uuid for license number',
+    _default: 'bcaaa67b-cc72-4662-90c2-e1e992ceda66',
+  },
+  licenseBodyUuid: {
+    _type: Type.String,
+    _description: 'The provider attribute type uuid for license body',
+    _default: 'ba18bb97-d17c-4640-80d2-58e7df90ca4c',
   },
 };

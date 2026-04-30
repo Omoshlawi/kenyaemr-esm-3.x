@@ -9,8 +9,4 @@ export type {
   SaveCervixDataResponse,
 } from '../resources/cervix.resource';
 
-export {
-  saveCervixFormData,
-  deleteCervixEncounter,
-  MCH_PARTOGRAPHY_ENCOUNTER_UUID,
-} from '../resources/cervix.resource';
+export { saveCervixFormData, MCH_PARTOGRAPHY_ENCOUNTER_UUID } from '../resources/cervix.resource';

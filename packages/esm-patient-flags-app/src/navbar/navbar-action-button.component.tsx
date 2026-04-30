@@ -14,11 +14,13 @@ const DEBOUNCE_TIME = 500;
 const NavbarActionButton: React.FC<NavbarActionButtonProps> = () => {
   const { t } = useTranslation();
   const moduleLinks = useModuleLinks();
+  const sortedModuleLinks = [...moduleLinks].sort((a, b) => a.label.localeCompare(b.label));
   const { instanceName } = useConfig<ConfigObject>();
   const [showOverlay, setShowOverlay] = React.useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const title = t('instanceModules', '{{instanceName}}Modules', { instanceName });
   const toggleOverlay = () => {
+    setSearchTerm('');
     setShowOverlay((prevState) => !prevState);
   };
   const ref = useOnClickOutside<HTMLDivElement>(toggleOverlay, showOverlay);
@@ -26,8 +28,8 @@ const NavbarActionButton: React.FC<NavbarActionButtonProps> = () => {
   const debounceSearchTerm = useDebounce(searchTerm, DEBOUNCE_TIME);
   const searchResults =
     debounceSearchTerm === ''
-      ? moduleLinks
-      : moduleLinks.filter((item) => item.label.toLowerCase().includes(searchTerm.toLowerCase()));
+      ? sortedModuleLinks
+      : sortedModuleLinks.filter((item) => item.label.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div id="module" ref={ref}>

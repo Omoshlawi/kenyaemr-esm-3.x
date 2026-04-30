@@ -12,10 +12,6 @@
     {
       "component": "queuesAdminHome",
       "route": "queues-admin"
-    },
-    {
-      "component": "@kenyaemr/esm-appointments-app#appointmentsDashboard",
-      "route": "appointments"
     }
   ],
   "extensions": [

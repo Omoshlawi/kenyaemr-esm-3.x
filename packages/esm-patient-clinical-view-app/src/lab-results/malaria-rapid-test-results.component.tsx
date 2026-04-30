@@ -3,14 +3,23 @@ import classNames from 'classnames';
 import { Button, ButtonSet, ComboBox, Form, InlineLoading } from '@carbon/react';
 import { Controller, useForm, type DefaultValues } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { showSnackbar, useAbortController, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
+import {
+  showSnackbar,
+  useAbortController,
+  useConfig,
+  useLayoutType,
+  useSession,
+  Workspace2DefinitionProps,
+} from '@openmrs/esm-framework';
 import { type Order } from '@openmrs/esm-patient-common-lib';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { MALARIA_RESULT_CONCEPTS, MALARIA_SPECIES } from './constants';
+import { MALARIA_RESULT_CONCEPTS } from './constants';
 import { malariaRapidTestSchema, type MalariaRapidTestForm } from './malaria-results.schema';
 import {
+  createMalariaRapidTest,
   getOpenmrsRestErrorMessage,
   saveMalariaLabResults,
+  updateMalariaRapidTestToInProgress,
   useMalariaResultsInvalidation,
   type MalariaObsPayload,
 } from './malaria-results.resource';
@@ -19,10 +28,11 @@ import { updateStockItemUsage, useInventory } from './useInventory';
 
 interface Props {
   order: Order;
-  closeWorkspace: () => void;
+  closeWorkspace: Workspace2DefinitionProps['closeWorkspace'];
+  setHasUnsavedChanges: (value: boolean) => void;
 }
 
-const MalariaRapidTestResultsForm: React.FC<Props> = ({ order, closeWorkspace }) => {
+const MalariaRapidTestResultsForm: React.FC<Props> = ({ order, closeWorkspace, setHasUnsavedChanges }) => {
   const { t } = useTranslation();
   const session = useSession();
   const { stockItemInventoryConceptUuids } = useConfig();
@@ -63,10 +73,12 @@ const MalariaRapidTestResultsForm: React.FC<Props> = ({ order, closeWorkspace })
   );
 
   const onSubmit = async (data: MalariaRapidTestForm) => {
-    const resultUuid =
-      data.rapidTestResult === '703AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-        ? MALARIA_RESULT_CONCEPTS.POSITIVE
-        : MALARIA_RESULT_CONCEPTS.NEGATIVE;
+    let resultUuid: string = MALARIA_RESULT_CONCEPTS.NEGATIVE;
+    if (data.rapidTestResult === MALARIA_RESULT_CONCEPTS.POSITIVE) {
+      resultUuid = MALARIA_RESULT_CONCEPTS.POSITIVE;
+    } else if (data.rapidTestResult === MALARIA_RESULT_CONCEPTS.INVALID) {
+      resultUuid = MALARIA_RESULT_CONCEPTS.INVALID;
+    }
     const obs: Array<MalariaObsPayload> = [
       {
         concept: { uuid: MALARIA_RESULT_CONCEPTS.RAPID_TEST },
@@ -86,7 +98,7 @@ const MalariaRapidTestResultsForm: React.FC<Props> = ({ order, closeWorkspace })
     }
 
     try {
-      const responsiblePersonUuid = session.currentProvider?.uuid ?? session.user?.uuid;
+      const responsiblePersonUuid = session.user?.uuid;
       if (responsiblePersonUuid) {
         await updateStockItemUsage({
           sourceUuid: data.stockItem.partyUuid,
@@ -100,8 +112,6 @@ const MalariaRapidTestResultsForm: React.FC<Props> = ({ order, closeWorkspace })
 
       await saveMalariaLabResults(order, obs, abortController);
 
-      mutateLabOrder();
-
       showSnackbar({
         title: t('saveLabResults', 'Save lab results'),
         isLowContrast: true,
@@ -111,6 +121,20 @@ const MalariaRapidTestResultsForm: React.FC<Props> = ({ order, closeWorkspace })
         }),
       });
 
+      if (resultUuid === MALARIA_RESULT_CONCEPTS.INVALID) {
+        await createMalariaRapidTest(order);
+        await updateMalariaRapidTestToInProgress(order);
+        showSnackbar({
+          title: t('createMalariaRapidTest', 'Create Malaria Rapid Test'),
+          kind: 'success',
+          isLowContrast: true,
+          subtitle: t(
+            'successfullyCreatedMalariaRapidTest',
+            'Malaria rapid test has been successfully created, since the result entered is invalid',
+          ),
+        });
+      }
+      mutateLabOrder();
       closeWorkspace();
     } catch (err) {
       const errorMessage =

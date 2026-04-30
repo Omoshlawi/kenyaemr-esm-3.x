@@ -6,7 +6,7 @@ import { List, Search, BaggageClaim, TwoFactorAuthentication } from '@carbon/rea
 import BillsTable from '../bills-table/bills-table.component';
 import PatientBillsScreen from '../past-patient-bills/patient-bills-dashboard/patient-bills-dashboard';
 import ClaimsManagementTable from '../claims/claims-management/table/claims-list-table.component';
-import PreauthTableTemporary from '../claims/claims-management/table/preauth-table.tmp.component';
+import PreauthQueueTable from '../claims/claims-management/table/virtual-claim-preauth/preauth-queue-table.component';
 
 const BillingTabs = () => {
   const { t } = useTranslation();
@@ -31,7 +31,7 @@ const BillingTabs = () => {
           <TabPanel>{<PatientBillsScreen />}</TabPanel>
           <TabPanel>{<BillsTable isOnActiveTab={activeTabIndex === 1} />}</TabPanel>
           <TabPanel>{activeTabIndex === 2 && <ClaimsManagementTable />}</TabPanel>
-          <TabPanel>{activeTabIndex === 3 && <PreauthTableTemporary />}</TabPanel>
+          <TabPanel>{activeTabIndex === 3 && <PreauthQueueTable />}</TabPanel>
         </TabPanels>
       </Tabs>
     </div>

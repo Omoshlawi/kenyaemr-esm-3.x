@@ -1,11 +1,12 @@
 import React, { useRef, useState, useMemo } from 'react';
 import { Button, ButtonSet, ModalBody, ModalFooter, InlineNotification } from '@carbon/react';
 import { useReactToPrint } from 'react-to-print';
-import { formatDate, formatDatetime, parseDate, useSession } from '@openmrs/esm-framework';
+import { formatDate, formatDatetime, parseDate, useConfig, useSession } from '@openmrs/esm-framework';
 import styles from './print-preview-confirmation.scss';
 import { type Patient } from '../../types';
 import { formatDateTime, documentId, getAbsoluteDateTime } from '../../utils/utils';
 import { useTranslation } from 'react-i18next';
+import { ConfigObject } from '../../config-schema';
 
 type PrintPreviewModalProps = {
   onClose: () => void;
@@ -15,6 +16,7 @@ type PrintPreviewModalProps = {
 
 const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({ onClose, patient, encounterDate }) => {
   const { t } = useTranslation();
+  const { paymentMethods } = useConfig<ConfigObject>();
   const [printError, setPrintError] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
   const { sessionLocation, user } = useSession();
@@ -28,7 +30,7 @@ const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({ onClose, patient,
       setPrintError(null);
     },
     onPrintError: (_, error) => {
-      setPrintError(error?.message || 'An error occurred while printing');
+      setPrintError(error?.message || t('errorOccurredWhilePrinting', 'An error occurred while printing'));
     },
     pageStyle: `
       @page {
@@ -108,26 +110,12 @@ const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({ onClose, patient,
                   {t('methodOfPayment', 'Method of payment (tick as appropriate)')}
                 </div>
                 <div className={styles.paymentGrid}>
-                  <div className={styles.paymentOption}>
-                    <span className={styles.checkbox}></span>
-                    <span className={styles.optionLabel}>{t('cash', 'Cash')}</span>
-                  </div>
-                  <div className={styles.paymentOption}>
-                    <span className={styles.checkbox}></span>
-                    <span className={styles.optionLabel}>{t('cheque', 'Cheque')}</span>
-                  </div>
-                  <div className={styles.paymentOption}>
-                    <span className={styles.checkbox}></span>
-                    <span className={styles.optionLabel}>{t('sha', 'SHA')}</span>
-                  </div>
-                  <div className={styles.paymentOption}>
-                    <span className={styles.checkbox}></span>
-                    <span className={styles.optionLabel}>{t('scheme', 'Scheme')}</span>
-                  </div>
-                  <div className={styles.paymentOption}>
-                    <span className={styles.checkbox}></span>
-                    <span className={styles.optionLabel}>{t('mrM', 'M.R.M')}</span>
-                  </div>
+                  {paymentMethods.map((method, i) => (
+                    <div className={styles.paymentOption} key={i}>
+                      <span className={styles.checkbox}></span>
+                      <span className={styles.optionLabel}>{t(method)}</span>
+                    </div>
+                  ))}
                   <div className={styles.paymentOption}>
                     <span className={styles.checkbox}></span>
                     <span className={styles.optionLabel}>

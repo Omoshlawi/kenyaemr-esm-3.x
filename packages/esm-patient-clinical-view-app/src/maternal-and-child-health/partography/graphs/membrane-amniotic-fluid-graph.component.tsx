@@ -123,10 +123,15 @@ const MembraneAmnioticFluidGraph: React.FC<MembraneAmnioticFluidGraphProps> = ({
       <div className={styles.fetalHeartRateContainer}>
         <div className={styles.fetalHeartRateHeader}>
           <div className={styles.fetalHeartRateHeaderLeft}>
-            <h3 className={styles.fetalHeartRateTitle}>Membrane Amniotic Fluid & Moulding</h3>
+            <h3 className={styles.fetalHeartRateTitle}>
+              {t('membraneAmnioticFluidData', 'Membrane Amniotic Fluid & Moulding')}
+            </h3>
             <div className={styles.fetalHeartRateControls}>
               <span className={styles.legendText}>
-                M=Membrane intact, C=Clear, MS=Meconium, A=Absent, B=Blood | 0, +, ++, +++
+                {t(
+                  'membraneAmnioticFluidLegend',
+                  'M=Membrane intact, C=Clear, MS=Meconium, A=Absent, B=Blood | 0, +, ++, +++',
+                )}
               </span>
             </div>
           </div>
@@ -160,7 +165,7 @@ const MembraneAmnioticFluidGraph: React.FC<MembraneAmnioticFluidGraphProps> = ({
                 disabled={isAddButtonDisabled}
                 onClick={onAddData}
                 className={styles.addButton}>
-                Add
+                {t('add', 'Add')}
               </Button>
             </div>
           </div>

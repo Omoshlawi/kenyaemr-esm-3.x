@@ -181,22 +181,22 @@ const PulseBPGraphWrapper: React.FC<PulseBPGraphWrapperProps> = ({
             <h3 className={styles.fetalHeartRateHeading}>{t('pulseAndBP', 'Pulse & BP')}</h3>
             <div className={styles.fetalHeartRateControls}>
               <Tag type="warm-gray" title="Low Pulse">
-                Low(&lt;60)
+                {t('low', 'Low')}(&lt;60)
               </Tag>
               <Tag type="green" title="Normal Pulse">
-                Normal(60-100)
+                {t('normal', 'Normal')}(60-100)
               </Tag>
               <Tag type="red" title="Abnormal Pulse">
-                Abnormal(&gt;100)
+                {t('abnormal', 'Abnormal')}(&gt;100)
               </Tag>
               <Tag type="warm-gray" title="Low BP">
-                Low(S≤90 or D≤60)
+                {t('low', 'Low')}(S≤90 or D≤60)
               </Tag>
               <Tag type="green" title="Normal BP">
-                Normal(90&lt;S&lt;149 and 60&lt;D&lt;80)
+                {t('normal', 'Normal')}(90&lt;S&lt;149 and 60&lt;D&lt;80)
               </Tag>
               <Tag type="red" title="High BP">
-                High(S≥149 or D≥80)
+                {t('high', 'High')}(S≥149 or D≥80)
               </Tag>
             </div>
           </div>
@@ -229,7 +229,7 @@ const PulseBPGraphWrapper: React.FC<PulseBPGraphWrapperProps> = ({
               disabled={isAddButtonDisabled}
               onClick={handleAddData}
               className={styles.addButton}>
-              Add
+              {t('add', 'Add')}
             </Button>
           </div>
         </div>

@@ -103,7 +103,7 @@ export async function saveCervicalDilationData(
   } catch (error) {
     return {
       success: false,
-      message: error?.message || t('Failed to save cervical dilation data'),
+      message: error?.message || t('failedToSaveCervixData', 'Failed to save cervical dilation data'),
     };
   }
 }

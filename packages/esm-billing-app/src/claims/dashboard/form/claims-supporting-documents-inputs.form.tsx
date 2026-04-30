@@ -1,6 +1,6 @@
 import { Button, Dropdown, FileUploader, InlineLoading, InlineNotification, Tag } from '@carbon/react';
 import { TrashCan } from '@carbon/react/icons';
-import { showSnackbar, usePatient } from '@openmrs/esm-framework';
+import { showSnackbar, useFeatureFlag, usePatient } from '@openmrs/esm-framework';
 import React, { FC } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -17,7 +17,16 @@ const ClaimsSupportingDocumentsInput: FC<{ patientUuid: string }> = ({ patientUu
     package_code: categories.join(','),
     applicable_gender: patient?.gender === 'male' ? 'MALE' : 'FEMALE',
   };
-  const { error, interventions, isLoading } = useInterventions(filters);
+  const patientCRId = patient?.identifier?.find((id: { value?: string }) => id?.value?.startsWith('CR'))?.value;
+  const subBenefitCode = categories?.[0];
+
+  const isSavannahProcessClaimsFormEnabled = useFeatureFlag('savannahInformaticsInformationExchange');
+  const { error, interventions, isLoading } = useInterventions(
+    filters,
+    isSavannahProcessClaimsFormEnabled,
+    patientCRId,
+    subBenefitCode,
+  );
 
   const supportDocs = form.watch('supportingDocuments') ?? [];
   const selectedInterventionsObservable = form.watch('interventions') ?? [];
@@ -51,7 +60,7 @@ const ClaimsSupportingDocumentsInput: FC<{ patientUuid: string }> = ({ patientUu
         <div key={i} className={styles.doc}>
           <Button
             hasIconOnly
-            renderIcon={TrashCan}
+            renderIcon={(props) => <TrashCan size={16} {...props} />}
             kind="danger--ghost"
             onClick={() =>
               form.setValue(

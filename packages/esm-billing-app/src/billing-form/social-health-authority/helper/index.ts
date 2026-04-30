@@ -98,3 +98,11 @@ export const formatCoverageDate = (dateString: string): string => {
 };
 
 export const toSavannahISO = (date: Date): string => `${dayjs(date).format('YYYY-MM-DD')}T08:00:00+03:00`;
+
+export const getPatientCRNumber = (patient: fhir.Patient, shaIdentifierTypeUUID: string): string | null => {
+  if (!patient?.identifier) {
+    return null;
+  }
+  const shaId = patient.identifier.find((id: fhir.Identifier) => id?.type?.coding?.[0]?.code === shaIdentifierTypeUUID);
+  return shaId?.value ?? null;
+};

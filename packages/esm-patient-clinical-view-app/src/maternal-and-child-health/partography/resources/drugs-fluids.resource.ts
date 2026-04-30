@@ -22,7 +22,7 @@ export async function saveDrugOrderData(
   } catch (error) {
     return {
       success: false,
-      message: error?.message || t('Failed to save drug order data'),
+      message: error?.message,
     };
   }
 }
@@ -54,7 +54,7 @@ export function useDrugOrders(patientUuid: string) {
     const processedOrders = activeOrders.map((order: any) => {
       const processed = {
         id: order.uuid,
-        drugName: order.drug?.display || order.drugNonCoded || t('Unknown Drug'),
+        drugName: order.drug?.display || order.drugNonCoded || t('unknownDrug', 'Unknown Drug'),
         dosage: `${order.dose || ''} ${order.doseUnits?.display || ''}`.trim(),
         route: order.route?.display || '',
         frequency: order.frequency?.display || '',
@@ -76,7 +76,7 @@ export function useDrugOrders(patientUuid: string) {
 
   let localizedError = error;
   if (error) {
-    localizedError = t('Failed to load drug orders');
+    localizedError = t('failedToLoadDrugOrders', 'Failed to load drug orders');
   }
 
   return {

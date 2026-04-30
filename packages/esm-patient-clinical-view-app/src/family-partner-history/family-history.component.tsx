@@ -18,11 +18,16 @@ import {
   OverflowMenuItem,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { EmptyDataIllustration, ErrorState, CardHeader, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
+import {
+  EmptyDataIllustration,
+  ErrorState,
+  CardHeader,
+  usePaginationInfo,
+  usePatientChartStore,
+} from '@openmrs/esm-patient-common-lib';
 import {
   ConfigurableLink,
   isDesktop,
-  launchWorkspace,
   launchWorkspace2,
   useConfig,
   useLayoutType,
@@ -50,6 +55,7 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
   const size = layout === 'tablet' ? 'lg' : 'md';
   const { relationships, error, isLoading, isValidating } = usePatientRelationships(patientUuid);
   const headerTitle = t('familyContacts', 'Family contacts');
+  const { patient, visitContext, mutateVisitContext } = usePatientChartStore(patientUuid);
   const { results, totalPages, currentPage, goTo } = usePagination(relationships, pageSize);
   const { pageSizes } = usePaginationInfo(pageSize, totalPages, currentPage, results.length);
 
@@ -110,9 +116,13 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
   ];
 
   const handleAddHistory = () => {
-    launchWorkspace2('family-relationship-form', {
-      patientUuid,
-    });
+    launchWorkspace2(
+      'family-relationship-form',
+      {
+        patientUuid,
+      },
+      { patient, patientUuid, visitContext, mutateVisitContext },
+    );
   };
   const handleEditRelationship = (relation: Contact) => {
     launchWorkspace2('contact-list-update-form', {

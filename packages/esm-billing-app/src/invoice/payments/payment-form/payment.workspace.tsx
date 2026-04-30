@@ -19,12 +19,13 @@ import { mutate } from 'swr';
 import { z } from 'zod';
 
 import { usePaymentModes } from '../../../billing.resource';
-import { formatCurrency } from '../../../helpers/currency';
+import { useCurrencyFormatting } from '../../../helpers/currency';
 import { PaymentMode, PaymentStatus, type LineItem, type MappedBill } from '../../../types';
 import { extractErrorMessagesFromResponse } from '../../../utils';
 import { makePayment } from '../payments.resource';
 
 import styles from './payment.workspace.scss';
+import { TFunction } from 'i18next';
 
 type PaymentWorkspaceProps = {
   selectedLineItems: Array<LineItem>;
@@ -37,7 +38,7 @@ type PaymentModeFormData = {
   referenceCode?: string;
 };
 
-const paymentModeFormSchema = (amountDue: number) =>
+const paymentModeFormSchema = (amountDue: number, t: TFunction) =>
   z
     .object({
       paymentMode: z.object({
@@ -61,7 +62,7 @@ const paymentModeFormSchema = (amountDue: number) =>
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['amount'],
-          message: 'Amount must equal amount due',
+          message: t('amountMustEqualAmountDue', 'Amount must equal amount due'),
         });
       }
 
@@ -71,7 +72,7 @@ const paymentModeFormSchema = (amountDue: number) =>
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['referenceCode'],
-          message: 'Reference code is required for this payment mode',
+          message: t('referenceCodeRequiredForThisPaymentMode', 'Reference code is required for this payment mode'),
         });
       }
     });
@@ -80,6 +81,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
   workspaceProps: { selectedLineItems, bill },
   closeWorkspace,
 }) => {
+  const { format: formatCurrency } = useCurrencyFormatting();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -90,7 +92,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
   const { paymentModes, isLoading: isLoadingPaymentModes } = usePaymentModes();
 
   const formMethods = useForm<PaymentModeFormData>({
-    resolver: zodResolver(paymentModeFormSchema(totalAmount)),
+    resolver: zodResolver(paymentModeFormSchema(totalAmount, t)),
     mode: 'all',
     defaultValues: {
       paymentMode: undefined,
@@ -196,7 +198,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
                   itemToString={(item) => (item ? item.name : '')}
                   items={paymentModes}
                   onChange={({ selectedItem }) => field.onChange(selectedItem)}
-                  titleText="Payment Mode"
+                  titleText={t('paymentMode', 'Payment Mode')}
                   invalid={!!errors.paymentMode}
                   invalidText={errors.paymentMode?.message}
                 />
@@ -235,7 +237,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
                     labelText={t('referenceCode', 'Reference Code')}
                     maxCount={10}
                     onChange={field.onChange}
-                    placeholder="Enter reference code"
+                    placeholder={t('enterReferenceCode', 'Enter reference code')}
                     size="md"
                     type="text"
                     value={field.value}

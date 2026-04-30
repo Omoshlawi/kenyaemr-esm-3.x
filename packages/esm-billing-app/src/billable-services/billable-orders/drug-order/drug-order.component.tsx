@@ -34,7 +34,7 @@ const DrugOrder: React.FC<DrugOrderProps> = ({ order }) => {
     <div className={styles.drugOrderContainer}>
       {stockItem && stockItem.length > 0 ? (
         <>
-          <div className={styles.bold}>{'In Stock'}</div>
+          <div className={styles.bold}>{t('inStock', 'In Stock')}</div>
           {stockItem.map((item, index) => (
             <div key={index} className={styles.itemContainer}>
               <span>{item.partyName}</span>
@@ -46,7 +46,7 @@ const DrugOrder: React.FC<DrugOrderProps> = ({ order }) => {
           ))}
         </>
       ) : (
-        <div className={styles.red}>{'Drug Is Not Available  / Out of Stock'}</div>
+        <div className={styles.red}>{t('drugNotAvailable', 'Drug Is Not Available / Out of Stock')}</div>
       )}
 
       <div>

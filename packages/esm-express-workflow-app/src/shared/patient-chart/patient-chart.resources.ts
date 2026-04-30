@@ -98,10 +98,16 @@ export const usePatientChartTabs = (navigationPath: string, patientUuid: string,
  */
 export const useCurrentPatientAdmissionEncounter = (patientUuid: string) => {
   // TODO: use visit context store instead of useVisit. This is happening on every mount of the patient chart dashboard. Which is not efficient.
-  const { currentVisit, error: visitError, isLoading: isLoadingVisit, mutate: mutateVisit } = useVisit(patientUuid);
+  const {
+    activeVisit: currentVisit,
+    error: visitError,
+    isLoading: isLoadingVisit,
+    mutate: mutateVisit,
+  } = useVisit(patientUuid);
   const { emrConfiguration, isLoadingEmrConfiguration, errorFetchingEmrConfiguration } = useEmrConfiguration();
   const { inPatientVisitTypeUuid } = useConfig<ExpressWorkflowConfig>();
   // Admission or Tranfer encounter depending on wether patient was transfered or admitted directly
+
   const latestAdmisionEncounter = useMemo(() => {
     return currentVisit?.encounters?.find(
       (encounter) =>

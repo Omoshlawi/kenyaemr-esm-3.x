@@ -1,5 +1,5 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import { type Order } from '@openmrs/esm-patient-common-lib';
+import { OrderPost, type Order } from '@openmrs/esm-patient-common-lib';
 
 export interface MalariaObsPayload {
   concept: { uuid: string };
@@ -157,3 +157,33 @@ export function getOpenmrsRestErrorMessage(error: unknown): string | undefined {
 
   return typeof error.message === 'string' && error.message ? error.message : undefined;
 }
+
+export const createMalariaRapidTest = async (order: Order) => {
+  const payload = {
+    type: 'testorder',
+    action: 'new',
+    urgency: 'ROUTINE',
+    dateActivated: new Date().toISOString(),
+    careSetting: order.careSetting.uuid,
+    encounter: order.encounter.uuid,
+    patient: order.patient.uuid,
+    concept: order.concept.uuid,
+    orderer: order.orderer,
+  };
+  return openmrsFetch(`${restBaseUrl}/order`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+};
+
+export const updateMalariaRapidTestToInProgress = async (order: Order) => {
+  const payload = {
+    fulfillerStatus: 'IN_PROGRESS',
+  };
+  return openmrsFetch(`${restBaseUrl}/order/${order.uuid}/fulfillerdetails`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+};

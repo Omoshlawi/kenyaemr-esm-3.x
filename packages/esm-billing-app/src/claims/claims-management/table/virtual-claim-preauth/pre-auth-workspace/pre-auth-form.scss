@@ -1,0 +1,289 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.form {
+  display: flex;
+  flex-direction: column;
+}
+
+.button {
+  height: layout.$spacing-10;
+  display: flex;
+  align-content: flex-start;
+  align-items: baseline;
+  width: 50%;
+  min-width: 50%;
+
+  :global(.cds--inline-loading) {
+    min-height: layout.$spacing-05;
+  }
+
+  :global(.cds--inline-loading__text) {
+    font-size: unset;
+  }
+}
+
+.tablet {
+  display: flex;
+  flex-direction: column;
+}
+
+.desktop {
+  display: flex;
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+  background-color: var(--omrs-color-bg-high-contrast);
+}
+
+.claimBanner {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background-color: var(--omrs-color-bg-low-contrast);
+}
+
+.bannerItem {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.bannerLabel {
+  @include type.type-style('label-01');
+  font-weight: 600;
+  color: var(--omrs-color-ink-medium-contrast);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bannerValue {
+  @include type.type-style('body-short-01');
+  font-weight: 500;
+  color: var(--omrs-color-ink-high-contrast);
+}
+
+.twoCol {
+  padding: layout.$spacing-02 layout.$spacing-05;
+}
+
+.checkboxGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-04;
+  margin-top: layout.$spacing-03;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  @include type.type-style('body-short-01');
+  color: var(--omrs-color-ink-high-contrast);
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    width: layout.$spacing-05;
+    height: layout.$spacing-05;
+    cursor: pointer;
+  }
+}
+
+.fieldError {
+  @include type.type-style('label-01');
+  color: colors.$red-60;
+  margin-top: layout.$spacing-02;
+}
+
+.diagnosisSearch {
+  position: relative;
+  flex: 1;
+}
+
+.diagnosisLabel {
+  @include type.type-style('label-01');
+  color: var(--omrs-color-ink-high-contrast);
+  margin-bottom: layout.$spacing-03;
+  display: block;
+}
+
+.searchInvalid {
+  outline: 2px solid var(--omrs-color-danger);
+  outline-offset: -2px;
+}
+
+.helperText {
+  @include type.type-style('label-01');
+  color: var(--omrs-color-ink-medium-contrast);
+  margin-top: layout.$spacing-02;
+}
+
+.diagnosisDropdown {
+  position: absolute;
+  z-index: 9000;
+  width: 100%;
+  max-height: 14rem;
+  overflow-y: auto;
+  background-color: var(--omrs-color-bg-high-contrast);
+  border: 1px solid var(--omrs-color-bg-medium-contrast);
+  border-top: none;
+  border-radius: 0 0 layout.$spacing-02 layout.$spacing-02;
+  box-shadow: 0 layout.$spacing-02 layout.$spacing-03 rgba(0, 0, 0, 0.1);
+}
+
+.diagnosisDropdownItem {
+  display: flex;
+  align-items: baseline;
+  gap: layout.$spacing-03;
+  width: 100%;
+  padding: layout.$spacing-03 layout.$spacing-05;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    background-color: var(--omrs-color-bg-low-contrast);
+  }
+
+  &:focus {
+    outline: 2px solid var(--omrs-color-brand-primary);
+    outline-offset: -2px;
+  }
+}
+
+.diagnosisDropdownEmpty {
+  padding: layout.$spacing-04 layout.$spacing-05;
+  @include type.type-style('body-short-01');
+  color: var(--omrs-color-ink-medium-contrast);
+}
+
+.diagnosisCode {
+  font-family: monospace;
+  @include type.type-style('label-01');
+  font-weight: 500;
+  color: var(--omrs-color-brand-primary);
+  flex-shrink: 0;
+  min-width: layout.$spacing-07 * 2;
+}
+
+.diagnosisName {
+  @include type.type-style('body-short-01');
+  color: var(--omrs-color-ink-high-contrast);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selectedDiagnosis {
+  max-width: 100%;
+  font-weight: 500;
+  margin-top: layout.$spacing-02;
+
+  :global(.cds--tag__label) {
+    white-space: normal;
+    word-break: break-word;
+  }
+}
+
+.selectedDiagnosisName {
+  @include type.type-style('label-01');
+  color: var(--omrs-color-ink-medium-contrast);
+}
+
+.addBtn {
+  margin-top: layout.$spacing-03;
+  padding: layout.$spacing-02 layout.$spacing-03;
+}
+
+.addBtnContainer {
+  display: flex;
+  gap: layout.$spacing-03;
+}
+
+.removeBtn {
+  margin-top: layout.$spacing-03;
+  padding: layout.$spacing-02 layout.$spacing-03;
+}
+
+.uploaderLabel {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-70;
+  margin: 0 0 layout.$spacing-03 0;
+}
+
+.required {
+  color: colors.$red-60;
+  margin-left: layout.$spacing-02;
+  font-weight: 600;
+}
+
+.itemCard {
+  background-color: var(--omrs-color-bg-low-contrast);
+  border: 1px solid var(--omrs-color-bg-medium-contrast);
+  border-radius: layout.$spacing-02;
+  padding: layout.$spacing-05;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  margin-bottom: layout.$spacing-03;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardTitle {
+  @include type.type-style('body-short-01');
+  font-weight: 500;
+  color: var(--omrs-color-ink-high-contrast);
+}
+
+.diagRow {
+  display: flex;
+  align-items: flex-end;
+  gap: layout.$spacing-03;
+
+  > :first-child {
+    flex: 1;
+  }
+}
+
+.dateTimeSection {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.datePicker {
+  width: 100%;
+}
+
+.timePickerContainer {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.timePicker {
+  width: 100%;
+}
+
+.timePickerSelectError {
+  outline: 2px solid var(--omrs-color-danger);
+  outline-offset: -2px;
+}
+
+.timerPickerError {
+  @include type.type-style('label-01');
+  color: var(--omrs-color-danger);
+  margin-top: layout.$spacing-02;
+}
+
+.inlineNotification {
+  padding: 0 layout.$spacing-05;
+}

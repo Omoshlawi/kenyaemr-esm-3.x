@@ -42,7 +42,6 @@ const PULSE_BP_CHART_OPTIONS = {
       },
     },
     left: {
-      title: 'Pulse',
       mapsTo: 'value',
       domain: [0, 260],
       ticks: {
@@ -141,7 +140,14 @@ const PulseBPGraph: React.FC<PulseBPGraphProps> = ({ data }) => {
 
   const chartOptions = {
     ...PULSE_BP_CHART_OPTIONS,
-    title: 'Pulse and Blood Pressure Monitoring',
+    axes: {
+      ...PULSE_BP_CHART_OPTIONS.axes,
+      left: {
+        ...PULSE_BP_CHART_OPTIONS.axes.left,
+        title: t('pulse', 'Pulse'),
+      },
+    },
+    title: t('pulseAndBloodPressureMonitoring', 'Pulse and Blood Pressure Monitoring'),
     color: {
       scale: colorScale,
     },

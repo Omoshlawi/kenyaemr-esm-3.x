@@ -26,11 +26,11 @@ import { LabManifestConfig } from '../config-schema';
 import {
   DRAFT_MANIFEST_STATUS,
   editableManifestStatus,
-  LabManifestFilters,
   labManifestFormSchema,
   mutateManifestLinks,
   READY_TO_SEND_MANIFEST_STATUS,
   saveLabManifest,
+  useLabManifestFilters,
 } from '../lab-manifest.resources';
 import { County, MappedLabManifest } from '../types';
 import styles from './lab-manifest-form.scss';
@@ -42,6 +42,7 @@ interface LabManifestFormProps extends DefaultWorkspaceProps {
 type LabManifestFormType = z.infer<typeof labManifestFormSchema>;
 
 const LabManifestForm: React.FC<LabManifestFormProps> = ({ closeWorkspace, manifest }) => {
+  const LabManifestFilters = useLabManifestFilters();
   const { labmanifestTypes } = useConfig<LabManifestConfig>();
   const counties = require('../counties.json') as County[];
 

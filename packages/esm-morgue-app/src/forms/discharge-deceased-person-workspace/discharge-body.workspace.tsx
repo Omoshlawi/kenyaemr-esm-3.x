@@ -61,7 +61,7 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const [submissionError, setSubmissionError] = useState<string | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
   const { activeVisit, currentVisitIsRetrospective } = useVisit(patientUuid);
   const { queueEntry } = useVisitQueueEntry(patientUuid, activeVisit?.uuid);
   const { dischargeBody } = useMortuaryOperation();
@@ -108,23 +108,11 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
     },
   });
 
-  const selectedDischargeType = watch('dischargeType');
+  const closeWorkspaceWithSavedChanges = () => {
+    closeWorkspace({ discardUnsavedChanges: true });
+  };
 
-  useEffect(() => {
-    if (personAttributes?.length) {
-      setValue('nextOfKinNames', getAttributeValue(nextOfKinNameUuid));
-      setValue('relationshipType', getAttributeValue(nextOfKinRelationshipUuid));
-      setValue('nextOfKinContact', getAttributeValue(nextOfKinPhoneUuid));
-      setValue('nextOfKinNationalId', getAttributeValue(nextOfKinNationalIdUuid));
-    }
-  }, [
-    personAttributes,
-    setValue,
-    nextOfKinNameUuid,
-    nextOfKinRelationshipUuid,
-    nextOfKinPhoneUuid,
-    nextOfKinNationalIdUuid,
-  ]);
+  const selectedDischargeType = watch('dischargeType');
 
   const getAttributeValue = useCallback(
     (attributeTypeUuid: string) =>
@@ -138,12 +126,29 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
     [personAttributes],
   );
 
+  useEffect(() => {
+    if (personAttributes?.length) {
+      setValue('nextOfKinNames', getAttributeValue(nextOfKinNameUuid));
+      setValue('relationshipType', getAttributeValue(nextOfKinRelationshipUuid));
+      setValue('nextOfKinContact', getAttributeValue(nextOfKinPhoneUuid));
+      setValue('nextOfKinNationalId', getAttributeValue(nextOfKinNationalIdUuid));
+    }
+  }, [
+    personAttributes,
+    setValue,
+    getAttributeValue,
+    nextOfKinNameUuid,
+    nextOfKinRelationshipUuid,
+    nextOfKinPhoneUuid,
+    nextOfKinNationalIdUuid,
+  ]);
+
   const onSubmit = async (data) => {
     setSubmissionError(null);
 
     if (currentVisitIsRetrospective) {
       setCurrentVisit(null, null);
-      closeWorkspace();
+      closeWorkspaceWithSavedChanges();
       return;
     }
 
@@ -180,15 +185,10 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
 
       for (const attr of attributeUpdates) {
         try {
-          const attributeData: any = {
-            attributeType: attr.uuid,
-            value: attr.value,
-          };
-
+          const attributeData: any = { attributeType: attr.uuid, value: attr.value };
           if (attr.existingUuid) {
             attributeData.uuid = attr.existingUuid;
           }
-
           await createOrUpdatePersonAttribute(patientUuid, attributeData, patientInfo);
         } catch (error) {
           showSnackbar({
@@ -214,7 +214,7 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
       });
 
       mutate();
-      closeWorkspace();
+      closeWorkspaceWithSavedChanges();
     } catch (error) {
       let errorMessage = t('dischargeUnknownError', 'An unknown error occurred');
       if (error?.message) {
@@ -224,7 +224,6 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
       } else if (error?.responseBody?.error?.globalErrors) {
         errorMessage = error.responseBody.error.globalErrors[0]?.message || errorMessage;
       }
-
       setSubmissionError(errorMessage);
       showSnackbar({
         title: t('dischargeError', 'Discharge Error'),
@@ -235,12 +234,8 @@ const DischargeForm: React.FC<Workspace2DefinitionProps<DischargeFormProps, obje
     }
   };
 
-  useEffect(() => {
-    setHasUnsavedChanges(isDirty);
-  }, [isDirty, setHasUnsavedChanges]);
-
   return (
-    <Workspace2 title={t('dischargeForm', 'Discharge form')} hasUnsavedChanges={hasUnsavedChanges}>
+    <Workspace2 title={t('dischargeForm', 'Discharge form')} hasUnsavedChanges={isDirty}>
       <Form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
         <div className={styles.formContainer}>
           {isLoadingBills && <InlineLoading description={t('loadingBills', 'Loading bills...')} />}

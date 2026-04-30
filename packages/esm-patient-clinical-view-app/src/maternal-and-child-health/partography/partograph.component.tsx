@@ -122,7 +122,6 @@ const CERVIX_CHART_OPTIONS = {
       },
     },
     left: {
-      title: 'Cervical Dilation (cm) / Descent of Head (5=high → 1=descended)',
       mapsTo: 'value',
       domain: [0, 10],
       ticks: {
@@ -1238,10 +1237,10 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
           await mutateFetalHeartRateData();
           setIsFetalHeartRateFormOpen(false);
         } else {
-          alert(result.message || 'Failed to save fetal heart rate data.');
+          alert(result.message || t('failedToSaveFetalHeartRateData', 'Failed to save fetal heart rate data.'));
         }
       } catch (error) {
-        alert(error?.message || 'Failed to save fetal heart rate data.');
+        alert(error?.message || t('failedToSaveFetalHeartRateData', 'Failed to save fetal heart rate data.'));
       }
     })();
   };
@@ -2073,6 +2072,13 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
       chartOptions = {
         ...chartOptions,
         ...CERVIX_CHART_OPTIONS,
+        axes: {
+          ...CERVIX_CHART_OPTIONS.axes,
+          left: {
+            ...CERVIX_CHART_OPTIONS.axes.left,
+            title: t('cervicalDilationLeftTitle', 'Cervical Dilation (cm) / Descent of Head (5=high → 1=descended)'),
+          },
+        },
         title: graph.title,
         color: {
           scale: {
@@ -2094,27 +2100,27 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
       const EXPECTED_LABOR_DURATION_HOURS = 6;
 
       const staticLinesData: ChartDataPoint[] = [
-        { hour: 0, value: ALERT_START_CM, group: 'Alert Line' },
-        { hour: EXPECTED_LABOR_DURATION_HOURS, value: CERVIX_DILATION_MAX, group: 'Alert Line' },
-        { hour: ALERT_ACTION_DIFFERENCE_HOURS, value: ALERT_START_CM, group: 'Action Line' },
+        { hour: 0, value: ALERT_START_CM, group: t('alertLine', 'Alert Line') },
+        { hour: EXPECTED_LABOR_DURATION_HOURS, value: CERVIX_DILATION_MAX, group: t('alertLine', 'Alert Line') },
+        { hour: ALERT_ACTION_DIFFERENCE_HOURS, value: ALERT_START_CM, group: t('actionLine', 'Action Line') },
         {
           hour: ALERT_ACTION_DIFFERENCE_HOURS + EXPECTED_LABOR_DURATION_HOURS,
           value: CERVIX_DILATION_MAX,
-          group: 'Action Line',
+          group: t('actionLine', 'Action Line'),
         },
       ];
 
       const cervicalDilationData: ChartDataPoint[] = cervixFormData.map((data) => ({
         hour: data.hour,
         value: data.cervicalDilation,
-        group: 'Cervical Dilation',
+        group: t('cervicalDilation', 'Cervical Dilation'),
         time: data.time,
       }));
 
       const descentOfHeadData: ChartDataPoint[] = cervixFormData.map((data) => ({
         hour: data.hour,
         value: data.descentOfHead,
-        group: 'Descent of Head',
+        group: t('descentOfHead', 'Descent of Head'),
         time: data.time,
       }));
 
@@ -2298,7 +2304,9 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
                   }}>
                   <thead>
                     <tr style={{ background: '#f4f4f4', fontWeight: 700 }}>
-                      <th style={{ width: 100, border: '1px solid #e0e0e0', padding: 8, textAlign: 'left' }}>Hour</th>
+                      <th style={{ width: 100, border: '1px solid #e0e0e0', padding: 8, textAlign: 'left' }}>
+                        {t('hour', 'Hour')}
+                      </th>
                       {Array.from({ length: Math.max(6, timeLabelsData.length) }).map((_, idx) => (
                         <th
                           key={`hour-col-${idx}`}
@@ -2310,7 +2318,7 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
                   </thead>
                   <tbody>
                     <tr style={{ background: '#fafafa' }}>
-                      <td style={{ width: 100, border: '1px solid #e0e0e0', padding: 8 }}>Time</td>
+                      <td style={{ width: 100, border: '1px solid #e0e0e0', padding: 8 }}>{t('time', 'Time')}</td>
                       {Array.from({ length: Math.max(6, timeLabelsData.length) }).map((_, idx) => (
                         <td key={`time-col-${idx}`} style={{ width: 100, border: '1px solid #e0e0e0', padding: 8 }}>
                           {timeLabelsData[idx]?.time || ''}

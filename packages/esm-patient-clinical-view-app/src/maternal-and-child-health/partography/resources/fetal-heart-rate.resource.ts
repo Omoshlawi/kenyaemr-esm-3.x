@@ -83,7 +83,7 @@ export function useFetalHeartRateData(patientUuid: string) {
   }, [data]);
   let localizedError = error;
   if (error) {
-    localizedError = t('Failed to load fetal heart rate data');
+    localizedError = t('failedToLoadFetalHeartRateData', 'Failed to load fetal heart rate data');
   }
   return {
     fetalHeartRateData,
@@ -112,7 +112,7 @@ export async function saveFetalHeartRateData(
   } catch (error) {
     return {
       success: false,
-      message: error?.message || t('Failed to save fetal heart rate data'),
+      message: error?.message || t('failedToSaveFetalHeartRateData', 'Failed to save fetal heart rate data'),
     };
   }
 }

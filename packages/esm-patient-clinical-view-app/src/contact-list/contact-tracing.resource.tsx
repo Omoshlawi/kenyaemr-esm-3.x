@@ -84,9 +84,9 @@ export const useContactTraceHistory = (patientUuid: string) => {
   const tracingHistory = useMemo(
     () =>
       encounters
-        .filter((encounter: TraceEncounter) => encounter.form.uuid === htsClientTracingFormUuid)
+        .filter((encounter: TraceEncounter) => encounter?.form?.uuid === htsClientTracingFormUuid)
         .map<ContactTrace>((encounter: TraceEncounter) => ({
-          encounterUuid: encounter.uuid,
+          encounterUuid: encounter?.uuid,
           contactType: getObsValueByConceptUuid(encounter.obs, modeOfClienttracingConceptUuid),
           status: getObsValueByConceptUuid(encounter.obs, tracingStatusConceptUuid),
           reasonNotContacted: getObsValueByConceptUuid(encounter.obs, reasonNotContactedConceptUuid),

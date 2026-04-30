@@ -126,6 +126,8 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
     blockSavingForm: boolean;
   } | null>(null);
 
+  const [isAwaitingOtp, setIsAwaitingOtp] = useState(false);
+
   const setErrorFetchingResourcesAdapter = useCallback((action: React.SetStateAction<{ blockSavingForm: boolean }>) => {
     setErrorFetchingResources((prev) => {
       const prevNonNull = prev ?? { blockSavingForm: false };
@@ -160,6 +162,11 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
 
   const isSHAVisit = useMemo(
     () => [...visitFormCallbacks.values()].some((cb) => cb.isSHAVisit === true),
+    [visitFormCallbacks],
+  );
+
+  const isElectiveNotApproved = useMemo(
+    () => [...visitFormCallbacks.values()].some((cb) => cb.isElectiveNotApproved === true),
     [visitFormCallbacks],
   );
 
@@ -257,7 +264,6 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
     },
     [getErrorDescription, visitToEdit, t, visitAttributeTypes],
   );
-
   const onSubmit = useCallback(
     async (data: VisitFormData) => {
       const {
@@ -306,14 +312,20 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
       };
 
       const abortController = new AbortController();
+
       if (isOnline) {
-        for (const [, callbacks] of visitFormCallbacks) {
-          if (typeof callbacks.onBeforeVisitSave === 'function') {
-            const canProceed = await callbacks.onBeforeVisitSave();
-            if (!canProceed) {
-              return;
+        setIsAwaitingOtp(true);
+        try {
+          for (const [, callbacks] of visitFormCallbacks) {
+            if (typeof callbacks.onBeforeVisitSave === 'function') {
+              const canProceed = await callbacks.onBeforeVisitSave();
+              if (!canProceed) {
+                return;
+              }
             }
           }
+        } finally {
+          setIsAwaitingOtp(false);
         }
 
         const visitRequest = visitToEdit?.uuid
@@ -354,7 +366,6 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
 
             invalidateVisitAndEncounterData(globalMutate as any, patientUuid);
             invalidateCurrentVisit(globalMutate as any, patientUuid);
-
             globalMutate(
               (key) =>
                 typeof key === 'string' &&
@@ -401,7 +412,6 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
           async (visit) => {
             invalidateVisitAndEncounterData(globalMutate as any, patientUuid);
             invalidateCurrentVisit(globalMutate as any, patientUuid);
-
             globalMutate(
               (key) =>
                 typeof key === 'string' &&
@@ -411,7 +421,6 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
               undefined,
               { revalidate: true },
             );
-
             showSnackbar({
               isLowContrast: true,
               kind: 'success',
@@ -453,6 +462,8 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
   if (!workspaceProps) {
     return null;
   }
+
+  const isBusy = isAwaitingOtp || isSubmitting;
 
   return (
     <Workspace2
@@ -652,32 +663,30 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
             </Stack>
           </div>
           <ButtonSet
-            className={classNames(styles.buttonSet, {
-              [styles.tablet]: isTablet,
-              [styles.desktop]: !isTablet,
-            })}>
+            className={classNames(styles.buttonSet, { [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
             <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
               {t('discard', 'Discard')}
             </Button>
             <Button
               className={styles.button}
               disabled={
-                isSubmitting ||
+                isBusy ||
                 isLoadingVisit ||
                 isLoadingBirthdateCheck ||
                 isLoadingOverlapSetting ||
                 errorFetchingResources?.blockSavingForm ||
-                hasActiveVisitConflict
+                hasActiveVisitConflict ||
+                isElectiveNotApproved
               }
               kind="primary"
               type="submit">
-              {isSubmitting ? (
+              {isBusy ? (
                 <InlineLoading
                   className={styles.spinner}
                   description={
                     visitToEdit
                       ? t('updatingVisit', 'Updating visit') + '...'
-                      : isSHAVisit
+                      : isAwaitingOtp
                       ? t('sendingOtp', 'Sending OTP') + '...'
                       : t('startingVisit', 'Starting visit') + '...'
                   }
@@ -686,6 +695,8 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                 <span>
                   {visitToEdit
                     ? t('updateVisit', 'Update visit')
+                    : isElectiveNotApproved
+                    ? t('awaitingApproval', 'Awaiting approval')
                     : isSHAVisit
                     ? t('sendOtpAndStartVisit', 'Send OTP & Start Visit')
                     : t('startVisit', 'Start visit')}

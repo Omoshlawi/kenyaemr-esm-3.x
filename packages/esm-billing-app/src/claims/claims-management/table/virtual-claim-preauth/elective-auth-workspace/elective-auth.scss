@@ -1,0 +1,77 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.formBody {
+  flex: 1;
+  padding: layout.$spacing-05;
+  overflow-y: auto;
+}
+
+.button {
+  height: layout.$spacing-10;
+  display: flex;
+  align-content: flex-start;
+  align-items: baseline;
+  width: 50%;
+  min-width: 50%;
+
+  :global(.cds--inline-loading) {
+    min-height: layout.$spacing-05;
+  }
+
+  :global(.cds--inline-loading__text) {
+    font-size: unset;
+  }
+}
+
+.tablet {
+  display: flex;
+  flex-direction: column;
+}
+
+.desktop {
+  display: flex;
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+  background-color: var(--omrs-color-bg-high-contrast);
+}
+
+.sectionTitle {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-03;
+  padding-bottom: layout.$spacing-02;
+  border-bottom: 1px solid colors.$gray-20;
+}
+
+.helperText {
+  @include type.type-style('body-01');
+  color: colors.$gray-60;
+  margin-bottom: layout.$spacing-03;
+}
+
+.required {
+  color: colors.$red-60;
+  margin-left: layout.$spacing-01;
+}
+.tag {
+  max-width: 100%;
+  font-weight: 500;
+
+  :global(.cds--tag__label) {
+    white-space: normal;
+    word-break: break-word;
+  }
+}
+
+.changeButton {
+  padding: layout.$spacing-05 layout.$spacing-02;
+}

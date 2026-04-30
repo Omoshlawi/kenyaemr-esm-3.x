@@ -81,7 +81,7 @@ const ContactTracingHistory: React.FC<ContactTracingHistoryProps> = ({ patientUu
     },
   ];
 
-  const headerTitle = t('traceHistory', 'Trace History');
+  const headerTitle = t('contactTraceHistory', 'Contact Trace History');
   const tablerows = useMemo(
     () =>
       results.map((row) => ({
@@ -101,7 +101,7 @@ const ContactTracingHistory: React.FC<ContactTracingHistoryProps> = ({ patientUu
   );
 
   if (contactTracesHistory.length === 0) {
-    return <EmptyState headerTitle={headerTitle} displayText="tracing hosty" />;
+    return <EmptyState headerTitle={headerTitle} displayText={t('traceHistory', 'trace history')} />;
   }
   if (error) {
     return <ErrorState headerTitle={headerTitle} error={error} />;

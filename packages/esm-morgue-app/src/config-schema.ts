@@ -105,7 +105,7 @@ export const configSchema = {
   autopsyEncounterFormUuid: {
     _type: Type.String,
     _description: 'Encounter UUID for autopsy',
-    _default: '465a92f2-baf8-42e9-9612-53064be868e8',
+    _default: '32b61a73-4971-4fc0-b20b-9a30176317e2',
   },
   courtOrderCaseNumberUuid: {
     _type: Type.String,
@@ -289,6 +289,11 @@ export const configSchema = {
     _default: 'dfacd928-0370-4315-99d7-6ec1c9f7ae76',
     _description: 'UUID for the patient Opennmrs identifier type to display',
   },
+  paymentMethods: {
+    _type: Type.Array,
+    _description: 'List of payment methods used when printing gatepass',
+    _default: ['Cash', 'Cheque', 'SHA', 'Scheme', 'M.R.M'],
+  },
 };
 
 export interface BillingConfig {
@@ -362,4 +367,5 @@ export type ConfigObject = {
   mortuaryNotUrgentPriorityUuid: string;
   mortalityEncounterTypeUuid: string;
   patientIdentifierTypeUuid: string;
+  paymentMethods: Array<string>;
 };

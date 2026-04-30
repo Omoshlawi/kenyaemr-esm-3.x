@@ -93,10 +93,10 @@ const CervicalContractionsGraph: React.FC<CervicalContractionsGraphProps> = ({
       <div className={styles.fetalHeartRateContainer}>
         <div className={styles.fetalHeartRateHeader}>
           <div className={styles.fetalHeartRateHeaderLeft}>
-            <h3 className={styles.fetalHeartRateTitle}>Contractions</h3>
+            <h3 className={styles.fetalHeartRateTitle}>{t('contractions', 'Contractions')}</h3>
             <div className={styles.fetalHeartRateControls}>
               <span className={styles.legendText}>
-                Contractions per 10 min | Bar Heights: 0=None, 2=Mild, 3=Moderate, 5=Strong
+                {t('contractionsKey', 'Contractions per 10 min | Bar Heights: 0=None, 2=Mild, 3=Moderate, 5=Strong')}
               </span>
             </div>
           </div>
@@ -130,7 +130,7 @@ const CervicalContractionsGraph: React.FC<CervicalContractionsGraphProps> = ({
                 disabled={isAddButtonDisabled}
                 onClick={() => onAddData?.()}
                 className={styles.addButton}>
-                Add
+                {t('add', 'Add')}
               </Button>
             </div>
           </div>

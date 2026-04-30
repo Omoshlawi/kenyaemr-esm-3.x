@@ -133,7 +133,7 @@ const ContactListUpdateForm: React.FC<Workspace2DefinitionProps<ContactListUpdat
         return typeof key === 'string' && key.startsWith(`${restBaseUrl}/relationship`);
       });
 
-      closeWorkspace();
+      closeWorkspace({ discardUnsavedChanges: true });
     } catch (error) {
       showSnackbar({
         title: 'Error',

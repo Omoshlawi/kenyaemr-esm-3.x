@@ -7,6 +7,7 @@ import { ConfigurableLink, MaybeIcon, evaluateAsBoolean, usePatient } from '@ope
 import styles from './dashboard.scss';
 import { usePatientEnrollment } from './useDashboard';
 import { InlineLoading } from '@carbon/react';
+import { getPatientUuidFromUrl } from '../specialized-clinics/generic-nav-links/generic-nav-links.component';
 
 export interface DashboardExtensionProps {
   path: string;
@@ -19,11 +20,11 @@ export interface DashboardExtensionProps {
 export const DashboardExtension = ({ path, title, basePath, icon, showWhenExpression }: DashboardExtensionProps) => {
   const { t } = useTranslation();
   const location = useLocation();
-  const { patientUuid } = useParams();
+  const patientUuid = useMemo(() => getPatientUuidFromUrl(), []);
   const { patient } = usePatient(patientUuid);
   const { activePatientEnrollment, patientEnrollments, isLoading } = usePatientEnrollment(patientUuid);
 
-  const show = evaluateAsBoolean(showWhenExpression, {
+  const show = evaluateAsBoolean(showWhenExpression as string, {
     activePatientEnrollment,
     patientEnrollments,
     patient,
