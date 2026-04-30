@@ -8,6 +8,9 @@ import {
   TableBody,
   TableCell,
   TableContainer,
+  TableExpandedRow,
+  TableExpandHeader,
+  TableExpandRow,
   TableHead,
   TableHeader,
   TableRow,
@@ -19,6 +22,7 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Claim, ClaimsPreAuthFilter, DataTableRow, Header, TableProps } from '../../../types';
 import ClaimsFilterHeader from '../header/filter-header.component';
+import { ClaimSummary } from './claim-summary.component';
 import styles from './claims-list-table.scss';
 import { useFacilityClaims } from './use-facility-claims';
 import { statusColors } from '../../utils';
@@ -26,11 +30,24 @@ import { statusColors } from '../../utils';
 const ClaimStatus = ({ row }: { row: DataTableRow }) => {
   const { claims } = useFacilityClaims();
   const { t } = useTranslation();
+  type CarbonTagType =
+    | 'blue'
+    | 'red'
+    | 'green'
+    | 'purple'
+    | 'gray'
+    | 'magenta'
+    | 'cyan'
+    | 'teal'
+    | 'cool-gray'
+    | 'warm-gray'
+    | 'high-contrast'
+    | 'outline';
 
   const claim = claims.find((claim) => claim.id === row.id) as Claim;
 
   // Default to 'gray' if status not found in the mapping
-  const tagType = statusColors[claim.status] || 'gray';
+  const tagType = (statusColors[claim?.status as keyof typeof statusColors] || 'gray') as CarbonTagType;
 
   return (
     <div className={styles.claimStatus}>
@@ -72,7 +89,7 @@ const ClaimsTable: React.FC<TableProps> = ({
     return claims.filter((claim) => claim.use === use);
   }, [claims, use]);
 
-  const filterClaims = (claim: Claim) => {
+  const filterClaims = (claim: (typeof claimsByUse)[number]) => {
     const status = filters?.status;
     const search = filters?.search?.toLowerCase();
     const fromDate = filters?.fromDate ? new Date(filters.fromDate) : null;
@@ -101,7 +118,7 @@ const ClaimsTable: React.FC<TableProps> = ({
   const filteredClaimIds = filteredClaims.map((claim) => claim.responseUUID);
   const responseUUIDs = filteredClaimIds
     .map((claimId) => claimsByUse.find((c) => c.responseUUID === claimId)?.responseUUID)
-    .filter((uuid) => uuid);
+    .filter((uuid): uuid is string => Boolean(uuid));
 
   const getHeaders = (): Header[] => {
     let baseHeaders = [
@@ -170,10 +187,9 @@ const ClaimsTable: React.FC<TableProps> = ({
   const renderActionCell = (row: DataTableRow, rowStatus: string, size: 'lg' | 'md' | 'sm') => {
     return (
       <OverflowMenu size={size} flipped>
-        <OverflowMenuItem itemText={t('viewSummary', 'View Summary')} onClick={() => handleViewSummary(row.id)} />
         {['ENTERED', 'ERRORED'].includes(rowStatus) && (
           <OverflowMenuItem
-            itemText={t('retryRequest', 'Retry request')}
+            itemText={t('resubmitClaimRequest', 'Resubmit claim request')}
             onClick={() => handleClaimAction(row.id, 'retry')}
           />
         )}
@@ -232,14 +248,14 @@ const ClaimsTable: React.FC<TableProps> = ({
         />
       </div>
       <DataTable rows={results} headers={headers} isSortable useZebraStyles>
-        {({ rows, headers, getHeaderProps, getRowProps, getTableProps }) => (
+        {({ rows, headers, getHeaderProps, getRowProps, getTableProps, getExpandedRowProps }) => (
           <TableContainer className={styles.claimsTable}>
             <Table {...getTableProps()} aria-label="sample table">
               <TableHead>
                 <TableRow>
+                  <TableExpandHeader aria-label={t('expandRow', 'Expand row')} />
                   {headers.map((header) => (
                     <TableHeader
-                      key={header.key}
                       {...getHeaderProps({
                         header,
                       })}>
@@ -252,11 +268,16 @@ const ClaimsTable: React.FC<TableProps> = ({
                 {rows.map((row) => {
                   const rowStatus = row.cells.find((cell) => cell.info.header === 'status')?.value;
                   return (
-                    <TableRow key={row.id} {...getRowProps({ row })}>
-                      {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>{renderCellContent(cell, row, rowStatus)}</TableCell>
-                      ))}
-                    </TableRow>
+                    <React.Fragment key={row.id}>
+                      <TableExpandRow {...getRowProps({ row })}>
+                        {row.cells.map((cell) => (
+                          <TableCell key={cell.id}>{renderCellContent(cell, row, rowStatus)}</TableCell>
+                        ))}
+                      </TableExpandRow>
+                      <TableExpandedRow {...getExpandedRowProps({ row })} colSpan={headers.length + 1}>
+                        <ClaimSummary claimId={row.id} embedded />
+                      </TableExpandedRow>
+                    </React.Fragment>
                   );
                 })}
               </TableBody>

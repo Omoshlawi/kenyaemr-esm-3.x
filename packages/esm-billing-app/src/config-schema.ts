@@ -57,7 +57,7 @@ export const configSchema: ConfigSchema = {
   shaIdentificationNumberUUID: {
     _type: Type.String,
     _description: 'Social Health Authority Identification Number',
-    _default: '24aedd37-b5be-4e08-8311-3721b8d5100d',
+    _default: '52c3c0c3-05b8-4b26-930e-2a6a54e14c90',
   },
   nationalIdUUID: {
     _type: Type.String,

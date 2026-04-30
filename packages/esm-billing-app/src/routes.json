@@ -338,6 +338,22 @@
       "component": "claimSummaryModal"
     },
     {
+      "name": "claim-preview-modal",
+      "component": "claimPreviewModal"
+    },
+    {
+      "name": "close-claim-modal",
+      "component": "claimCloseModal"
+    },
+    {
+      "name": "resubmit-claim-modal",
+      "component": "claimResubmitModal"
+    },
+    {
+      "name": "edit-claim-line-modal",
+      "component": "claimEditLineModal"
+    },
+    {
       "name": "clock-in-modal",
       "component": "clockIn"
     },

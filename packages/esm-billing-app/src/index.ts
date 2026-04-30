@@ -216,6 +216,22 @@ export const claimSummaryModal = getAsyncLifecycle(
     })),
   options,
 );
+export const claimPreviewModal = getAsyncLifecycle(
+  () => import('./claims/claims-management/table/claim-summary-modal/claim-preview.modal'),
+  options,
+);
+export const claimCloseModal = getAsyncLifecycle(
+  () => import('./claims/claims-management/table/claim-summary-modal/claim-close.modal'),
+  options,
+);
+export const claimResubmitModal = getAsyncLifecycle(
+  () => import('./claims/claims-management/table/claim-summary-modal/claim-resubmit.modal'),
+  options,
+);
+export const claimEditLineModal = getAsyncLifecycle(
+  () => import('./claims/claims-management/table/claim-summary-modal/claim-edit-line.modal'),
+  options,
+);
 
 // Print Preview Components
 export const printPreviewModal = getAsyncLifecycle(() => import('./print-preview/print-preview.modal'), options);
