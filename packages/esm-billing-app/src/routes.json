@@ -346,7 +346,7 @@
       "component": "claimCloseModal"
     },
     {
-      "name": "resubmit-claim-modal",
+      "name": "resubmit-claim-line-modal",
       "component": "claimResubmitModal"
     },
     {
@@ -356,6 +356,10 @@
     {
       "name": "clock-in-modal",
       "component": "clockIn"
+    },
+    {
+      "name": "delete-claim-line-modal",
+      "component": "claimDeleteLineModal"
     },
     {
       "name": "create-bill-item-modal",

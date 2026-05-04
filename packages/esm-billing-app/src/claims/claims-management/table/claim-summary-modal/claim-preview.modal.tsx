@@ -7,8 +7,6 @@ import {
   ModalBody,
   ModalFooter,
   ModalHeader,
-  OverflowMenu,
-  OverflowMenuItem,
   Select,
   SelectItem,
   Table,
@@ -19,12 +17,13 @@ import {
   TableRow,
   TextInput,
 } from '@carbon/react';
-import { ErrorState, formatDate, openmrsFetch, restBaseUrl, showModal, showToast } from '@openmrs/esm-framework';
+import { ErrorState, formatDate, showModal, showToast, useLayoutType } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { sendSHAOtp } from '../../../../billing-form/social-health-authority/sha-virtual-claim.resource';
 import { ClaimPreview, useClaimPreview, useVisit } from '../../../dashboard/form/claims-form.resource';
+import { submitInsuranceClaim } from './claim.resource';
 import { type LineItem, type MappedBill } from '../../../../types';
-import { Edit, TrashCan } from '@carbon/react/icons';
+import { Edit, TrashCan, WatsonHealthRotate_360 } from '@carbon/react/icons';
 
 const formatAmount = (value?: number) => {
   if (typeof value !== 'number' || Number.isNaN(value)) {
@@ -204,9 +203,7 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
   const [isRequestingOtp, setIsRequestingOtp] = useState(false);
   const [hasRequestedOtp, setHasRequestedOtp] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { visits: recentVisit, error: visitError, isLoading: visitLoading } = useVisit(patientUuid);
-
-  // Use a consent token for fetching the preview that does not depend on preview data
+  const controlSize = useLayoutType() === 'tablet' ? 'md' : 'sm';
 
   const { claimPreview: data, isLoading, error } = useClaimPreview(visit_uuid);
 
@@ -242,6 +239,14 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
     [data?.service_type],
   );
 
+  const isClosed = useMemo(
+    () =>
+      String(data?.claim_auth_status ?? data?.status ?? '')
+        .trim()
+        .toUpperCase() === 'CLOSED',
+    [data?.claim_auth_status, data?.status],
+  );
+
   const summaryHeaders = useMemo(
     () => [
       { key: 'label', header: t('field', 'Field') },
@@ -249,7 +254,6 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
     ],
     [t],
   );
-
   const summaryRows = useMemo(
     () => [
       {
@@ -456,22 +460,46 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
         actions: selectedInvoiceUuid ? (
           <ButtonSet aria-label={t('lineItemActions', 'Line item actions')}>
             <Button
+              kind="ghost"
+              hasIconOnly
+              disabled={isClosed}
+              renderIcon={(props) => <WatsonHealthRotate_360 size={16} {...props} />}
+              onClick={() => {
+                onClose();
+                window.setTimeout(() => {
+                  const dispose = showModal('resubmit-claim-line-modal', {
+                    visit_uuid,
+                    onClose: () => {
+                      dispose();
+                    },
+                    controlSize: 'sm',
+                  });
+                }, 0);
+              }}
+              style={{ marginBottom: '1rem' }}>
+              {t('resubmitClaimLine', 'Resubmit Claim Line')}
+            </Button>
+            <Button
               hasIconOnly
               kind="ghost"
+              disabled={isClosed}
               renderIcon={(props) => <Edit size={16} {...props} />}
               title={t('editLineItem', 'Edit line item')}
               onClick={() => {
-                const dispose = showModal('edit-claim-line-modal', {
-                  onClose: () => {
-                    dispose();
-                  },
-                  billUuid: selectedInvoiceUuid,
-                  claimLineId: lineItem.uuid,
-                  quantity: lineItem.quantity,
-                  scheme_code: lineItem.priceName ?? undefined,
-                  unit_price: lineItem.price,
-                  size: 'sm',
-                });
+                onClose();
+                window.setTimeout(() => {
+                  const dispose = showModal('edit-claim-line-modal', {
+                    billUuid: selectedInvoiceUuid,
+                    claimLineId: lineItem.uuid,
+                    quantity: lineItem.quantity,
+                    unit_price: lineItem.price,
+                    visit_uuid,
+                    onClose: () => {
+                      dispose();
+                    },
+                    controlSize: 'sm',
+                  });
+                }, 0);
               }}
             />
             <Button
@@ -480,36 +508,19 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
               renderIcon={(props) => <TrashCan size={16} {...props} />}
               title={t('deleteLineItem', 'Delete line item')}
               style={{ paddingLeft: '0.5rem' }}
+              disabled={isClosed}
               onClick={async () => {
-                const confirmed = window.confirm(
-                  t('confirmDeleteLine', 'Are you sure you want to delete this line item?'),
-                );
-                if (!confirmed) {
-                  return;
-                }
-
-                try {
-                  await openmrsFetch(`${restBaseUrl}/bill/line/edit`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ line_guid: lineItem.uuid }),
+                onClose();
+                window.setTimeout(() => {
+                  const dispose = showModal('delete-claim-line-modal', {
+                    claimLineId: lineItem.uuid,
+                    visit_uuid,
+                    onClose: () => {
+                      dispose();
+                    },
+                    controlSize: 'sm',
                   });
-
-                  showToast({
-                    critical: false,
-                    kind: 'success',
-                    title: t('deleted', 'Deleted'),
-                    description: t('lineDeleted', 'Line item deleted successfully'),
-                  });
-                  onClose();
-                } catch (err) {
-                  showToast({
-                    critical: true,
-                    kind: 'error',
-                    title: t('deleteFailed', 'Delete failed'),
-                    description: (err as any)?.message ?? t('deleteLineFailed', 'Failed to delete line item'),
-                  });
-                }
+                }, 0);
               }}
             />
           </ButtonSet>
@@ -538,13 +549,13 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
     setIsRequestingOtp(true);
 
     try {
-      const response = await sendSHAOtp(patientId, interventionCodes);
+      await sendSHAOtp(patientId, interventionCodes);
       setHasRequestedOtp(true);
       showToast({
         critical: false,
         kind: 'success',
         title: t('otpSent', 'OTP sent'),
-        description: response?.raw_response?.message ?? t('otpSentDescription', 'An OTP has been sent to the patient.'),
+        description: t('otpSentDescription', 'An OTP has been sent to the patient.'),
       });
     } catch (err) {
       showToast({
@@ -596,27 +607,19 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      const endpoint = isInpatientClaim
-        ? `${restBaseUrl}/insuranceclaims/bill/inpatient/submit`
-        : `${restBaseUrl}/insuranceclaims/bill/outpatient/submit`;
-
-      const body: any = {
-        consent_token: data.authorization_code,
-        invoice_number: receiptNumber,
-        visit_uuid: visit_uuid,
-      };
-
-      if (isInpatientClaim) {
-        body.otp = claimOtp;
-        body.discharge_date = dischargeDate;
-        body.discharge_reason = dischargeReason;
-      }
-
-      await openmrsFetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      await submitInsuranceClaim(
+        isInpatientClaim,
+        data.authorization_code ?? '',
+        receiptNumber ?? '',
+        visit_uuid ?? '',
+        isInpatientClaim
+          ? {
+              otp: claimOtp,
+              dischargeDate: dischargeDate,
+              dischargeReason: dischargeReason,
+            }
+          : undefined,
+      );
 
       showToast({
         critical: false,
@@ -645,34 +648,19 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
     }
   };
 
-  const handleResubmitClaim = async () => {
-    onClose();
-
-    window.setTimeout(() => {
-      const dispose = showModal('resubmit-claim-modal', {
-        title: t('resubmitClaim', 'Resubmit Claim'),
-        visitUuid: visit_uuid,
-        onClose: () => {
-          dispose();
-        },
-        size: 'sm',
-      });
-    }, 0);
-  };
-
   const handleCloseClaim = () => {
     onClose();
 
     window.setTimeout(() => {
       const dispose = showModal('close-claim-modal', {
-        title: t('closeClaim', 'Close Claim'),
+        title: t('cancelClaim', 'Cancel Claim'),
         billUuid: billNumber,
         billNumber: receiptNumber,
-        visit_uuid: recentVisit?.uuid,
+        visit_uuid: visit_uuid,
         onClose: () => {
           dispose();
         },
-        size: 'sm',
+        controlSize: 'sm',
       });
     }, 0);
   };
@@ -772,7 +760,11 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
             {isInpatientClaim && (
               <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                  <Button kind="secondary" onClick={handleRequestOtp} type="button" disabled={isRequestingOtp}>
+                  <Button
+                    kind="secondary"
+                    onClick={handleRequestOtp}
+                    type="button"
+                    disabled={isRequestingOtp || isClosed}>
                     {isRequestingOtp ? t('sendingOtp', 'Sending OTP...') : t('sendOtp', 'Send OTP')}
                   </Button>
 
@@ -918,23 +910,20 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
         <Button kind="secondary" onClick={onClose} type="button">
           {t('closeModal', 'Close modal')}
         </Button>
-        <Button kind="danger" onClick={handleCloseClaim} style={{ marginBottom: '1rem' }}>
-          {t('closeClaim', 'Close Claim')}
-        </Button>
-        <Button kind="tertiary" onClick={handleResubmitClaim} style={{ marginBottom: '1rem' }}>
-          {t('resubmitClaim', 'Resubmit Claim')}
+        <Button kind="danger" onClick={handleCloseClaim} style={{ marginBottom: '1rem' }} disabled={isClosed}>
+          {t('cancelClaim', 'Cancel Claim')}
         </Button>
         <Button
           kind="primary"
           onClick={() => handleDispatchClaim()}
-          // disabled={
-          //   !data ||
-          //   !selectedInvoiceNumber ||
-          //   isSubmitting ||
-          //   !hasRequestedOtp ||
-          //   !claimOtp.trim() ||
-          //   (isInpatientClaim && (!dischargeDate || !dischargeReason))
-          // }
+          disabled={
+            isClosed ||
+            !data ||
+            !selectedInvoiceNumber ||
+            isSubmitting ||
+            (!isInpatientClaim && false) ||
+            (isInpatientClaim && (!hasRequestedOtp || !claimOtp.trim() || !dischargeDate || !dischargeReason))
+          }
           type="button">
           {isSubmitting ? t('submitting', 'Submitting...') : t('submitClaim', 'Submit Claim')}
         </Button>

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Button, ModalBody, ModalFooter, ModalHeader, TextInput } from '@carbon/react';
-import { openmrsFetch, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
+import { showSnackbar } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
+import { editInsuranceClaimLine } from './claim.resource';
+import styles from './claim-modals.scss';
 
 type ClaimEditLineModalProps = {
   onClose: () => void;
@@ -9,6 +11,7 @@ type ClaimEditLineModalProps = {
   quantity?: number;
   scheme_code?: string;
   unit_price?: string | number;
+  visit_uuid?: string;
 };
 
 const ClaimEditLineModal: React.FC<ClaimEditLineModalProps> = ({
@@ -17,10 +20,10 @@ const ClaimEditLineModal: React.FC<ClaimEditLineModalProps> = ({
   quantity,
   scheme_code,
   unit_price,
+  visit_uuid,
 }) => {
   const { t } = useTranslation();
   const [q, setQ] = useState<number>(Number(quantity ?? 1));
-  const [scheme, setScheme] = useState<string>(scheme_code ?? '');
   const [price, setPrice] = useState<string>(String(unit_price ?? ''));
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -30,17 +33,7 @@ const ClaimEditLineModal: React.FC<ClaimEditLineModalProps> = ({
     }
     setIsSubmitting(true);
     try {
-      const body = {
-        claim_line_id: String(claimLineId),
-        quantity: Number(q),
-        unit_price: String(price),
-      };
-
-      await openmrsFetch(`${restBaseUrl}/insuranceclaims/line/edit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      await editInsuranceClaimLine(claimLineId, Number(q), String(price), visit_uuid);
 
       showSnackbar({
         kind: 'success',
@@ -66,7 +59,7 @@ const ClaimEditLineModal: React.FC<ClaimEditLineModalProps> = ({
     <>
       <ModalHeader closeModal={onClose}>{t('editLine', 'Edit line item')}</ModalHeader>
       <ModalBody>
-        <div style={{ marginBottom: 12 }}>
+        <div className={styles.formField}>
           <TextInput
             id="claim-line-quantity"
             labelText={t('quantity', 'Quantity')}
@@ -75,16 +68,7 @@ const ClaimEditLineModal: React.FC<ClaimEditLineModalProps> = ({
           />
         </div>
 
-        <div style={{ marginBottom: 12 }}>
-          <TextInput
-            id="claim-line-scheme"
-            labelText={t('schemeCode', 'Scheme code')}
-            value={scheme}
-            onChange={(e) => setScheme((e.target as HTMLInputElement).value)}
-          />
-        </div>
-
-        <div>
+        <div className={styles.formField}>
           <TextInput
             id="claim-line-unit-price"
             labelText={t('unitPrice', 'Unit price')}

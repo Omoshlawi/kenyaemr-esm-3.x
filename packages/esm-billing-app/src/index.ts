@@ -221,15 +221,20 @@ export const claimPreviewModal = getAsyncLifecycle(
   options,
 );
 export const claimCloseModal = getAsyncLifecycle(
-  () => import('./claims/claims-management/table/claim-summary-modal/claim-close.modal'),
+  () => import('./claims/claims-management/table/claim-summary-modal/cancel-claim.modal'),
   options,
 );
 export const claimResubmitModal = getAsyncLifecycle(
-  () => import('./claims/claims-management/table/claim-summary-modal/claim-resubmit.modal'),
+  () => import('./claims/claims-management/table/claim-summary-modal/claim-line-resubmit.modal'),
   options,
 );
 export const claimEditLineModal = getAsyncLifecycle(
   () => import('./claims/claims-management/table/claim-summary-modal/claim-edit-line.modal'),
+  options,
+);
+
+export const claimDeleteLineModal = getAsyncLifecycle(
+  () => import('./claims/claims-management/table/claim-summary-modal/claim-delete-line.modal'),
   options,
 );
 

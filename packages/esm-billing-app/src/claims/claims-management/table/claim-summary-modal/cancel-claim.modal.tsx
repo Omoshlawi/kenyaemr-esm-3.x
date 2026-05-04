@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Button, ModalBody, ModalFooter, ModalHeader, Select, SelectItem, TextInput } from '@carbon/react';
-import { openmrsFetch, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
+import { showSnackbar } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
+import { closeInsuranceClaim } from './claim.resource';
 
 type ClaimCloseModalProps = {
   onClose: () => void;
@@ -29,25 +30,12 @@ const ClaimCloseModal: React.FC<ClaimCloseModalProps> = ({ onClose, billUuid, vi
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const body: any = {
-        cancel_reason_text: text,
-        cancel_reason_type: type,
-        visit_uuid: visit_uuid,
-      };
-      if (billUuid) {
-        body.bill_uuid = billUuid;
-      }
-
-      await openmrsFetch(`${restBaseUrl}/insuranceclaims/bill/close`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      await closeInsuranceClaim(type, text, visit_uuid, billUuid);
 
       showSnackbar({
         kind: 'success',
-        title: t('closeClaim', 'Close Claim'),
-        subtitle: t('claimClosedSuccessfully', 'Claim closed successfully'),
+        title: t('cancelClaim', 'Cancel Claim'),
+        subtitle: t('claimCanceledSuccessfully', 'Claim canceled successfully'),
         timeoutInMs: 3000,
       });
 
@@ -55,8 +43,8 @@ const ClaimCloseModal: React.FC<ClaimCloseModalProps> = ({ onClose, billUuid, vi
     } catch (err: any) {
       showSnackbar({
         kind: 'error',
-        title: t('closeClaimError', 'Close Claim Error'),
-        subtitle: err?.message ?? t('closeClaimFailed', 'Failed to close claim'),
+        title: t('cancelClaimError', 'Cancel Claim Error'),
+        subtitle: err?.message ?? t('cancelClaimFailed', 'Failed to cancel claim'),
         timeoutInMs: 4000,
       });
     } finally {
@@ -66,7 +54,7 @@ const ClaimCloseModal: React.FC<ClaimCloseModalProps> = ({ onClose, billUuid, vi
 
   return (
     <>
-      <ModalHeader>{t('closeClaim', 'Close Claim')}</ModalHeader>
+      <ModalHeader>{t('cancelClaim', 'Cancel Claim')}</ModalHeader>
       <ModalBody>
         <div style={{ marginBottom: 12 }}>
           <TextInput
@@ -95,7 +83,7 @@ const ClaimCloseModal: React.FC<ClaimCloseModalProps> = ({ onClose, billUuid, vi
           {t('close', 'Close')}
         </Button>
         <Button kind="primary" onClick={handleSubmit} disabled={isSubmitting || !text.trim()} type="button">
-          {isSubmitting ? t('closing', 'Closing...') : t('closeClaim', 'Close Claim')}
+          {isSubmitting ? t('canceling', 'Canceling...') : t('cancelClaim', 'Cancel Claim')}
         </Button>
       </ModalFooter>
     </>
