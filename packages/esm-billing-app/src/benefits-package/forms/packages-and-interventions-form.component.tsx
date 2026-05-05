@@ -19,9 +19,14 @@ import PackageInterventions from './interventions-form.component';
 type Props = {
   patientUuid: string;
   visitTypeUuid?: string;
+  showApplicableDocuments?: boolean;
 };
 
-const SHABenefitPackagesAndInterventions: React.FC<Props> = ({ patientUuid, visitTypeUuid }) => {
+const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
+  patientUuid,
+  visitTypeUuid,
+  showApplicableDocuments,
+}) => {
   const { t } = useTranslation();
   const { crIdentificationNumberUUID, inPatientVisitTypeUuid } = useConfig<BillingConfig>();
   const { error: patientError, isLoading: isLoadingPatient, patient } = usePatient(patientUuid);
@@ -176,6 +181,7 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({ patientUuid, visi
           subBenefitCode={selectedSubBenefitCode ?? ''}
           patientUuid={patientUuid}
           selectedPackages={selectedPackages ?? []}
+          showApplicableDocuments={showApplicableDocuments}
         />
       </Column>
 

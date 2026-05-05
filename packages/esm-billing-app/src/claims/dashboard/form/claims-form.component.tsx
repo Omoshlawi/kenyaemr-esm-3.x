@@ -752,7 +752,7 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
               </Layer>
             </Column>
           </Row>
-          <SHABenefitPackangesAndInterventions patientUuid={patientUuid} />
+          <SHABenefitPackangesAndInterventions patientUuid={patientUuid} showApplicableDocuments={true} />
           <Column>
             <Layer className={styles.input}>
               <Controller

@@ -13,12 +13,15 @@ type PackageInterventionsProps = {
   subBenefitCode: string;
   patientUuid: string;
   selectedPackages: Array<string>;
+  showApplicableDocuments?: boolean;
 };
 
 const PackageInterventions: React.FC<PackageInterventionsProps> = ({
   patientCRId,
   subBenefitCode,
+  patientUuid,
   selectedPackages,
+  showApplicableDocuments,
 }) => {
   const { t } = useTranslation();
   const form = useFormContext<{ packages: Array<string>; interventions: Array<string> }>();
@@ -177,25 +180,27 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
             })}
           </div>
 
-          <div className={styles.applicableDocsSection}>
-            <p className={styles.sectionTitle}>{t('applicableDocuments', 'Applicable documents')}</p>
-            {selectedInterventionDetails.map((intervention) => (
-              <div key={intervention.code} className={styles.interventionDocsBlock}>
-                <p className={styles.interventionDocsTitle}>{intervention.name}</p>
-                {intervention.applicableDocumentTypes.length > 0 ? (
-                  <div className={styles.docTagsContainer}>
-                    {intervention.applicableDocumentTypes.map((docType) => (
-                      <Tag key={`${intervention.code}-${docType}`} type="cool-gray" size="sm" className={styles.tag}>
-                        {docType.replace(/_/g, ' ')}
-                      </Tag>
-                    ))}
-                  </div>
-                ) : (
-                  <p className={styles.noDocsText}>{t('noApplicableDocuments', 'No applicable documents listed')}</p>
-                )}
-              </div>
-            ))}
-          </div>
+          {showApplicableDocuments && (
+            <div className={styles.applicableDocsSection}>
+              <p className={styles.sectionTitle}>{t('applicableDocuments', 'Applicable documents')}</p>
+              {selectedInterventionDetails.map((intervention) => (
+                <div key={intervention.code} className={styles.interventionDocsBlock}>
+                  <p className={styles.interventionDocsTitle}>{intervention.name}</p>
+                  {intervention.applicableDocumentTypes.length > 0 ? (
+                    <div className={styles.docTagsContainer}>
+                      {intervention.applicableDocumentTypes.map((docType) => (
+                        <Tag key={`${intervention.code}-${docType}`} type="cool-gray" size="sm" className={styles.tag}>
+                          {docType.replace(/_/g, ' ')}
+                        </Tag>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className={styles.noDocsText}>{t('noApplicableDocuments', 'No applicable documents listed')}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
     </div>
