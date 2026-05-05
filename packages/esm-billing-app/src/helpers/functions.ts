@@ -81,3 +81,94 @@ export function extractNameString(formattedString: string) {
 export function formatDate(date) {
   return dayjs(date).format('YYYY-MM-DD');
 }
+
+export const formatAmount = (value?: number) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return '-';
+  }
+
+  return new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  }).format(value);
+};
+
+/**
+ * Extracts meaningful error message from various error formats
+ * Handles: thrown Error objects, OpenMRS responseBody errors, and parsed JSON responses
+ */
+export const extractSavannahErrorMessage = (err: any): string => {
+  if (!err) {
+    return 'Unknown error occurred';
+  }
+
+  // Prioritize structured API payloads before generic fetch error messages.
+  const extractFromPayload = (payload: any): string | null => {
+    if (!payload) {
+      return null;
+    }
+
+    const upstreamMessage = payload?.upstream_error?.message?.trim();
+    if (upstreamMessage) {
+      return upstreamMessage;
+    }
+
+    const upstreamError = payload?.upstream_error?.error?.trim();
+    if (upstreamError && upstreamError.toLowerCase() !== 'bad request') {
+      return upstreamError;
+    }
+
+    const topMessage = payload?.message?.trim();
+    if (topMessage) {
+      return topMessage;
+    }
+
+    const topError = payload?.error?.trim();
+    if (topError) {
+      return topError;
+    }
+
+    return null;
+  };
+
+  if (err?.responseBody) {
+    try {
+      const responseBody = typeof err.responseBody === 'string' ? JSON.parse(err.responseBody) : err.responseBody;
+      const fromResponse = extractFromPayload(responseBody);
+      if (fromResponse) {
+        return fromResponse;
+      }
+    } catch {
+      // Ignore parse failure and continue with other fallbacks.
+    }
+  }
+
+  if (err?.data) {
+    const fromData = extractFromPayload(err.data);
+    if (fromData) {
+      return fromData;
+    }
+  }
+
+  // Some callers throw Error(JSON.stringify(payload)).
+  if (err?.message && typeof err.message === 'string') {
+    try {
+      const parsed = JSON.parse(err.message);
+      const fromParsedMessage = extractFromPayload(parsed);
+      if (fromParsedMessage) {
+        return fromParsedMessage;
+      }
+    } catch {
+      // message is plain text, fall back below
+    }
+
+    return err.message;
+  }
+
+  const fromObject = extractFromPayload(err);
+  if (fromObject) {
+    return fromObject;
+  }
+
+  return 'Unknown error occurred';
+};

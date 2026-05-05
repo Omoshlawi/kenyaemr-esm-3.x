@@ -80,6 +80,13 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({ patientUuid, visi
 
   const selectedPackages = form.watch('packages');
 
+  // Initialize selectedSubBenefitCode when packages are pre-selected (e.g., from visit attributes)
+  useEffect(() => {
+    if (selectedPackages?.length > 0 && selectedSubBenefitCode === null) {
+      setSelectedSubBenefitCode(selectedPackages[0]);
+    }
+  }, [selectedPackages]);
+
   if (isLoadingPatient) {
     return (
       <InlineLoading

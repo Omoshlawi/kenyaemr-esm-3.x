@@ -80,6 +80,19 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
 
   const electiveCount = useMemo(() => items.filter((i) => i.isElective).length, [items]);
 
+  const selectedInterventionDetails = useMemo(
+    () =>
+      selectedInterventionsObservable.map((code) => {
+        const intervention = cachedInterventions[code];
+        return {
+          code,
+          name: intervention?.name ?? code,
+          applicableDocumentTypes: intervention?.applicable_document_types ?? [],
+        };
+      }),
+    [selectedInterventionsObservable, cachedInterventions],
+  );
+
   if (isLoading) {
     return (
       <InlineLoading
@@ -142,26 +155,48 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
         }}
       />
       {selectedInterventionsObservable.length > 0 && (
-        <div className={styles.tagsContainer}>
-          {selectedInterventionsObservable.map((code) => {
-            const intervention = cachedInterventions[code];
-            const name = intervention?.name ?? code;
-            const needsPreauth = intervention?.needs_preauth ?? false;
-            const tariff = intervention?.tariff ? ` - ${formatCurrency(Number(intervention.tariff))}` : '';
+        <>
+          <div className={styles.tagsContainer}>
+            {selectedInterventionsObservable.map((code) => {
+              const intervention = cachedInterventions[code];
+              const name = intervention?.name ?? code;
+              const needsPreauth = intervention?.needs_preauth ?? false;
+              const tariff = intervention?.tariff ? ` - ${formatCurrency(Number(intervention.tariff))}` : '';
 
-            return needsPreauth ? (
-              <Tag key={code} type="red" size="lg" className={styles.tag}>
-                {name}
-                {tariff}: {t('preauthRequired', 'Preauth required')}
-              </Tag>
-            ) : (
-              <Tag key={code} type="green" size="lg" className={styles.tag}>
-                {name}
-                {tariff}: {t('noPreauthNeeded', 'No preauth needed')}
-              </Tag>
-            );
-          })}
-        </div>
+              return needsPreauth ? (
+                <Tag key={code} type="red" size="lg" className={styles.tag}>
+                  {name}
+                  {tariff}: {t('preauthRequired', 'Preauth required')}
+                </Tag>
+              ) : (
+                <Tag key={code} type="green" size="lg" className={styles.tag}>
+                  {name}
+                  {tariff}: {t('noPreauthNeeded', 'No preauth needed')}
+                </Tag>
+              );
+            })}
+          </div>
+
+          <div className={styles.applicableDocsSection}>
+            <p className={styles.sectionTitle}>{t('applicableDocuments', 'Applicable documents')}</p>
+            {selectedInterventionDetails.map((intervention) => (
+              <div key={intervention.code} className={styles.interventionDocsBlock}>
+                <p className={styles.interventionDocsTitle}>{intervention.name}</p>
+                {intervention.applicableDocumentTypes.length > 0 ? (
+                  <div className={styles.docTagsContainer}>
+                    {intervention.applicableDocumentTypes.map((docType) => (
+                      <Tag key={`${intervention.code}-${docType}`} type="cool-gray" size="sm" className={styles.tag}>
+                        {docType.replace(/_/g, ' ')}
+                      </Tag>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={styles.noDocsText}>{t('noApplicableDocuments', 'No applicable documents listed')}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

@@ -3,5 +3,88 @@
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
 .formField {
-  margin-bottom: 12px;
+  margin-bottom: layout.$spacing-04;
+}
+
+.claimDetails {
+  margin-top: layout.$spacing-05;
+}
+
+.sectionSpacing {
+  margin-top: layout.$spacing-05;
+  margin-bottom: layout.$spacing-03;
+}
+
+.lineItemsSection {
+  margin-top: layout.$spacing-05;
+  overflow: visible;
+}
+
+.lineItemsTitle {
+  margin-top: layout.$spacing-05;
+  font-weight: 700;
+}
+
+.noLineItems {
+  margin-top: layout.$spacing-03;
+}
+
+.lineItemsTableWrapper {
+  overflow: visible;
+  width: 100%;
+}
+
+.otpRow {
+  display: flex;
+  gap: layout.$spacing-03;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.otpInputContainer {
+  min-width: 220px;
+  flex: 1 1 auto;
+}
+
+.sectionLabel {
+  margin-top: layout.$spacing-05;
+  font-weight: 700;
+}
+
+.invoicesSection {
+  margin-top: layout.$spacing-05;
+}
+
+.documentsSection {
+  margin-top: layout.$spacing-05;
+}
+
+.documentList {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  margin-top: layout.$spacing-04;
+}
+
+.documentRow {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-04;
+  flex-wrap: wrap;
+}
+
+.documentTitle {
+  font-weight: 600;
+}
+
+.documentPreviewButton {
+  margin-left: auto;
+}
+
+.actionButton {
+  margin-bottom: layout.$spacing-05;
+}
+
+.deleteActionButton {
+  padding-left: layout.$spacing-03;
 }

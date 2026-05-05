@@ -55,6 +55,7 @@ import { formatDateTime } from '../../utils';
 import styles from './claims-form.scss';
 import ClaimsSupportingDocumentsInput from './claims-supporting-documents-inputs.form';
 import { usePatientIdentifier } from '../../../hooks/usePatientIdentifierType';
+import { extractSavannahErrorMessage } from '../../../helpers';
 
 type ClaimsFormProps = {
   bill: MappedBill;
@@ -399,17 +400,19 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
 
     const defaultInterventionCode = data.interventions?.[0] ?? '';
 
-    const toBlob = (base64DataUrl: string, mimeType = 'application/octet-stream') => {
-      const base64 = base64DataUrl.includes(',') ? base64DataUrl.split(',')[1] : base64DataUrl;
-      const binary = atob(base64);
-      const bytes = new Uint8Array(binary.length);
-
-      for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
-      }
-
-      return new Blob([bytes], { type: mimeType });
-    };
+    // Warn user if interventions require supporting documents but none provided
+    if (data.interventions?.length > 0 && (!data.supportingDocuments || data.supportingDocuments.length === 0)) {
+      showSnackbar({
+        kind: 'warning',
+        title: t('missingDocuments', 'Missing Supporting Documents'),
+        subtitle: t(
+          'noSupportingDocumentsWarning',
+          'No supporting documents uploaded. Some interventions may require documentation for processing.',
+        ),
+        timeoutInMs: 3500,
+        isLowContrast: true,
+      });
+    }
 
     try {
       // delegate network operations to resource helpers
@@ -453,18 +456,12 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
         patientUuid: bill.patientUuid,
       });
     } catch (err: any) {
-      launchClaimPreviewModal({
-        title: t('claimPreview', 'Claim Preview'),
-        billNumber: billUuid,
-        visit_uuid: recentVisit?.uuid,
-        receiptNumber: bill.receiptNumber,
-        patientUuid: bill.patientUuid,
-      });
+      const extractedError = extractSavannahErrorMessage(err);
 
       showSnackbar({
         kind: 'error',
         title: t('claimError', 'Claim Error'),
-        subtitle: err['upstream_error'] ?? t('sendSavanahClaimError', 'Request Failed, Please try later...'),
+        subtitle: extractedError || t('sendSavanahClaimError', 'Request Failed, Please try later...'),
         timeoutInMs: 2500,
         isLowContrast: true,
       });

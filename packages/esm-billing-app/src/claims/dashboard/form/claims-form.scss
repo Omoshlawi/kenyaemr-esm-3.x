@@ -159,3 +159,19 @@
   margin: layout.$spacing-03 0 layout.$spacing-03 0;
   position: relative;
 }
+
+.docTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+  margin-bottom: layout.$spacing-03;
+}
+
+.cardTitle {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--omrs-color-ink-medium-contrast);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: layout.$spacing-03;
+}

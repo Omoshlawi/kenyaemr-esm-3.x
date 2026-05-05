@@ -56,6 +56,7 @@ const ClaimsSupportingDocumentsInput: FC<{ patientUuid: string }> = ({ patientUu
 
   return (
     <div>
+      <p className={styles.cardTitle}>{t('supportingDocuments', 'Supporting documents')}</p>
       {supportDocs?.map((doc, i) => (
         <div key={i} className={styles.doc}>
           <Button

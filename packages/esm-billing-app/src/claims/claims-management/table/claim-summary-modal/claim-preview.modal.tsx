@@ -15,6 +15,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  Tag,
   TextInput,
 } from '@carbon/react';
 import { ErrorState, formatDate, showModal, showToast, useLayoutType } from '@openmrs/esm-framework';
@@ -22,19 +23,10 @@ import { useTranslation } from 'react-i18next';
 import { sendSHAOtp } from '../../../../billing-form/social-health-authority/sha-virtual-claim.resource';
 import { ClaimPreview, useClaimPreview, useVisit } from '../../../dashboard/form/claims-form.resource';
 import { submitInsuranceClaim } from './claim.resource';
+import styles from './claim-modals.scss';
 import { type LineItem, type MappedBill } from '../../../../types';
-import { Edit, TrashCan, WatsonHealthRotate_360 } from '@carbon/react/icons';
-
-const formatAmount = (value?: number) => {
-  if (typeof value !== 'number' || Number.isNaN(value)) {
-    return '-';
-  }
-
-  return new Intl.NumberFormat(undefined, {
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 2,
-  }).format(value);
-};
+import { Document, Edit, TrashCan, WatsonHealthRotate_360 } from '@carbon/react/icons';
+import { formatAmount } from '../../../../helpers';
 
 const formatDateValue = (value?: string | number) => {
   if (value === undefined || value === null) {
@@ -425,6 +417,11 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
     [invoiceEntries],
   );
 
+  const claimAttachments = useMemo(
+    () => (Array.isArray(data?.claim_attachments) ? data.claim_attachments : []),
+    [data?.claim_attachments],
+  );
+
   const selectedInvoice = useMemo(
     () =>
       invoiceEntries.find(
@@ -476,7 +473,7 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
                   });
                 }, 0);
               }}
-              style={{ marginBottom: '1rem' }}>
+              className={styles.actionButton}>
               {t('resubmitClaimLine', 'Resubmit Claim Line')}
             </Button>
             <Button
@@ -507,7 +504,7 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
               kind="ghost"
               renderIcon={(props) => <TrashCan size={16} {...props} />}
               title={t('deleteLineItem', 'Delete line item')}
-              style={{ paddingLeft: '0.5rem' }}
+              className={styles.deleteActionButton}
               disabled={isClosed}
               onClick={async () => {
                 onClose();
@@ -707,7 +704,7 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
               )}
             </DataTable>
 
-            <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
+            <div className={styles.sectionSpacing}>
               <Select
                 id="invoice-number"
                 labelText={t('invoiceNumber', 'Invoice Number')}
@@ -724,13 +721,13 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
             </div>
 
             {selectedInvoice && (
-              <div style={{ marginTop: '1rem', overflow: 'visible' }}>
-                <label style={{ marginTop: '1rem', fontWeight: 'bold' }}>{t('lineItems', 'Line Items')}</label>
+              <div className={styles.lineItemsSection}>
+                <label className={styles.lineItemsTitle}>{t('lineItems', 'Line Items')}</label>
 
                 {lineItemRows.length === 0 ? (
-                  <p style={{ marginTop: '0.5rem' }}>{t('noLineItems', 'No line items found for this invoice')}</p>
+                  <p className={styles.noLineItems}>{t('noLineItems', 'No line items found for this invoice')}</p>
                 ) : (
-                  <div style={{ overflow: 'visible', width: '100%' }}>
+                  <div className={styles.lineItemsTableWrapper}>
                     <Table aria-label={t('lineItems', 'Line Items')} size="sm" useZebraStyles>
                       <TableHead>
                         <TableRow>
@@ -758,8 +755,8 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
             )}
 
             {isInpatientClaim && (
-              <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div className={styles.sectionSpacing}>
+                <div className={styles.otpRow}>
                   <Button
                     kind="secondary"
                     onClick={handleRequestOtp}
@@ -768,7 +765,7 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
                     {isRequestingOtp ? t('sendingOtp', 'Sending OTP...') : t('sendOtp', 'Send OTP')}
                   </Button>
 
-                  <div style={{ minWidth: 220, flex: '1 1 auto' }}>
+                  <div className={styles.otpInputContainer}>
                     <TextInput
                       id="claim-otp"
                       labelText={t('otp', 'OTP')}
@@ -812,8 +809,8 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
             )}
 
             {diagnosisRows.length > 0 && (
-              <div style={{ marginTop: '1rem' }}>
-                <label style={{ marginTop: '1rem', fontWeight: 'bold' }}>{t('diagnoses', 'Diagnoses')}</label>
+              <div className={styles.claimDetails}>
+                <label className={styles.sectionLabel}>{t('diagnoses', 'Diagnoses')}</label>
                 <DataTable rows={diagnosisRows} headers={diagnosisHeaders} size="sm" useZebraStyles>
                   {({ rows, headers, getHeaderProps, getRowProps }) => (
                     <Table aria-label={t('diagnoses', 'Diagnoses')} size="sm" useZebraStyles>
@@ -843,8 +840,8 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
             )}
 
             {interventionRows.length > 0 && (
-              <div style={{ marginTop: '1rem' }}>
-                <label style={{ marginTop: '1rem', fontWeight: 'bold' }}>{t('interventions', 'Interventions')}</label>
+              <div className={styles.claimDetails}>
+                <label className={styles.sectionLabel}>{t('interventions', 'Interventions')}</label>
                 <DataTable rows={interventionRows} headers={interventionHeaders} size="sm" useZebraStyles>
                   {({ rows, headers, getHeaderProps, getRowProps }) => (
                     <Table aria-label={t('interventions', 'Interventions')} size="sm" useZebraStyles>
@@ -874,8 +871,8 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
             )}
 
             {invoiceRows.length > 0 && (
-              <div style={{ marginTop: '1.25rem' }}>
-                <label style={{ marginTop: '1rem', fontWeight: 'bold' }}>{t('invoices', 'Invoices')}</label>
+              <div className={styles.invoicesSection}>
+                <label className={styles.sectionLabel}>{t('invoices', 'Invoices')}</label>
                 <DataTable rows={invoiceRows} headers={invoiceHeaders} size="sm" useZebraStyles>
                   {({ rows, headers, getHeaderProps, getRowProps }) => (
                     <Table aria-label={t('invoices', 'Invoices')} size="sm" useZebraStyles>
@@ -903,6 +900,48 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
                 </DataTable>
               </div>
             )}
+
+            {claimAttachments.length > 0 && (
+              <div className={styles.documentsSection}>
+                <label className={styles.sectionLabel}>{t('submittedDocuments', 'Submitted documents')}</label>
+                <div className={styles.documentList}>
+                  {claimAttachments.map((attachment, index: number) => {
+                    const previewUrl =
+                      attachment.data ?? attachment.uploaded_file ?? attachment.file_url ?? attachment.url ?? '';
+                    const attachmentLabel =
+                      attachment.title ?? attachment.document_title ?? attachment.attachment ?? `Document ${index + 1}`;
+                    const attachmentType = attachment.attachment_type ?? attachment.document_type ?? 'FILE';
+
+                    return (
+                      <div
+                        key={attachment.uuid ?? attachment.id ?? `${attachmentLabel}-${index}`}
+                        className={styles.documentRow}>
+                        <Tag type="blue" size="sm">
+                          {attachmentType}
+                        </Tag>
+                        <span className={styles.documentTitle}>{attachmentLabel}</span>
+                        {previewUrl ? (
+                          <Button
+                            kind="ghost"
+                            size="sm"
+                            className={styles.documentPreviewButton}
+                            href={previewUrl}
+                            renderIcon={Document}
+                            iconDescription={t('previewAttachment', 'Preview attachment')}
+                            rel="noopener noreferrer"
+                            target="_blank"
+                            type="button">
+                            {t('preview', 'Preview')}
+                          </Button>
+                        ) : (
+                          <span className={styles.muted}>—</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </ModalBody>
@@ -910,7 +949,7 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
         <Button kind="secondary" onClick={onClose} type="button">
           {t('closeModal', 'Close modal')}
         </Button>
-        <Button kind="danger" onClick={handleCloseClaim} style={{ marginBottom: '1rem' }} disabled={isClosed}>
+        <Button kind="danger" onClick={handleCloseClaim} className={styles.actionButton} disabled={isClosed}>
           {t('cancelClaim', 'Cancel Claim')}
         </Button>
         <Button

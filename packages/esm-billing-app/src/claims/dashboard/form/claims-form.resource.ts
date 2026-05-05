@@ -4,6 +4,7 @@ import useSWR from 'swr';
 import useSWRImmutable from 'swr/immutable';
 import { mockInterventions, mockPackages } from './claims-form.mocks';
 import z from 'zod';
+import { extractSavannahErrorMessage } from '../../../helpers';
 
 interface Provider {
   uuid: string;
@@ -113,10 +114,25 @@ export const submitCombinedBills = async (
       formData.append(`attachments_${index}_file_blob`, fileBlob, doc.name || `attachment-${index + 1}`);
     });
 
-    await openmrsFetch(`${restBaseUrl}/insuranceclaims/combined-bills`, {
-      method: 'POST',
-      body: formData,
-    });
+    try {
+      const response = await openmrsFetch(`${restBaseUrl}/insuranceclaims/combined-bills`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      // Check if response indicates failure
+      if (!response.ok || (response.data && !response.data.success)) {
+        const errorData = response.data;
+        const errorMessage =
+          errorData?.error ||
+          errorData?.upstream_error?.message ||
+          errorData?.message ||
+          'Failed to process combined bill';
+        throw new Error(errorMessage);
+      }
+    } catch (error: any) {
+      throw new Error(extractSavannahErrorMessage(error));
+    }
   }
 };
 
@@ -135,13 +151,24 @@ export const createBillsForItems = async (
       visit_uuid: visitUuid,
     };
 
-    await openmrsFetch(`${restBaseUrl}/insuranceclaims/bills`, {
-      method: 'POST',
-      body: JSON.stringify(itemPayload),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    try {
+      const response = await openmrsFetch(`${restBaseUrl}/insuranceclaims/bills`, {
+        method: 'POST',
+        body: JSON.stringify(itemPayload),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok || (response.data && !response.data.success)) {
+        const errorData = response.data;
+        const errorMessage =
+          errorData?.error || errorData?.upstream_error?.message || errorData?.message || 'Failed to create bill item';
+        throw new Error(errorMessage);
+      }
+    } catch (error: any) {
+      throw new Error(extractSavannahErrorMessage(error));
+    }
   }
 };
 
@@ -153,13 +180,24 @@ export const submitDiagnoses = async (diagnoses: string[], defaultInterventionCo
       visit_uuid: visitUuid,
     };
 
-    await openmrsFetch(`${restBaseUrl}/insuranceclaims/bill-diagnosis`, {
-      method: 'POST',
-      body: JSON.stringify(diagnosisPayload),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    try {
+      const response = await openmrsFetch(`${restBaseUrl}/insuranceclaims/bill-diagnosis`, {
+        method: 'POST',
+        body: JSON.stringify(diagnosisPayload),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok || (response.data && !response.data.success)) {
+        const errorData = response.data;
+        const errorMessage =
+          errorData?.error || errorData?.upstream_error?.message || errorData?.message || 'Failed to submit diagnosis';
+        throw new Error(errorMessage);
+      }
+    } catch (error: any) {
+      throw new Error(extractSavannahErrorMessage(error));
+    }
   }
 };
 
@@ -176,10 +214,21 @@ export const uploadAttachments = async (
     const fileBlob = base64ToBlob(doc.base64, doc.type);
     formData.append('file_blob', fileBlob, doc.name || 'attachment');
 
-    await openmrsFetch(`${restBaseUrl}/insuranceclaims/bill-attachment`, {
-      method: 'POST',
-      body: formData,
-    });
+    try {
+      const response = await openmrsFetch(`${restBaseUrl}/insuranceclaims/bill-attachment`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok || (response.data && !response.data.success)) {
+        const errorData = response.data;
+        const errorMessage =
+          errorData?.error || errorData?.upstream_error?.message || errorData?.message || 'Failed to upload attachment';
+        throw new Error(errorMessage);
+      }
+    } catch (error: any) {
+      throw new Error(extractSavannahErrorMessage(error));
+    }
   }
 };
 
