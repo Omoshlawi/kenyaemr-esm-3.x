@@ -19,7 +19,7 @@ export interface BillingConfig {
   mpesaAPIBaseUrl: string;
   hieBaseUrl: string;
   insuranceSchemes: Array<string>;
-  shaIdentificationNumberUUID: string;
+  crIdentificationNumberUUID: string;
   cashPointUuid: string;
   cashierUuid: string;
   patientBillsUrl: string;
@@ -54,10 +54,11 @@ export const configSchema: ConfigSchema = {
     _description: 'Mobile money payment method uuid',
     _default: '28989582-e8c3-46b0-96d0-c249cb06d5c6',
   },
-  shaIdentificationNumberUUID: {
+  crIdentificationNumberUUID: {
     _type: Type.String,
-    _description: 'Social Health Authority Identification Number',
-    _default: '52c3c0c3-05b8-4b26-930e-2a6a54e14c90',
+    _description:
+      'The person identifier type uuid for Client Registry ID, which is used as the identification number for SHA claims',
+    _default: '24aedd37-b5be-4e08-8311-3721b8d5100d',
   },
   nationalIdUUID: {
     _type: Type.String,

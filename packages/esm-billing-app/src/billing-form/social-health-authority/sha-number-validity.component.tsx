@@ -18,13 +18,13 @@ type SHANumberValidityProps = {
 
 const SHANumberValidity: React.FC<SHANumberValidityProps> = ({ paymentMethod, patientUuid }) => {
   const { t } = useTranslation();
-  const { shaIdentificationNumberUUID } = useConfig<BillingConfig>();
+  const { crIdentificationNumberUUID } = useConfig<BillingConfig>();
   const { patient, isLoading: isLoadingPatientUuid } = usePatient(patientUuid);
   const { watch } = useFormContext();
   const isSHA = watch('insuranceScheme')?.includes('SHA');
   const shaIdentificationNumber = patient?.identifier
     ?.filter((identifier) => identifier)
-    .filter((identifier) => identifier.type.coding.some((coding) => coding.code === shaIdentificationNumberUUID));
+    .filter((identifier) => identifier.type.coding.some((coding) => coding.code === crIdentificationNumberUUID));
 
   const { data, isLoading: isLoadingHIEEligibility, error } = useSHAEligibility(patientUuid, shaIdentificationNumber);
 

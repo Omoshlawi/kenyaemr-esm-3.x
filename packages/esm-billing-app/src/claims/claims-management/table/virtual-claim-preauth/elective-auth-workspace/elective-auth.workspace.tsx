@@ -63,7 +63,7 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
   const workspaceTitle =
     workspaceProps?.workspaceTitle ?? t('createElectivePreauth', 'Create Elective Pre-Authorization');
 
-  const { shaIdentificationNumberUUID } = useConfig<BillingConfig>();
+  const { crIdentificationNumberUUID } = useConfig<BillingConfig>();
 
   const {
     control,
@@ -87,7 +87,7 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
 
   const { patient } = usePatient(patientUuid ?? '');
   const crId: string | null =
-    patient?.identifiers?.find((id) => id.identifierType?.uuid === shaIdentificationNumberUUID)?.identifier ?? null;
+    patient?.identifiers?.find((id) => id.identifierType?.uuid === crIdentificationNumberUUID)?.identifier ?? null;
 
   const patientPhone = usePatientPhone(patientUuid ?? '');
 

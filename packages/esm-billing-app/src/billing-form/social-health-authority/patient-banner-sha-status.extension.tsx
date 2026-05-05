@@ -17,14 +17,14 @@ interface PatientBannerShaStatusProps {
 
 const PatientBannerShaStatus: React.FC<PatientBannerShaStatusProps> = ({ patientUuid, renderedFrom }) => {
   const { t } = useTranslation();
-  const { shaIdentificationNumberUUID } = useConfig<BillingConfig>();
+  const { crIdentificationNumberUUID } = useConfig<BillingConfig>();
   const { patient, isLoading: isLoadingPatient } = usePatient(patientUuid);
 
-  const shaIdentificationNumber = patient?.identifier?.filter((identifier) =>
-    identifier?.type?.coding?.some((coding) => coding?.code === shaIdentificationNumberUUID),
+  const crIdentificationNumber = patient?.identifier?.filter((identifier) =>
+    identifier?.type?.coding?.some((coding) => coding?.code === crIdentificationNumberUUID),
   );
 
-  const { data, isLoading: isLoadingHIEEligibility, error } = useSHAEligibility(patientUuid, shaIdentificationNumber);
+  const { data, isLoading: isLoadingHIEEligibility, error } = useSHAEligibility(patientUuid, crIdentificationNumber);
 
   const schemesData = useMemo(() => {
     if (!data?.schemes || data.schemes.length === 0) {

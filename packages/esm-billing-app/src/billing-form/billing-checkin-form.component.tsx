@@ -64,7 +64,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   const {
     visitAttributeTypes: { isPatientExempted },
     inPatientVisitTypeUuid,
-    shaIdentificationNumberUUID,
+    crIdentificationNumberUUID,
   } = useConfig<BillingConfig>();
 
   const { patient } = usePatient(patientUuid);
@@ -201,7 +201,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         return;
       }
 
-      const patientCRId = getPatientCRNumber(patient as fhir.Patient, shaIdentificationNumberUUID);
+      const patientCRId = getPatientCRNumber(patient as fhir.Patient, crIdentificationNumberUUID);
       if (!patientCRId) {
         showSnackbar({
           title: t('shaVirtualClaim', 'SHA Virtual Claim'),
@@ -364,7 +364,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     isElectiveVisit,
     electiveRecord,
     isApproved,
-    shaIdentificationNumberUUID,
+    crIdentificationNumberUUID,
     patientUuid,
     t,
   ]);

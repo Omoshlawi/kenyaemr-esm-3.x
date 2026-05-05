@@ -23,7 +23,7 @@ type Props = {
 
 const SHABenefitPackagesAndInterventions: React.FC<Props> = ({ patientUuid, visitTypeUuid }) => {
   const { t } = useTranslation();
-  const { shaIdentificationNumberUUID, inPatientVisitTypeUuid } = useConfig<BillingConfig>();
+  const { crIdentificationNumberUUID, inPatientVisitTypeUuid } = useConfig<BillingConfig>();
   const { error: patientError, isLoading: isLoadingPatient, patient } = usePatient(patientUuid);
   const form = useFormContext<{
     packages: Array<string>;
@@ -41,29 +41,21 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({ patientUuid, visi
     if (!patient?.identifier) {
       return null;
     }
-    const byCode = patient.identifier.find((id: fhir.Identifier) =>
-      id?.type?.coding?.some((c) => c.code === shaIdentificationNumberUUID || c.system?.includes('sha')),
+    const byType = patient.identifier.find((id: fhir.Identifier) =>
+      id?.type?.coding?.some((c) => c.code === crIdentificationNumberUUID),
     );
-    if (byCode?.value) {
-      return byCode.value;
+    if (byType?.value) {
+      return byType.value;
     }
-    const byCR = patient.identifier.find((id: fhir.Identifier) => id?.value?.startsWith('CR'));
-    return byCR?.value ?? null;
-  }, [patient, shaIdentificationNumberUUID]);
-
-  const shaNumber = useMemo(
-    () =>
-      patient?.identifier?.find((id: fhir.Identifier) =>
-        id?.type?.coding?.some((c) => c.code === shaIdentificationNumberUUID || c.system?.includes('sha')),
-      )?.value,
-    [patient, shaIdentificationNumberUUID],
-  );
+    const byPrefix = patient.identifier.find((id: fhir.Identifier) => id?.value?.startsWith('CR'));
+    return byPrefix?.value ?? null;
+  }, [patient, crIdentificationNumberUUID]);
 
   useEffect(() => {
-    if (shaNumber) {
-      setValue('policyNumber', shaNumber);
+    if (patientCRId) {
+      setValue('policyNumber', patientCRId);
     }
-  }, [shaNumber, setValue]);
+  }, [patientCRId, setValue]);
 
   useEffect(() => {
     if (isInpatient) {
@@ -80,7 +72,6 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({ patientUuid, visi
 
   const selectedPackages = form.watch('packages');
 
-  // Initialize selectedSubBenefitCode when packages are pre-selected (e.g., from visit attributes)
   useEffect(() => {
     if (selectedPackages?.length > 0 && selectedSubBenefitCode === null) {
       setSelectedSubBenefitCode(selectedPackages[0]);
