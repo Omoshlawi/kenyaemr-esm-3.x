@@ -28,6 +28,8 @@ export const hivCareAndTreatmentLink = getAsyncLifecycle(
     import('./dashboard/createDashboardLink').then((m) => ({
       default: m.createDashboardLink({
         ...hivCareAndTreatmentDashboardMeta,
+        // t('HIV Care & Treatment', 'HIV Care & Treatment')
+        title: hivCareAndTreatmentDashboardMeta.title,
         icon: 'omrs-icon-programs',
       }),
     })),

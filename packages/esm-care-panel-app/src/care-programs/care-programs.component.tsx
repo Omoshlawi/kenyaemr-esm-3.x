@@ -90,7 +90,7 @@ const CarePrograms: React.FC<CareProgramsProps> = ({ patientUuid, patient }) => 
 
         return {
           id: enrollment.program.uuid,
-          programName: enrollment.program.name,
+          programName: t(enrollment.program.name),
           status: (
             <div className={styles.careProgramButtonContainer}>
               <Tag type="green">{t('enrolled', 'Enrolled')}</Tag>
@@ -123,15 +123,35 @@ const CarePrograms: React.FC<CareProgramsProps> = ({ patientUuid, patient }) => 
       }),
       ...eligibleCarePrograms.map((careProgram) => {
         const enrollmentForm = getProgramEnrollmentForm(careProgram.uuid);
-
         return {
           id: `${careProgram.uuid}`,
-          programName: careProgram.display,
+          //  t('HIV', 'HIV')
+          //  t('Child Welfare Clinic', 'Child Welfare Clinic')
+          //  t('SMNI - Services maternels', 'SMNI - Services maternels')
+          //  t('TB', 'TB')
+          //  t('TPT', 'TPT')
+          //  t('PrEP', 'PrEP')
+          //  t('OVC', 'OVC')
+          //  t('OTZ', 'OTZ')
+          //  t('KVP', 'KVP')
+          //  t('NimeCONFIRM', 'NimeCONFIRM')
+          //  t('VMMC', 'VMMC')
+          //  t('MAT', 'MAT')
+          //  t('NCD', 'NCD')
+          //  t('Violence screening', 'Violence screening')
+          //  t('CPM', 'CPM')
+          //  t('Nutrition', 'Nutrition')
+          //  t('Antenatal Care', 'Antenatal Care')
+          //  t('Postnatal Care', 'Postnatal Care')
+          //  t('Family Planning', 'Family Planning')
+          //  t('Pre-Conception Care', 'Pre-Conception Care')
+          programName: t(careProgram.display),
           status: (
             <div className={styles.careProgramButtonContainer}>
               <span>
                 {capitalize(
-                  `${careProgram.enrollmentStatus} ${
+                  // t('eligible', 'Eligible')
+                  `${t(careProgram.enrollmentStatus)} ${
                     careProgram.enrollmentDetails?.dateEnrolled && careProgram.enrollmentStatus === 'active'
                       ? `Since (${formatDate(new Date(careProgram.enrollmentDetails.dateEnrolled))})`
                       : ''
@@ -161,7 +181,7 @@ const CarePrograms: React.FC<CareProgramsProps> = ({ patientUuid, patient }) => 
                   );
                 }}
                 renderIcon={careProgram.enrollmentStatus == 'active' ? Close : DocumentAdd}>
-                {careProgram.enrollmentStatus == 'active' ? 'Discontinue' : 'Enroll'}
+                {careProgram.enrollmentStatus == 'active' ? t('discontinue', 'Discontinue') : t('enroll', 'Enroll')}
               </Button>
             </div>
           ),
@@ -186,11 +206,11 @@ const CarePrograms: React.FC<CareProgramsProps> = ({ patientUuid, patient }) => 
   const headers = [
     {
       key: 'programName',
-      header: 'Program name',
+      header: t('programName', 'Program Name'),
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('status', 'Status'),
     },
   ];
 
