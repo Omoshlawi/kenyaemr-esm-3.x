@@ -57,9 +57,23 @@
 }
 
 .buttonSet {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
   margin-top: auto;
-  justify-self: end;
-  margin-right: 3rem;
+
+  :global(.cds--btn) {
+    max-width: none;
+    width: 100%;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  &.tablet {
+    padding: layout.$spacing-04 layout.$spacing-05;
+    background-color: colors.$white;
+  }
 }
 .button {
   height: layout.$spacing-10;

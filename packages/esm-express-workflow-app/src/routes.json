@@ -314,7 +314,7 @@
     {
       "name": "custom-start-visit-workspace-form",
       "component": "visitFormWorkspace",
-      "window": "start-visit"
+      "window": "ewf-start-visit"
     }
   ],
   "workspaceWindows2": [
