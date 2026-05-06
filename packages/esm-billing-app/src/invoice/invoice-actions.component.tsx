@@ -1,12 +1,10 @@
 import { Button, Popover, PopoverContent } from '@carbon/react';
 import { Close, Printer, Wallet, FolderOpen, BaggageClaim } from '@carbon/react/icons';
 import {
-  launchWorkspace,
   restBaseUrl,
   showModal,
   UserHasAccess,
   useFeatureFlag,
-  useVisit,
   useVisitContextStore,
   defaultVisitCustomRepresentation,
   navigate,
@@ -249,7 +247,7 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
           renderIcon={BaggageClaim}
           iconDescription="Add"
           tooltipPosition="bottom">
-          {activeVisit ? t('endVisitAndClaim', 'End visit and Process claim') : t('claim', 'Process claim')}
+          {activeVisit ? t('endVisitAndSIClaim', 'End visit and Process SI claim') : t('siClaim', 'Process SI claim')}
         </Button>
       )}
     </div>

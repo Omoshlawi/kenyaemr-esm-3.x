@@ -275,10 +275,15 @@ export type ClaimPreviewInvoiceLine = {
   unit?: string;
   unit_price?: string | number;
   charge_date?: string;
-  bill_from?: string;
-  bill_to?: string;
   scheme_code?: string;
   scheme_name?: string;
+  discount?: string | number;
+  is_active?: boolean;
+  is_cancellation?: boolean;
+  is_return?: boolean;
+  line_number?: string;
+  uhc_exceeded?: boolean;
+  paymentStatus?: string;
   [key: string]: any;
 };
 

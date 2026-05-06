@@ -21,7 +21,7 @@ import {
 import { ErrorState, formatDate, showModal, showToast, useLayoutType } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { sendSHAOtp } from '../../../../billing-form/social-health-authority/sha-virtual-claim.resource';
-import { ClaimPreview, useClaimPreview, useVisit } from '../../../dashboard/form/claims-form.resource';
+import { ClaimPreview, ClaimPreviewInvoiceLine, useClaimPreview } from '../../../dashboard/form/claims-form.resource';
 import { submitInsuranceClaim } from './claim.resource';
 import styles from './claim-modals.scss';
 import { type LineItem, type MappedBill } from '../../../../types';
@@ -135,8 +135,8 @@ type PreviewInvoice = {
   lineItems: LineItem[];
 };
 
-const buildPreviewLineItem = (lineItem: any, index: number): LineItem => ({
-  uuid: lineItem?.uuid ?? lineItem?.id ?? `line-item-${index}`,
+const buildPreviewLineItem = (lineItem: ClaimPreviewInvoiceLine, index: number): LineItem => ({
+  uuid: lineItem?.id ?? `line-item-${index}`,
   display: lineItem?.display ?? lineItem?.item_name ?? lineItem?.item?.display ?? lineItem?.billableService ?? '',
   voided: Boolean(lineItem?.voided),
   voidReason: lineItem?.voidReason ?? null,
@@ -152,6 +152,8 @@ const buildPreviewLineItem = (lineItem: any, index: number): LineItem => ({
   itemOrServiceConceptUuid: lineItem?.itemOrServiceConceptUuid ?? lineItem?.item_or_service_concept_uuid ?? '',
   serviceTypeUuid: lineItem?.serviceTypeUuid ?? lineItem?.service_type_uuid ?? '',
   order: lineItem?.order ?? ({} as any),
+  is_return: lineItem?.is_return,
+  is_cancellation: lineItem?.is_cancellation,
 });
 
 const buildPreviewBill = (claim: ClaimPreview, invoice: any, lineItems: LineItem[]): MappedBill =>
@@ -447,84 +449,89 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
 
   const lineItemRows = useMemo(
     () =>
-      (selectedInvoice?.lineItems ?? []).map((lineItem, index) => ({
-        id: lineItem.uuid ?? `${selectedInvoice?.id ?? 'line'}-${index}`,
-        item: lineItem.item || lineItem.display || lineItem.billableService || '-',
-        qty: lineItem.quantity ?? 1,
-        unitPrice: formatAmount(Number(lineItem.price ?? 0)),
-        total: formatAmount(Number((lineItem.price ?? 0) * (lineItem.quantity ?? 1))),
-        status: lineItem.paymentStatus || '-',
-        actions: selectedInvoiceUuid ? (
-          <ButtonSet aria-label={t('lineItemActions', 'Line item actions')}>
-            <Button
-              kind="ghost"
-              hasIconOnly
-              disabled={isClosed}
-              renderIcon={(props) => <WatsonHealthRotate_360 size={16} {...props} />}
-              onClick={() => {
-                onClose();
-                window.setTimeout(() => {
-                  const dispose = showModal('resubmit-claim-line-modal', {
-                    visit_uuid,
-                    onClose: () => {
-                      dispose();
-                    },
-                    controlSize: 'sm',
-                  });
-                }, 0);
-              }}
-              className={styles.actionButton}>
-              {t('resubmitClaimLine', 'Resubmit Claim Line')}
-            </Button>
-            <Button
-              hasIconOnly
-              kind="ghost"
-              disabled={isClosed}
-              renderIcon={(props) => <Edit size={16} {...props} />}
-              title={t('editLineItem', 'Edit line item')}
-              onClick={() => {
-                onClose();
-                window.setTimeout(() => {
-                  const dispose = showModal('edit-claim-line-modal', {
-                    billUuid: selectedInvoiceUuid,
-                    claimLineId: lineItem.uuid,
-                    quantity: lineItem.quantity,
-                    unit_price: lineItem.price,
-                    visit_uuid,
-                    onClose: () => {
-                      dispose();
-                    },
-                    controlSize: 'sm',
-                  });
-                }, 0);
-              }}
-            />
-            <Button
-              hasIconOnly
-              kind="ghost"
-              renderIcon={(props) => <TrashCan size={16} {...props} />}
-              title={t('deleteLineItem', 'Delete line item')}
-              className={styles.deleteActionButton}
-              disabled={isClosed}
-              onClick={async () => {
-                onClose();
-                window.setTimeout(() => {
-                  const dispose = showModal('delete-claim-line-modal', {
-                    claimLineId: lineItem.uuid,
-                    visit_uuid,
-                    onClose: () => {
-                      dispose();
-                    },
-                    controlSize: 'sm',
-                  });
-                }, 0);
-              }}
-            />
-          </ButtonSet>
-        ) : null,
-        lineItem,
-      })),
-    [onClose, selectedInvoice, selectedInvoiceUuid, t],
+      (selectedInvoice?.lineItems ?? []).map((lineItem: LineItem, index) => {
+        const isLineItemReturned = lineItem?.is_return === true;
+        const isLineItemCancelled = lineItem?.is_cancellation === true;
+
+        return {
+          id: lineItem.uuid ?? `${selectedInvoice?.id ?? 'line'}-${index}`,
+          item: lineItem.item || lineItem.display || lineItem.billableService || '-',
+          qty: lineItem.quantity ?? 1,
+          unitPrice: formatAmount(Number(lineItem.price ?? 0)),
+          total: formatAmount(Number((lineItem.price ?? 0) * (lineItem.quantity ?? 1))),
+          status: isLineItemCancelled ? t('cancelled', 'Cancelled') : lineItem.paymentStatus || '-',
+          actions: selectedInvoiceUuid ? (
+            <ButtonSet aria-label={t('lineItemActions', 'Line item actions')}>
+              <Button
+                kind="ghost"
+                hasIconOnly
+                disabled={isClosed || !isLineItemReturned || !isLineItemCancelled}
+                renderIcon={(props) => <WatsonHealthRotate_360 size={16} {...props} />}
+                onClick={() => {
+                  onClose();
+                  window.setTimeout(() => {
+                    const dispose = showModal('resubmit-claim-line-modal', {
+                      visit_uuid,
+                      onClose: () => {
+                        dispose();
+                      },
+                      controlSize: 'sm',
+                    });
+                  }, 0);
+                }}
+                className={styles.actionButton}>
+                {t('resubmitClaimLine', 'Resubmit Claim Line')}
+              </Button>
+              <Button
+                hasIconOnly
+                kind="ghost"
+                disabled={isClosed || !isLineItemReturned || !isLineItemCancelled}
+                renderIcon={(props) => <Edit size={16} {...props} />}
+                title={t('editLineItem', 'Edit line item')}
+                onClick={() => {
+                  onClose();
+                  window.setTimeout(() => {
+                    const dispose = showModal('edit-claim-line-modal', {
+                      billUuid: selectedInvoiceUuid,
+                      claimLineId: lineItem.uuid,
+                      quantity: lineItem.quantity,
+                      unit_price: lineItem.price,
+                      visit_uuid,
+                      onClose: () => {
+                        dispose();
+                      },
+                      controlSize: 'sm',
+                    });
+                  }, 0);
+                }}
+              />
+              <Button
+                hasIconOnly
+                kind="ghost"
+                renderIcon={(props) => <TrashCan size={16} {...props} />}
+                title={t('deleteLineItem', 'Delete line item')}
+                className={styles.deleteActionButton}
+                disabled={isClosed}
+                onClick={async () => {
+                  onClose();
+                  window.setTimeout(() => {
+                    const dispose = showModal('delete-claim-line-modal', {
+                      claimLineId: lineItem.uuid,
+                      visit_uuid,
+                      onClose: () => {
+                        dispose();
+                      },
+                      controlSize: 'sm',
+                    });
+                  }, 0);
+                }}
+              />
+            </ButtonSet>
+          ) : null,
+          lineItem,
+        };
+      }),
+    [isClosed, onClose, selectedInvoice, selectedInvoiceUuid, t, visit_uuid],
   );
   const patientId = data?.member_number;
   const interventionCodes = useMemo(

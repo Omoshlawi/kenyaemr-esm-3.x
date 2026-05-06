@@ -78,6 +78,8 @@ export interface LineItem {
   itemOrServiceConceptUuid: string;
   serviceTypeUuid: string;
   order: OpenmrsResource;
+  is_return?: boolean;
+  is_cancellation?: boolean;
 }
 
 interface PatientLink {
