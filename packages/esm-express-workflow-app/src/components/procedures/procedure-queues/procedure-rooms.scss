@@ -1,0 +1,13 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.contentArea {
+  padding: layout.$spacing-05;
+  min-height: 400px;
+}
+
+.tabsContainer {
+  margin-top: layout.$spacing-05;
+  padding: layout.$spacing-05;
+}

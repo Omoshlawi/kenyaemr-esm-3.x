@@ -110,3 +110,15 @@ export type QueueEntriesPagination = {
   goToPrevious: () => void;
   defaultPageSize: number;
 };
+
+export interface QueueEntryPayload {
+  visit: { uuid: string };
+  queueEntry: {
+    status: { uuid: string };
+    priority: { uuid: string };
+    queue: { uuid: string };
+    patient: { uuid: string };
+    startedAt: Date;
+    sortWeight: number;
+  };
+}
