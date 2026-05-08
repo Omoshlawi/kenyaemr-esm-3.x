@@ -1,10 +1,6 @@
 import { InlineLoading, OverflowMenuItem } from '@carbon/react';
-import { launchWorkspace, showSnackbar, useConfig, Visit } from '@openmrs/esm-framework';
-import {
-  launchStartVisitPrompt,
-  useLaunchWorkspaceRequiringVisit,
-  usePatientChartStore,
-} from '@openmrs/esm-patient-common-lib';
+import { showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { useLaunchWorkspaceRequiringVisit, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
 import React, { FC, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CarePanelConfig } from '../config-schema';
@@ -105,14 +101,16 @@ const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
     );
   }
 
+  const formLabel = t(form.formTranslationKey ?? form.formName, { defaultValue: form.formName });
+
   return (
     <OverflowMenuItem
       key={form.formUuId}
-      itemText={form.formName}
+      itemText={formLabel}
       onClick={() => {
         /**
           launchWorkspace('patient-form-entry-workspace', {
-            workspaceTitle: form.formName,
+            workspaceTitle: formLabel,
             mutateForm: () => {
               mutate?.();
               mutateDependancyStatus();
@@ -129,7 +127,7 @@ const ProgramFormOverflowMenuItem: FC<ProgramFormOverflowMenuItemProps> = ({
          */
         return launchFormEntryWorkspace(
           {
-            workspaceTitle: form.formName,
+            workspaceTitle: formLabel,
             form: {
               uuid: form.formUuId,
             },

@@ -53,7 +53,7 @@ const CarePanel: React.FC<CarePanelProps> = ({ patientUuid, formEntrySub }) => {
         <div className={styles.contextSwitcherContainer}>
           <ContentSwitcher size="md" selectedIndex={switchItem?.index} onChange={(params) => setSwitcherItem(params)}>
             {switcherHeaders?.map((enrollment) => (
-              <Switch key={enrollment} name={enrollment} text={enrollment} />
+              <Switch key={enrollment} name={enrollment} text={t(enrollment)} />
             ))}
           </ContentSwitcher>
         </div>
