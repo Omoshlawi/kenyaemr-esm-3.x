@@ -4,7 +4,6 @@ import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import { Layer, Tile, Tabs, TabList, Tab, TabPanels, TabPanel } from '@carbon/react';
 import { Task, Upload } from '@carbon/react/icons';
 
-import BenefitsTable from './table/benefits-table.component';
 import Benefits from './benefits/benefits.component';
 
 import styles from './benefits-package.scss';
@@ -30,9 +29,7 @@ const BenefitsPackage: React.FC<BenefitsPackageProps> = ({ patientUuid }) => {
             <TabPanel>
               <Benefits />
             </TabPanel>
-            <TabPanel>
-              <BenefitsTable patientUuid={patientUuid} />
-            </TabPanel>
+            <TabPanel></TabPanel>
           </TabPanels>
         </Tabs>
       </div>

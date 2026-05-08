@@ -24,10 +24,10 @@ import {
   Tabs,
   Tag,
 } from '@carbon/react';
-import { Add, Calendar, TrashCan } from '@carbon/react/icons';
-import { formatDatetime, isDesktop, launchWorkspace2, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
+import { Add, Calendar } from '@carbon/react/icons';
+import { isDesktop, launchWorkspace2, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import { EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
-import { mutate, useSWRConfig } from 'swr';
+import { mutate } from 'swr';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styles from './preauth-queue-table.scss';
@@ -36,6 +36,7 @@ import { PreauthQueueItem } from '../../../../billing-form/social-health-authori
 import { PREAUTH_TYPE_COLORS, WORKFLOW_STATE_COLORS } from './constants';
 import { formatShaDate, isWithinDateRange } from './utils';
 import { formatCurrency } from '../../../../helpers/currency';
+import InterventionCrudLauncher from './intervention-crud-launcher.component';
 
 interface ExpandedPanelProps {
   item: PreauthQueueItem;
@@ -46,6 +47,10 @@ interface ExpandedPanelProps {
 const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) => {
   const { t } = useTranslation();
   const [submitting] = useState(false);
+
+  // Disable submit when SHA already has this preauth
+  // preauth_already_submitted = true when status is ACTIVE / PENDING_DOCTOR_APPROVAL / FINALISED
+  const preauthAlreadySubmitted = Boolean((item as any).preauth_already_submitted);
 
   const handleSubmitPreauth = () =>
     launchWorkspace2('preauth-form-workspace', {
@@ -66,8 +71,10 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
   return (
     <div className={styles.expandedPanel}>
       <div className={styles.expandedGrid}>
+        {/* ── Left card: preauth details ─────────────────────────────── */}
         <div className={styles.expandedCard}>
           <p className={styles.expandedCardTitle}>{t('preauthDetails', 'Preauth details')}</p>
+
           <div className={styles.kvRow}>
             <span className={styles.kvLabel}>{t('authCode', 'Auth code')}</span>
             <span className={styles.kvValueMono}>{item.authorization_code}</span>
@@ -96,6 +103,7 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
             <span className={styles.kvLabel}>{t('serviceType', 'Service type')}</span>
             <span className={styles.kvValue}>{item.service_type ?? '—'}</span>
           </div>
+
           {item.preauth_status && (
             <div className={styles.kvRow}>
               <span className={styles.kvLabel}>{t('preauthStatus', 'Preauth status')}</span>
@@ -114,6 +122,7 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
               </span>
             </div>
           )}
+
           {item.requested_on && (
             <div className={styles.kvRow}>
               <span className={styles.kvLabel}>{t('requestedOn', 'Requested on')}</span>
@@ -126,12 +135,14 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
               <span className={styles.kvValue}>{formatShaDate(item.responded_on)}</span>
             </div>
           )}
+
           {tab === 'COMPLETED' && item.approved_amount && (
             <div className={styles.kvRow}>
               <span className={styles.kvLabel}>{t('approvedAmount', 'Approved amount')}</span>
               <span className={`${styles.kvValue} ${styles.kvValueGreen}`}>KES {item.approved_amount}</span>
             </div>
           )}
+
           {tab === 'REJECTED' && item.response_note && (
             <div className={styles.kvRow}>
               <span className={styles.kvLabel}>{t('rejectionReason', 'Rejection reason')}</span>
@@ -140,6 +151,7 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
           )}
         </div>
 
+        {/* ── Right card: docs + visit info ──────────────────────────── */}
         <div className={styles.expandedCard}>
           {tab === 'PENDING' && (
             <>
@@ -157,6 +169,7 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
               )}
             </>
           )}
+
           {(tab === 'COMPLETED' || tab === 'REJECTED') && (
             <>
               <p className={styles.expandedCardTitle}>{t('submittedDocuments', 'Submitted documents')}</p>
@@ -187,6 +200,7 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
               )}
             </>
           )}
+
           <p className={styles.expandedCardTitle}>{t('visitInfo', 'Visit info')}</p>
           <div className={styles.kvRow}>
             <span className={styles.kvLabel}>{t('visitType', 'Visit type')}</span>
@@ -205,9 +219,15 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
 
       <div className={styles.expandedActions}>
         {tab === 'PENDING' && (
-          <Button size="sm" kind="primary" onClick={handleSubmitPreauth} disabled={submitting}>
+          <Button
+            size="sm"
+            kind={preauthAlreadySubmitted ? 'ghost' : 'primary'}
+            onClick={handleSubmitPreauth}
+            disabled={submitting || preauthAlreadySubmitted}>
             {submitting ? (
               <InlineLoading description={t('submitting', 'Submitting...')} />
+            ) : preauthAlreadySubmitted ? (
+              t('preauthAlreadySubmitted', 'Preauth submitted ✓')
             ) : (
               t('submitPreauth', 'Submit preauth')
             )}
@@ -222,7 +242,6 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
     </div>
   );
 };
-
 interface ScheduledExpandedPanelProps {
   item: PreauthQueueItem;
   onAction: () => void;
@@ -234,6 +253,8 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
   const isPending = item.workflow_state === 'ELECTIVE_PENDING';
   const isDraft = item.workflow_state === 'ELECTIVE_DRAFT';
   const isRejected = item.workflow_state === 'ELECTIVE_REJECTED';
+
+  const preauthAlreadySubmitted = Boolean((item as any).preauth_already_submitted);
 
   const handleSubmitPreauth = () =>
     launchWorkspace2('preauth-form-workspace', {
@@ -251,6 +272,7 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
       <div className={styles.expandedGrid}>
         <div className={styles.expandedCard}>
           <p className={styles.expandedCardTitle}>{t('electivePreauthDetails', 'Elective preauth details')}</p>
+
           <div className={styles.kvRow}>
             <span className={styles.kvLabel}>{t('authCode', 'Auth code')}</span>
             <span className={styles.kvValueMono}>{item.authorization_code}</span>
@@ -283,6 +305,7 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
             <span className={styles.kvLabel}>{t('dateCreated', 'Date created')}</span>
             <span className={styles.kvValue}>{formatShaDate(item.date_created)}</span>
           </div>
+
           {item.preauth_status && (
             <div className={styles.kvRow}>
               <span className={styles.kvLabel}>{t('shaStatus', 'SHA status')}</span>
@@ -351,6 +374,7 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
               )}
             </>
           )}
+
           {isRejected && (item.attachments ?? []).length > 0 && (
             <>
               <p className={styles.expandedCardTitle}>
@@ -375,6 +399,7 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
               </div>
             </>
           )}
+
           {(isPending || isApproved) && (
             <>
               <p className={styles.expandedCardTitle}>{t('submittedDocuments', 'Submitted documents')}</p>
@@ -405,6 +430,7 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
               )}
             </>
           )}
+
           <div className={styles.inlineNotification}>
             {isDraft && (
               <InlineNotification
@@ -454,13 +480,27 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
 
       <div className={styles.expandedActions}>
         {isDraft && (
-          <Button size="sm" kind="primary" renderIcon={Calendar} onClick={handleSubmitPreauth}>
-            {t('submitElectivePreauth', 'Submit elective preauth')}
+          <Button
+            size="sm"
+            kind={preauthAlreadySubmitted ? 'ghost' : 'primary'}
+            renderIcon={Calendar}
+            onClick={handleSubmitPreauth}
+            disabled={preauthAlreadySubmitted}>
+            {preauthAlreadySubmitted
+              ? t('preauthAlreadySubmitted', 'Preauth submitted ✓')
+              : t('submitElectivePreauth', 'Submit elective preauth')}
           </Button>
         )}
         {isPending && (
-          <Button size="sm" kind="secondary" renderIcon={Calendar} onClick={handleSubmitPreauth}>
-            {t('resubmitElectivePreauth', 'Resubmit preauth')}
+          <Button
+            size="sm"
+            kind={preauthAlreadySubmitted ? 'ghost' : 'secondary'}
+            renderIcon={Calendar}
+            onClick={handleSubmitPreauth}
+            disabled={preauthAlreadySubmitted}>
+            {preauthAlreadySubmitted
+              ? t('preauthAlreadySubmitted', 'Preauth submitted ✓')
+              : t('resubmitElectivePreauth', 'Resubmit preauth')}
           </Button>
         )}
         {isRejected && (
@@ -484,8 +524,6 @@ const ScheduledTable: React.FC<ScheduledTableProps> = ({ search, fromDate, toDat
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const { queue, count, isLoading, error, mutate } = usePreauthQueue('SCHEDULED', pageSize);
-  const layout = useLayoutType();
-  const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
 
   const headers = [
     { key: 'patient', header: t('patient', 'Patient') },
@@ -631,7 +669,6 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const { queue, count, isLoading, error, mutate } = usePreauthQueue(tab, pageSize);
-  const layout = useLayoutType();
 
   const headerTitle =
     tab === 'PENDING'
@@ -639,6 +676,7 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
       : tab === 'COMPLETED'
       ? t('completedPreauths', 'Completed Pre-Authorizations')
       : t('rejectedPreauths', 'Rejected Pre-Authorizations');
+
   const emptyText =
     tab === 'PENDING'
       ? t('noPendingPreauths', 'No pending pre-authorizations')
@@ -804,6 +842,7 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
 
 const PreauthQueueTable: React.FC = () => {
   const { t } = useTranslation();
+
   const { queue: pendingQueue } = usePreauthQueue('PENDING');
   const { queue: completedQueue } = usePreauthQueue('COMPLETED');
   const { queue: rejectedQueue } = usePreauthQueue('REJECTED');

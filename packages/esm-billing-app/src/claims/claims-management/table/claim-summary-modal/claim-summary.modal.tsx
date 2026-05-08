@@ -14,115 +14,113 @@ import {
 import { formatDate, parseDate } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { FacilityClaim } from '../../../../types';
-import { useFacilityClaims } from '../use-facility-claims';
 import styles from './claim-summary.scss';
 import upperCase from 'lodash-es/upperCase';
 import capitalize from 'lodash-es/capitalize';
 import { useCurrencyFormatting } from '../../../../helpers/currency';
 import { SHA_INTERVENTION_LABELS } from '../../../../constants';
 
-type ExtendedClaim = FacilityClaim & {
-  id: string;
-  providerName: string;
-  patientName: string;
-  patientId?: string;
-};
+// type ExtendedClaim = FacilityClaim & {
+//   id: string;
+//   providerName: string;
+//   patientName: string;
+//   patientId?: string;
+// };
 
 export const ClaimSummaryModal = ({ closeModal, claimId }: { closeModal: () => void; claimId: string }) => {
   const { t } = useTranslation();
-  const { claims } = useFacilityClaims();
-  const { format: formatCurrency } = useCurrencyFormatting();
+  // const { claims } = useFacilityClaims();
+  // const { format: formatCurrency } = useCurrencyFormatting();
 
-  const claim = claims.find((c) => c.id === claimId) as ExtendedClaim | undefined;
+  // const claim = claims.find((c) => c.id === claimId) as ExtendedClaim | undefined;
 
-  if (!claim) {
-    return (
-      <React.Fragment>
-        <ModalBody>
-          <p>{t('claimNotFound', 'Claim not found')}</p>
-        </ModalBody>
-        <ModalFooter>
-          <Button kind="primary" onClick={closeModal} type="button">
-            {t('close', 'Close')}
-          </Button>
-        </ModalFooter>
-      </React.Fragment>
-    );
-  }
+  // if (claim) {
+  //   return (
+  //     <React.Fragment>
+  //       <ModalBody>
+  //         <p>{t('claimNotFound', 'Claim not found')}</p>
+  //       </ModalBody>
+  //       <ModalFooter>
+  //         <Button kind="primary" onClick={closeModal} type="button">
+  //           {t('close', 'Close')}
+  //         </Button>
+  //       </ModalFooter>
+  //     </React.Fragment>
+  //   );
+  // }
 
-  const personData = claim.bill?.patient?.person ?? claim.patient?.person;
+  // const personData = claim.bill?.patient?.person ?? claim.patient?.person;
 
-  const rawPatientDisplay = personData?.display || claim.bill?.patient?.display || claim.patientName || '-';
-  const cleanPatientName = rawPatientDisplay.includes(' - ')
-    ? rawPatientDisplay.split(' - ').slice(1).join(' - ').trim()
-    : rawPatientDisplay;
-  const patientName = upperCase(cleanPatientName);
-  const patientGender = personData?.gender ?? '-';
-  const patientAge = personData?.age != null ? `${personData.age} yrs` : '-';
+  // const rawPatientDisplay = personData?.display || claim.bill?.patient?.display || claim.patientName || '-';
+  // const cleanPatientName = rawPatientDisplay.includes(' - ')
+  //   ? rawPatientDisplay.split(' - ').slice(1).join(' - ').trim()
+  //   : rawPatientDisplay;
+  // const patientName = upperCase(cleanPatientName);
+  // const patientGender = personData?.gender ?? '-';
+  // const patientAge = personData?.age != null ? `${personData.age} yrs` : '-';
 
-  const rawBirthdate = personData?.birthdate ?? personData?.birthDate;
-  const patientDob = rawBirthdate ? formatDate(new Date(rawBirthdate)) : '-';
+  // const rawBirthdate = personData?.birthdate ?? personData?.birthDate;
+  // const patientDob = rawBirthdate ? formatDate(new Date(rawBirthdate)) : '-';
 
-  const rawProviderDisplay = claim.provider?.person?.display || claim.provider?.display || claim.providerName || '-';
-  const providerName = rawProviderDisplay.includes(' - ')
-    ? rawProviderDisplay.split(' - ').slice(1).join(' - ').trim()
-    : rawProviderDisplay;
+  // const rawProviderDisplay = claim.provider?.person?.display || claim.provider?.display || claim.providerName || '-';
+  // const providerName = rawProviderDisplay.includes(' - ')
+  //   ? rawProviderDisplay.split(' - ').slice(1).join(' - ').trim()
+  //   : rawProviderDisplay;
 
-  const diagnosesRaw =
-    (claim.visit?.encounters as any[])?.flatMap((encounter: any) => {
-      if (!encounter.diagnoses?.length) {
-        return [];
-      }
-      return encounter.diagnoses
-        .filter((d: any) => !d.voided)
-        .map((d: any) => ({
-          uuid: d.uuid,
-          display: d.diagnosis?.coded?.display || d.diagnosis?.nonCoded || d.diagnosis?.display || d.display || '',
-          certainty: d.certainty,
-          rank: d.rank ?? 2,
-        }))
-        .filter((d: any) => Boolean(d.display));
-    }) ?? [];
+  // const diagnosesRaw =
+  //   (claim.visit?.encounters as any[])?.flatMap((encounter: any) => {
+  //     if (!encounter.diagnoses?.length) {
+  //       return [];
+  //     }
+  //     return encounter.diagnoses
+  //       .filter((d: any) => !d.voided)
+  //       .map((d: any) => ({
+  //         uuid: d.uuid,
+  //         display: d.diagnosis?.coded?.display || d.diagnosis?.nonCoded || d.diagnosis?.display || d.display || '',
+  //         certainty: d.certainty,
+  //         rank: d.rank ?? 2,
+  //       }))
+  //       .filter((d: any) => Boolean(d.display));
+  //   }) ?? [];
 
-  const seenUuids = new Set<string>();
-  const diagnoses = diagnosesRaw
-    .filter((d) => {
-      if (seenUuids.has(d.uuid)) {
-        return false;
-      }
-      seenUuids.add(d.uuid);
-      return true;
-    })
-    .sort((a, b) => a.rank - b.rank);
+  // const seenUuids = new Set<string>();
+  // const diagnoses = diagnosesRaw
+  //   .filter((d) => {
+  //     if (seenUuids.has(d.uuid)) {
+  //       return false;
+  //     }
+  //     seenUuids.add(d.uuid);
+  //     return true;
+  //   })
+  //   .sort((a, b) => a.rank - b.rank);
 
-  const interventions = claim.interventions ?? [];
+  // const interventions = claim.interventions ?? [];
 
-  const isPHCClaim = claim.claimCode === 'auto' || claim.adjustment === 'PHC Claim';
+  // const isPHCClaim = claim.claimCode === 'auto' || claim.adjustment === 'PHC Claim';
 
-  const providedItems = claim.bill?.providedItems ?? [];
+  // const providedItems = claim.bill?.providedItems ?? [];
 
-  const billingHeaders = [
-    { key: 'item', header: t('item', 'Item') },
-    { key: 'qty', header: t('qty', 'Qty') },
-    { key: 'unitPrice', header: t('unitPrice', 'Unit Price') },
-    { key: 'total', header: t('total', 'Total') },
-  ];
+  // const billingHeaders = [
+  //   { key: 'item', header: t('item', 'Item') },
+  //   { key: 'qty', header: t('qty', 'Qty') },
+  //   { key: 'unitPrice', header: t('unitPrice', 'Unit Price') },
+  //   { key: 'total', header: t('total', 'Total') },
+  // ];
 
-  const billingRows = providedItems.map((item, idx) => ({
-    id: `${idx}`,
-    item: item.item?.display || '-',
-    qty: item.numberOfConsumptions ?? 1,
-    unitPrice: formatCurrency(item.price ?? 0),
-    total: formatCurrency((item.price ?? 0) * (item.numberOfConsumptions ?? 1)),
-  }));
+  // const billingRows = providedItems.map((item, idx) => ({
+  //   id: `${idx}`,
+  //   item: item.item?.display || '-',
+  //   qty: item.numberOfConsumptions ?? 1,
+  //   unitPrice: formatCurrency(item.price ?? 0),
+  //   total: formatCurrency((item.price ?? 0) * (item.numberOfConsumptions ?? 1)),
+  // }));
 
-  const claimedTotal = providedItems.reduce(
-    (sum, item) => sum + (item.price ?? 0) * (item.numberOfConsumptions ?? 1),
-    0,
-  );
+  // const claimedTotal = providedItems.reduce(
+  //   (sum, item) => sum + (item.price ?? 0) * (item.numberOfConsumptions ?? 1),
+  //   0,
+  // );
 
-  const displayTotal = isPHCClaim ? 0 : claimedTotal > 0 ? claimedTotal : claim.claimedTotal ?? 0;
+  // const displayTotal = isPHCClaim ? 0 : claimedTotal > 0 ? claimedTotal : claim.claimedTotal ?? 0;
 
   return (
     <React.Fragment>
@@ -134,11 +132,12 @@ export const ClaimSummaryModal = ({ closeModal, claimId }: { closeModal: () => v
             </div>
             <div className={styles.claimNumber}>
               <span className={styles.claimNumberLabel}>{t('claimNo', 'Claim No.')}</span>
-              <span className={styles.claimNumberValue}>{claim.claimCode || 'N/A'}</span>
+              {/* <span className={styles.claimNumberValue}>{claim.claimCode || 'N/A'}</span> */}
             </div>
           </div>
+        </div>
 
-          <div className={styles.infoGrid}>
+        {/* <div className={styles.infoGrid}>
             <div className={styles.infoBlock}>
               <h4 className={styles.blockTitle}>{t('billTo', 'BILL TO')}</h4>
               <div className={styles.infoContent}>
@@ -218,7 +217,6 @@ export const ClaimSummaryModal = ({ closeModal, claimId }: { closeModal: () => v
             )}
           </div>
 
-          {/* ── Billing Details — SHIF claims only ─────────────────────────── */}
           {!isPHCClaim && (
             <div className={styles.lineItemsSection}>
               <h4 className={styles.sectionTitle}>{t('billingDetails', 'BILLING DETAILS')}</h4>
@@ -265,7 +263,7 @@ export const ClaimSummaryModal = ({ closeModal, claimId }: { closeModal: () => v
               </span>
             </div>
           </div>
-        </div>
+        </div> */}
       </ModalBody>
 
       <ModalFooter>

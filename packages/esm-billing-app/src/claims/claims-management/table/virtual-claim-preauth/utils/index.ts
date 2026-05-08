@@ -3,6 +3,7 @@ import type { FieldErrors, FieldValues, Path } from 'react-hook-form';
 import { type SHAIntervention, type PreauthQueueItem } from '../../../../../billing-form/social-health-authority/type';
 import { PreauthFormData } from '../pre-auth-workspace/pre-auth-schema';
 import { ConceptResult, PreauthFormDataExtended, ProviderAttribute, SavannahErrorResponse } from '../type';
+import { mutate } from 'swr';
 
 export function formatShaDate(value: string | null | undefined): string {
   if (!value?.trim()) {
@@ -351,3 +352,21 @@ export function extractFetchError(err: unknown, fallback = 'An unexpected error 
 
   return fallback;
 }
+
+export const toDate = (value: unknown): Date | null => {
+  if (value == null || value === '') {
+    return null;
+  }
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? null : value;
+  }
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  }
+  return null;
+};
+
+export const handleQueueMutate = async (urlFragment: string) => {
+  await mutate((key) => typeof key === 'string' && key.includes(urlFragment), undefined, { revalidate: true });
+};

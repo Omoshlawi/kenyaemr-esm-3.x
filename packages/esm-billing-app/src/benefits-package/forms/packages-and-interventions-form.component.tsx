@@ -8,11 +8,12 @@ import {
   NumberInput,
 } from '@carbon/react';
 import { useConfig, usePatient } from '@openmrs/esm-framework';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { BillingConfig } from '../../config-schema';
 import { useSHASubBenefits } from '../../billing-form/social-health-authority/sha-virtual-claim.resource';
+import { type SHAIntervention } from '../../billing-form/social-health-authority/type';
 import styles from './packages-and-interventions-form.scss';
 import PackageInterventions from './interventions-form.component';
 
@@ -20,12 +21,15 @@ type Props = {
   patientUuid: string;
   visitTypeUuid?: string;
   showApplicableDocuments?: boolean;
+  /** Called whenever the intervention cache updates — parent uses this to detect CAPITATION */
+  onInterventionsCached?: (cache: Record<string, SHAIntervention>) => void;
 };
 
 const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
   patientUuid,
   visitTypeUuid,
   showApplicableDocuments,
+  onInterventionsCached,
 }) => {
   const { t } = useTranslation();
   const { crIdentificationNumberUUID, inPatientVisitTypeUuid } = useConfig<BillingConfig>();
@@ -74,7 +78,6 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
     isLoading: isLoadingSubBenefits,
     error: subBenefitsError,
   } = useSHASubBenefits(patientCRId ?? '');
-
   const selectedPackages = form.watch('packages');
 
   useEffect(() => {
@@ -82,6 +85,13 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
       setSelectedSubBenefitCode(selectedPackages[0]);
     }
   }, [selectedPackages]);
+
+  const handleInterventionsCached = useCallback(
+    (cache: Record<string, SHAIntervention>) => {
+      onInterventionsCached?.(cache);
+    },
+    [onInterventionsCached],
+  );
 
   if (isLoadingPatient) {
     return (
@@ -92,7 +102,6 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
       />
     );
   }
-
   if (patientError) {
     return (
       <InlineNotification
@@ -105,7 +114,6 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
       />
     );
   }
-
   if (!patientCRId) {
     return (
       <InlineNotification
@@ -121,7 +129,6 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
       />
     );
   }
-
   if (isLoadingSubBenefits) {
     return (
       <InlineLoading
@@ -131,7 +138,6 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
       />
     );
   }
-
   if (subBenefitsError) {
     return (
       <InlineNotification
@@ -182,6 +188,7 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
           patientUuid={patientUuid}
           selectedPackages={selectedPackages ?? []}
           showApplicableDocuments={showApplicableDocuments}
+          onInterventionsCached={handleInterventionsCached}
         />
       </Column>
 
@@ -211,7 +218,6 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
               )}
             />
           </Column>
-
           <Column className={styles.column}>
             <Controller
               control={form.control}

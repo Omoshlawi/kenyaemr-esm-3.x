@@ -24,7 +24,7 @@ import {
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import classNames from 'classnames';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
@@ -45,6 +45,7 @@ import {
   asStringField,
   extractUpstreamError,
   extractFetchError,
+  handleQueueMutate,
 } from '../utils';
 import {
   ANAESTHESIA_TYPES,
@@ -57,6 +58,7 @@ import {
   virtualClaimBaseUrl,
 } from '../constants';
 import { formatCurrency } from '../../../../../helpers/currency';
+import { handleMutation } from '../../../../../bill-administration/payment-modes/payment-mode.resource';
 
 const RequiredLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <span>
@@ -92,6 +94,12 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
   const workspaceTitle = workspaceProps?.workspaceTitle ?? t('preauthForm', 'Pre-authorization Form');
 
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const availableDocumentTypes = useMemo(() => {
+    const fromClaim = item?.applicable_document_types;
+    const list = fromClaim && fromClaim.length > 0 ? fromClaim : (DOCUMENT_TYPES as readonly string[]);
+    return Array.from(new Set(list));
+  }, [item?.applicable_document_types]);
 
   const schema = getSchemaForType(preauthType);
   const existingItemForDefaults =
@@ -130,6 +138,16 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
     remove: removeAttachment,
   } = useFieldArray({ control, name: 'attachments' });
 
+  useEffect(() => {
+    if (availableDocumentTypes.length === 0) {
+      return;
+    }
+    const current = methods.getValues('attachments.0.document_type');
+    if (!current) {
+      setValue('attachments.0.document_type', availableDocumentTypes[0]);
+    }
+  }, [availableDocumentTypes, methods, setValue]);
+
   const onSubmit = async (data: PreauthFormData) => {
     if (!item) {
       return;
@@ -157,7 +175,7 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
         kind: 'success',
       });
 
-      handleMutate(`${virtualClaimBaseUrl}/preauth-queue`);
+      handleQueueMutate(`${virtualClaimBaseUrl}/preauth-queue`);
       mutate?.();
       closeWorkspaceWithSavedChanges();
     } catch (err: unknown) {
@@ -256,21 +274,23 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
           />
         </div>
 
-        <div className={styles.twoCol}>
-          <Controller
-            name="clinical_indications"
-            control={control}
-            render={({ field }) => (
-              <TextArea
-                {...field}
-                id="clinical-indications"
-                labelText={t('clinicalIndications', 'Clinical indications')}
-                placeholder={t('clinicalIndicationsHint', 'Describe clinical reasons...')}
-                rows={3}
-              />
-            )}
-          />
-        </div>
+        {preauthType !== 'IMAGING' && (
+          <div className={styles.twoCol}>
+            <Controller
+              name="clinical_indications"
+              control={control}
+              render={({ field }) => (
+                <TextArea
+                  {...field}
+                  id="clinical-indications"
+                  labelText={t('clinicalIndications', 'Clinical indications')}
+                  placeholder={t('clinicalIndicationsHint', 'Describe clinical reasons...')}
+                  rows={3}
+                />
+              )}
+            />
+          </div>
+        )}
 
         <div className={styles.twoCol}>
           <Controller
@@ -650,7 +670,6 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
             </FormGroup>
           </div>
         )}
-
         {preauthType === 'OPTICAL' && (
           <div className={styles.twoCol}>
             <FormGroup legendText={t('opticalDetails', 'Optical details')}>
@@ -715,7 +734,36 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
             </FormGroup>
           </div>
         )}
-
+        {preauthType === 'IMAGING' && (
+          <div className={styles.twoCol}>
+            <FormGroup legendText={t('imagingDetails', 'Imaging details')}>
+              <Stack gap={4}>
+                <Controller
+                  name="clinical_indications"
+                  control={control}
+                  render={({ field }) => (
+                    <TextArea
+                      {...field}
+                      id="imaging-clinical-indications"
+                      labelText={
+                        <RequiredLabel>
+                          {t('imagingClinicalIndications', 'Clinical indications for imaging')}
+                        </RequiredLabel>
+                      }
+                      placeholder={t(
+                        'imagingClinicalHint',
+                        'Describe clinical findings or symptoms justifying this study (e.g. chronic headache with focal neurology, suspected fracture, abdominal mass)...',
+                      )}
+                      rows={4}
+                      invalid={!!errors.clinical_indications}
+                      invalidText={errors.clinical_indications?.message}
+                    />
+                  )}
+                />
+              </Stack>
+            </FormGroup>
+          </div>
+        )}
         <div className={styles.twoCol}>
           <FormGroup legendText={<RequiredLabel>{t('attachments', 'Attachments')}</RequiredLabel>}>
             {attachmentFields.map((field, idx) => (
@@ -732,7 +780,8 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
                           labelText={<RequiredLabel>{t('documentType', 'Document type')}</RequiredLabel>}
                           invalid={!!errors.attachments?.[idx]?.document_type}
                           invalidText={errors.attachments?.[idx]?.document_type?.message}>
-                          {DOCUMENT_TYPES.map((d) => (
+                          <SelectItem value="" text={t('selectDocumentType', 'Select document type')} />
+                          {availableDocumentTypes.map((d) => (
                             <SelectItem key={d} value={d} text={d.replace(/_/g, ' ')} />
                           ))}
                         </Select>
@@ -779,7 +828,7 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
                       onClick={() =>
                         appendAttachment({
                           document_title: '',
-                          document_type: 'LAB_ORDER',
+                          document_type: availableDocumentTypes[0] ?? '',
                           file: null as unknown as File,
                         })
                       }>

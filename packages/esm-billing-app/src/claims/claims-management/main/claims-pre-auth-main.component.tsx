@@ -2,9 +2,6 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ClaimsPreAuthFilter } from '../../../types';
 import { ClaimsManagementHeader } from '../header/claims-header.component';
-import ClaimsFilterHeader from '../header/filter-header.component';
-import PreAuthTable from '../table/pre-auth-table.component';
-import PreauthTableTemporary from '../table/preauth-table.tmp.component';
 
 const ClaimsManagementPreAuthRequest = () => {
   const { t } = useTranslation();
@@ -27,8 +24,6 @@ const ClaimsManagementPreAuthRequest = () => {
   return (
     <div className="omrs-main-content">
       <ClaimsManagementHeader title={t('preAuthRequets', 'Pre-Auth Requests')} />
-      {/* <ClaimsFilterHeader filters={filters} onFilterChanged={setFilters} statusOptions={status} /> */}
-      <PreauthTableTemporary />
     </div>
   );
 };

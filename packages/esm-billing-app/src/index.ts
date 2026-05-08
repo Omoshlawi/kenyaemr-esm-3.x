@@ -137,6 +137,13 @@ export const benefitsPreAuthForm = getAsyncLifecycle(
   () => import('./benefits-package/forms/benefit-pre-auth-form.workspace'),
   options,
 );
+export const patientPreauthWidget = getAsyncLifecycle(
+  () =>
+    import(
+      './claims/claims-management/table/virtual-claim-preauth/patient-preauth-history/patient-preauth-history.component'
+    ),
+  options,
+);
 
 // Payment Components
 export const requirePaymentModal = getAsyncLifecycle(

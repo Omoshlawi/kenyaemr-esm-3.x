@@ -12,19 +12,11 @@ import { virtualClaimBaseUrl } from '../../claims/claims-management/table/virtua
 
 export const useSHASubBenefits = (patientCRId: string) => {
   const url = patientCRId ? `${virtualClaimBaseUrl}/sub-benefits?patient_id=${patientCRId}` : null;
-
   const { data, error, isLoading, mutate } = useSWR<FetchResponse<{ count: number; results: Array<SHASubBenefit> }>>(
     url,
     openmrsFetch,
   );
-
-  return {
-    subBenefits: data?.data?.results ?? [],
-    count: data?.data?.count ?? 0,
-    isLoading,
-    error,
-    mutate,
-  };
+  return { subBenefits: data?.data?.results ?? [], count: data?.data?.count ?? 0, isLoading, error, mutate };
 };
 
 export const useSHAInterventions = (patientCRId: string, subBenefitCode: string) => {
@@ -32,19 +24,11 @@ export const useSHAInterventions = (patientCRId: string, subBenefitCode: string)
     patientCRId && subBenefitCode
       ? `${virtualClaimBaseUrl}/interventions?patient_id=${patientCRId}&sub_benefit_code=${subBenefitCode}`
       : null;
-
   const { data, error, isLoading, mutate } = useSWR<FetchResponse<{ count: number; results: Array<SHAIntervention> }>>(
     url,
     openmrsFetch,
   );
-
-  return {
-    interventions: data?.data?.results ?? [],
-    count: data?.data?.count ?? 0,
-    isLoading,
-    error,
-    mutate,
-  };
+  return { interventions: data?.data?.results ?? [], count: data?.data?.count ?? 0, isLoading, error, mutate };
 };
 
 export const usePreauthQueue = (
@@ -62,11 +46,7 @@ export const usePreauthQueue = (
   }
 
   const result = useOpenmrsPagination<PreauthQueueItem>(url, pageSize, {
-    swrConfig: {
-      refreshInterval: 60_000,
-      revalidateOnFocus: false,
-      dedupingInterval: 30_000,
-    },
+    swrConfig: { refreshInterval: 60_000, revalidateOnFocus: false, dedupingInterval: 30_000 },
   });
 
   return {
@@ -91,16 +71,12 @@ export const useElectiveCheckin = (authorizationCode: string | null) => {
     authorizationCode && authorizationCode.trim().length >= 6
       ? `${virtualClaimBaseUrl}/elective-checkin?authorization_code=${authorizationCode.trim()}`
       : null;
-
   const { data, error, isLoading, mutate } = useSWR<FetchResponse<ElectiveCheckinRecord>>(url, openmrsFetch);
-
   const record = data?.data ?? null;
-
   const isAlreadyUsed =
     error?.response?.status === 409 ||
     (record as any)?.already_used === true ||
     (record !== null && record.workflow_state != null && !record.workflow_state.startsWith('ELECTIVE'));
-
   return {
     electiveRecord: isAlreadyUsed ? null : record,
     isLoading,
@@ -115,14 +91,10 @@ export const sendSHAOtp = async (patientCRId: string, interventionCodes: string[
   const response = await openmrsFetch(`${virtualClaimBaseUrl}/otp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: {
-      patient_id: patientCRId,
-      intervention_codes: interventionCodes,
-    },
+    body: { patient_id: patientCRId, intervention_codes: interventionCodes },
   });
   return response.data;
 };
-
 export async function createSHAVirtualClaim(
   patientCRId: string,
   otp: string,
@@ -134,6 +106,7 @@ export async function createSHAVirtualClaim(
     admission_date?: string;
     estimated_days_of_admission?: number;
   },
+  paymentMechanism?: string,
 ): Promise<VirtualClaimResponse> {
   const body: Record<string, any> = {
     patient_id: patientCRId,
@@ -143,6 +116,10 @@ export async function createSHAVirtualClaim(
     visit_uuid: visitUuid,
     patient_uuid: patientUuid,
   };
+
+  if (paymentMechanism) {
+    body.payment_mechanism = paymentMechanism;
+  }
 
   if (serviceType === 'INPATIENT' && inpatientFields) {
     if (inpatientFields.admission_date) {
@@ -218,11 +195,7 @@ export const linkVisitToClaim = async (
   const response = await openmrsFetch(`${virtualClaimBaseUrl}/link-visit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: {
-      authorization_code: authorizationCode,
-      visit_uuid: visitUuid,
-      patient_uuid: patientUuid,
-    },
+    body: { authorization_code: authorizationCode, visit_uuid: visitUuid, patient_uuid: patientUuid },
   });
   return response.data;
 };

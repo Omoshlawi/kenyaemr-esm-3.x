@@ -1,6 +1,20 @@
 import { z } from 'zod';
 import { addDays, toDateInputValue } from '../utils';
 
+const dateOrString = z
+  .union([z.date(), z.string().min(1, 'Date is required')])
+  .transform((v) => (v instanceof Date ? toDateInputValue(v) : v));
+
+const optionalDateOrString = z
+  .union([z.date(), z.string(), z.undefined(), z.null()])
+  .optional()
+  .transform((v) => {
+    if (!v) {
+      return '';
+    }
+    return v instanceof Date ? toDateInputValue(v) : v;
+  });
+
 export const doctorSchema = z.object({
   display: z.string().optional(),
   identification_number: z.string().min(1, 'Doctor ID is required'),
@@ -29,10 +43,10 @@ export const attachmentSchema = z.object({
 });
 
 export const basePreauthSchema = z.object({
-  service_start: z.coerce.date().or(z.string().min(1, 'Service start date is required')),
+  service_start: dateOrString,
   service_start_time: z.string().optional(),
   service_start_time_format: z.enum(['AM', 'PM']).default('AM'),
-  service_end: z.coerce.date().or(z.string().min(1, 'Service end date is required')),
+  service_end: dateOrString,
   service_end_time: z.string().optional(),
   service_end_time_format: z.enum(['AM', 'PM']).default('AM'),
   clinical_indications: z.string().optional(),
@@ -51,7 +65,9 @@ export const surgicalPreauthSchema = basePreauthSchema.extend({
   physical_examination: z.string().optional(),
   investigation_report_details: z.string().optional(),
   type_of_anaesthesia: z.enum(['GENERAL', 'LOCAL', 'REGIONAL', 'SPINAL', 'EPIDURAL']),
-  surgery_date: z.string().optional(),
+  surgery_date: optionalDateOrString,
+  surgery_date_time: z.string().optional(),
+  surgery_date_time_format: z.enum(['AM', 'PM']).default('AM'),
 });
 
 export const renalPreauthSchema = basePreauthSchema.extend({
@@ -64,7 +80,9 @@ export const renalPreauthSchema = basePreauthSchema.extend({
     .min(1, 'Required')
     .refine((v) => Number(v) > 0, 'Must be > 0'),
   frequency_of_sessions: z.enum(['ONCE_A_WEEK', 'TWICE_A_WEEK', 'ONCE_A_MONTH', 'DAILY']),
-  start_date: z.string().optional(),
+  renal_date: optionalDateOrString,
+  renal_date_time: z.string().optional(),
+  renal_date_time_format: z.enum(['AM', 'PM']).default('AM'),
   is_co_insured: z.boolean().default(false),
 });
 
@@ -93,18 +111,24 @@ export const opticalPreauthSchema = basePreauthSchema.extend({
   new_or_replacement: z.enum(['NEW', 'REPLACEMENT']),
 });
 
+export const imagingPreauthSchema = basePreauthSchema.extend({
+  clinical_indications: z.string().min(10, 'Clinical indications are required for imaging preauth (min 10 characters)'),
+});
+
 export type PreauthType = 'NORMAL' | 'SURGICAL' | 'RENAL' | 'ONCOLOGY' | 'IMAGING' | 'OPTICAL';
 export type NormalPreauthFormData = z.infer<typeof normalPreauthSchema>;
 export type SurgicalPreauthFormData = z.infer<typeof surgicalPreauthSchema>;
 export type RenalPreauthFormData = z.infer<typeof renalPreauthSchema>;
 export type OncologyPreauthFormData = z.infer<typeof oncologyPreauthSchema>;
 export type OpticalPreauthFormData = z.infer<typeof opticalPreauthSchema>;
+export type ImagingPreauthFormData = z.infer<typeof imagingPreauthSchema>;
 export type PreauthFormData =
   | NormalPreauthFormData
   | SurgicalPreauthFormData
   | RenalPreauthFormData
   | OncologyPreauthFormData
-  | OpticalPreauthFormData;
+  | OpticalPreauthFormData
+  | ImagingPreauthFormData;
 
 export function getSchemaForType(preauthType: PreauthType) {
   switch (preauthType) {
@@ -116,6 +140,8 @@ export function getSchemaForType(preauthType: PreauthType) {
       return oncologyPreauthSchema;
     case 'OPTICAL':
       return opticalPreauthSchema;
+    case 'IMAGING':
+      return imagingPreauthSchema;
     default:
       return normalPreauthSchema;
   }
@@ -126,32 +152,33 @@ export function getDefaultValues(
   isElective: boolean = false,
   existingItem?: { requested_on?: string; responded_on?: string },
 ): Partial<PreauthFormData> {
-  const tomorrow = addDays(new Date(), 1);
-  const dayAfter = addDays(new Date(), 2);
+  const today = new Date();
+  const tomorrow = addDays(today, 1);
+  const dayAfter = addDays(today, 2);
 
-  const now = new Date();
-  const hours = now.getHours();
-  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const hours = today.getHours();
+  const minutes = String(today.getMinutes()).padStart(2, '0');
   const timeFormat = hours >= 12 ? 'PM' : 'AM';
   const hours12 = hours % 12 === 0 ? 12 : hours % 12;
   const currentTime = `${String(hours12).padStart(2, '0')}:${minutes}`;
 
-  const existingStart = existingItem?.requested_on
+  const startDate = existingItem?.requested_on
     ? toDateInputValue(new Date(existingItem.requested_on))
     : isElective
     ? toDateInputValue(tomorrow)
-    : '';
-  const existingEnd = existingItem?.responded_on
+    : toDateInputValue(today);
+
+  const endDate = existingItem?.responded_on
     ? toDateInputValue(new Date(existingItem.responded_on))
     : isElective
     ? toDateInputValue(dayAfter)
-    : '';
+    : toDateInputValue(tomorrow);
 
   const baseDefaults = {
-    service_start: existingStart,
+    service_start: startDate,
     service_start_time: currentTime,
     service_start_time_format: timeFormat as 'AM' | 'PM',
-    service_end: existingEnd,
+    service_end: endDate,
     service_end_time: currentTime,
     service_end_time_format: timeFormat as 'AM' | 'PM',
     clinical_indications: '',
@@ -165,7 +192,7 @@ export function getDefaultValues(
       },
     ],
     diagnoses: [{ icd_code: '', display: '' }],
-    attachments: [{ document_title: '', document_type: 'LAB_ORDER', file: null }],
+    attachments: [{ document_title: '', document_type: '', file: null }],
   };
 
   switch (preauthType) {
@@ -178,7 +205,9 @@ export function getDefaultValues(
         physical_examination: '',
         investigation_report_details: '',
         type_of_anaesthesia: 'GENERAL',
-        surgery_date: isElective ? toDateInputValue(tomorrow) : '',
+        surgery_date: isElective ? toDateInputValue(tomorrow) : toDateInputValue(today),
+        surgery_date_time: currentTime,
+        surgery_date_time_format: timeFormat as 'AM' | 'PM',
       };
     case 'RENAL':
       return {
@@ -186,7 +215,9 @@ export function getDefaultValues(
         number_of_sessions_required: '',
         cost_per_session: '',
         frequency_of_sessions: 'ONCE_A_WEEK',
-        start_date: isElective ? toDateInputValue(tomorrow) : '',
+        renal_date: isElective ? toDateInputValue(tomorrow) : toDateInputValue(today),
+        renal_date_time: currentTime,
+        renal_date_time_format: timeFormat as 'AM' | 'PM',
         is_co_insured: false,
       };
     case 'ONCOLOGY':
@@ -209,6 +240,11 @@ export function getDefaultValues(
         eye_examination_amount: '',
         frame_amount: '',
         new_or_replacement: 'NEW',
+      };
+    case 'IMAGING':
+      return {
+        ...baseDefaults,
+        clinical_indications: '',
       };
     default:
       return baseDefaults;

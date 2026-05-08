@@ -1,63 +1,58 @@
 import { FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
-import { FacilityClaim } from '../../../types';
+import { ClaimResponse } from '../../../types';
 
-const extractInterventions = (claim: FacilityClaim): string[] => {
-  if (Array.isArray(claim.interventions) && claim.interventions.length > 0) {
-    return claim.interventions;
-  }
+const url =
+  `${restBaseUrl}/claim?v=custom:(` +
+  [
+    'uuid',
+    'claimCode',
+    'billNumber',
+    'dateFrom',
+    'dateTo',
+    'claimedTotal',
+    'approvedTotal',
+    'status',
+    'use',
+    'adjustment',
+    'rejectionReason',
+    'guaranteeId',
+    'externalId',
+    'serviceType',
+    'claimAuthStatus',
+    'isResubmitted',
+    'hasClaimReview',
+    'authorizationCode',
+    'authorizationGuid',
+    'workflowState',
+    'totalClaimAmount',
+    'totalClaimNetAmount',
+    'totalClaimCopay',
+    'totalClaimDiscount',
+    'memberNumber',
+    'invoiceNumber',
+    'interventions',
+    'packages',
+    'provider:(uuid,display)',
+    'patient:(uuid,display)',
+    'bill:(uuid,totalAmount,paymentStatus,diagnosis)',
+    'interventionDetails:(intervention_code,intervention_name,tariff,payment_mechanism,' +
+      'workflow_state,sub_benefit_code,supported_scheme,intervention_fund,' +
+      'needs_preauth,preauth_exist,applicable_document_types)',
+    'invoices:(invoice_number,invoice_date,dispatch_status,workflow_state,' +
+      'service_type,total_inv_amount,total_inv_net_amount,total_inv_copay,' +
+      'total_inv_discount,lines)',
+  ].join(',') +
+  ')';
 
-  const shaBenefitsAttribute = claim.visit?.attributes?.find(
-    (attribute) => attribute.attributeType?.display === 'SHA Benefits Package',
-  );
-
-  if (!shaBenefitsAttribute?.value) {
-    return [];
-  }
-
-  try {
-    const parsedValue = JSON.parse(shaBenefitsAttribute.value) as { interventions?: unknown };
-    return Array.isArray(parsedValue.interventions)
-      ? parsedValue.interventions.filter((value): value is string => typeof value === 'string')
-      : [];
-  } catch {
-    return [];
-  }
-};
-
-export const useFacilityClaims = () => {
-  const url = `${restBaseUrl}/claim?v=full`;
-
-  const { data, error, isLoading, mutate, isValidating } = useSWR<FetchResponse<{ results: Array<FacilityClaim> }>>(
+export const useClaims = () => {
+  const { data, error, isLoading, mutate, isValidating } = useSWR<FetchResponse<{ results: Array<ClaimResponse> }>>(
     url,
     openmrsFetch,
   );
 
-  const formatClaim = (
-    claim: FacilityClaim,
-  ): FacilityClaim & {
-    id: string;
-    providerName: string;
-    patientName: string;
-    patientId?: string;
-    visitType?: { uuid: string; display: string };
-  } => ({
-    ...claim,
-    interventions: extractInterventions(claim),
-    id: claim.uuid,
-    providerName: claim.provider?.person?.display || claim.provider?.display || '',
-    approvedTotal: claim.approvedTotal ?? 0,
-    status: claim.status,
-    patientName: claim.patient?.display || '',
-    insurer: claim.insurer ?? '',
-    patientId: claim.patient?.uuid,
-    visitType: claim.visitType,
-  });
-
-  const formattedClaims = data?.data.results.map(formatClaim) ?? [];
-
   return {
-    claims: formattedClaims,
+    claims: data?.data.results ?? [],
     error,
     isLoading,
     mutate,

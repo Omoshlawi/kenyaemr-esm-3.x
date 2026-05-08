@@ -24,6 +24,29 @@
         "slot": "appointments-dashboard-slot",
         "title": "Appointments"
       }
+        },
+    {
+      "name": "ewf-preauth-dashboard-link",
+      "component": "preauthDashboardLink",
+      "slot": "patient-chart-dashboard-slot",
+      "order": 10,
+      "meta": {
+        "name": "ewf-preauth",
+        "title": "Preauthorization",
+        "path": "preauthorization",
+        "slot": "ewf-preauth-dashboard-slot",
+        "layoutMode": "anchored",
+        "hideDashboardTitle": true
+      }
+
+    },
+    {
+
+      "name": "ewf-preauth-dashboard",
+      "component": "preauthDashboard",
+      "slot": "ewf-patient-chart-preauth-dashboard-slot",
+      "online": true,
+      "offline": false
     },
     {
       "component": "admissionsLeftPanelLink",

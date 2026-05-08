@@ -547,7 +547,8 @@ export interface shifIdentifiersResponse {
   identiferNumber: string;
   identiferType: string;
 }
-export type FacilityClaim = {
+
+export interface ClaimResponse {
   uuid: string;
   claimCode: string;
   use: string;
@@ -555,8 +556,65 @@ export type FacilityClaim = {
   dateTo: string;
   claimedTotal: number;
   approvedTotal: null | number;
-  status: 'REJECTED' | 'ENTERED' | 'CHECKED' | 'VALUATED' | 'ERRORED';
+  status: 'REJECTED' | 'ENTERED' | 'CHECKED' | 'VALUATED' | 'ERRORED' | 'APPROVED' | 'DRAFT' | 'PENDING';
+  workflowState?: string | null;
+  authorizationCode?: string | null;
+  authorizationGuid?: string | null;
+  serviceType?: 'OUTPATIENT' | 'INPATIENT' | null;
+  claimAuthStatus?: string | null;
+  totalClaimAmount?: number | null;
+  totalClaimNetAmount?: number | null;
+  totalClaimCopay?: number | null;
+  totalClaimDiscount?: number | null;
+  invoiceNumber?: string | null;
+  memberNumber?: string | null;
   interventions?: string[];
+  interventionDetails?: Array<{
+    intervention_code: string;
+    intervention_name: string | null;
+    tariff: string | null;
+    payment_mechanism: string | null;
+    needs_preauth: boolean;
+    preauth_exist: boolean;
+    workflow_state: string | null;
+    sub_benefit_code: string | null;
+    intervention_fund: string | null;
+    supported_scheme: string | null;
+    requires_surgical_preauth: boolean;
+    requires_renal_preauth: boolean;
+    requires_oncology_preauth: boolean;
+    requires_radiology_preauth: boolean;
+    requires_optical_preauth: boolean;
+    applicable_document_types: string[];
+  }>;
+  invoices?: Array<{
+    invoice_number: string | null;
+    invoice_date: string | null;
+    dispatch_status: string | null;
+    workflow_state: string | null;
+    total_inv_amount: string | null;
+    total_inv_net_amount: string | null;
+    total_inv_copay: string | null;
+    total_inv_discount: string | null;
+    service_type: string | null;
+    lines: Array<{
+      id: string | null;
+      item_code: string | null;
+      item_name: string | null;
+      intervention_code: string | null;
+      quantity: number;
+      unit: string | null;
+      unit_price: string | null;
+      line_total_amount: string | null;
+      line_net_amount: string | null;
+      line_copay: number;
+      charge_date: string | null;
+      is_active: boolean;
+      scheme_name: string | null;
+      map_request: string | null;
+    }>;
+  }>;
+  packages?: string[];
   provider: {
     uuid: string;
     display: string;
@@ -588,6 +646,7 @@ export type FacilityClaim = {
     display: string;
     startDatetime: string;
     stopDatetime: string;
+    voided?: boolean;
     encounters: Array<{
       uuid: string;
       display: string;
@@ -599,10 +658,7 @@ export type FacilityClaim = {
         voided?: boolean;
         rank?: number;
         diagnosis: {
-          coded?: {
-            uuid: string;
-            display: string;
-          };
+          coded?: { uuid: string; display: string };
           nonCoded?: string;
           display?: string;
         };
@@ -663,7 +719,10 @@ export type FacilityClaim = {
   rejectionReason?: string | null;
   guaranteeId?: string;
   dateProcessed?: string | null;
-};
+  isResubmitted?: string | null;
+  hasClaimReview?: string | null;
+}
+
 export type BillingPromptType = 'patient-chart' | 'billing-orders';
 
 export interface Schema {

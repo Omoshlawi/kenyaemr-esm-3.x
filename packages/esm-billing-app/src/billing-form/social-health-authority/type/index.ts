@@ -8,6 +8,44 @@ export interface SHASubBenefit {
   active: boolean;
 }
 
+export type PreauthTypeName = 'NONE' | 'NORMAL' | 'SURGICAL' | 'RENAL' | 'OPTICAL' | 'ONCOLOGY' | 'IMAGING';
+
+export type ApplicableDocumentType =
+  | 'LAB_ORDER'
+  | 'LAB_RESULTS'
+  | 'LAB_TESTS'
+  | 'FINAL_BILL'
+  | 'INTERIM_BILL'
+  | 'CLAIM_FORM'
+  | 'PREAUTH_FORM'
+  | 'DISCHARGE_SUMMARY'
+  | 'REFERRAL_LETTER'
+  | 'CLINICAL_DOCUMENTATION'
+  | 'PRESCRIPTION'
+  | 'THEATRE_LIST'
+  | 'THEATRE_NOTES'
+  | 'IMAGING_ORDER'
+  | 'IMAGING_RESULT'
+  | 'RADIOLOGY_REQUEST'
+  | 'RADIOLOGICAL_EXAM'
+  | 'PRIOR_BASIC_DIAGNOSTIC_IMAGES'
+  | 'ULTRASOUND'
+  | 'BIOPSY_RESULT'
+  | 'HISTOPATHOLOGY_RESULTS'
+  | 'STAGING_RESULTS'
+  | 'TREATMENT_PLAN'
+  | 'DIALYSIS_CHART'
+  | 'CONSULTANT_REPORT'
+  | 'MEDICAL_REPORT'
+  | 'CASE_SUMMARY'
+  | 'CASE_NOTES_JUSTIFYING_ADMISSION'
+  | 'CRITICAL_CARE_UNIT_CASE_NOTES'
+  | 'PROFORMA_INVOICE'
+  | 'KMPDC_FORM'
+  | 'LOU'
+  | 'OTHER'
+  | (string & {});
+
 export interface SHAIntervention {
   code: string;
   name: string;
@@ -15,10 +53,10 @@ export interface SHAIntervention {
   fund: string;
   access_point: string;
   needs_preauth: boolean;
-  preauth_type: 'NONE' | 'NORMAL' | 'SURGICAL' | 'RENAL' | 'OPTICAL' | 'ONCOLOGY' | 'IMAGING';
+  preauth_type: PreauthTypeName;
   payment_mechanism: string;
   annual_quantity_limit: number | null;
-  applicable_document_types: Array<string>;
+  applicable_document_types: Array<ApplicableDocumentType>;
 }
 
 export interface VirtualClaimResponse {
@@ -58,8 +96,8 @@ export interface PreauthQueueItem {
   tariff: string;
   payment_mechanism: string;
   preauth_exist: boolean;
-  preauth_type: 'NONE' | 'NORMAL' | 'SURGICAL' | 'RENAL' | 'OPTICAL' | 'ONCOLOGY' | 'IMAGING';
-  applicable_document_types: string[];
+  preauth_type: PreauthTypeName;
+  applicable_document_types: Array<ApplicableDocumentType>;
   preauth_status:
     | 'FINALISED'
     | 'REJECTED'
@@ -69,8 +107,10 @@ export interface PreauthQueueItem {
     | 'CANCELLED'
     | 'ACTIVE'
     | null;
+  preauth_already_submitted: boolean;
   approved_amount: string | null;
   response_note: string | null;
+  response_note_raw?: string | null;
   requested_on: string | null;
   responded_on: string | null;
   attachments: Array<{

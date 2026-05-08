@@ -28,8 +28,8 @@ import {
   useElectiveCheckin,
   usePatientPhone,
 } from './social-health-authority/sha-virtual-claim.resource';
+import { type SHAIntervention, VirtualClaimResponse } from './social-health-authority/type';
 import { getPatientCRNumber, toSavannahISO } from './social-health-authority/helper';
-import { VirtualClaimResponse } from './social-health-authority/type';
 import { extractFetchError, extractUpstreamError } from '../claims/claims-management/table/virtual-claim-preauth/utils';
 import { formatCurrency } from '../helpers/currency';
 
@@ -94,6 +94,10 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   const admissionDateRef = useRef<Date | null>(null);
   const estimatedDaysRef = useRef<number | null>(null);
   const shaClaimResponseRef = useRef<VirtualClaimResponse | null>(null);
+  // ── Intervention cache — populated via onInterventionsCached callback ────────
+  // Holds the full SHAIntervention objects (including payment_mechanism) for all
+  // interventions loaded for this patient. Used to detect CAPITATION at submit time.
+  const interventionCacheRef = useRef<Record<string, SHAIntervention>>({});
 
   const formMethods = useForm<BillingCheckInFormValue>({
     mode: 'all',
@@ -128,6 +132,19 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   useEffect(() => {
     estimatedDaysRef.current = estimatedDays ?? null;
   }, [estimatedDays]);
+
+  // ── Detect CAPITATION: all selected interventions must have payment_mechanism=CAPITATION ──
+  // Uses the actual field from the Savannah interventions response, not a code prefix.
+  const resolvePaymentMechanism = useCallback((codes: string[]): string | undefined => {
+    if (codes.length === 0) {
+      return undefined;
+    }
+    const allCapitation = codes.every((code) => {
+      const int = interventionCacheRef.current[code];
+      return int?.payment_mechanism?.toUpperCase() === 'CAPITATION';
+    });
+    return allCapitation ? 'CAPITATION' : undefined;
+  }, []);
 
   const handleCreateBill = useCallback(
     (billPayload: Record<string, any>) => {
@@ -212,6 +229,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         return;
       }
 
+      // ── ELECTIVE flow ─────────────────────────────────────────────────────
       if (isElectiveVisit === 'yes') {
         if (!electiveRecord) {
           showSnackbar({
@@ -277,6 +295,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
                     estimated_days_of_admission: estimatedDaysRef.current ?? undefined,
                   }
                 : undefined,
+              undefined,
             );
             if (!claimResponse.success) {
               throw new Error(
@@ -303,6 +322,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
       const codes = selectedInterventions.length > 0 ? selectedInterventions : [''];
       patientCRIdRef.current = patientCRId;
       interventionCodesRef.current = codes;
+      const paymentMechanism = resolvePaymentMechanism(codes);
 
       let settled = false;
       const dispose = showModal('otp-verification-modal', {
@@ -334,6 +354,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
                   estimated_days_of_admission: estimatedDaysRef.current ?? undefined,
                 }
               : undefined,
+            paymentMechanism,
           );
           if (!claimResponse.success) {
             throw new Error(
@@ -366,6 +387,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     isApproved,
     crIdentificationNumberUUID,
     patientUuid,
+    resolvePaymentMechanism,
     t,
   ]);
 
@@ -629,7 +651,13 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
       )}
 
       {hieFeatureFlags && isInsuranceSchemeSha && isElectiveVisit === 'no' && (
-        <SHABenefitPackagesAndInterventions patientUuid={patientUuid} visitTypeUuid={visitTypeUuid} />
+        <SHABenefitPackagesAndInterventions
+          patientUuid={patientUuid}
+          visitTypeUuid={visitTypeUuid}
+          onInterventionsCached={(cache) => {
+            interventionCacheRef.current = { ...interventionCacheRef.current, ...cache };
+          }}
+        />
       )}
 
       {paymentMethod && (

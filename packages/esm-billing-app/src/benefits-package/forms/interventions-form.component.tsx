@@ -14,6 +14,7 @@ type PackageInterventionsProps = {
   patientUuid: string;
   selectedPackages: Array<string>;
   showApplicableDocuments?: boolean;
+  onInterventionsCached?: (cache: Record<string, SHAIntervention>) => void;
 };
 
 const PackageInterventions: React.FC<PackageInterventionsProps> = ({
@@ -22,6 +23,7 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
   patientUuid,
   selectedPackages,
   showApplicableDocuments,
+  onInterventionsCached,
 }) => {
   const { t } = useTranslation();
   const form = useFormContext<{ packages: Array<string>; interventions: Array<string> }>();
@@ -43,6 +45,12 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
     }
   }, [interventions]);
 
+  useEffect(() => {
+    if (Object.keys(cachedInterventions).length > 0) {
+      onInterventionsCached?.(cachedInterventions);
+    }
+  }, [cachedInterventions, onInterventionsCached]);
+
   const items: Array<InterventionItem> = useMemo(() => {
     const base = interventions.length > 0 ? interventions : Object.values(cachedInterventions);
 
@@ -59,10 +67,13 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
     const built: Array<InterventionItem> = combined.map((intervention) => {
       const isElective = Boolean((intervention as any).needs_manual_preauth_approval);
       const tariff = intervention.tariff ? ` · ${formatCurrency(Number(intervention.tariff))}` : '';
+      const isCapitation = intervention.payment_mechanism?.toUpperCase() === 'CAPITATION';
 
       let suffix: string;
       if (isElective) {
         suffix = ` — ${t('scheduledOnly', 'Scheduled only')}`;
+      } else if (isCapitation) {
+        suffix = ` — ${t('capitation', 'Capitation (PHC)')}`;
       } else if (intervention.needs_preauth) {
         suffix = ` — ${t('preauthRequired', 'Preauth required')}`;
       } else {
@@ -91,6 +102,7 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
           code,
           name: intervention?.name ?? code,
           applicableDocumentTypes: intervention?.applicable_document_types ?? [],
+          paymentMechanism: intervention?.payment_mechanism ?? '',
         };
       }),
     [selectedInterventionsObservable, cachedInterventions],
@@ -139,7 +151,7 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
               items={items}
               helperText={
                 electiveCount > 0
-                  ? t('electiveInterventionsHint', 'Items disable require SHA pre-approval via the Preauth Queue.')
+                  ? t('electiveInterventionsHint', 'Items disabled require SHA pre-approval via the Preauth Queue.')
                   : undefined
               }
               itemToString={(item: InterventionItem | null) => (item ? item.text : '')}
@@ -157,6 +169,7 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
           );
         }}
       />
+
       {selectedInterventionsObservable.length > 0 && (
         <>
           <div className={styles.tagsContainer}>
@@ -164,8 +177,17 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
               const intervention = cachedInterventions[code];
               const name = intervention?.name ?? code;
               const needsPreauth = intervention?.needs_preauth ?? false;
+              const isCapitation = intervention?.payment_mechanism?.toUpperCase() === 'CAPITATION';
               const tariff = intervention?.tariff ? ` - ${formatCurrency(Number(intervention.tariff))}` : '';
 
+              if (isCapitation) {
+                return (
+                  <Tag key={code} type="teal" size="lg" className={styles.tag}>
+                    {name}
+                    {tariff}: {t('capitation', 'Capitation (PHC)')}
+                  </Tag>
+                );
+              }
               return needsPreauth ? (
                 <Tag key={code} type="red" size="lg" className={styles.tag}>
                   {name}

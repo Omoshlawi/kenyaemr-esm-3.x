@@ -8,6 +8,7 @@ import { SelectItem, TimePicker, TimePickerSelect } from '@carbon/react';
 import { type amPm } from '@openmrs/esm-patient-common-lib';
 import get from 'lodash-es/get';
 import styles from './service-datetime.scss';
+import { toDate } from '../utils';
 
 interface Field {
   name: string;
@@ -57,7 +58,7 @@ const ServiceDateTimeField: React.FC<ServiceDateTimeFieldProps> = ({
           <ResponsiveWrapper>
             <OpenmrsDatePicker
               {...field}
-              value={field.value as unknown as Date}
+              value={toDate(field.value)}
               className={styles.datePicker}
               id={`${dateField.name}Input`}
               data-testid={`${dateField.name}Input`}
@@ -86,7 +87,7 @@ const ServiceDateTimeField: React.FC<ServiceDateTimeFieldProps> = ({
                 onBlur={onBlur}
                 onChange={(event) => onChange(event.target.value)}
                 pattern="^(0[1-9]|1[0-2]):([0-5][0-9])$"
-                value={value as string}>
+                value={(value as string) ?? ''}>
                 <Controller
                   name={timeFormatField.name}
                   control={control}
@@ -99,7 +100,7 @@ const ServiceDateTimeField: React.FC<ServiceDateTimeFieldProps> = ({
                       disabled={disabled}
                       id={`${timeFormatField.name}Input`}
                       onChange={(event) => onChange(event.target.value as amPm)}
-                      value={value as amPm}>
+                      value={(value as amPm) ?? 'AM'}>
                       <SelectItem value="AM" text={t('AM', 'AM')} />
                       <SelectItem value="PM" text={t('PM', 'PM')} />
                     </TimePickerSelect>

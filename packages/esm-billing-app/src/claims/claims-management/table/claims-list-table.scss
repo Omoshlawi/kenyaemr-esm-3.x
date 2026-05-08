@@ -1,45 +1,200 @@
 @use '@carbon/layout';
 @use '@carbon/type';
 
-.tableHeader {
-  padding: 0 layout.$spacing-05 0 layout.$spacing-05;
+.container {
+  background-color: var(--omrs-color-bg-low-contrast);
+  width: 100%;
+  overflow: hidden;
 }
 
-.expanded_row_section {
-  display: flex;
-  align-items: center;
-
-  h4 {
-    margin-right: layout.$spacing-05;
-  }
-  gap: layout.$spacing-05;
-  margin-bottom: layout.$spacing-05;
-}
-.header {
-  @include type.type-style('heading-02');
-}
-.paragraph {
-  font-size: 15px;
-}
-
-.claimsTable {
-  padding: layout.$spacing-05;
-}
-
-.actionsContainer {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: layout.$spacing-05;
-  margin-bottom: layout.$spacing-03;
-}
-
-.claimStatus {
+.tabsToolbar {
   display: flex;
   align-items: center;
   gap: layout.$spacing-03;
+  padding: 0 0 layout.$spacing-02;
+  flex-shrink: 0;
+  margin-right: layout.$spacing-02;
+}
+.searchInput {
+  width: layout.$spacing-12 * 2 + layout.$spacing-05;
+}
+.tabsRow {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--omrs-color-bg-medium-contrast);
+}
 
-  > :nth-child(2) {
-    font-size: 0.7rem;
+.expandedActions {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background: var(--cds-layer-01);
+}
+
+.expandedInfo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-04 layout.$spacing-07;
+  font-size: 0.8125rem;
+  color: var(--cds-text-secondary);
+
+  code {
+    font-size: 0.75rem;
+    color: var(--cds-text-primary);
+    background: var(--cds-layer-02);
+    padding: 1px 5px;
   }
+}
+
+.expandedButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+  align-items: center;
+}
+
+.billingLinesPreview {
+  border-top: 1px solid var(--cds-border-subtle);
+  padding-top: layout.$spacing-04;
+}
+
+.billingLinesTitle {
+  @include type.type-style('label-01');
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cds-text-secondary);
+  margin-bottom: layout.$spacing-03;
+}
+
+.billingLinesTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+
+  th {
+    padding: layout.$spacing-02 layout.$spacing-04;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--cds-text-secondary);
+    background: var(--cds-layer-02);
+    border-bottom: 1px solid var(--cds-border-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  td {
+    padding: layout.$spacing-03 layout.$spacing-04;
+    border-bottom: 1px solid var(--cds-border-subtle);
+    vertical-align: middle;
+
+    code {
+      font-size: 0.75rem;
+    }
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  tr:hover td {
+    background: var(--cds-layer-hover);
+  }
+}
+
+.expandedPanel {
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background: var(--cds-layer-01);
+  border-top: 2px solid var(--cds-interactive);
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+}
+
+.expandedInfo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03 layout.$spacing-06;
+  font-size: 0.8125rem;
+  color: var(--cds-text-secondary);
+
+  code {
+    font-size: 0.75rem;
+    color: var(--cds-text-primary);
+    background: var(--cds-layer-02);
+    padding: 1px 5px;
+  }
+}
+
+.expandedButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+  align-items: center;
+}
+
+.billingLinesSection {
+  border-top: 1px solid var(--cds-border-subtle);
+  padding-top: layout.$spacing-04;
+}
+
+.billingLinesTitle {
+  @include type.type-style('label-01');
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cds-text-secondary);
+  margin-bottom: layout.$spacing-03;
+}
+
+.billingLinesEmpty {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-04;
+  background: var(--cds-layer-02);
+  color: var(--cds-text-secondary);
+  font-size: 0.875rem;
+}
+
+.billingLinesTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+
+  th {
+    padding: layout.$spacing-02 layout.$spacing-04;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--cds-text-secondary);
+    background: var(--cds-layer-02);
+    border-bottom: 1px solid var(--cds-border-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: layout.$spacing-03 layout.$spacing-04;
+    border-bottom: 1px solid var(--cds-border-subtle);
+    vertical-align: middle;
+
+    code {
+      font-size: 0.75rem;
+    }
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+  tr:hover td {
+    background: var(--cds-layer-hover);
+  }
+}
+
+.netAmount {
+  color: var(--cds-support-success);
+  font-weight: 500;
 }
