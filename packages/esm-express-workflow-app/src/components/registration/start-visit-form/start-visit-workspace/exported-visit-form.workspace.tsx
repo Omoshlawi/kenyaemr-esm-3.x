@@ -698,7 +698,7 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                     : isElectiveNotApproved
                     ? t('awaitingApproval', 'Awaiting approval')
                     : isSHAVisit
-                    ? t('sendOtpAndStartVisit', 'Send OTP & Start Visit')
+                    ? t('verifyAndStartVisit', 'Verify & Start Visit')
                     : t('startVisit', 'Start visit')}
                 </span>
               )}

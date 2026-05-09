@@ -100,3 +100,235 @@
   line-height: 1.29;
   font-weight: 400;
 }
+
+// ── Auth landing (method picker) ──
+
+.eyebrow {
+  @include type.type-style('label-01');
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: colors.$gray-60;
+  margin: 0 0 layout.$spacing-02;
+  font-weight: 500;
+}
+
+.authLandingContainer {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-05;
+}
+
+.authIntro {
+  @include type.type-style('body-01');
+  color: colors.$gray-70;
+  margin: 0 0 layout.$spacing-04;
+  line-height: 1.5;
+}
+
+.methodCard {
+  display: flex;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-05;
+  border: 1px solid colors.$gray-20;
+  background: colors.$white-0;
+  cursor: pointer;
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
+  transition: border-color 0.15s, background 0.15s;
+  border-radius: 4px;
+
+  &:hover:not(:disabled) {
+    border-color: colors.$blue-60;
+    background: colors.$gray-10;
+  }
+}
+
+.methodCardDisabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.methodIconWrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  background: colors.$blue-10;
+  color: colors.$blue-70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.methodIconWarning {
+  background: colors.$yellow-20;
+  color: colors.$yellow-90;
+}
+
+.methodContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.methodTitleRow {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  margin-bottom: layout.$spacing-02;
+}
+
+.methodTitle {
+  @include type.type-style('body-compact-01');
+  font-weight: 500;
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.methodDesc {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.methodArrow {
+  color: colors.$gray-50;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.badgeRequired {
+  @include type.type-style('label-01');
+  background: colors.$yellow-20;
+  color: colors.$yellow-90;
+  padding: 2px layout.$spacing-03;
+  border-radius: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.dividerWithText {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-04;
+  margin: layout.$spacing-04 0 layout.$spacing-03;
+  @include type.type-style('label-01');
+  color: colors.$gray-50;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: colors.$gray-20;
+  }
+}
+
+.whitelistLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-04;
+  background: transparent;
+  border: 1px dashed colors.$gray-30;
+  color: colors.$blue-70;
+  cursor: pointer;
+  width: 100%;
+  border-radius: 4px;
+  @include type.type-style('body-compact-01');
+
+  &:hover {
+    background: colors.$gray-10;
+    border-color: colors.$blue-60;
+  }
+}
+
+.dataNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-04;
+  background: colors.$gray-10;
+  border-radius: 4px;
+  margin-top: layout.$spacing-04;
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  line-height: 1.5;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+}
+
+// ── Biometric capture ──
+
+.biometricContainer {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-04;
+}
+
+.iframeWrapper {
+  border: 1px solid colors.$gray-20;
+  border-radius: 4px;
+  overflow: hidden;
+  background: colors.$white-0;
+}
+
+.biometricIframe {
+  width: 100%;
+  height: 480px;
+  border: 0;
+  display: block;
+}
+
+.biometricHint {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  text-align: center;
+  margin: 0;
+}
+
+// ── Biometric failure ──
+
+.failedContainer {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-05;
+}
+
+.chooseLabel {
+  @include type.type-style('body-compact-01');
+  font-weight: 500;
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.tryAgainButton {
+  align-self: center;
+}
+
+// ── 3-strike escape hatch (verify-otp) ──
+
+.escapeHatch {
+  width: 100%;
+  margin-top: layout.$spacing-05;
+  padding-top: layout.$spacing-05;
+  border-top: 1px solid colors.$gray-20;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+}
+
+.escapeHatchButton {
+  align-self: center;
+}

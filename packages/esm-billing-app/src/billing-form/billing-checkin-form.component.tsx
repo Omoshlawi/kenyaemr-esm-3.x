@@ -1,6 +1,4 @@
-/* eslint-disable no-console */
 import {
-  Button,
   FilterableMultiSelect,
   InlineLoading,
   InlineNotification,
@@ -10,15 +8,7 @@ import {
   TextInput,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  showModal,
-  showSnackbar,
-  useConfig,
-  useFeatureFlag,
-  usePatient,
-  type Visit,
-  useLayoutType,
-} from '@openmrs/esm-framework';
+import { showModal, showSnackbar, useConfig, useFeatureFlag, usePatient, type Visit } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -32,10 +22,8 @@ import SHANumberValidity from './social-health-authority/sha-number-validity.com
 import VisitAttributesForm from './visit-attributes/visit-attributes-form.component';
 import SHABenefitPackagesAndInterventions from '../benefits-package/forms/packages-and-interventions-form.component';
 import {
-  BiometricConfigResponse,
   createSHABiometricAuthorize,
   createSHAVirtualClaim,
-  fetchBiometricConfig,
   linkVisitToClaim,
   sendSHAOtp,
   useElectiveCheckin,
@@ -65,6 +53,13 @@ type BillingCheckInFormValue = VisitAttributesFormValue & {
   admissionDate: Date | null;
   estimatedDaysOfAdmission: number;
 };
+
+// ── TEMPORARY FALLBACKS ──
+// Replace once real wiring is in place:
+//   - Workstation ID: fetch from local biometric agent (http://localhost:18065/status/)
+//   - Agent ID: National ID of the logged-in OpenMRS user (person attribute)
+const FALLBACK_WORKSTATION_ID = '8e4824b9-729c-490d-97b4-74409721c6ef-7066553AB4E5';
+const FALLBACK_AGENT_ID = '12345678';
 
 const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   patientUuid,
@@ -142,6 +137,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   useEffect(() => {
     estimatedDaysRef.current = estimatedDays ?? null;
   }, [estimatedDays]);
+
   const resolvePaymentMechanism = useCallback((codes: string[]): string | undefined => {
     if (codes.length === 0) {
       return undefined;
@@ -152,80 +148,6 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     });
     return allCapitation ? 'CAPITATION' : undefined;
   }, []);
-
-  const handleTestBiometric = useCallback(async () => {
-    console.group('[biometric test]');
-    try {
-      const patientCRId = getPatientCRNumber(patient as fhir.Patient, crIdentificationNumberUUID);
-      if (!patientCRId) {
-        console.warn('No CR number on patient — skippin');
-        return;
-      }
-
-      // ── Step 1: backend config ──
-      let config: BiometricConfigResponse;
-      try {
-        config = await fetchBiometricConfig();
-        console.log('[1/3] /biometric-config returned:', config);
-      } catch (err) {
-        console.error('[1/3] /biometric-config failed:', err);
-        return;
-      }
-
-      // ── Step 2: local agent (with hardcoded fallback) ──
-      const HARDCODED_FALLBACK_WORKSTATION_ID = '8e4824b9-729c-490d-97b4-74409721c6ef-7066553AB4E5';
-      let workstationId: string;
-      let agentReached = false;
-
-      try {
-        const agentResponse = await fetchLocalAgent(config.agent_url, config.agent_timeout_ms);
-        console.log('[2/3] local agent returned:', agentResponse);
-        agentReached = true;
-      } catch (err) {
-        console.warn(
-          '[2/3] local agent unreachable, using hardcoded fallback:',
-          err instanceof Error ? err.message : err,
-        );
-        workstationId = HARDCODED_FALLBACK_WORKSTATION_ID;
-      }
-
-      // ── Step 3: backend authorize ──
-      const codes = selectedInterventions.length > 0 ? selectedInterventions : ['SHA-18-004'];
-      const paymentMechanism = resolvePaymentMechanism(codes);
-
-      const payload = {
-        agent_id: '12345678', // TODO: replace with logged-in user's National ID
-        patient_id: patientCRId,
-        interventions: codes,
-        service_type: serviceTypeRef.current,
-        workstation_id: workstationId,
-        authorizing_device_os: 'android',
-        factors: config.default_factors,
-        payment_mechanism: paymentMechanism,
-        patient_uuid: patientUuid,
-      };
-
-      console.log('[3/3] sending payload (workstation_id from:', agentReached ? 'agent' : 'fallback', '):', payload);
-
-      try {
-        const res = await createSHABiometricAuthorize(payload);
-        console.log('[3/3] /biometric-authorize response:', res);
-        if (res.success) {
-          console.log('  embed_url           :', res.embed_url);
-          console.log('  authorization_code  :', res.authorization_code);
-          console.log('  consent_token       :', res.consent_token);
-          console.log('  facility_name       :', res.facility_name);
-          console.log('  service_type        :', res.service_type);
-        } else {
-          console.error('  failed:', res.error, res.upstream_error);
-        }
-      } catch (err) {
-        console.error('[3/3] /biometric-authorize threw:', err);
-      }
-    } finally {
-      console.groupEnd();
-    }
-  }, [patient, crIdentificationNumberUUID, selectedInterventions, patientUuid, resolvePaymentMechanism]);
 
   const handleCreateBill = useCallback(
     (billPayload: Record<string, any>) => {
@@ -292,6 +214,53 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     setSelectedBillingServices(selectedItems);
   }, []);
 
+  const buildBiometricStarter = useCallback(
+    (crId: string, codes: string[], paymentMechanism: string | undefined) => {
+      return async () => {
+        const res = await createSHABiometricAuthorize({
+          agent_id: FALLBACK_AGENT_ID,
+          patient_id: crId,
+          interventions: codes,
+          service_type: serviceTypeRef.current,
+          workstation_id: FALLBACK_WORKSTATION_ID,
+          authorizing_device_os: 'windows',
+          payment_mechanism: paymentMechanism,
+          patient_uuid: patientUuid,
+        });
+
+        if (!res.success || !res.embed_url) {
+          throw new Error(
+            extractUpstreamError(res as any, t('biometricStartFailed', 'Could not start biometric session.')),
+          );
+        }
+
+        return {
+          embed_url: res.embed_url,
+          authorization_code: res.authorization_code ?? '',
+          consent_token: res.consent_token ?? '',
+        };
+      };
+    },
+    [patientUuid, t],
+  );
+
+  const handleRequestWhitelist = useCallback(() => {
+    showSnackbar({
+      title: t('whitelistRequest', 'Whitelist request'),
+      subtitle: t('whitelistRequestStub', 'Whitelist submission modal not yet implemented. The request would go here.'),
+      kind: 'info',
+    });
+    // TODO: launch WhitelistSubmissionModal({ patientCRId: patientCRIdRef.current, patientUuid });
+  }, [t]);
+
+  const handleReject = useCallback(() => {
+    showSnackbar({
+      title: t('authRejected', 'Authentication rejected'),
+      subtitle: t('authRejectedSubtitle', 'Visit will proceed without SHA virtual claim. This may affect billing.'),
+      kind: 'warning',
+    });
+  }, [t]);
+
   const launchSHAOtpFlow = useCallback((): Promise<boolean> => {
     return new Promise((resolve) => {
       if (!hieFeatureFlags || !isInsuranceSchemeSha) {
@@ -345,6 +314,9 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         interventionCodesRef.current = codes;
         serviceTypeRef.current = electiveRecord.service_type ?? 'OUTPATIENT';
 
+        // TODO: source whitelistedForOTP from real API once available.
+        const whitelistedForOTP = (electiveRecord as any)?.whitelistedForOTP ?? false;
+
         let settled = false;
         const dispose = showModal('otp-verification-modal', {
           onClose: () => {
@@ -354,6 +326,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
           otpLength: 6,
           expiryMinutes: 5,
           centerBoxes: true,
+
           onRequestOtp: async (_phone: string) => {
             const res = await sendSHAOtp(electedCRId, codes);
             if (!res.success) {
@@ -395,6 +368,36 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
               resolve(false);
             }
           },
+
+          authMode: 'multi',
+          whitelistedForOTP,
+
+          onStartBiometric: buildBiometricStarter(electedCRId, codes, undefined),
+          onBiometricSuccess: (result: { authorization_code: string; consent_token: string }) => {
+            shaClaimResponseRef.current = {
+              success: true,
+              authorization_code: result.authorization_code,
+              consent_token: result.consent_token,
+            } as VirtualClaimResponse;
+            settled = true;
+            dispose();
+            resolve(true);
+          },
+          onBiometricCancel: (_consentToken: string | null) => {
+            // TODO: call /biometric-cancel endpoint when implemented
+          },
+          onRequestWhitelist: () => {
+            handleRequestWhitelist();
+            settled = true;
+            dispose();
+            resolve(false);
+          },
+          onRejected: () => {
+            handleReject();
+            settled = true;
+            dispose();
+            resolve(true);
+          },
         });
         return;
       }
@@ -403,6 +406,9 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
       patientCRIdRef.current = patientCRId;
       interventionCodesRef.current = codes;
       const paymentMechanism = resolvePaymentMechanism(codes);
+
+      // TODO: source whitelistedForOTP from patient API or eligibility check.
+      const whitelistedForOTP = (patient as any)?.whitelistedForOTP ?? false;
 
       let settled = false;
       const dispose = showModal('otp-verification-modal', {
@@ -413,6 +419,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         otpLength: 6,
         expiryMinutes: 5,
         centerBoxes: true,
+
         onRequestOtp: async (_phone: string) => {
           const res = await sendSHAOtp(patientCRId, codes);
           if (!res.success) {
@@ -454,6 +461,36 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
             resolve(false);
           }
         },
+
+        authMode: 'multi',
+        whitelistedForOTP,
+
+        onStartBiometric: buildBiometricStarter(patientCRId, codes, paymentMechanism),
+        onBiometricSuccess: (result: { authorization_code: string; consent_token: string }) => {
+          shaClaimResponseRef.current = {
+            success: true,
+            authorization_code: result.authorization_code,
+            consent_token: result.consent_token,
+          } as VirtualClaimResponse;
+          settled = true;
+          dispose();
+          resolve(true);
+        },
+        onBiometricCancel: (_consentToken: string | null) => {
+          // TODO: call /biometric-cancel endpoint when implemented
+        },
+        onRequestWhitelist: () => {
+          handleRequestWhitelist();
+          settled = true;
+          dispose();
+          resolve(false);
+        },
+        onRejected: () => {
+          handleReject();
+          settled = true;
+          dispose();
+          resolve(true);
+        },
       });
     });
   }, [
@@ -468,6 +505,9 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     crIdentificationNumberUUID,
     patientUuid,
     resolvePaymentMechanism,
+    buildBiometricStarter,
+    handleRequestWhitelist,
+    handleReject,
     t,
   ]);
 
@@ -593,12 +633,6 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
 
       {hieFeatureFlags && isInsuranceSchemeSha && (
         <section className={styles.sectionContainer}>
-          <section className={styles.sectionContainer}>
-            <div className={styles.sectionTitle}>{t('biometricTest', 'Biometric (test)')}</div>
-            <Button kind="tertiary" size="sm" onClick={handleTestBiometric}>
-              {t('testBiometricAuthorize', 'Test biometric authorize (check console)')}
-            </Button>
-          </section>
           <div className={styles.sectionTitle}>{t('electiveVisitQuestion', 'Is this an elective visit?')}</div>
           <RadioButtonGroup
             name="is-elective-visit"
@@ -767,6 +801,3 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
 };
 
 export default React.memo(BillingCheckInForm);
-function fetchLocalAgent(agent_url: string, agent_timeout_ms: number) {
-  throw new Error('Function not implemented.');
-}

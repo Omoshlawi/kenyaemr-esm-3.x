@@ -70,6 +70,8 @@
   "authorizationCodePlaceholder": "e.g. CMJ5RTHANG",
   "authorizationStatus": "Authorization Status",
   "authorizeFailed": "Authorization failed",
+  "authRejected": "Authentication rejected",
+  "authRejectedSubtitle": "Visit will proceed without SHA virtual claim. This may affect billing.",
   "availableBalance": "Available Balance",
   "awaitingPreauth": "Awaiting preauth",
   "balance": "Balance",
@@ -120,7 +122,7 @@
   "billWaiver": "Bill waiver",
   "billWaiverError": "Bill waiver failed {{error}}",
   "billWaiverSuccess": "Bill waiver successful",
-  "biometricTest": "Biometric (test)",
+  "biometricStartFailed": "Could not start biometric session.",
   "bulkUpload": "Bulk Upload",
   "cancel": "Cancel",
   "cancelBillForm": "Cancel Bill Form",
@@ -837,7 +839,6 @@
   "switchPaymentPoint": "Switch Payment Point",
   "syncStatus": "Sync status",
   "tariff": "Tariff (KES)",
-  "testBiometricAuthorize": "Test biometric authorize (check console)",
   "timesheet": "Timesheet",
   "todayPreauths": "Today's preauths",
   "total": "Total",
@@ -918,5 +919,7 @@
   "waiverPaymentModeNotFoundSubtitle": "Contact your administrator to create a waiver payment attribute type to waive a bill",
   "waiverReasonLabel": "Waiver reason",
   "waiverReasonRequired": "Waiver reason is required",
+  "whitelistRequest": "Whitelist request",
+  "whitelistRequestStub": "Whitelist submission modal not yet implemented. The request would go here.",
   "yes": "Yes"
 }
