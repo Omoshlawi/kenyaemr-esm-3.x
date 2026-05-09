@@ -88,7 +88,7 @@ type OTPVerificationModalProps = {
   onRejected?: () => void;
 
   /** eKYC iframe postMessage origin for security (defaults to
-   *  https://test.ekyc.pesaflow.com). */
+   */
   ekycOrigin?: string;
 };
 
@@ -110,7 +110,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
   onBiometricCancel,
   onRequestWhitelist,
   onRejected,
-  ekycOrigin = 'https://test.ekyc.pesaflow.com',
+  ekycOrigin,
 }) => {
   const { t } = useTranslation();
   const [otp, setOtp] = useState('');
@@ -130,10 +130,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
   const [biometricEmbedUrl, setBiometricEmbedUrl] = useState<string | null>(null);
   const biometricResultRef = useRef<{ authorization_code: string; consent_token: string } | null>(null);
 
-  // Initial mode: auth-landing if multi-method, else legacy landing.
   const [mode, setMode] = useState<Mode>(authMode === 'multi' ? 'auth-landing' : 'landing');
-
-  // ── lifecycle ──
 
   useEffect(() => {
     return () => {
@@ -141,17 +138,12 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
     };
   }, [onCleanup]);
 
-  // ── eKYC iframe postMessage listener ──
-  // The SHA capture page posts back success/failure when the patient completes
-  // (or fails) the biometric capture. We listen, validate origin, and route.
-
   useEffect(() => {
     if (mode !== 'biometric') {
       return;
     }
 
     const handleMessage = (event: MessageEvent) => {
-      // Origin check — never trust messages from other sources.
       if (ekycOrigin && event.origin !== ekycOrigin) {
         return;
       }
@@ -160,9 +152,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
       if (!data || typeof data !== 'object') {
         return;
       }
-
-      // Expected shape from SHA eKYC (adjust if their format differs):
-      //   { type: 'EKYC_COMPLETE', status: 'SUCCESS' | 'FAILURE', ... }
       if (data.type === 'EKYC_COMPLETE') {
         if (data.status === 'SUCCESS' && biometricResultRef.current) {
           onBiometricSuccess?.(biometricResultRef.current);
@@ -177,10 +166,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
     return () => window.removeEventListener('message', handleMessage);
   }, [mode, ekycOrigin, onBiometricSuccess]);
 
-  // ── handlers ──
-
   const handleClose = useCallback(() => {
-    // If a biometric session was active, tell the backend to release it.
     if (biometricResultRef.current && (mode === 'biometric' || mode === 'biometric-failed')) {
       onBiometricCancel?.(biometricResultRef.current.consent_token);
     }
@@ -339,7 +325,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
       </ModalHeader>
 
       <ModalBody>
-        {/* error banner — renders for all modes when error state is set */}
         {error && (
           <>
             <InlineNotification
@@ -358,7 +343,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
           </>
         )}
 
-        {/* ── AUTH-LANDING MODE ── */}
         {mode === 'auth-landing' && (
           <div className={styles.authLandingContainer}>
             <p className={styles.authIntro}>
@@ -427,7 +411,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
           </div>
         )}
 
-        {/* ── EXISTING: LANDING MODE (confirm phone) ── */}
         {mode === 'landing' && (
           <div className={styles.otpTriggerContainer}>
             <p>{t('confirmationTxt', 'Verify the phone number before OTP')}</p>
@@ -455,7 +438,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
           </div>
         )}
 
-        {/* ── EXISTING: VERIFY-OTP MODE ── */}
         {mode === 'verify-otp' && (
           <div className={styles.otpInputContainer}>
             <div className={styles.otpInstruction}>
@@ -487,7 +469,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
               {t('useADifferentNumber', 'Use a different number')}
             </Button>
 
-            {/* 3-strike escape hatch */}
             {showEscapeHatch && (
               <div className={styles.escapeHatch}>
                 <InlineNotification
@@ -526,7 +507,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
           </div>
         )}
 
-        {/* ── EXISTING: CHANGE-NUMBER MODE ── */}
         {mode === 'change-number' && (
           <div className={styles.changeNumberContainer}>
             <TextInput
@@ -545,7 +525,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
           </div>
         )}
 
-        {/* ── BIOMETRIC MODE ── */}
         {mode === 'biometric' && biometricEmbedUrl && (
           <div className={styles.biometricContainer}>
             <div className={styles.iframeWrapper}>
@@ -562,7 +541,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
           </div>
         )}
 
-        {/* ── BIOMETRIC-FAILED MODE ── */}
         {mode === 'biometric-failed' && (
           <div className={styles.failedContainer}>
             <InlineNotification
@@ -630,7 +608,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
 
       <ModalFooter>
         <ButtonSet className={styles.buttonSet}>
-          {/* Reject button only on auth-landing and biometric-failed */}
           {(mode === 'auth-landing' || mode === 'biometric-failed') && onRejected && (
             <Button kind="danger--ghost" onClick={handleReject} className={styles.button}>
               {t('btnReject', 'Reject')}
@@ -641,7 +618,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
             {t('btnCancel', 'Cancel')}
           </Button>
 
-          {/* Primary action varies by mode */}
           {mode === 'landing' && (
             <Button
               kind="primary"

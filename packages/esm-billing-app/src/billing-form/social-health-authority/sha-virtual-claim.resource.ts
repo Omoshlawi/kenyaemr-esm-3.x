@@ -1,14 +1,20 @@
-import { openmrsFetch, restBaseUrl, type FetchResponse, useOpenmrsPagination } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, type FetchResponse, useOpenmrsPagination, useConfig } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import {
+  AuthorizingDeviceOS,
+  BiometricAuthorizeRequest,
+  BiometricAuthorizeResponse,
+  BiometricConfigResponse,
   ElectiveCheckinRecord,
   OTPResponse,
   PreauthQueueItem,
+  ProviderAttributesResponse,
   SHAIntervention,
   SHASubBenefit,
   VirtualClaimResponse,
 } from './type';
 import { virtualClaimBaseUrl } from '../../claims/claims-management/table/virtual-claim-preauth/constants';
+import { BillingConfig } from '../../config-schema';
 
 export const useSHASubBenefits = (patientCRId: string) => {
   const url = patientCRId ? `${virtualClaimBaseUrl}/sub-benefits?patient_id=${patientCRId}` : null;
@@ -200,35 +206,6 @@ export const linkVisitToClaim = async (
   return response.data;
 };
 
-export interface BiometricAuthorizeResponse {
-  success: boolean;
-  embed_url?: string;
-  facility_name?: string;
-  service_type?: string;
-  authorization_code?: string;
-  consent_token?: string;
-  patient_uuid?: string;
-  visit_uuid?: string;
-  response?: any;
-  error?: string;
-  upstream_error?: any;
-}
-
-export interface BiometricAuthorizeRequest {
-  agent_id: string;
-  patient_id: string;
-  interventions: string[];
-  service_type: string;
-  workstation_id: string;
-  authorizing_device_os: string;
-  is_emergency?: boolean;
-  is_biometrics_discharge_authorization?: boolean;
-  payment_mechanism?: string;
-  factors?: string[];
-  patient_uuid?: string;
-  visit_uuid?: string;
-}
-
 export const createSHABiometricAuthorize = async (
   payload: BiometricAuthorizeRequest,
 ): Promise<BiometricAuthorizeResponse> => {
@@ -240,16 +217,97 @@ export const createSHABiometricAuthorize = async (
   return response.data;
 };
 
-export interface BiometricConfigResponse {
-  agent_url: string;
-  agent_timeout_ms: number;
-  default_factors: string[];
+export const useBiometricConfig = () => {
+  const url = `${virtualClaimBaseUrl}/biometric-config`;
+  const { data, error, isLoading, mutate } = useSWR<FetchResponse<BiometricConfigResponse>>(url, openmrsFetch);
+  return {
+    agentUrl: data?.data?.agent_url,
+    agentTimeoutMs: data?.data?.agent_timeout_ms,
+    defaultFactors: data?.data?.default_factors,
+    isLoading,
+    error,
+    mutate,
+  };
+};
+export const useProviderNationalId = (uuid: string) => {
+  const customRepresentation = 'custom:(person:(display),attributes:(attributeType:(display),value))';
+  const url = `${restBaseUrl}/provider/${uuid}?v=${customRepresentation}`;
+  const { providerNationalIdUuid } = useConfig<BillingConfig>();
+
+  const { isLoading, error, data } = useSWR<FetchResponse<ProviderAttributesResponse>>(url, openmrsFetch);
+
+  const providerNationalid = data?.data?.attributes?.find(
+    (attr) => attr.attributeType.uuid === providerNationalIdUuid,
+  )?.value;
+  return { isLoading, error, providerNationalid };
+};
+
+export interface BiometricAgentStatus {
+  devices: any[];
+  card_readers: any[];
+  isAuthed: boolean;
+  workstationID: string;
+  version: string;
 }
 
-export const fetchBiometricConfig = async (): Promise<BiometricConfigResponse> => {
-  const response = await openmrsFetch(`${virtualClaimBaseUrl}/biometric-config`, {
-    method: 'GET',
-    headers: { Accept: 'application/json' },
-  });
-  return response.data;
+export const useBiometricAgentStatus = (agentUrl: string | undefined) => {
+  const { data, error, isLoading, mutate } = useSWR<BiometricAgentStatus>(
+    agentUrl ?? null,
+    async (url: string) => {
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) {
+        throw new Error(`Biometric agent returned ${res.status}`);
+      }
+      return res.json();
+    },
+    {
+      revalidateOnFocus: false,
+      shouldRetryOnError: false,
+      dedupingInterval: 30_000,
+    },
+  );
+
+  return {
+    workstationId: data?.workstationID,
+    isAuthed: data?.isAuthed ?? false,
+    agentVersion: data?.version,
+    devices: data?.devices ?? [],
+    cardReaders: data?.card_readers ?? [],
+    isLoading,
+    error,
+    mutate,
+  };
+};
+
+export const detectAuthorizingDeviceOS = (): AuthorizingDeviceOS => {
+  if (typeof navigator === 'undefined') {
+    return 'windows';
+  }
+
+  const uaDataPlatform = (
+    navigator as Navigator & { userAgentData?: { platform?: string } }
+  ).userAgentData?.platform?.toLowerCase();
+
+  if (uaDataPlatform) {
+    if (uaDataPlatform.includes('android')) {
+      return 'android';
+    }
+    if (uaDataPlatform.includes('windows')) {
+      return 'windows';
+    }
+  }
+
+  const userAgent = navigator.userAgent?.toLowerCase() ?? '';
+
+  if (userAgent.includes('android')) {
+    return 'android';
+  }
+  if (userAgent.includes('windows')) {
+    return 'windows';
+  }
+
+  return 'windows';
 };

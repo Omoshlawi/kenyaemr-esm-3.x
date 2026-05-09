@@ -137,3 +137,47 @@ export type ElectiveCheckinRecord = {
   service_type: string | null;
   date_created: string | null;
 };
+
+export interface BiometricAuthorizeResponse {
+  success: boolean;
+  embed_url?: string;
+  facility_name?: string;
+  service_type?: string;
+  authorization_code?: string;
+  consent_token?: string;
+  patient_uuid?: string;
+  visit_uuid?: string;
+  response?: any;
+  error?: string;
+  upstream_error?: any;
+}
+
+export interface BiometricAuthorizeRequest {
+  agent_id: string;
+  patient_id: string;
+  interventions: string[];
+  service_type: string;
+  workstation_id: string;
+  authorizing_device_os: string;
+  is_emergency?: boolean;
+  is_biometrics_discharge_authorization?: boolean;
+  payment_mechanism?: string;
+  factors?: string[];
+  patient_uuid?: string;
+  visit_uuid?: string;
+}
+
+export interface BiometricConfigResponse {
+  agent_url: string;
+  agent_timeout_ms: number;
+  default_factors: string[];
+}
+
+export interface ProviderAttributesResponse {
+  attributes: Array<{
+    attributeType: { display: string; uuid: string };
+    value: string;
+  }>;
+}
+
+export type AuthorizingDeviceOS = 'windows' | 'android';

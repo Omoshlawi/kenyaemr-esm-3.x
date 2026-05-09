@@ -8,7 +8,15 @@ import {
   TextInput,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { showModal, showSnackbar, useConfig, useFeatureFlag, usePatient, type Visit } from '@openmrs/esm-framework';
+import {
+  showModal,
+  showSnackbar,
+  useConfig,
+  useFeatureFlag,
+  usePatient,
+  useSession,
+  type Visit,
+} from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -24,10 +32,14 @@ import SHABenefitPackagesAndInterventions from '../benefits-package/forms/packag
 import {
   createSHABiometricAuthorize,
   createSHAVirtualClaim,
+  detectAuthorizingDeviceOS,
   linkVisitToClaim,
   sendSHAOtp,
+  useBiometricAgentStatus,
+  useBiometricConfig,
   useElectiveCheckin,
   usePatientPhone,
+  useProviderNationalId,
 } from './social-health-authority/sha-virtual-claim.resource';
 import { type SHAIntervention, VirtualClaimResponse } from './social-health-authority/type';
 import { getPatientCRNumber, toSavannahISO } from './social-health-authority/helper';
@@ -54,13 +66,6 @@ type BillingCheckInFormValue = VisitAttributesFormValue & {
   estimatedDaysOfAdmission: number;
 };
 
-// ── TEMPORARY FALLBACKS ──
-// Replace once real wiring is in place:
-//   - Workstation ID: fetch from local biometric agent (http://localhost:18065/status/)
-//   - Agent ID: National ID of the logged-in OpenMRS user (person attribute)
-const FALLBACK_WORKSTATION_ID = '8e4824b9-729c-490d-97b4-74409721c6ef-7066553AB4E5';
-const FALLBACK_AGENT_ID = '12345678';
-
 const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   patientUuid,
   setVisitFormCallbacks,
@@ -77,6 +82,12 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
 
   const { patient } = usePatient(patientUuid);
   const phoneNumber = usePatientPhone(patientUuid);
+  const { currentProvider } = useSession();
+  const { providerNationalid } = useProviderNationalId(currentProvider?.uuid ?? '');
+  const { agentUrl } = useBiometricConfig();
+  const { workstationId, isAuthed: isAgentAuthed, error: agentError } = useBiometricAgentStatus(agentUrl);
+  const deviceOs = detectAuthorizingDeviceOS();
+
   const { cashPoints, isLoading: isLoadingCashPoints, error: cashError } = useCashPoint();
   const { lineItems, isLoading: isLoadingLineItems, error: lineError } = useBillableItems();
 
@@ -218,12 +229,12 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     (crId: string, codes: string[], paymentMechanism: string | undefined) => {
       return async () => {
         const res = await createSHABiometricAuthorize({
-          agent_id: FALLBACK_AGENT_ID,
+          agent_id: providerNationalid ?? '',
           patient_id: crId,
           interventions: codes,
           service_type: serviceTypeRef.current,
-          workstation_id: FALLBACK_WORKSTATION_ID,
-          authorizing_device_os: 'windows',
+          workstation_id: workstationId ?? '',
+          authorizing_device_os: deviceOs,
           payment_mechanism: paymentMechanism,
           patient_uuid: patientUuid,
         });
