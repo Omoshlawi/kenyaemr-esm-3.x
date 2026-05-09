@@ -199,3 +199,57 @@ export const linkVisitToClaim = async (
   });
   return response.data;
 };
+
+export interface BiometricAuthorizeResponse {
+  success: boolean;
+  embed_url?: string;
+  facility_name?: string;
+  service_type?: string;
+  authorization_code?: string;
+  consent_token?: string;
+  patient_uuid?: string;
+  visit_uuid?: string;
+  response?: any;
+  error?: string;
+  upstream_error?: any;
+}
+
+export interface BiometricAuthorizeRequest {
+  agent_id: string;
+  patient_id: string;
+  interventions: string[];
+  service_type: string;
+  workstation_id: string;
+  authorizing_device_os: string;
+  is_emergency?: boolean;
+  is_biometrics_discharge_authorization?: boolean;
+  payment_mechanism?: string;
+  factors?: string[];
+  patient_uuid?: string;
+  visit_uuid?: string;
+}
+
+export const createSHABiometricAuthorize = async (
+  payload: BiometricAuthorizeRequest,
+): Promise<BiometricAuthorizeResponse> => {
+  const response = await openmrsFetch(`${virtualClaimBaseUrl}/biometric-authorize`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: payload,
+  });
+  return response.data;
+};
+
+export interface BiometricConfigResponse {
+  agent_url: string;
+  agent_timeout_ms: number;
+  default_factors: string[];
+}
+
+export const fetchBiometricConfig = async (): Promise<BiometricConfigResponse> => {
+  const response = await openmrsFetch(`${virtualClaimBaseUrl}/biometric-config`, {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+  });
+  return response.data;
+};
