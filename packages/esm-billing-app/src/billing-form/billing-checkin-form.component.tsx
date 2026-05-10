@@ -228,12 +228,29 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   const buildBiometricStarter = useCallback(
     (crId: string, codes: string[], paymentMechanism: string | undefined) => {
       return async () => {
+        if (!providerNationalid) {
+          throw new Error(
+            t(
+              'biometricMissingNationalId',
+              'Provider National ID not configured. Please add it to your provider profile.',
+            ),
+          );
+        }
+        if (!workstationId) {
+          throw new Error(
+            t(
+              'biometricAgentNotReachable',
+              'Biometric agent not running. Please start the agent on this workstation and try again.',
+            ),
+          );
+        }
+
         const res = await createSHABiometricAuthorize({
-          agent_id: providerNationalid ?? '',
+          agent_id: providerNationalid,
           patient_id: crId,
           interventions: codes,
           service_type: serviceTypeRef.current,
-          workstation_id: workstationId ?? '',
+          workstation_id: workstationId,
           authorizing_device_os: deviceOs,
           payment_mechanism: paymentMechanism,
           patient_uuid: patientUuid,
@@ -252,7 +269,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         };
       };
     },
-    [patientUuid, t],
+    [providerNationalid, workstationId, deviceOs, patientUuid, t],
   );
 
   const handleRequestWhitelist = useCallback(() => {

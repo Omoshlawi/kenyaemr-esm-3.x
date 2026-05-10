@@ -230,7 +230,7 @@ export const useBiometricConfig = () => {
   };
 };
 export const useProviderNationalId = (uuid: string) => {
-  const customRepresentation = 'custom:(person:(display),attributes:(attributeType:(display),value))';
+  const customRepresentation = 'custom:(person:(display),attributes:(attributeType:(uuid,display),value))';
   const url = `${restBaseUrl}/provider/${uuid}?v=${customRepresentation}`;
   const { providerNationalIdUuid } = useConfig<BillingConfig>();
 
