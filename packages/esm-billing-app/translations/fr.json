@@ -122,6 +122,8 @@
   "billWaiver": "Exonération de facture",
   "billWaiverError": "Échec de l'exonération de la facture {{error}}",
   "billWaiverSuccess": "Exonération de la facture réussie",
+  "biometricAgentNotReachable": "Biometric agent not running. Please start the agent on this workstation and try again.",
+  "biometricMissingNationalId": "Provider National ID not configured. Please add it to your provider profile.",
   "biometricStartFailed": "Could not start biometric session.",
   "bulkUpload": "Téléchargement en masse",
   "cancel": "Annuler",

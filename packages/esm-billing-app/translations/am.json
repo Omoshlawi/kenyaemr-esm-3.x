@@ -122,6 +122,8 @@
   "billWaiver": "Bill waiver",
   "billWaiverError": "Bill waiver failed {{error}}",
   "billWaiverSuccess": "Bill waiver successful",
+  "biometricAgentNotReachable": "Biometric agent not running. Please start the agent on this workstation and try again.",
+  "biometricMissingNationalId": "Provider National ID not configured. Please add it to your provider profile.",
   "biometricStartFailed": "Could not start biometric session.",
   "bulkUpload": "ብዛት ማስገባት",
   "cancel": "ይሰርዝ",

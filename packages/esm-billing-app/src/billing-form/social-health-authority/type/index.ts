@@ -181,3 +181,43 @@ export interface ProviderAttributesResponse {
 }
 
 export type AuthorizingDeviceOS = 'windows' | 'android';
+
+export type WhitelistReason = {
+  code: string;
+  label: string;
+  description: string;
+  review_type: 'AUTOMATIC' | 'MANUAL';
+  requires_attachments: boolean;
+};
+
+export type WhitelistSubmitResponse = {
+  success: boolean;
+  request_id?: string;
+  reason_type?: string;
+  review_type?: 'AUTOMATIC' | 'MANUAL';
+  upstream_status?: string;
+  response?: any;
+  error?: string;
+  upstream_error?: any;
+  already_whitelisted?: boolean;
+  has_pending_request?: boolean;
+};
+
+export type WhitelistStatusPoll = {
+  beneficiary_cr_id: string;
+  is_whitelisted: boolean;
+  has_pending: boolean;
+  can_submit_new: boolean;
+  latest_status: string | null;
+  total: number;
+  requests: Array<{
+    request_id?: string;
+    status?: string;
+    reason_type?: string;
+    reason?: string;
+    biometric_attempts?: string;
+    created_on?: string;
+    reviewed_on?: string;
+    review_note?: string;
+  }>;
+};

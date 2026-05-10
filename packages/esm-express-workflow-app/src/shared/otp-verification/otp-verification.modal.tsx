@@ -1,11 +1,15 @@
 import {
   Button,
   ButtonSet,
+  Dropdown,
+  FileUploader,
   InlineLoading,
   InlineNotification,
   ModalBody,
   ModalFooter,
   ModalHeader,
+  NumberInput,
+  TextArea,
   TextInput,
   IconButton,
 } from '@carbon/react';
@@ -19,6 +23,8 @@ import {
   ChevronRight,
   WarningAlt,
   CheckmarkFilled,
+  ArrowLeft,
+  Time,
 } from '@carbon/react/icons';
 import React, { FC, useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -27,21 +33,39 @@ import PinPut from '../pin-put/pinput.component';
 import { PHONE_NUMBER_REGEX } from '../../constants';
 import OTPCountdown from './pin-counter/pin-counter.component';
 import { extractFetchError, maskPhoneNumber } from '../utils';
-import ShapeIndicator from '@carbon/react/lib/components/ShapeIndicator';
 
 const MAX_VERIFY_ATTEMPTS = 3;
 const BIOMETRIC_AUTO_CLOSE_MS = 1500;
+const MIN_REASON_LENGTH = 10;
+
+const WHITELIST_POLL_INTERVAL_MS = 5_000;
+const WHITELIST_POLL_TIMEOUT_MS = 5 * 60_000;
 
 type Mode =
-  | 'auth-landing' // method picker (only shown when authMode='multi')
-  | 'landing' // existing: confirm phone before sending OTP
-  | 'verify-otp' // existing: enter OTP code
-  | 'change-number' // existing: change phone number
-  | 'biometric' // NEW: iframe capture
-  | 'biometric-failed'; // NEW: post-failure recovery
+  | 'auth-landing'
+  | 'landing'
+  | 'verify-otp'
+  | 'change-number'
+  | 'biometric'
+  | 'biometric-failed'
+  | 'whitelist-submit'
+  | 'whitelist-waiting';
+
+type WhitelistReason = {
+  code: string;
+  label: string;
+  description: string;
+  review_type: 'AUTOMATIC' | 'MANUAL';
+  requires_attachments: boolean;
+};
+
+export type WhitelistPollResult = {
+  is_whitelisted: boolean;
+  has_pending: boolean;
+  latest_status: string | null;
+};
 
 type OTPVerificationModalProps = {
-  // ── EXISTING PROPS (unchanged) ──
   onClose?: () => void;
   otpLength?: number;
   onVerify?: (otp: string) => Promise<void>;
@@ -53,42 +77,33 @@ type OTPVerificationModalProps = {
   expiryMinutes?: number;
   onCleanup?: () => void;
 
-  // ── NEW PROPS (all optional — preserves backward compatibility) ──
-
-  /** When true, shows the auth-landing method picker first (Biometric / OTP /
-   *  Whitelist). When false or undefined, opens directly to the OTP landing
-   *  (existing behavior). */
   authMode?: 'otp-only' | 'multi';
-
-  /** Whether the patient is approved for OTP whitelist bypass. Drives the
-   *  method picker layout and post-failure recovery options. */
   whitelistedForOTP?: boolean;
 
-  /** Called when the user picks biometric. Should return a promise resolving
-   *  with the embed_url + auth code from /biometric-authorize. */
   onStartBiometric?: () => Promise<{
     embed_url: string;
     authorization_code: string;
     consent_token: string;
   }>;
-
-  /** Called on successful biometric capture (iframe postMessage SUCCESS). */
   onBiometricSuccess?: (result: { authorization_code: string; consent_token: string }) => void;
-
-  /** Called when biometric session is cancelled (user closes, timer expires).
-   *  Backend's /biometric-cancel goes here. */
   onBiometricCancel?: (consentToken: string | null) => void;
 
-  /** Called when user clicks "Request whitelisting" — parent opens the
-   *  whitelist submission modal. */
+  patientCRId?: string;
+
+  whitelistReasons?: WhitelistReason[];
+
+  onSubmitWhitelist?: (params: {
+    reasonType: string;
+    reason: string;
+    biometricAttempts: number;
+    attachment: File | null;
+  }) => Promise<{ success: boolean; review_type?: string; error?: string }>;
+
+  onCheckWhitelistStatus?: (crId: string) => Promise<WhitelistPollResult>;
+
   onRequestWhitelist?: () => void;
 
-  /** Called when user clicks "Reject" on the auth landing — visit proceeds
-   *  without consent (administrative override). */
   onRejected?: () => void;
-
-  /** eKYC iframe postMessage origin for security (defaults to
-   */
   ekycOrigin?: string;
 };
 
@@ -108,6 +123,10 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
   onStartBiometric,
   onBiometricSuccess,
   onBiometricCancel,
+  patientCRId,
+  whitelistReasons = [],
+  onSubmitWhitelist,
+  onCheckWhitelistStatus,
   onRequestWhitelist,
   onRejected,
   ekycOrigin,
@@ -116,7 +135,10 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
   const [otp, setOtp] = useState('');
   const [newPhoneNumber, setNewPhoneNumber] = useState(phoneNumber);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<{ type: 'request' | 'verification' | 'biometric'; message: string } | null>(null);
+  const [error, setError] = useState<{
+    type: 'request' | 'verification' | 'biometric' | 'whitelist';
+    message: string;
+  } | null>(null);
   const [requestingOtp, setRequestingOtp] = useState(false);
   const [currentPhoneNumber, setCurrentPhoneNumber] = useState(phoneNumber);
 
@@ -130,11 +152,29 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
   const [biometricEmbedUrl, setBiometricEmbedUrl] = useState<string | null>(null);
   const biometricResultRef = useRef<{ authorization_code: string; consent_token: string } | null>(null);
 
+  const [whitelistReasonCode, setWhitelistReasonCode] = useState<string>('');
+  const [whitelistReasonText, setWhitelistReasonText] = useState<string>('');
+  const [whitelistBiometricAttempts, setWhitelistBiometricAttempts] = useState<number>(0);
+  const [whitelistAttachment, setWhitelistAttachment] = useState<File | null>(null);
+  const [whitelistSubmitting, setWhitelistSubmitting] = useState(false);
+
+  const [whitelistReviewType, setWhitelistReviewType] = useState<string | null>(null);
+  const [pollElapsedSec, setPollElapsedSec] = useState(0);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollStartTimeRef = useRef<number>(0);
+
   const [mode, setMode] = useState<Mode>(authMode === 'multi' ? 'auth-landing' : 'landing');
 
   useEffect(() => {
     return () => {
       onCleanup?.();
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
+      }
     };
   }, [onCleanup]);
 
@@ -166,13 +206,30 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
     return () => window.removeEventListener('message', handleMessage);
   }, [mode, ekycOrigin, onBiometricSuccess]);
 
+  const selectedReason = whitelistReasons.find((r) => r.code === whitelistReasonCode);
+  const reasonRequiresAttachment = selectedReason?.requires_attachments ?? false;
+  const pollElapsedDisplay = `${Math.floor(pollElapsedSec / 60)}:${String(pollElapsedSec % 60).padStart(2, '0')}`;
+  const pollTotalDisplay = `${Math.floor(WHITELIST_POLL_TIMEOUT_MS / 60_000)}:00`;
+
+  const stopPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    if (pollTimeoutRef.current) {
+      clearTimeout(pollTimeoutRef.current);
+      pollTimeoutRef.current = null;
+    }
+  }, []);
+
   const handleClose = useCallback(() => {
+    stopPolling();
     if (biometricResultRef.current && (mode === 'biometric' || mode === 'biometric-failed')) {
       onBiometricCancel?.(biometricResultRef.current.consent_token);
     }
     onCleanup?.();
     onClose?.();
-  }, [biometricResultRef, mode, onBiometricCancel, onCleanup, onClose]);
+  }, [biometricResultRef, mode, onBiometricCancel, onCleanup, onClose, stopPolling]);
 
   const handleVerify = async () => {
     setError(null);
@@ -247,26 +304,134 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
     handleStartBiometric();
   };
 
-  const handleRequestWhitelist = () => {
-    onRequestWhitelist?.();
+  const handleOpenWhitelistFlow = useCallback(() => {
+    if (patientCRId && onSubmitWhitelist && whitelistReasons.length > 0) {
+      setError(null);
+      setWhitelistReasonCode('');
+      setWhitelistReasonText('');
+      setWhitelistBiometricAttempts(0);
+      setWhitelistAttachment(null);
+      setMode('whitelist-submit');
+    } else {
+      onRequestWhitelist?.();
+      handleClose();
+    }
+  }, [patientCRId, onSubmitWhitelist, whitelistReasons, onRequestWhitelist, handleClose]);
+
+  const startPollingWhitelistStatus = useCallback(() => {
+    if (!patientCRId || !onCheckWhitelistStatus) {
+      return;
+    }
+
+    pollStartTimeRef.current = Date.now();
+    setPollElapsedSec(0);
+
+    const doPoll = async () => {
+      try {
+        const status = await onCheckWhitelistStatus(patientCRId);
+        const elapsed = Math.floor((Date.now() - pollStartTimeRef.current) / 1000);
+        setPollElapsedSec(elapsed);
+
+        if (status.is_whitelisted) {
+          stopPolling();
+          showSnackbarLikeMessage('approved');
+          setMode('landing');
+        }
+      } catch (pollErr) {
+        console.warn('Whitelist status poll failed:', pollErr);
+      }
+    };
+
+    doPoll();
+    pollIntervalRef.current = setInterval(doPoll, WHITELIST_POLL_INTERVAL_MS);
+
+    pollTimeoutRef.current = setTimeout(() => {
+      stopPolling();
+      setError({
+        type: 'whitelist',
+        message: t(
+          'whitelistStillPending',
+          'The request is still pending after {{minutes}} minutes. Please retry check-in later.',
+          { minutes: Math.floor(WHITELIST_POLL_TIMEOUT_MS / 60_000) },
+        ),
+      });
+    }, WHITELIST_POLL_TIMEOUT_MS);
+  }, [patientCRId, onCheckWhitelistStatus, stopPolling, t]);
+
+  const showSnackbarLikeMessage = (kind: 'approved') => {
+    if (kind === 'approved') {
+      setError(null);
+    }
+  };
+
+  const handleSubmitWhitelist = async () => {
+    if (!onSubmitWhitelist) {
+      return;
+    }
+    setError(null);
+
+    if (!whitelistReasonCode) {
+      setError({ type: 'whitelist', message: t('whitelistReasonRequired', 'Please select a reason.') });
+      return;
+    }
+    if (whitelistReasonText.trim().length < MIN_REASON_LENGTH) {
+      setError({
+        type: 'whitelist',
+        message: t('whitelistReasonTooShort', 'Justification must be at least {{min}} characters.', {
+          min: MIN_REASON_LENGTH,
+        }),
+      });
+      return;
+    }
+    if (reasonRequiresAttachment && !whitelistAttachment) {
+      setError({
+        type: 'whitelist',
+        message: t('whitelistAttachmentRequired', 'This reason requires an attachment (e.g. medical report).'),
+      });
+      return;
+    }
+
+    setWhitelistSubmitting(true);
+    try {
+      const result = await onSubmitWhitelist({
+        reasonType: whitelistReasonCode,
+        reason: whitelistReasonText.trim(),
+        biometricAttempts: whitelistBiometricAttempts,
+        attachment: whitelistAttachment,
+      });
+      if (!result.success) {
+        throw new Error(result.error ?? t('whitelistSubmitFailed', 'Whitelist submission failed.'));
+      }
+
+      setWhitelistReviewType(result.review_type ?? null);
+      setMode('whitelist-waiting');
+      startPollingWhitelistStatus();
+    } catch (err) {
+      setError({
+        type: 'whitelist',
+        message: extractFetchError(err, t('whitelistSubmitFailed', 'Whitelist submission failed.')),
+      });
+    } finally {
+      setWhitelistSubmitting(false);
+    }
+  };
+
+  const handleCancelWhitelistWaiting = () => {
+    stopPolling();
     handleClose();
   };
 
   const handleSwitchToOtpFromAuthLanding = () => {
-    // Multi-mode → OTP picked → go through existing landing (confirm phone → send OTP)
     setMode('landing');
   };
 
   const handleEscapeHatchFromVerifyOtp = () => {
-    // 3-strike escape hatch inside verify-otp.
     if (whitelistedForOTP) {
-      // Patient has whitelist privilege → switch to biometric as alternative auth.
       setOtp('');
       setIsCountdownActive(false);
       setMode('auth-landing');
     } else {
-      // Patient not whitelisted → request whitelisting (parent handles).
-      handleRequestWhitelist();
+      handleOpenWhitelistFlow();
     }
   };
 
@@ -280,6 +445,11 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
   const handleBackToLanding = () => {
     setNewPhoneNumber(currentPhoneNumber);
     setMode('landing');
+  };
+
+  const handleBackFromWhitelist = () => {
+    setError(null);
+    setMode('auth-landing');
   };
 
   const handleCountdownExpired = () => {
@@ -299,8 +469,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
 
   const isValidPhoneNumber = (phone: string) => PHONE_NUMBER_REGEX.test(phone);
 
-  // ── render ──
-
   const headerTitle = (() => {
     switch (mode) {
       case 'auth-landing':
@@ -309,13 +477,30 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
         return t('biometricCaptureTitle', 'Biometric capture');
       case 'biometric-failed':
         return t('secureAuthBiometricFailedTitle', 'Biometric Verification Failed');
+      case 'whitelist-submit':
+        return t('whitelistRequestTitle', 'Request OTP Whitelisting');
+      case 'whitelist-waiting':
+        return t('whitelistWaitingTitle', 'Waiting for whitelist approval');
       default:
         return t('otpVerification', 'OTP Verification');
     }
   })();
 
   const headerEyebrow =
-    mode === 'auth-landing' || mode === 'biometric-failed' ? t('secureAuthEyebrow', 'Biometrics or OTP') : null;
+    mode === 'auth-landing' ||
+    mode === 'biometric-failed' ||
+    mode === 'whitelist-submit' ||
+    mode === 'whitelist-waiting'
+      ? t('secureAuthEyebrow', 'Biometrics or OTP')
+      : null;
+
+  const reasonItems = whitelistReasons.map((r) => ({
+    id: r.code,
+    label: r.label,
+    description: r.description,
+    review_type: r.review_type,
+    requires_attachments: r.requires_attachments,
+  }));
 
   return (
     <React.Fragment>
@@ -329,12 +514,14 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
           <>
             <InlineNotification
               lowContrast
-              kind={error.type === 'request' || error.type === 'biometric' ? 'error' : 'warning'}
+              kind={error.type === 'verification' ? 'warning' : 'error'}
               title={
                 error.type === 'request'
                   ? t('otpRequestError', 'Error requesting OTP')
                   : error.type === 'biometric'
                   ? t('biometricError', 'Biometric error')
+                  : error.type === 'whitelist'
+                  ? t('whitelistError', 'Whitelist submission error')
                   : t('otpVerificationError', 'Error verifying OTP')
               }
               subtitle={error.message}
@@ -392,7 +579,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
             {!whitelistedForOTP && (
               <>
                 <div className={styles.dividerWithText}>{t('or', 'or')}</div>
-                <button className={styles.whitelistLink} onClick={handleRequestWhitelist}>
+                <button className={styles.whitelistLink} onClick={handleOpenWhitelistFlow}>
                   <RuleLocked size={16} />
                   <span>{t('btnRequestOtpWhitelisting', 'Request OTP Whitelisting')}</span>
                 </button>
@@ -577,7 +764,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
                 <ChevronRight size={18} className={styles.methodArrow} />
               </button>
             ) : (
-              <button className={styles.methodCard} onClick={handleRequestWhitelist}>
+              <button className={styles.methodCard} onClick={handleOpenWhitelistFlow}>
                 <div className={`${styles.methodIconWrap} ${styles.methodIconWarning}`}>
                   <RuleLocked size={22} />
                 </div>
@@ -604,6 +791,141 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
             </Button>
           </div>
         )}
+
+        {mode === 'whitelist-submit' && (
+          <div className={styles.whitelistFormContainer}>
+            <p className={styles.whitelistIntro}>
+              {t(
+                'whitelistFormIntro',
+                'Submit a whitelist request so this patient can use OTP for the current visit. After approval, OTP will be sent automatically.',
+              )}
+            </p>
+            <Dropdown
+              id="whitelist-reason-type"
+              titleText={t('whitelistReasonType', 'Reason')}
+              label={t('whitelistReasonTypePlaceholder', 'Select a reason')}
+              items={reasonItems}
+              itemToString={(item) => (item ? item.label : '')}
+              selectedItem={reasonItems.find((r) => r.id === whitelistReasonCode) ?? null}
+              onChange={({ selectedItem }) => {
+                setWhitelistReasonCode(selectedItem?.id ?? '');
+                setWhitelistAttachment(null);
+              }}
+              disabled={whitelistSubmitting}
+            />
+            {selectedReason && (
+              <div className={styles.whitelistReasonHint}>
+                <p className={styles.whitelistReasonDesc}>{selectedReason.description}</p>
+              </div>
+            )}
+            <TextArea
+              id="whitelist-reason-text"
+              labelText={t('whitelistJustification', 'Justification')}
+              helperText={t(
+                'whitelistJustificationHelper',
+                'Explain why this patient cannot use biometric or OTP normally. Minimum {{min}} characters.',
+                { min: MIN_REASON_LENGTH },
+              )}
+              value={whitelistReasonText}
+              onChange={(ev) => setWhitelistReasonText(ev.target.value)}
+              maxCount={500}
+              enableCounter
+              rows={4}
+              disabled={whitelistSubmitting}
+              invalid={whitelistReasonText.length > 0 && whitelistReasonText.trim().length < MIN_REASON_LENGTH}
+              invalidText={t('whitelistJustificationTooShort', 'At least {{min}} characters required.', {
+                min: MIN_REASON_LENGTH,
+              })}
+            />
+            <NumberInput
+              id="whitelist-biometric-attempts"
+              label={t('biometricAttemptsLabel', 'Biometric attempts')}
+              helperText={t(
+                'biometricAttemptsHelper',
+                'How many times biometric capture has been attempted (use 0 if not applicable).',
+              )}
+              min={0}
+              max={50}
+              value={whitelistBiometricAttempts}
+              onChange={(_ev, { value }) => {
+                const n = typeof value === 'number' ? value : Number(value) || 0;
+                setWhitelistBiometricAttempts(Math.max(0, n));
+              }}
+              disabled={whitelistSubmitting}
+            />
+            {reasonRequiresAttachment && (
+              <FileUploader
+                accept={['.pdf', '.jpg', '.jpeg', '.png']}
+                buttonKind="tertiary"
+                buttonLabel={
+                  whitelistAttachment
+                    ? t('replaceAttachment', 'Replace attachment')
+                    : t('addAttachment', 'Add attachment')
+                }
+                filenameStatus="edit"
+                labelDescription={t(
+                  'attachmentOptionalDesc',
+                  'Optional. Attach a supporting document if helpful (PDF/JPG/PNG, max 5 MB).',
+                )}
+                labelTitle={t('attachment', 'Attachment')}
+                multiple={false}
+                onChange={(ev: React.ChangeEvent<HTMLInputElement>) => {
+                  const files = ev.target.files;
+                  setWhitelistAttachment(files && files.length > 0 ? files[0] : null);
+                }}
+                onDelete={() => setWhitelistAttachment(null)}
+                disabled={whitelistSubmitting}
+              />
+            )}
+            <Button
+              kind="ghost"
+              onClick={handleBackFromWhitelist}
+              renderIcon={ArrowLeft}
+              size="md"
+              className={styles.tryAgainButton}
+              disabled={whitelistSubmitting}>
+              {t('back', 'Back')}
+            </Button>
+          </div>
+        )}
+
+        {mode === 'whitelist-waiting' && (
+          <div className={styles.whitelistWaitingContainer}>
+            <div className={styles.whitelistWaitingIconWrap}>
+              <Time size={32} />
+            </div>
+            <h3 className={styles.whitelistWaitingTitle}>
+              {whitelistReviewType === 'AUTOMATIC'
+                ? t('whitelistAutoApprovalProcessing', 'Processing automatic approval…')
+                : t('whitelistAwaitingManualReview', 'Awaiting manual review…')}
+            </h3>
+            <p className={styles.whitelistWaitingBody}>
+              {whitelistReviewType === 'AUTOMATIC'
+                ? t(
+                    'whitelistAutoApprovalBody',
+                    'Your request was submitted. We are checking with SHA this usually takes a few seconds. Once approved, OTP will be sent automatically.',
+                  )
+                : t(
+                    'whitelistManualReviewBody',
+                    'Your request is queued for manual review by SHA. We will keep checking. If you would rather try again later, you can cancel below.',
+                  )}
+            </p>
+
+            <div className={styles.whitelistPollProgress}>
+              <InlineLoading description={t('whitelistChecking', 'Checking status…')} status="active" />
+              <span className={styles.whitelistPollTimer}>
+                {pollElapsedDisplay} / {pollTotalDisplay}
+              </span>
+            </div>
+
+            {patientCRId && (
+              <div className={styles.whitelistContextRow}>
+                <span className={styles.whitelistContextLabel}>{t('patientCR', 'Patient CR')}</span>
+                <code className={styles.whitelistContextValue}>{patientCRId}</code>
+              </div>
+            )}
+          </div>
+        )}
       </ModalBody>
 
       <ModalFooter>
@@ -614,9 +936,15 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
             </Button>
           )}
 
-          <Button kind="secondary" onClick={handleClose} className={styles.button}>
-            {t('btnCancel', 'Cancel')}
-          </Button>
+          {mode === 'whitelist-waiting' ? (
+            <Button kind="secondary" onClick={handleCancelWhitelistWaiting} className={styles.button}>
+              {t('btnCancel', 'Cancel')}
+            </Button>
+          ) : (
+            <Button kind="secondary" onClick={handleClose} className={styles.button} disabled={whitelistSubmitting}>
+              {t('btnCancel', 'Cancel')}
+            </Button>
+          )}
 
           {mode === 'landing' && (
             <Button
@@ -655,6 +983,22 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
                 <InlineLoading description={t('reSendingOtp', 'Resending OTP...')} />
               ) : (
                 t('sendOtp', 'Send OTP')
+              )}
+            </Button>
+          )}
+
+          {mode === 'whitelist-submit' && (
+            <Button
+              kind="primary"
+              onClick={handleSubmitWhitelist}
+              className={styles.button}
+              disabled={
+                whitelistSubmitting || !whitelistReasonCode || whitelistReasonText.trim().length < MIN_REASON_LENGTH
+              }>
+              {whitelistSubmitting ? (
+                <InlineLoading description={t('submittingWhitelist', 'Submitting…')} />
+              ) : (
+                t('submitWhitelist', 'Submit request')
               )}
             </Button>
           )}

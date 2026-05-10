@@ -17,7 +17,7 @@ import {
   useSession,
   type Visit,
 } from '@openmrs/esm-framework';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { createPatientBill, createVisitAttribute, useBillableItems, useCashPoint } from '../billing.resource';
@@ -33,11 +33,14 @@ import {
   createSHABiometricAuthorize,
   createSHAVirtualClaim,
   detectAuthorizingDeviceOS,
+  fetchWhitelistStatus,
   linkVisitToClaim,
   sendSHAOtp,
+  submitOtpWhitelist,
   useBiometricAgentStatus,
   useBiometricConfig,
   useElectiveCheckin,
+  useOtpWhitelistReasons,
   usePatientPhone,
   useProviderNationalId,
 } from './social-health-authority/sha-virtual-claim.resource';
@@ -45,6 +48,7 @@ import { type SHAIntervention, VirtualClaimResponse } from './social-health-auth
 import { getPatientCRNumber, toSavannahISO } from './social-health-authority/helper';
 import { extractFetchError, extractUpstreamError } from '../claims/claims-management/table/virtual-claim-preauth/utils';
 import { formatCurrency } from '../helpers/currency';
+import { useSHAEligibility } from './hie.resource';
 
 export interface VisitFormCallbacks {
   onVisitCreatedOrUpdated: (visit: Visit) => Promise<any>;
@@ -82,6 +86,15 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
 
   const { patient } = usePatient(patientUuid);
   const phoneNumber = usePatientPhone(patientUuid);
+
+  const patientCRId = useMemo(
+    () => getPatientCRNumber(patient as fhir.Patient, crIdentificationNumberUUID),
+    [patient, crIdentificationNumberUUID],
+  );
+
+  const { isPatientWhiteListed } = useSHAEligibility(patientUuid);
+  const { reasons: whitelistReasons } = useOtpWhitelistReasons();
+
   const { currentProvider } = useSession();
   const { providerNationalid } = useProviderNationalId(currentProvider?.uuid ?? '');
   const { agentUrl } = useBiometricConfig();
@@ -272,22 +285,34 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     [providerNationalid, workstationId, deviceOs, patientUuid, t],
   );
 
-  const handleRequestWhitelist = useCallback(() => {
-    showSnackbar({
-      title: t('whitelistRequest', 'Whitelist request'),
-      subtitle: t('whitelistRequestStub', 'Whitelist submission modal not yet implemented. The request would go here.'),
-      kind: 'info',
-    });
-    // TODO: launch WhitelistSubmissionModal({ patientCRId: patientCRIdRef.current, patientUuid });
-  }, [t]);
+  const handleSubmitWhitelist = useCallback(
+    async (params: { reasonType: string; reason: string; biometricAttempts: number; attachment: File | null }) => {
+      if (!patientCRId) {
+        return { success: false, error: t('noCRNumber', 'Patient has no SHA CR number.') };
+      }
+      return submitOtpWhitelist({
+        beneficiaryCrId: patientCRId,
+        reasonType: params.reasonType,
+        reason: params.reason,
+        biometricAttempts: params.biometricAttempts,
+        attachment: params.attachment,
+      });
+    },
+    [patientCRId, t],
+  );
+
+  const handleCheckWhitelistStatus = useCallback(async (crId: string) => {
+    const status = await fetchWhitelistStatus(crId);
+    return {
+      is_whitelisted: status.is_whitelisted,
+      has_pending: status.has_pending,
+      latest_status: status.latest_status,
+    };
+  }, []);
 
   const handleReject = useCallback(() => {
-    showSnackbar({
-      title: t('authRejected', 'Authentication rejected'),
-      subtitle: t('authRejectedSubtitle', 'Visit will proceed without SHA virtual claim. This may affect billing.'),
-      kind: 'warning',
-    });
-  }, [t]);
+    // TODO: Reject workflow to be defined.
+  }, []);
 
   const launchSHAOtpFlow = useCallback((): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -296,7 +321,6 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         return;
       }
 
-      const patientCRId = getPatientCRNumber(patient as fhir.Patient, crIdentificationNumberUUID);
       if (!patientCRId) {
         showSnackbar({
           title: t('shaVirtualClaim', 'SHA Virtual Claim'),
@@ -306,6 +330,104 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         resolve(true);
         return;
       }
+
+      const buildModalConfig = (
+        crIdToUse: string,
+        codes: string[],
+        paymentMechanism: string | undefined,
+        electiveAdmissionFields?: any,
+      ): any => {
+        let settled = false;
+        const dispose = showModal('otp-verification-modal', {
+          onClose: () => {
+            if (!settled) {
+              settled = true;
+              dispose();
+              resolve(false);
+            } else {
+              dispose();
+            }
+          },
+
+          phoneNumber,
+          otpLength: 6,
+          expiryMinutes: 5,
+          centerBoxes: true,
+
+          onRequestOtp: async (_phone: string) => {
+            const res = await sendSHAOtp(crIdToUse, codes);
+            if (!res.success) {
+              throw new Error(extractUpstreamError(res as any, t('otpRequestFailed', 'Failed to send OTP')));
+            }
+          },
+          onVerify: async (enteredOtp: string) => {
+            const isInpatient = serviceTypeRef.current === 'INPATIENT';
+            const claimResponse = await createSHAVirtualClaim(
+              patientCRIdRef.current!,
+              enteredOtp,
+              serviceTypeRef.current,
+              interventionCodesRef.current,
+              '',
+              patientUuid,
+              isInpatient
+                ? {
+                    admission_date: admissionDateRef.current ? toSavannahISO(admissionDateRef.current) : undefined,
+                    estimated_days_of_admission: estimatedDaysRef.current ?? undefined,
+                  }
+                : undefined,
+              paymentMechanism,
+            );
+            if (!claimResponse.success) {
+              throw new Error(
+                extractUpstreamError(claimResponse as any, t('virtualClaimFailed', 'SHA virtual claim failed.')),
+              );
+            }
+            verifiedOtpRef.current = enteredOtp;
+            shaClaimResponseRef.current = claimResponse;
+          },
+          onVerificationSuccess: () => {
+            settled = true;
+            dispose();
+            resolve(true);
+          },
+          onCleanup: () => {
+            if (!settled) {
+              settled = true;
+              resolve(false);
+            }
+          },
+
+          authMode: 'multi',
+          whitelistedForOTP: isPatientWhiteListed,
+
+          onStartBiometric: buildBiometricStarter(crIdToUse, codes, paymentMechanism),
+          onBiometricSuccess: (result: { authorization_code: string; consent_token: string }) => {
+            shaClaimResponseRef.current = {
+              success: true,
+              authorization_code: result.authorization_code,
+              consent_token: result.consent_token,
+            } as VirtualClaimResponse;
+            settled = true;
+            dispose();
+            resolve(true);
+          },
+          onBiometricCancel: (_consentToken: string | null) => {
+            // TODO: call /biometric-cancel endpoint when implemented
+          },
+
+          patientCRId: crIdToUse,
+          whitelistReasons,
+          onSubmitWhitelist: handleSubmitWhitelist,
+          onCheckWhitelistStatus: handleCheckWhitelistStatus,
+
+          onRejected: () => {
+            handleReject();
+            settled = true;
+            dispose();
+            resolve(true);
+          },
+        });
+      };
 
       if (isElectiveVisit === 'yes') {
         if (!electiveRecord) {
@@ -342,91 +464,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         interventionCodesRef.current = codes;
         serviceTypeRef.current = electiveRecord.service_type ?? 'OUTPATIENT';
 
-        // TODO: source whitelistedForOTP from real API once available.
-        const whitelistedForOTP = (electiveRecord as any)?.whitelistedForOTP ?? false;
-
-        let settled = false;
-        const dispose = showModal('otp-verification-modal', {
-          onClose: () => {
-            dispose();
-          },
-          phoneNumber,
-          otpLength: 6,
-          expiryMinutes: 5,
-          centerBoxes: true,
-
-          onRequestOtp: async (_phone: string) => {
-            const res = await sendSHAOtp(electedCRId, codes);
-            if (!res.success) {
-              throw new Error(extractUpstreamError(res as any, t('otpRequestFailed', 'Failed to send OTP')));
-            }
-          },
-          onVerify: async (enteredOtp: string) => {
-            const isInpatient = serviceTypeRef.current === 'INPATIENT';
-            const claimResponse = await createSHAVirtualClaim(
-              patientCRIdRef.current!,
-              enteredOtp,
-              serviceTypeRef.current,
-              interventionCodesRef.current,
-              '',
-              patientUuid,
-              isInpatient
-                ? {
-                    admission_date: admissionDateRef.current ? toSavannahISO(admissionDateRef.current) : undefined,
-                    estimated_days_of_admission: estimatedDaysRef.current ?? undefined,
-                  }
-                : undefined,
-              undefined,
-            );
-            if (!claimResponse.success) {
-              throw new Error(
-                extractUpstreamError(claimResponse as any, t('virtualClaimFailed', 'SHA virtual claim failed.')),
-              );
-            }
-            verifiedOtpRef.current = enteredOtp;
-            shaClaimResponseRef.current = claimResponse;
-          },
-          onVerificationSuccess: () => {
-            settled = true;
-            dispose();
-            resolve(true);
-          },
-          onCleanup: () => {
-            if (!settled) {
-              resolve(false);
-            }
-          },
-
-          authMode: 'multi',
-          whitelistedForOTP,
-
-          onStartBiometric: buildBiometricStarter(electedCRId, codes, undefined),
-          onBiometricSuccess: (result: { authorization_code: string; consent_token: string }) => {
-            shaClaimResponseRef.current = {
-              success: true,
-              authorization_code: result.authorization_code,
-              consent_token: result.consent_token,
-            } as VirtualClaimResponse;
-            settled = true;
-            dispose();
-            resolve(true);
-          },
-          onBiometricCancel: (_consentToken: string | null) => {
-            // TODO: call /biometric-cancel endpoint when implemented
-          },
-          onRequestWhitelist: () => {
-            handleRequestWhitelist();
-            settled = true;
-            dispose();
-            resolve(false);
-          },
-          onRejected: () => {
-            handleReject();
-            settled = true;
-            dispose();
-            resolve(true);
-          },
-        });
+        buildModalConfig(electedCRId, codes, undefined);
         return;
       }
 
@@ -435,106 +473,24 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
       interventionCodesRef.current = codes;
       const paymentMechanism = resolvePaymentMechanism(codes);
 
-      // TODO: source whitelistedForOTP from patient API or eligibility check.
-      const whitelistedForOTP = (patient as any)?.whitelistedForOTP ?? false;
-
-      let settled = false;
-      const dispose = showModal('otp-verification-modal', {
-        onClose: () => {
-          dispose();
-        },
-        phoneNumber,
-        otpLength: 6,
-        expiryMinutes: 5,
-        centerBoxes: true,
-
-        onRequestOtp: async (_phone: string) => {
-          const res = await sendSHAOtp(patientCRId, codes);
-          if (!res.success) {
-            throw new Error(extractUpstreamError(res as any, t('otpRequestFailed', 'Failed to send OTP')));
-          }
-        },
-        onVerify: async (enteredOtp: string) => {
-          const isInpatient = serviceTypeRef.current === 'INPATIENT';
-          const claimResponse = await createSHAVirtualClaim(
-            patientCRIdRef.current!,
-            enteredOtp,
-            serviceTypeRef.current,
-            interventionCodesRef.current,
-            '',
-            patientUuid,
-            isInpatient
-              ? {
-                  admission_date: admissionDateRef.current ? toSavannahISO(admissionDateRef.current) : undefined,
-                  estimated_days_of_admission: estimatedDaysRef.current ?? undefined,
-                }
-              : undefined,
-            paymentMechanism,
-          );
-          if (!claimResponse.success) {
-            throw new Error(
-              extractUpstreamError(claimResponse as any, t('virtualClaimFailed', 'SHA virtual claim failed.')),
-            );
-          }
-          verifiedOtpRef.current = enteredOtp;
-          shaClaimResponseRef.current = claimResponse;
-        },
-        onVerificationSuccess: () => {
-          settled = true;
-          dispose();
-          resolve(true);
-        },
-        onCleanup: () => {
-          if (!settled) {
-            resolve(false);
-          }
-        },
-
-        authMode: 'multi',
-        whitelistedForOTP,
-
-        onStartBiometric: buildBiometricStarter(patientCRId, codes, paymentMechanism),
-        onBiometricSuccess: (result: { authorization_code: string; consent_token: string }) => {
-          shaClaimResponseRef.current = {
-            success: true,
-            authorization_code: result.authorization_code,
-            consent_token: result.consent_token,
-          } as VirtualClaimResponse;
-          settled = true;
-          dispose();
-          resolve(true);
-        },
-        onBiometricCancel: (_consentToken: string | null) => {
-          // TODO: call /biometric-cancel endpoint when implemented
-        },
-        onRequestWhitelist: () => {
-          handleRequestWhitelist();
-          settled = true;
-          dispose();
-          resolve(false);
-        },
-        onRejected: () => {
-          handleReject();
-          settled = true;
-          dispose();
-          resolve(true);
-        },
-      });
+      buildModalConfig(patientCRId, codes, paymentMechanism);
     });
   }, [
     hieFeatureFlags,
     isInsuranceSchemeSha,
-    patient,
+    patientCRId,
+    isPatientWhiteListed,
+    whitelistReasons,
     phoneNumber,
     selectedInterventions,
     isElectiveVisit,
     electiveRecord,
     isApproved,
-    crIdentificationNumberUUID,
     patientUuid,
     resolvePaymentMechanism,
     buildBiometricStarter,
-    handleRequestWhitelist,
+    handleSubmitWhitelist,
+    handleCheckWhitelistStatus,
     handleReject,
     t,
   ]);

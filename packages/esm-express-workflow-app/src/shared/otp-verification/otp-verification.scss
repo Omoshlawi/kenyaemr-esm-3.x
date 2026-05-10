@@ -101,8 +101,6 @@
   font-weight: 400;
 }
 
-// ── Auth landing (method picker) ──
-
 .eyebrow {
   @include type.type-style('label-01');
   text-transform: uppercase;
@@ -267,8 +265,6 @@
   }
 }
 
-// ── Biometric capture ──
-
 .biometricContainer {
   display: flex;
   flex-direction: column;
@@ -297,8 +293,6 @@
   margin: 0;
 }
 
-// ── Biometric failure ──
-
 .failedContainer {
   display: flex;
   flex-direction: column;
@@ -317,8 +311,6 @@
   align-self: center;
 }
 
-// ── 3-strike escape hatch (verify-otp) ──
-
 .escapeHatch {
   width: 100%;
   margin-top: layout.$spacing-05;
@@ -331,4 +323,154 @@
 
 .escapeHatchButton {
   align-self: center;
+}
+
+.whitelistFormContainer {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+}
+
+.whitelistIntro {
+  @include type.type-style('body-01');
+  color: colors.$gray-70;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.whitelistContextRow {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-03 layout.$spacing-04;
+  background: colors.$gray-10;
+  border-left: 2px solid colors.$blue-60;
+  border-radius: 4px;
+}
+
+.whitelistContextLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.whitelistContextValue {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  color: colors.$gray-100;
+  background: colors.$white-0;
+  padding: 2px layout.$spacing-03;
+  border-radius: 2px;
+  border: 1px solid colors.$gray-20;
+}
+
+.whitelistReasonHint {
+  background: colors.$gray-10;
+  padding: layout.$spacing-04;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.whitelistReasonDesc {
+  @include type.type-style('body-01');
+  color: colors.$gray-80;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.whitelistReasonMeta {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  flex-wrap: wrap;
+}
+
+.reviewBadge {
+  @include type.type-style('label-01');
+  padding: 2px layout.$spacing-03;
+  border-radius: 2px;
+  font-weight: 500;
+}
+
+.reviewAuto {
+  background: colors.$green-20;
+  color: colors.$green-80;
+}
+
+.reviewManual {
+  background: colors.$blue-20;
+  color: colors.$blue-80;
+}
+
+.requiresAttachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  @include type.type-style('label-01');
+  color: colors.$yellow-90;
+  font-weight: 500;
+}
+
+// ── Whitelist waiting (polling) ──
+
+.whitelistWaitingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-07 layout.$spacing-05;
+  text-align: center;
+}
+
+.whitelistWaitingIconWrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: colors.$blue-10;
+  color: colors.$blue-70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.whitelistWaitingTitle {
+  @include type.type-style('heading-03');
+  font-weight: 500;
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.whitelistWaitingBody {
+  @include type.type-style('body-01');
+  color: colors.$gray-70;
+  margin: 0;
+  line-height: 1.5;
+  max-width: 440px;
+}
+
+.whitelistPollProgress {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-04;
+  background: colors.$gray-10;
+  border-radius: 4px;
+  margin-top: layout.$spacing-03;
+}
+
+.whitelistPollTimer {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: layout.$spacing-04;
 }

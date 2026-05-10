@@ -6,6 +6,7 @@ export interface EligibilityResponse {
   requestIdType: number;
   requestIdNumber: string;
   memberCrNumber: string;
+  whitelistedForOTP: boolean;
   fullName: string;
   statusCode: string;
   statusDesc: string;
@@ -84,8 +85,11 @@ export const useSHAEligibility = (patientUuid: string, shaIdentificationNumber?:
     errorRetryCount: 0,
   });
 
+  const isPatientWhiteListed = data?.data?.whitelistedForOTP;
+
   return {
     data: data?.data,
+    isPatientWhiteListed,
     isLoading,
     error,
     mutate,

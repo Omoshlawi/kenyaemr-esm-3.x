@@ -12,6 +12,9 @@ import {
   SHAIntervention,
   SHASubBenefit,
   VirtualClaimResponse,
+  WhitelistReason,
+  WhitelistStatusPoll,
+  WhitelistSubmitResponse,
 } from './type';
 import { virtualClaimBaseUrl } from '../../claims/claims-management/table/virtual-claim-preauth/constants';
 import { BillingConfig } from '../../config-schema';
@@ -310,4 +313,47 @@ export const detectAuthorizingDeviceOS = (): AuthorizingDeviceOS => {
   }
 
   return 'windows';
+};
+
+export const useOtpWhitelistReasons = () => {
+  const url = `${virtualClaimBaseUrl}/otp-whitelist-reasons`;
+  const { data, error, isLoading } = useSWR<FetchResponse<{ count: number; reasons: Array<WhitelistReason> }>>(
+    url,
+    openmrsFetch,
+    { revalidateOnFocus: false, dedupingInterval: 5 * 60_000 },
+  );
+  return {
+    reasons: data?.data?.reasons ?? [],
+    isLoading,
+    error,
+  };
+};
+
+export const submitOtpWhitelist = async (params: {
+  beneficiaryCrId: string;
+  reasonType: string;
+  reason: string;
+  biometricAttempts: number;
+  attachment?: File | null;
+}): Promise<WhitelistSubmitResponse> => {
+  const formData = new FormData();
+  formData.append('beneficiary_cr_id', params.beneficiaryCrId);
+  formData.append('reason_type', params.reasonType);
+  formData.append('reason', params.reason);
+  formData.append('biometric_attempts', String(params.biometricAttempts));
+  if (params.attachment) {
+    formData.append('attachment', params.attachment, params.attachment.name);
+  }
+
+  const response = await openmrsFetch(`${virtualClaimBaseUrl}/otp-whitelists`, {
+    method: 'POST',
+    body: formData,
+  });
+  return response.data;
+};
+
+export const fetchWhitelistStatus = async (beneficiaryCrId: string): Promise<WhitelistStatusPoll> => {
+  const url = `${virtualClaimBaseUrl}/otp-whitelist-status?beneficiary_cr_id=${encodeURIComponent(beneficiaryCrId)}`;
+  const response = await openmrsFetch(url);
+  return response.data;
 };
