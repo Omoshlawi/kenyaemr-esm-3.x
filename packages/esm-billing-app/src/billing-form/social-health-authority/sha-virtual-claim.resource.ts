@@ -352,8 +352,14 @@ export const submitOtpWhitelist = async (params: {
   return response.data;
 };
 
-export const fetchWhitelistStatus = async (beneficiaryCrId: string): Promise<WhitelistStatusPoll> => {
-  const url = `${virtualClaimBaseUrl}/otp-whitelist-status?beneficiary_cr_id=${encodeURIComponent(beneficiaryCrId)}`;
+export const fetchWhitelistStatus = async (
+  beneficiaryCrId: string,
+  options?: { force?: boolean },
+): Promise<WhitelistStatusPoll> => {
+  const buster = options?.force ? `&_=${Date.now()}` : '';
+  const url = `${virtualClaimBaseUrl}/otp-whitelist-status?beneficiary_cr_id=${encodeURIComponent(
+    beneficiaryCrId,
+  )}${buster}`;
   const response = await openmrsFetch(url);
   return response.data;
 };

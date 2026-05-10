@@ -62,7 +62,9 @@ type WhitelistReason = {
 export type WhitelistPollResult = {
   is_whitelisted: boolean;
   has_pending: boolean;
+  is_rejected?: boolean;
   latest_status: string | null;
+  reviewer_note?: string | null;
 };
 
 type OTPVerificationModalProps = {
@@ -141,6 +143,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
   } | null>(null);
   const [requestingOtp, setRequestingOtp] = useState(false);
   const [currentPhoneNumber, setCurrentPhoneNumber] = useState(phoneNumber);
+  const [manualCheckLoading, setManualCheckLoading] = useState(false);
 
   const [countdownResetTrigger, setCountdownResetTrigger] = useState(0);
   const [isCountdownActive, setIsCountdownActive] = useState(false);
@@ -318,6 +321,68 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
     }
   }, [patientCRId, onSubmitWhitelist, whitelistReasons, onRequestWhitelist, handleClose]);
 
+  const checkWhitelistStatusOnce = useCallback(
+    async (opts?: { manual?: boolean }) => {
+      if (!patientCRId || !onCheckWhitelistStatus) {
+        return;
+      }
+      if (opts?.manual) {
+        setManualCheckLoading(true);
+      }
+      try {
+        const status = await onCheckWhitelistStatus(patientCRId);
+        const elapsed = Math.floor((Date.now() - pollStartTimeRef.current) / 1000);
+        setPollElapsedSec(elapsed);
+
+        if (status.is_whitelisted) {
+          stopPolling();
+          setError(null);
+          setMode('landing');
+          return;
+        }
+
+        if (status.is_rejected) {
+          stopPolling();
+          setError({
+            type: 'whitelist',
+            message:
+              status.reviewer_note?.trim() ||
+              t(
+                'whitelistRejected',
+                'The whitelist request was rejected by SHA. You may submit a new request or use biometrics.',
+              ),
+          });
+          setMode('biometric-failed');
+          return;
+        }
+
+        if (opts?.manual && !status.is_whitelisted && !status.is_rejected) {
+          setError({
+            type: 'whitelist',
+            message: t(
+              'whitelistStillPendingShort',
+              'Request is still pending review. We will keep checking automatically.',
+            ),
+          });
+        }
+      } catch (pollErr) {
+        if (opts?.manual) {
+          setError({
+            type: 'whitelist',
+            message: extractFetchError(pollErr, t('whitelistCheckFailed', 'Status check failed. Please try again.')),
+          });
+        } else {
+          console.warn('Whitelist status poll failed:', pollErr);
+        }
+      } finally {
+        if (opts?.manual) {
+          setManualCheckLoading(false);
+        }
+      }
+    },
+    [patientCRId, onCheckWhitelistStatus, stopPolling, t],
+  );
+
   const startPollingWhitelistStatus = useCallback(() => {
     if (!patientCRId || !onCheckWhitelistStatus) {
       return;
@@ -326,24 +391,8 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
     pollStartTimeRef.current = Date.now();
     setPollElapsedSec(0);
 
-    const doPoll = async () => {
-      try {
-        const status = await onCheckWhitelistStatus(patientCRId);
-        const elapsed = Math.floor((Date.now() - pollStartTimeRef.current) / 1000);
-        setPollElapsedSec(elapsed);
-
-        if (status.is_whitelisted) {
-          stopPolling();
-          showSnackbarLikeMessage('approved');
-          setMode('landing');
-        }
-      } catch (pollErr) {
-        console.warn('Whitelist status poll failed:', pollErr);
-      }
-    };
-
-    doPoll();
-    pollIntervalRef.current = setInterval(doPoll, WHITELIST_POLL_INTERVAL_MS);
+    checkWhitelistStatusOnce();
+    pollIntervalRef.current = setInterval(() => checkWhitelistStatusOnce(), WHITELIST_POLL_INTERVAL_MS);
 
     pollTimeoutRef.current = setTimeout(() => {
       stopPolling();
@@ -356,13 +405,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
         ),
       });
     }, WHITELIST_POLL_TIMEOUT_MS);
-  }, [patientCRId, onCheckWhitelistStatus, stopPolling, t]);
-
-  const showSnackbarLikeMessage = (kind: 'approved') => {
-    if (kind === 'approved') {
-      setError(null);
-    }
-  };
+  }, [patientCRId, onCheckWhitelistStatus, checkWhitelistStatusOnce, stopPolling, t]);
 
   const handleSubmitWhitelist = async () => {
     if (!onSubmitWhitelist) {
@@ -639,14 +682,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
               <span className={styles.phoneNumber}>
                 {currentPhoneNumber ? maskPhoneNumber(currentPhoneNumber) : '—'}
               </span>
-              <IconButton
-                kind="ghost"
-                size="sm"
-                label={t('changePhoneNumber', 'Change phone number')}
-                onClick={handleUseDifferentNumber}
-                className={styles.editButton}>
-                <Edit />
-              </IconButton>
             </div>
             <div className={styles.expiryInfo}>
               <p className={styles.expiryText}>
@@ -726,25 +761,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
             )}
           </div>
         )}
-
-        {mode === 'change-number' && (
-          <div className={styles.changeNumberContainer}>
-            <TextInput
-              id="otp-phone-number"
-              labelText={t('phoneNumber', 'Phone number')}
-              value={newPhoneNumber}
-              onChange={(ev) => setNewPhoneNumber(ev.target.value)}
-              placeholder={t('enterPhoneNumber', 'Enter phone number')}
-              className={styles.phoneInput}
-              invalid={newPhoneNumber.length > 0 && !isValidPhoneNumber(newPhoneNumber)}
-              invalidText={t('invalidPhoneNumber', 'Please enter a valid phone number')}
-            />
-            <Button kind="ghost" size="sm" onClick={handleBackToLanding} className={styles.backButton}>
-              {t('back', 'Back')}
-            </Button>
-          </div>
-        )}
-
         {mode === 'biometric' && biometricEmbedUrl && (
           <div className={styles.biometricContainer}>
             <div className={styles.iframeWrapper}>
@@ -943,38 +959,36 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
 
             <div className={styles.whitelistPollProgress}>
               <InlineLoading description={t('whitelistChecking', 'Checking status…')} status="active" />
-              <span className={styles.whitelistPollTimer}>
-                {pollElapsedDisplay} / {pollTotalDisplay}
-              </span>
             </div>
+            <span className={styles.whitelistPollTimer}>
+              {pollElapsedDisplay} / {pollTotalDisplay}
+            </span>
 
-            {patientCRId && (
-              <div className={styles.whitelistContextRow}>
-                <span className={styles.whitelistContextLabel}>{t('patientCR', 'Patient CR')}</span>
-                <code className={styles.whitelistContextValue}>{patientCRId}</code>
-              </div>
-            )}
+            <Button
+              kind="ghost"
+              size="md"
+              renderIcon={Renew}
+              onClick={() => checkWhitelistStatusOnce({ manual: true })}
+              disabled={manualCheckLoading}
+              className={styles.tryAgainButton}>
+              {manualCheckLoading ? (
+                <InlineLoading description={t('whitelistChecking', 'Checking status…')} />
+              ) : (
+                t('checkStatusNow', 'Check status now')
+              )}
+            </Button>
           </div>
         )}
       </ModalBody>
 
       <ModalFooter>
         <ButtonSet className={styles.buttonSet}>
-          {(mode === 'auth-landing' || mode === 'biometric-failed') && onRejected && (
-            <Button kind="danger--ghost" onClick={handleReject} className={styles.button}>
-              {t('btnReject', 'Reject')}
-            </Button>
-          )}
-
-          {mode === 'whitelist-waiting' ? (
-            <Button kind="secondary" onClick={handleCancelWhitelistWaiting} className={styles.button}>
-              {t('btnCancel', 'Cancel')}
-            </Button>
-          ) : (
-            <Button kind="secondary" onClick={handleClose} className={styles.button} disabled={whitelistSubmitting}>
-              {t('btnCancel', 'Cancel')}
-            </Button>
-          )}
+          {mode === 'landing' ||
+            (mode === 'whitelist-submit' && (
+              <Button kind="secondary" onClick={handleCancelWhitelistWaiting} className={styles.button}>
+                {t('btnCancel', 'Cancel')}
+              </Button>
+            ))}
 
           {mode === 'landing' && (
             <Button
