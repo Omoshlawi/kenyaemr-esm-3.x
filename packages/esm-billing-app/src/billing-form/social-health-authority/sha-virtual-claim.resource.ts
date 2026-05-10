@@ -341,7 +341,7 @@ export const submitOtpWhitelist = async (params: {
   formData.append('reason_type', params.reasonType);
   formData.append('reason', params.reason);
   formData.append('biometric_attempts', String(params.biometricAttempts));
-  if (params.attachment) {
+  if (params.attachment && params.attachment.size > 0) {
     formData.append('attachment', params.attachment, params.attachment.name);
   }
 

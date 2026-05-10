@@ -390,6 +390,13 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
       });
       return;
     }
+    if (whitelistAttachment && whitelistAttachment.size === 0) {
+      setError({
+        type: 'whitelist',
+        message: t('whitelistAttachmentEmpty', 'The selected file is empty. Please re-select it.'),
+      });
+      return;
+    }
 
     setWhitelistSubmitting(true);
     try {
@@ -467,6 +474,32 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
     handleClose();
   };
 
+  const handleAttachmentChange = useCallback(
+    (event: any) => {
+      const fromAddedFiles: File[] = Array.isArray(event?.addedFiles) ? event.addedFiles : [];
+      const fromTargetFiles: File[] = event?.target?.files ? Array.from(event.target.files as FileList) : [];
+      const candidates = fromAddedFiles.length > 0 ? fromAddedFiles : fromTargetFiles;
+
+      const file = candidates.find((f) => f && f.size > 0) ?? null;
+
+      if (file) {
+        setError(null);
+        setWhitelistAttachment(file);
+        return;
+      }
+
+      if (candidates.length > 0) {
+        setWhitelistAttachment(null);
+        setError({
+          type: 'whitelist',
+          message: t('whitelistAttachmentEmpty', 'The selected file appears to be empty. Please re-select it.'),
+        });
+        return;
+      }
+      setWhitelistAttachment(null);
+    },
+    [t],
+  );
   const isValidPhoneNumber = (phone: string) => PHONE_NUMBER_REGEX.test(phone);
 
   const headerTitle = (() => {
@@ -864,15 +897,12 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
                 }
                 filenameStatus="edit"
                 labelDescription={t(
-                  'attachmentOptionalDesc',
-                  'Optional. Attach a supporting document if helpful (PDF/JPG/PNG, max 5 MB).',
+                  'attachmentRequiredDesc',
+                  'Required for this reason. Attach a supporting document (PDF/JPG/PNG, max 5 MB).',
                 )}
                 labelTitle={t('attachment', 'Attachment')}
                 multiple={false}
-                onChange={(ev: React.ChangeEvent<HTMLInputElement>) => {
-                  const files = ev.target.files;
-                  setWhitelistAttachment(files && files.length > 0 ? files[0] : null);
-                }}
+                onChange={handleAttachmentChange}
                 onDelete={() => setWhitelistAttachment(null)}
                 disabled={whitelistSubmitting}
               />
@@ -993,7 +1023,10 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
               onClick={handleSubmitWhitelist}
               className={styles.button}
               disabled={
-                whitelistSubmitting || !whitelistReasonCode || whitelistReasonText.trim().length < MIN_REASON_LENGTH
+                whitelistSubmitting ||
+                !whitelistReasonCode ||
+                whitelistReasonText.trim().length < MIN_REASON_LENGTH ||
+                (reasonRequiresAttachment && (!whitelistAttachment || whitelistAttachment.size === 0))
               }>
               {whitelistSubmitting ? (
                 <InlineLoading description={t('submittingWhitelist', 'Submitting…')} />
