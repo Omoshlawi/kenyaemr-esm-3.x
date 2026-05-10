@@ -1,6 +1,7 @@
-import { openmrsFetch, restBaseUrl, useConfig, usePatient } from '@openmrs/esm-framework';
+import { openmrsFetch, useConfig, usePatient } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { BillingConfig } from '../config-schema';
+import { virtualClaimBaseUrl } from '../claims/claims-management/table/virtual-claim-preauth/constants';
 
 export interface EligibilityResponse {
   requestIdType: number;
@@ -11,6 +12,9 @@ export interface EligibilityResponse {
   statusCode: string;
   statusDesc: string;
   schemes: Array<Scheme>;
+  dateOfBirth?: string;
+  gender?: string;
+  age?: number;
 }
 
 export interface Scheme {
@@ -27,7 +31,7 @@ export interface Scheme {
     endDate: string;
     message: string;
     reason: string;
-    possibleSolution: string | null;
+    possibleSolution?: string | null;
     status: string;
   };
   principalContributor: {
@@ -39,10 +43,10 @@ export interface Scheme {
     employmentType: string;
     employerDetails: {
       name: string;
-      jobGroup: string | null;
+      jobGroup?: string | null;
     };
   };
-  beneficiaryOf: Array<Beneficiary>;
+  beneficiaryOf?: Array<Beneficiary>;
 }
 
 export interface Beneficiary {
@@ -67,29 +71,29 @@ export const SCHEME_NAMES = {
   4: 'POMSF',
 } as const;
 
-export const useSHAEligibility = (patientUuid: string, shaIdentificationNumber?: fhir.Identifier[]) => {
+export const useSHAEligibility = (patientUuid: string) => {
   const { patient } = usePatient(patientUuid);
   const { nationalIdUUID } = useConfig<BillingConfig>();
 
-  const nationalId = patient?.identifier
-    ?.filter((identifier) => identifier)
-    .filter((identifier) => identifier?.type?.coding?.some((coding) => coding?.code === nationalIdUUID))
-    ?.at(0)?.value;
+  const nationalId = patient?.identifier?.find((id) =>
+    id?.type?.coding?.some((c) => c?.code === nationalIdUUID),
+  )?.value;
 
-  const url =
-    shaIdentificationNumber?.length > 0 && nationalId
-      ? `${restBaseUrl}/insuranceclaims/CoverageEligibilityRequest?nationalId=${nationalId}`
-      : undefined;
+  const url = nationalId
+    ? `${virtualClaimBaseUrl}/eligibility?identification_number=${encodeURIComponent(
+        nationalId,
+      )}&identification_type=${encodeURIComponent('National ID')}`
+    : null;
 
   const { data, error, isLoading, mutate } = useSWR<{ data: EligibilityResponse }>(url, openmrsFetch, {
     errorRetryCount: 0,
+    revalidateOnFocus: false,
+    dedupingInterval: 60_000,
   });
-
-  const isPatientWhiteListed = data?.data?.whitelistedForOTP;
 
   return {
     data: data?.data,
-    isPatientWhiteListed,
+    isPatientWhiteListed: data?.data?.whitelistedForOTP ?? false,
     isLoading,
     error,
     mutate,

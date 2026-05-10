@@ -70,8 +70,6 @@
   "authorizationCodePlaceholder": "ex : CMJ5RTHANG",
   "authorizationStatus": "Statut d'autorisation",
   "authorizeFailed": "Échec de l'autorisation",
-  "authRejected": "Authentication rejected",
-  "authRejectedSubtitle": "Visit will proceed without SHA virtual claim. This may affect billing.",
   "availableBalance": "Solde disponible",
   "awaitingPreauth": "Awaiting preauth",
   "balance": "Solde",
@@ -921,7 +919,5 @@
   "waiverPaymentModeNotFoundSubtitle": "Contact admin",
   "waiverReasonLabel": "Raison",
   "waiverReasonRequired": "Requis",
-  "whitelistRequest": "Whitelist request",
-  "whitelistRequestStub": "Whitelist submission modal not yet implemented. The request would go here.",
   "yes": "Oui"
 }

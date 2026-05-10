@@ -1,10 +1,8 @@
 import React, { useMemo } from 'react';
 import { InlineLoading, InlineNotification, Tag } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
-import { useConfig, usePatient } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { useSHAEligibility } from '../hie.resource';
-import { BillingConfig } from '../../config-schema';
 import styles from './patient-banner-sha-status.scss';
 import { getSchemeEligibility } from './helper';
 import { EligibilityStatusCode, SchemeName } from './constant';
@@ -17,14 +15,8 @@ interface PatientBannerShaStatusProps {
 
 const PatientBannerShaStatus: React.FC<PatientBannerShaStatusProps> = ({ patientUuid, renderedFrom }) => {
   const { t } = useTranslation();
-  const { crIdentificationNumberUUID } = useConfig<BillingConfig>();
-  const { patient, isLoading: isLoadingPatient } = usePatient(patientUuid);
 
-  const crIdentificationNumber = patient?.identifier?.filter((identifier) =>
-    identifier?.type?.coding?.some((coding) => coding?.code === crIdentificationNumberUUID),
-  );
-
-  const { data, isLoading: isLoadingHIEEligibility, error } = useSHAEligibility(patientUuid, crIdentificationNumber);
+  const { data, isLoading: isLoadingHIEEligibility, error } = useSHAEligibility(patientUuid);
 
   const schemesData = useMemo(() => {
     if (!data?.schemes || data.schemes.length === 0) {
@@ -57,7 +49,7 @@ const PatientBannerShaStatus: React.FC<PatientBannerShaStatusProps> = ({ patient
     return null;
   }
 
-  if (isLoadingHIEEligibility || isLoadingPatient) {
+  if (isLoadingHIEEligibility) {
     return <InlineLoading status="active" description={t('loading', 'Loading ...')} />;
   }
 

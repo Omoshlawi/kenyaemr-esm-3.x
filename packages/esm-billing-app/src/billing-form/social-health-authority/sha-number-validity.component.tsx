@@ -22,11 +22,12 @@ const SHANumberValidity: React.FC<SHANumberValidityProps> = ({ paymentMethod, pa
   const { patient, isLoading: isLoadingPatientUuid } = usePatient(patientUuid);
   const { watch } = useFormContext();
   const isSHA = watch('insuranceScheme')?.includes('SHA');
-  const shaIdentificationNumber = patient?.identifier
+
+  const crIdNumber = patient?.identifier
     ?.filter((identifier) => identifier)
     .filter((identifier) => identifier.type.coding.some((coding) => coding.code === crIdentificationNumberUUID));
 
-  const { data, isLoading: isLoadingHIEEligibility, error } = useSHAEligibility(patientUuid, shaIdentificationNumber);
+  const { data, isLoading: isLoadingHIEEligibility, error } = useSHAEligibility(patientUuid);
 
   const eligibilityInfo = useMemo(() => {
     if (!data?.schemes || data.schemes.length === 0) {
@@ -93,7 +94,7 @@ const SHANumberValidity: React.FC<SHANumberValidityProps> = ({ paymentMethod, pa
     return null;
   }
 
-  if (shaIdentificationNumber?.length === 0) {
+  if (crIdNumber?.length === 0) {
     return (
       <ActionableNotification
         title={t('patientMissingSHAId', 'Patient missing SHA identification number')}

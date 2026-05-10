@@ -70,8 +70,6 @@
   "authorizationCodePlaceholder": "e.g. CMJ5RTHANG",
   "authorizationStatus": "Authorization Status",
   "authorizeFailed": "Authorization failed",
-  "authRejected": "Authentication rejected",
-  "authRejectedSubtitle": "Visit will proceed without SHA virtual claim. This may affect billing.",
   "availableBalance": "Available Balance",
   "awaitingPreauth": "Awaiting preauth",
   "balance": "ሚዛን",
@@ -921,7 +919,5 @@
   "waiverPaymentModeNotFoundSubtitle": "Contact your administrator to create a waiver payment attribute type to waive a bill",
   "waiverReasonLabel": "Waiver reason",
   "waiverReasonRequired": "Waiver reason is required",
-  "whitelistRequest": "Whitelist request",
-  "whitelistRequestStub": "Whitelist submission modal not yet implemented. The request would go here.",
   "yes": "አዎ"
 }
