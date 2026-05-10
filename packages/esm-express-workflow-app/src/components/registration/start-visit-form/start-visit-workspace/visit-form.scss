@@ -4,8 +4,9 @@
 
 .container {
   margin: layout.$spacing-05;
+
   & section {
-    margin: layout.$spacing-03 0 layout.$spacing-03;
+    margin: layout.$spacing-05 0 layout.$spacing-03;
 
     &:first-of-type {
       margin-top: 0;
@@ -57,24 +58,10 @@
 }
 
 .buttonSet {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  width: 100%;
   margin-top: auto;
-
-  :global(.cds--btn) {
-    max-width: none;
-    width: 100%;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  &.tablet {
-    padding: layout.$spacing-04 layout.$spacing-05;
-    background-color: colors.$white;
-  }
+  justify-self: end;
 }
+
 .button {
   height: layout.$spacing-10;
   display: flex;
@@ -107,29 +94,6 @@
 .label {
   @include type.type-style('label-01');
   color: colors.$gray-70;
-}
-
-:global(.omrs-breakpoint-lt-desktop) {
-  .container {
-    & section {
-      display: flex;
-      gap: layout.$spacing-10;
-
-      .sectionTitle {
-        flex-basis: 30%;
-        min-width: 8rem;
-        text-align: left;
-      }
-
-      .sectionField {
-        flex-basis: 70%;
-      }
-    }
-  }
-
-  .form {
-    height: 100%;
-  }
 }
 
 .spinner {
