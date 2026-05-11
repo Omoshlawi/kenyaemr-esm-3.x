@@ -1,4 +1,4 @@
-import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
+import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle, registerFeatureFlag } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 export * from './components/procedures/procedure-queues';
 
@@ -13,6 +13,11 @@ export const importTranslation = require.context('../translations', false, /.jso
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
+  registerFeatureFlag(
+    'procedureQueues',
+    'Procedure Queues',
+    'Enable/Disable procedure queue in procedure pannel and procedure form',
+  );
 }
 export * from './components/facility-dashboard';
 export * from './components/registration';
