@@ -159,6 +159,7 @@ const AwaitingBedLineListView: React.FC<AwaitingBedLineListViewProps> = ({
           });
 
           mutated?.();
+          dispose();
         } catch (error) {
           showSnackbar({
             kind: 'error',

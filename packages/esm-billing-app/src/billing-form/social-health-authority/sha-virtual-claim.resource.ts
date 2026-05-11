@@ -121,21 +121,23 @@ export async function createSHAVirtualClaim(
   const body: Record<string, any> = {
     patient_id: patientCRId,
     service_type: serviceType,
+    intervention_codes: interventionCodes,
     visit_uuid: visitUuid,
     patient_uuid: patientUuid,
   };
 
   if ('otp' in authParams) {
     body.otp = authParams.otp;
-    body.intervention_codes = interventionCodes;
+    body.is_biometrics = false;
   } else {
     body.auth_guid = authParams.authGuid;
-    body.interventions = interventionCodes;
+    body.is_biometrics = true;
   }
 
   if (paymentMechanism) {
     body.payment_mechanism = paymentMechanism;
   }
+
   if (serviceType === 'INPATIENT' && inpatientFields) {
     if (inpatientFields.admission_date) {
       body.admission_date = inpatientFields.admission_date;
@@ -152,7 +154,6 @@ export async function createSHAVirtualClaim(
   });
   return response.data;
 }
-
 export const usePatientPhone = (patientUuid: string) => {
   const { data } = useSWR<{
     data: { person: { attributes: Array<{ attributeType: { display: string }; value: string }> } };
