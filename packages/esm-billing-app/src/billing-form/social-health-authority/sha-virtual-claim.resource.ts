@@ -2,6 +2,7 @@ import { openmrsFetch, restBaseUrl, type FetchResponse, useOpenmrsPagination, us
 import useSWR from 'swr';
 import {
   AuthorizingDeviceOS,
+  BiometricAuthorizationStatus,
   BiometricAuthorizeRequest,
   BiometricAuthorizeResponse,
   BiometricConfigResponse,
@@ -106,7 +107,7 @@ export const sendSHAOtp = async (patientCRId: string, interventionCodes: string[
 };
 export async function createSHAVirtualClaim(
   patientCRId: string,
-  otp: string,
+  authParams: { otp: string } | { authGuid: string },
   serviceType: string,
   interventionCodes: string[],
   visitUuid: string,
@@ -119,17 +120,22 @@ export async function createSHAVirtualClaim(
 ): Promise<VirtualClaimResponse> {
   const body: Record<string, any> = {
     patient_id: patientCRId,
-    otp,
     service_type: serviceType,
-    intervention_codes: interventionCodes,
     visit_uuid: visitUuid,
     patient_uuid: patientUuid,
   };
 
+  if ('otp' in authParams) {
+    body.otp = authParams.otp;
+    body.intervention_codes = interventionCodes;
+  } else {
+    body.auth_guid = authParams.authGuid;
+    body.interventions = interventionCodes;
+  }
+
   if (paymentMechanism) {
     body.payment_mechanism = paymentMechanism;
   }
-
   if (serviceType === 'INPATIENT' && inpatientFields) {
     if (inpatientFields.admission_date) {
       body.admission_date = inpatientFields.admission_date;
@@ -360,6 +366,25 @@ export const submitOtpWhitelist = async (params: {
   const response = await openmrsFetch(`${virtualClaimBaseUrl}/otp-whitelists`, {
     method: 'POST',
     body: formData,
+  });
+  return response.data;
+};
+
+export const checkBiometricAuthorizationStatus = async (token: string): Promise<BiometricAuthorizationStatus> => {
+  const response = await openmrsFetch<BiometricAuthorizationStatus>(
+    `${virtualClaimBaseUrl}/biometric-authorization-status?token=${encodeURIComponent(token)}`,
+  );
+  return response.data;
+};
+
+export const rejectBiometricAuthorization = async (
+  token: string,
+  reason?: string,
+): Promise<{ success: boolean; message?: string; error?: string }> => {
+  const response = await openmrsFetch(`${virtualClaimBaseUrl}/biometric-reject`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: { token, ...(reason ? { reason } : {}) },
   });
   return response.data;
 };

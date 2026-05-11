@@ -41,6 +41,9 @@ const MIN_REASON_LENGTH = 10;
 const WHITELIST_POLL_INTERVAL_MS = 5_000;
 const WHITELIST_POLL_TIMEOUT_MS = 60_000;
 
+const BIOMETRIC_POLL_INTERVAL_MS = 3_000;
+const BIOMETRIC_POLL_TIMEOUT_MS = 3 * 60_000;
+
 type Mode =
   | 'auth-landing'
   | 'landing'
@@ -80,15 +83,26 @@ type OTPVerificationModalProps = {
 
   authMode?: 'otp-only' | 'multi';
   whitelistedForOTP?: boolean;
-
   onStartBiometric?: () => Promise<{
     embed_url: string;
     authorization_code: string;
     consent_token: string;
+    token: string;
+    guid: string;
   }>;
-  onBiometricSuccess?: (result: { authorization_code: string; consent_token: string }) => void;
-  onBiometricCancel?: (consentToken: string | null) => void;
-
+  onBiometricSuccess?: (result: {
+    authorization_code: string;
+    consent_token: string;
+    guid: string;
+  }) => Promise<void> | void;
+  onBiometricCancel?: (consentToken: string | null) => Promise<void> | void;
+  onCheckBiometricStatus?: (token: string) => Promise<{
+    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    is_complete: boolean;
+    is_approved: boolean;
+    guid: string | null;
+    authorization_code: string | null;
+  }>;
   patientCRId?: string;
 
   whitelistReasons?: WhitelistReason[];
@@ -124,6 +138,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
   onStartBiometric,
   onBiometricSuccess,
   onBiometricCancel,
+  onCheckBiometricStatus,
   patientCRId,
   whitelistReasons = [],
   onSubmitWhitelist,
@@ -152,8 +167,12 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
 
   const [biometricLoading, setBiometricLoading] = useState(false);
   const [biometricEmbedUrl, setBiometricEmbedUrl] = useState<string | null>(null);
-  const biometricResultRef = useRef<{ authorization_code: string; consent_token: string } | null>(null);
-
+  const biometricResultRef = useRef<{
+    authorization_code: string;
+    consent_token: string;
+    token: string;
+    guid: string;
+  } | null>(null);
   const [whitelistReasonCode, setWhitelistReasonCode] = useState<string>('');
   const [whitelistReasonText, setWhitelistReasonText] = useState<string>('');
   const [whitelistBiometricAttempts, setWhitelistBiometricAttempts] = useState<number>(0);
@@ -169,7 +188,25 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
 
   const [autoPollEnded, setAutoPollEnded] = useState(false);
 
+  const [biometricPollElapsedSec, setBiometricPollElapsedSec] = useState(0);
+  const [biometricFinalizing, setBiometricFinalizing] = useState(false);
+  const [biometricRetrying, setBiometricRetrying] = useState(false);
+  const biometricPollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const biometricPollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const biometricPollStartRef = useRef<number>(0);
+
   const [mode, setMode] = useState<Mode>(authMode === 'multi' ? 'auth-landing' : 'landing');
+
+  const stopBiometricPolling = useCallback(() => {
+    if (biometricPollIntervalRef.current) {
+      clearInterval(biometricPollIntervalRef.current);
+      biometricPollIntervalRef.current = null;
+    }
+    if (biometricPollTimeoutRef.current) {
+      clearTimeout(biometricPollTimeoutRef.current);
+      biometricPollTimeoutRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -180,36 +217,14 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
       if (pollTimeoutRef.current) {
         clearTimeout(pollTimeoutRef.current);
       }
+      if (biometricPollIntervalRef.current) {
+        clearInterval(biometricPollIntervalRef.current);
+      }
+      if (biometricPollTimeoutRef.current) {
+        clearTimeout(biometricPollTimeoutRef.current);
+      }
     };
   }, [onCleanup]);
-
-  useEffect(() => {
-    if (mode !== 'biometric') {
-      return;
-    }
-
-    const handleMessage = (event: MessageEvent) => {
-      if (ekycOrigin && event.origin !== ekycOrigin) {
-        return;
-      }
-
-      const data = event.data;
-      if (!data || typeof data !== 'object') {
-        return;
-      }
-      if (data.type === 'EKYC_COMPLETE') {
-        if (data.status === 'SUCCESS' && biometricResultRef.current) {
-          onBiometricSuccess?.(biometricResultRef.current);
-          setTimeout(() => handleClose(), BIOMETRIC_AUTO_CLOSE_MS);
-        } else {
-          setMode('biometric-failed');
-        }
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [mode, ekycOrigin, onBiometricSuccess]);
 
   const selectedReason = whitelistReasons.find((r) => r.code === whitelistReasonCode);
   const reasonRequiresAttachment = selectedReason?.requires_attachments ?? false;
@@ -229,12 +244,13 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
 
   const handleClose = useCallback(() => {
     stopPolling();
+    stopBiometricPolling();
     if (biometricResultRef.current && (mode === 'biometric' || mode === 'biometric-failed')) {
       onBiometricCancel?.(biometricResultRef.current.consent_token);
     }
     onCleanup?.();
     onClose?.();
-  }, [biometricResultRef, mode, onBiometricCancel, onCleanup, onClose, stopPolling]);
+  }, [biometricResultRef, mode, onBiometricCancel, onCleanup, onClose, stopPolling, stopBiometricPolling]);
 
   const handleVerify = async () => {
     setError(null);
@@ -288,6 +304,8 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
       biometricResultRef.current = {
         authorization_code: result.authorization_code,
         consent_token: result.consent_token,
+        token: result.token,
+        guid: result.guid,
       };
       setBiometricEmbedUrl(result.embed_url);
       setMode('biometric');
@@ -302,12 +320,130 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
     }
   };
 
-  const handleRetryBiometric = () => {
+  const handleRetryBiometric = async () => {
     setError(null);
-    biometricResultRef.current = null;
-    setBiometricEmbedUrl(null);
-    handleStartBiometric();
+    setBiometricRetrying(true);
+    try {
+      if (biometricResultRef.current?.consent_token) {
+        try {
+          await onBiometricCancel?.(biometricResultRef.current.consent_token);
+        } catch (rejectErr) {
+          console.warn('Failed to reject previous biometric auth:', rejectErr);
+        }
+      }
+      biometricResultRef.current = null;
+      setBiometricEmbedUrl(null);
+      await handleStartBiometric();
+    } finally {
+      setBiometricRetrying(false);
+    }
   };
+  useEffect(() => {
+    if (mode !== 'biometric') {
+      stopBiometricPolling();
+      return;
+    }
+
+    const finalize = async (result: NonNullable<typeof biometricResultRef.current>) => {
+      setBiometricFinalizing(true);
+      try {
+        await onBiometricSuccess?.(result);
+        setTimeout(() => handleClose(), BIOMETRIC_AUTO_CLOSE_MS);
+      } catch (err) {
+        setError({
+          type: 'biometric',
+          message: extractFetchError(
+            err,
+            t('biometricVisitFailed', 'Biometric was approved but visit creation failed.'),
+          ),
+        });
+        setMode('biometric-failed');
+      } finally {
+        setBiometricFinalizing(false);
+      }
+    };
+
+    const handleMessage = (event: MessageEvent) => {
+      if (ekycOrigin && event.origin !== ekycOrigin) {
+        return;
+      }
+      const data = event.data;
+      if (!data || typeof data !== 'object') {
+        return;
+      }
+      if (data.type !== 'EKYC_COMPLETE') {
+        return;
+      }
+
+      if (data.status === 'SUCCESS' && biometricResultRef.current) {
+        stopBiometricPolling();
+        finalize(biometricResultRef.current).catch((err) => {
+          console.warn('Biometric finalize (postMessage) failed:', err);
+        });
+      } else {
+        stopBiometricPolling();
+        setMode('biometric-failed');
+      }
+    };
+    window.addEventListener('message', handleMessage);
+
+    if (onCheckBiometricStatus && biometricResultRef.current?.token) {
+      const token = biometricResultRef.current.token;
+      biometricPollStartRef.current = Date.now();
+      setBiometricPollElapsedSec(0);
+
+      const doPoll = async () => {
+        try {
+          const status = await onCheckBiometricStatus(token);
+          const elapsed = Math.floor((Date.now() - biometricPollStartRef.current) / 1000);
+          setBiometricPollElapsedSec(elapsed);
+
+          if (status.is_approved && biometricResultRef.current) {
+            stopBiometricPolling();
+            const refreshedGuid = status.guid ?? biometricResultRef.current.guid;
+            await finalize({
+              ...biometricResultRef.current,
+              guid: refreshedGuid,
+              authorization_code: status.authorization_code ?? biometricResultRef.current.authorization_code,
+            });
+            return;
+          }
+          if (status.status === 'REJECTED' || (status.is_complete && !status.is_approved)) {
+            stopBiometricPolling();
+            setError({
+              type: 'biometric',
+              message: t('biometricRejected', 'Biometric verification was rejected. You can try again or use OTP.'),
+            });
+            setMode('biometric-failed');
+            return;
+          }
+        } catch (pollErr) {
+          console.warn('Biometric status poll failed:', pollErr);
+        }
+      };
+      const runPoll = () => {
+        doPoll().catch((err) => {
+          console.warn('Biometric poll wrapper error:', err);
+        });
+      };
+
+      runPoll();
+      biometricPollIntervalRef.current = setInterval(runPoll, BIOMETRIC_POLL_INTERVAL_MS);
+      biometricPollTimeoutRef.current = setTimeout(() => {
+        stopBiometricPolling();
+        setError({
+          type: 'biometric',
+          message: t('biometricTimeout', 'Biometric verification did not complete in time. Please try again.'),
+        });
+        setMode('biometric-failed');
+      }, BIOMETRIC_POLL_TIMEOUT_MS);
+    }
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      stopBiometricPolling();
+    };
+  }, [mode, ekycOrigin, onBiometricSuccess, onCheckBiometricStatus, handleClose, stopBiometricPolling, t]);
 
   const checkWhitelistStatusOnce = useCallback(
     async (opts?: { manual?: boolean }) => {
@@ -801,6 +937,20 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
             <p className={styles.biometricHint}>
               {t('biometricHint', 'Follow the on-screen instructions in the capture window.')}
             </p>
+            <div className={styles.whitelistPollProgress}>
+              <InlineLoading
+                description={
+                  biometricFinalizing
+                    ? t('biometricCreatingVisit', 'Verified — creating visit…')
+                    : t('biometricWaitingForApproval', 'Waiting for SHA to confirm capture…')
+                }
+                status="active"
+              />
+            </div>
+            <span className={styles.whitelistPollTimer}>
+              {Math.floor(biometricPollElapsedSec / 60)}:{String(biometricPollElapsedSec % 60).padStart(2, '0')} /{' '}
+              {Math.floor(BIOMETRIC_POLL_TIMEOUT_MS / 60_000)}:00
+            </span>
           </div>
         )}
 
@@ -862,8 +1012,13 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
               size="md"
               renderIcon={Renew}
               className={styles.tryAgainButton}
-              onClick={handleRetryBiometric}>
-              {t('tryBiometricsAgain', 'Try biometrics again')}
+              onClick={handleRetryBiometric}
+              disabled={biometricRetrying || biometricLoading}>
+              {biometricRetrying || biometricLoading ? (
+                <InlineLoading description={t('biometricRetrying', 'Restarting…')} />
+              ) : (
+                t('tryBiometricsAgain', 'Try biometrics again')
+              )}
             </Button>
           </div>
         )}

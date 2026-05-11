@@ -138,20 +138,18 @@ export type ElectiveCheckinRecord = {
   date_created: string | null;
 };
 
-export interface BiometricAuthorizeResponse {
+export type BiometricAuthorizeResponse = {
   success: boolean;
   embed_url?: string;
-  facility_name?: string;
-  service_type?: string;
   authorization_code?: string;
   consent_token?: string;
-  patient_uuid?: string;
-  visit_uuid?: string;
-  response?: any;
+  token?: string;
+  guid?: string;
+  facility_name?: string;
+  service_type?: string;
+  response?: unknown;
   error?: string;
-  upstream_error?: any;
-}
-
+};
 export interface BiometricAuthorizeRequest {
   agent_id: string;
   patient_id: string;
@@ -225,4 +223,24 @@ export type WhitelistStatusPoll = {
     created_on: string | null;
     reviewed_on: string | null;
   }>;
+};
+
+export type BiometricAuthorizationStatus = {
+  success: boolean;
+  token: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  upstream_status: string | null;
+  is_complete: boolean;
+  is_approved: boolean;
+  authorization_code: string | null;
+  guid: string | null;
+  beneficiary_name: string | null;
+  beneficiary_cr_id: string | null;
+  provider_name: string | null;
+  provider_fid: string | null;
+  expiry: string | null;
+  date_authorized: string | null;
+  is_open: boolean;
+  needs_preauth: boolean;
+  overall_preauth_finalised: boolean;
 };
