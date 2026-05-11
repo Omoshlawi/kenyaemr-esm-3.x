@@ -216,7 +216,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         return {
           billableService: item?.uuid ?? '',
           quantity: 1,
-          price: priceForPaymentMode ? priceForPaymentMode.price : '0.000',
+          price: priceForPaymentMode ? priceForPaymentMode.price : '0.00',
           priceName: 'Default',
           priceUuid: priceForPaymentMode ? priceForPaymentMode.uuid : '',
           lineItemOrder: index,
@@ -306,7 +306,9 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     return {
       is_whitelisted: status.is_whitelisted,
       has_pending: status.has_pending,
+      is_rejected: (status as any).is_rejected,
       latest_status: status.latest_status,
+      reviewer_note: (status as any).reviewer_note,
     };
   }, []);
 

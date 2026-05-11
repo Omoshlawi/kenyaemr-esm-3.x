@@ -39,13 +39,12 @@ const BIOMETRIC_AUTO_CLOSE_MS = 1500;
 const MIN_REASON_LENGTH = 10;
 
 const WHITELIST_POLL_INTERVAL_MS = 5_000;
-const WHITELIST_POLL_TIMEOUT_MS = 5 * 60_000;
+const WHITELIST_POLL_TIMEOUT_MS = 60_000;
 
 type Mode =
   | 'auth-landing'
   | 'landing'
   | 'verify-otp'
-  | 'change-number'
   | 'biometric'
   | 'biometric-failed'
   | 'whitelist-submit'
@@ -160,12 +159,15 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
   const [whitelistBiometricAttempts, setWhitelistBiometricAttempts] = useState<number>(0);
   const [whitelistAttachment, setWhitelistAttachment] = useState<File | null>(null);
   const [whitelistSubmitting, setWhitelistSubmitting] = useState(false);
+  const [checkingPendingRequest, setCheckingPendingRequest] = useState(false);
 
   const [whitelistReviewType, setWhitelistReviewType] = useState<string | null>(null);
   const [pollElapsedSec, setPollElapsedSec] = useState(0);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollStartTimeRef = useRef<number>(0);
+
+  const [autoPollEnded, setAutoPollEnded] = useState(false);
 
   const [mode, setMode] = useState<Mode>(authMode === 'multi' ? 'auth-landing' : 'landing');
 
@@ -307,20 +309,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
     handleStartBiometric();
   };
 
-  const handleOpenWhitelistFlow = useCallback(() => {
-    if (patientCRId && onSubmitWhitelist && whitelistReasons.length > 0) {
-      setError(null);
-      setWhitelistReasonCode('');
-      setWhitelistReasonText('');
-      setWhitelistBiometricAttempts(0);
-      setWhitelistAttachment(null);
-      setMode('whitelist-submit');
-    } else {
-      onRequestWhitelist?.();
-      handleClose();
-    }
-  }, [patientCRId, onSubmitWhitelist, whitelistReasons, onRequestWhitelist, handleClose]);
-
   const checkWhitelistStatusOnce = useCallback(
     async (opts?: { manual?: boolean }) => {
       if (!patientCRId || !onCheckWhitelistStatus) {
@@ -390,22 +378,64 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
 
     pollStartTimeRef.current = Date.now();
     setPollElapsedSec(0);
+    setAutoPollEnded(false);
 
     checkWhitelistStatusOnce();
     pollIntervalRef.current = setInterval(() => checkWhitelistStatusOnce(), WHITELIST_POLL_INTERVAL_MS);
 
     pollTimeoutRef.current = setTimeout(() => {
       stopPolling();
-      setError({
-        type: 'whitelist',
-        message: t(
-          'whitelistStillPending',
-          'The request is still pending after {{minutes}} minutes. Please retry check-in later.',
-          { minutes: Math.floor(WHITELIST_POLL_TIMEOUT_MS / 60_000) },
-        ),
-      });
+      setAutoPollEnded(true);
     }, WHITELIST_POLL_TIMEOUT_MS);
-  }, [patientCRId, onCheckWhitelistStatus, checkWhitelistStatusOnce, stopPolling, t]);
+  }, [patientCRId, onCheckWhitelistStatus, checkWhitelistStatusOnce, stopPolling]);
+
+  const handleOpenWhitelistFlow = useCallback(async () => {
+    if (!patientCRId || !onSubmitWhitelist || whitelistReasons.length === 0) {
+      onRequestWhitelist?.();
+      handleClose();
+      return;
+    }
+
+    setError(null);
+
+    if (onCheckWhitelistStatus) {
+      try {
+        setCheckingPendingRequest(true);
+        const status = await onCheckWhitelistStatus(patientCRId);
+
+        if (status.is_whitelisted) {
+          setMode('landing');
+          return;
+        }
+
+        if (status.has_pending && !status.is_rejected) {
+          setWhitelistReviewType(null);
+          setMode('whitelist-waiting');
+          startPollingWhitelistStatus();
+          return;
+        }
+      } catch (err) {
+        // Non-fatal: if the status check fails, fall through to the submission form
+        console.warn('Pending whitelist status check failed; opening submission form:', err);
+      } finally {
+        setCheckingPendingRequest(false);
+      }
+    }
+
+    setWhitelistReasonCode('');
+    setWhitelistReasonText('');
+    setWhitelistBiometricAttempts(0);
+    setWhitelistAttachment(null);
+    setMode('whitelist-submit');
+  }, [
+    patientCRId,
+    onSubmitWhitelist,
+    whitelistReasons,
+    onCheckWhitelistStatus,
+    onRequestWhitelist,
+    handleClose,
+    startPollingWhitelistStatus,
+  ]);
 
   const handleSubmitWhitelist = async () => {
     if (!onSubmitWhitelist) {
@@ -483,18 +513,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
     } else {
       handleOpenWhitelistFlow();
     }
-  };
-
-  const handleUseDifferentNumber = () => {
-    setOtp('');
-    setIsCountdownActive(false);
-    setNewPhoneNumber(currentPhoneNumber);
-    setMode('change-number');
-  };
-
-  const handleBackToLanding = () => {
-    setNewPhoneNumber(currentPhoneNumber);
-    setMode('landing');
   };
 
   const handleBackFromWhitelist = () => {
@@ -655,9 +673,18 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
             {!whitelistedForOTP && (
               <>
                 <div className={styles.dividerWithText}>{t('or', 'or')}</div>
-                <button className={styles.whitelistLink} onClick={handleOpenWhitelistFlow}>
-                  <RuleLocked size={16} />
-                  <span>{t('btnRequestOtpWhitelisting', 'Request OTP Whitelisting')}</span>
+                <button
+                  className={styles.whitelistLink}
+                  onClick={handleOpenWhitelistFlow}
+                  disabled={checkingPendingRequest}>
+                  {checkingPendingRequest ? (
+                    <InlineLoading description={t('checkingExistingRequest', 'Checking existing requests…')} />
+                  ) : (
+                    <>
+                      <RuleLocked size={16} />
+                      <span>{t('btnRequestOtpWhitelisting', 'Request OTP Whitelisting')}</span>
+                    </>
+                  )}
                 </button>
               </>
             )}
@@ -719,11 +746,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
               centerBoxes={centerBoxes}
               obscureText={obscureText}
             />
-
-            <Button kind="ghost" size="sm" className={styles.changeNumberLink} onClick={handleUseDifferentNumber}>
-              {t('useADifferentNumber', 'Use a different number')}
-            </Button>
-
             {showEscapeHatch && (
               <div className={styles.escapeHatch}>
                 <InlineNotification
@@ -752,10 +774,15 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
                   size="md"
                   className={styles.escapeHatchButton}
                   renderIcon={whitelistedForOTP ? FingerprintRecognition : RuleLocked}
-                  onClick={handleEscapeHatchFromVerifyOtp}>
-                  {whitelistedForOTP
-                    ? t('switchToBiometric', 'Switch to biometric')
-                    : t('btnRequestOtpWhitelisting', 'Request OTP Whitelisting')}
+                  onClick={handleEscapeHatchFromVerifyOtp}
+                  disabled={checkingPendingRequest}>
+                  {checkingPendingRequest ? (
+                    <InlineLoading description={t('checkingExistingRequest', 'Checking existing requests…')} />
+                  ) : whitelistedForOTP ? (
+                    t('switchToBiometric', 'Switch to biometric')
+                  ) : (
+                    t('btnRequestOtpWhitelisting', 'Request OTP Whitelisting')
+                  )}
                 </Button>
               </div>
             )}
@@ -813,7 +840,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
                 <ChevronRight size={18} className={styles.methodArrow} />
               </button>
             ) : (
-              <button className={styles.methodCard} onClick={handleOpenWhitelistFlow}>
+              <button className={styles.methodCard} onClick={handleOpenWhitelistFlow} disabled={checkingPendingRequest}>
                 <div className={`${styles.methodIconWrap} ${styles.methodIconWarning}`}>
                   <RuleLocked size={22} />
                 </div>
@@ -826,7 +853,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
                     )}
                   </p>
                 </div>
-                <ChevronRight size={18} className={styles.methodArrow} />
+                {checkingPendingRequest ? <InlineLoading /> : <ChevronRight size={18} className={styles.methodArrow} />}
               </button>
             )}
 
@@ -941,15 +968,22 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
               <Time size={32} />
             </div>
             <h3 className={styles.whitelistWaitingTitle}>
-              {whitelistReviewType === 'AUTOMATIC'
+              {autoPollEnded
+                ? t('whitelistManualCheckTitle', 'Check status manually')
+                : whitelistReviewType === 'AUTOMATIC'
                 ? t('whitelistAutoApprovalProcessing', 'Processing automatic approval…')
                 : t('whitelistAwaitingManualReview', 'Awaiting manual review…')}
             </h3>
             <p className={styles.whitelistWaitingBody}>
-              {whitelistReviewType === 'AUTOMATIC'
+              {autoPollEnded
+                ? t(
+                    'whitelistManualCheckBody',
+                    'Automatic checking has stopped. Tap "Check status now" to see if the request has been approved, or cancel and retry check-in later.',
+                  )
+                : whitelistReviewType === 'AUTOMATIC'
                 ? t(
                     'whitelistAutoApprovalBody',
-                    'Your request was submitted. We are checking with SHA this usually takes a few seconds. Once approved, OTP will be sent automatically.',
+                    'Your request was submitted. We are checking with SHA — this usually takes a few seconds. Once approved, OTP will be sent automatically.',
                   )
                 : t(
                     'whitelistManualReviewBody',
@@ -957,38 +991,27 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
                   )}
             </p>
 
-            <div className={styles.whitelistPollProgress}>
-              <InlineLoading description={t('whitelistChecking', 'Checking status…')} status="active" />
-            </div>
-            <span className={styles.whitelistPollTimer}>
-              {pollElapsedDisplay} / {pollTotalDisplay}
-            </span>
-
-            <Button
-              kind="ghost"
-              size="md"
-              renderIcon={Renew}
-              onClick={() => checkWhitelistStatusOnce({ manual: true })}
-              disabled={manualCheckLoading}
-              className={styles.tryAgainButton}>
-              {manualCheckLoading ? (
-                <InlineLoading description={t('whitelistChecking', 'Checking status…')} />
-              ) : (
-                t('checkStatusNow', 'Check status now')
-              )}
-            </Button>
+            {!autoPollEnded && (
+              <>
+                <div className={styles.whitelistPollProgress}>
+                  <InlineLoading description={t('whitelistChecking', 'Checking status…')} status="active" />
+                </div>
+                <span className={styles.whitelistPollTimer}>
+                  {pollElapsedDisplay} / {pollTotalDisplay}
+                </span>
+              </>
+            )}
           </div>
         )}
       </ModalBody>
 
       <ModalFooter>
         <ButtonSet className={styles.buttonSet}>
-          {mode === 'landing' ||
-            (mode === 'whitelist-submit' && (
-              <Button kind="secondary" onClick={handleCancelWhitelistWaiting} className={styles.button}>
-                {t('btnCancel', 'Cancel')}
-              </Button>
-            ))}
+          {(mode === 'landing' || mode === 'whitelist-submit' || mode !== 'auth-landing') && (
+            <Button kind="secondary" onClick={handleCancelWhitelistWaiting} className={styles.button}>
+              {t('btnCancel', 'Cancel')}
+            </Button>
+          )}
 
           {mode === 'landing' && (
             <Button
@@ -1017,20 +1040,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
             </Button>
           )}
 
-          {mode === 'change-number' && (
-            <Button
-              disabled={!isValidPhoneNumber(newPhoneNumber) || requestingOtp}
-              kind="primary"
-              onClick={() => handleRequestingOtp(newPhoneNumber)}
-              className={styles.button}>
-              {requestingOtp ? (
-                <InlineLoading description={t('reSendingOtp', 'Resending OTP...')} />
-              ) : (
-                t('sendOtp', 'Send OTP')
-              )}
-            </Button>
-          )}
-
           {mode === 'whitelist-submit' && (
             <Button
               kind="primary"
@@ -1046,6 +1055,21 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
                 <InlineLoading description={t('submittingWhitelist', 'Submitting…')} />
               ) : (
                 t('submitWhitelist', 'Submit request')
+              )}
+            </Button>
+          )}
+          {mode === 'whitelist-waiting' && (
+            <Button
+              kind={autoPollEnded ? 'primary' : 'ghost'}
+              size="md"
+              renderIcon={Renew}
+              onClick={() => checkWhitelistStatusOnce({ manual: true })}
+              disabled={manualCheckLoading}
+              className={styles.tryAgainButton}>
+              {manualCheckLoading ? (
+                <InlineLoading description={t('whitelistChecking', 'Checking status…')} />
+              ) : (
+                t('checkStatusNow', 'Check status now')
               )}
             </Button>
           )}

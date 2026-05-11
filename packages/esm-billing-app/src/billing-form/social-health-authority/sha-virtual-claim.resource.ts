@@ -329,12 +329,24 @@ export const useOtpWhitelistReasons = () => {
   };
 };
 
+export const fetchWhitelistStatus = async (
+  beneficiaryCrId: string,
+  options?: { force?: boolean },
+): Promise<WhitelistStatusPoll> => {
+  const buster = options?.force ? `&_=${Date.now()}` : '';
+  const url = `${virtualClaimBaseUrl}/otp-whitelist-status?beneficiary_cr_id=${encodeURIComponent(
+    beneficiaryCrId,
+  )}${buster}`;
+  const response = await openmrsFetch(url);
+  return response.data;
+};
+
 export const submitOtpWhitelist = async (params: {
   beneficiaryCrId: string;
   reasonType: string;
   reason: string;
   biometricAttempts: number;
-  attachment?: File | null;
+  attachment?: File;
 }): Promise<WhitelistSubmitResponse> => {
   const formData = new FormData();
   formData.append('beneficiary_cr_id', params.beneficiaryCrId);
@@ -349,17 +361,5 @@ export const submitOtpWhitelist = async (params: {
     method: 'POST',
     body: formData,
   });
-  return response.data;
-};
-
-export const fetchWhitelistStatus = async (
-  beneficiaryCrId: string,
-  options?: { force?: boolean },
-): Promise<WhitelistStatusPoll> => {
-  const buster = options?.force ? `&_=${Date.now()}` : '';
-  const url = `${virtualClaimBaseUrl}/otp-whitelist-status?beneficiary_cr_id=${encodeURIComponent(
-    beneficiaryCrId,
-  )}${buster}`;
-  const response = await openmrsFetch(url);
   return response.data;
 };
