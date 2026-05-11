@@ -198,3 +198,176 @@
   color: var(--cds-support-success);
   font-weight: 500;
 }
+
+// Interventions Section Styles
+.interventionsSection {
+  border-top: 1px solid var(--cds-border-subtle);
+  padding-top: layout.$spacing-04;
+}
+
+.interventionsSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: layout.$spacing-03;
+}
+
+.interventionsSectionTitle {
+  @include type.type-style('label-01');
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cds-text-secondary);
+  margin: 0;
+}
+
+.interventionActions {
+  display: flex;
+  gap: layout.$spacing-02;
+}
+
+.interventionsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+
+  th {
+    padding: layout.$spacing-02 layout.$spacing-04;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--cds-text-secondary);
+    background: var(--cds-layer-02);
+    border-bottom: 1px solid var(--cds-border-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: layout.$spacing-03 layout.$spacing-04;
+    border-bottom: 1px solid var(--cds-border-subtle);
+    vertical-align: middle;
+
+    code {
+      font-size: 0.75rem;
+    }
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  tr:hover td {
+    background: var(--cds-layer-hover);
+  }
+}
+
+.rowActions {
+  display: flex;
+  gap: layout.$spacing-02;
+  flex-wrap: wrap;
+}
+
+.fallbackMessage {
+  padding: layout.$spacing-04;
+  background: var(--cds-layer-02);
+  color: var(--cds-text-secondary);
+  font-size: 0.875rem;
+  border-left: 4px solid var(--cds-interactive);
+
+  p {
+    margin: 0 0 layout.$spacing-02 0;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: layout.$spacing-05;
+  }
+
+  li {
+    margin-bottom: layout.$spacing-02;
+  }
+}
+
+.noInterventions {
+  color: var(--cds-text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+  padding: layout.$spacing-03 0;
+}
+
+// Submission Status Section Styles
+.submissionStatusSection {
+  border-top: 1px solid var(--cds-border-subtle);
+  padding-top: layout.$spacing-04;
+}
+
+.submissionStatusTitle {
+  @include type.type-style('label-01');
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cds-text-secondary);
+  margin: 0 0 layout.$spacing-03 0;
+}
+
+.statusDetails {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+}
+
+.statusRow {
+  display: flex;
+  gap: layout.$spacing-03;
+  align-items: flex-start;
+
+  strong {
+    min-width: 140px;
+    color: var(--cds-text-primary);
+    font-size: 0.875rem;
+  }
+
+  span,
+  .notesList {
+    flex: 1;
+    color: var(--cds-text-secondary);
+    font-size: 0.875rem;
+  }
+}
+
+.errorText {
+  color: var(--cds-support-error);
+  font-size: 0.875rem;
+}
+
+.notesList {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.noteItem {
+  padding: layout.$spacing-03;
+  background: var(--cds-layer-02);
+  border-left: 4px solid var(--cds-interactive);
+  border-radius: 2px;
+}
+
+.noteText {
+  margin: 0 0 layout.$spacing-02 0;
+  color: var(--cds-text-primary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.noteMetadata {
+  display: flex;
+  gap: layout.$spacing-03;
+  color: var(--cds-text-secondary);
+  font-size: 0.75rem;
+  font-style: italic;
+
+  span {
+    display: inline-block;
+  }
+}

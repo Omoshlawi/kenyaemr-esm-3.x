@@ -20,13 +20,7 @@ const ClaimsSupportingDocumentsInput: FC<{ patientUuid: string }> = ({ patientUu
   const patientCRId = patient?.identifier?.find((id: { value?: string }) => id?.value?.startsWith('CR'))?.value;
   const subBenefitCode = categories?.[0];
 
-  const isSavannahProcessClaimsFormEnabled = useFeatureFlag('savannahInformaticsInformationExchange');
-  const { error, interventions, isLoading } = useInterventions(
-    filters,
-    isSavannahProcessClaimsFormEnabled,
-    patientCRId,
-    subBenefitCode,
-  );
+  const { error, interventions, isLoading } = useInterventions(filters, patientCRId, subBenefitCode);
 
   const supportDocs = form.watch('supportingDocuments') ?? [];
   const selectedInterventionsObservable = form.watch('interventions') ?? [];

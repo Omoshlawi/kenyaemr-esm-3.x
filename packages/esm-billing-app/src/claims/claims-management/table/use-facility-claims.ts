@@ -35,7 +35,8 @@ const url =
     'packages',
     'provider:(uuid,display)',
     'patient:(uuid,display)',
-    'bill:(uuid,totalAmount,paymentStatus,diagnosis)',
+    'visit:(uuid,display,visitType:(uuid,display),location:(uuid,display),startDatetime,stopDatetime),' +
+      'bill:(uuid,totalAmount,paymentStatus,diagnosis)',
     'interventionDetails:(intervention_code,intervention_name,tariff,payment_mechanism,' +
       'workflow_state,sub_benefit_code,supported_scheme,intervention_fund,' +
       'needs_preauth,preauth_exist,applicable_document_types)',

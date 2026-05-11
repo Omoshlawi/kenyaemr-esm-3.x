@@ -3,24 +3,14 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 export interface closeClaimPayload {
   cancel_reason_type: string;
   cancel_reason_text: string;
-  visit_uuid?: string;
-  bill_uuid?: string;
+  patient_uuid?: string;
 }
-export async function closeInsuranceClaim(
-  cancelReasonType: string,
-  cancelReasonText: string,
-  visitUuid?: string,
-  billUuid?: string,
-) {
+export async function closeInsuranceClaim(cancelReasonType: string, cancelReasonText: string, patientUuid?: string) {
   const body: closeClaimPayload = {
     cancel_reason_type: cancelReasonType,
     cancel_reason_text: cancelReasonText,
-    visit_uuid: visitUuid,
+    patient_uuid: patientUuid,
   };
-
-  if (billUuid) {
-    body.bill_uuid = billUuid;
-  }
 
   return await openmrsFetch(`${restBaseUrl}/insuranceclaims/bill/close`, {
     method: 'POST',
@@ -33,13 +23,13 @@ export async function editInsuranceClaimLine(
   claimLineId: string,
   quantity: number,
   unitPrice: string,
-  visit_uuid?: string,
+  patient_uuid?: string,
 ) {
   const body = {
     line_id: String(claimLineId),
     quantity,
     unit_price: String(unitPrice),
-    visit_uuid: visit_uuid,
+    patient_uuid: patient_uuid,
   };
 
   return await openmrsFetch(`${restBaseUrl}/insuranceclaims/bill/line/edit`, {
@@ -49,9 +39,9 @@ export async function editInsuranceClaimLine(
   });
 }
 
-export async function resubmitInsuranceClaimLine(visit_uuid: string) {
+export async function resubmitInsuranceClaimLine(patient_uuid: string) {
   const body = {
-    visit_uuid: visit_uuid,
+    patient_uuid: patient_uuid,
   };
 
   return await openmrsFetch(`${restBaseUrl}/insuranceclaims/bill/line/resubmit`, {
@@ -61,10 +51,10 @@ export async function resubmitInsuranceClaimLine(visit_uuid: string) {
   });
 }
 
-export async function deleteInsuranceClaimLine(claimLineId: string, visit_uuid: string) {
+export async function deleteInsuranceClaimLine(claimLineId: string, patient_uuid: string) {
   const body = {
     line_guid: String(claimLineId),
-    visit_uuid: visit_uuid,
+    patient_uuid: patient_uuid,
   };
 
   return await openmrsFetch(`${restBaseUrl}/insuranceclaims/bill/line/delete`, {
@@ -92,7 +82,7 @@ export async function submitInsuranceClaim(
   const body: any = {
     consent_token: authorizationCode,
     invoice_number: receiptNumber,
-    visit_uuid: visitUuid,
+    patient_uuid: visitUuid,
   };
 
   if (isInpatientClaim && inpatientData) {
@@ -106,4 +96,33 @@ export async function submitInsuranceClaim(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+}
+
+export async function getClaimPayerPreview(invoiceNumber: string) {
+  // 9b. Retrieve Payer Claim Preview — GET /claims/preview/payer?provider_claim_no=...
+
+  const response = await openmrsFetch(
+    `${restBaseUrl}/insuranceclaims/claims/preview/payer?provider_claim_no=${invoiceNumber}`,
+    {
+      method: 'GET',
+    },
+  );
+
+  // Normalize different possible response shapes and extract first result
+  const results = response?.data?.results || response?.data?.claim_preview_payer?.results || null;
+
+  if (results && results.length > 0) {
+    const claimData = results[0];
+
+    return {
+      data: {
+        workflowState: claimData.workflowState ?? claimData.workflow_state ?? null,
+        workflowDisplayName: claimData.workflowDisplayName ?? claimData.workflow_display_name ?? null,
+        created: claimData.created ?? claimData.creationDate ?? null,
+        claimNotes: claimData.claimNotes ?? claimData.claim_notes ?? [],
+      },
+    };
+  }
+
+  return { data: null };
 }

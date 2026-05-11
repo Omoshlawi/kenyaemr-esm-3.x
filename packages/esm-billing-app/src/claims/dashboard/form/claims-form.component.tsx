@@ -94,7 +94,6 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
 
   const currentPhoneRef = useRef<string>('');
   const claimSummaryRef = useRef<ClaimSummary | null>(null);
-  const isSavannahProcessClaimsFormEnabled = useFeatureFlag('savannahInformaticsInformationExchange');
 
   const patientName = `${bill.patientName}`;
   const otpExpiryMinutes = 5;
@@ -283,36 +282,6 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
     return dispose;
   };
 
-  const launchClaimPreviewModal = ({
-    title,
-    billNumber,
-    documentUrl,
-    visit_uuid,
-    receiptNumber,
-    patientUuid,
-  }: {
-    title: string;
-    billNumber?: string;
-    documentUrl?: string;
-    visit_uuid?: string;
-    receiptNumber?: string;
-    patientUuid?: string;
-  }) => {
-    const dispose = showModal('claim-preview-modal', {
-      title,
-      billNumber,
-      documentUrl,
-      visit_uuid,
-      receiptNumber,
-      patientUuid,
-      onClose: () => {
-        dispose();
-      },
-      size: 'lg',
-    });
-    return dispose;
-  };
-
   const handleOTPVerificationSuccess = async (): Promise<void> => {
     setOtpState(OTPState.VERIFIED);
   };
@@ -447,14 +416,6 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
         timeoutInMs: 4000,
         isLowContrast: true,
       });
-
-      launchClaimPreviewModal({
-        title: t('claimPreview', 'Claim Preview'),
-        billNumber: billUuid,
-        visit_uuid: recentVisit?.uuid,
-        receiptNumber: bill.receiptNumber,
-        patientUuid: bill.patientUuid,
-      });
     } catch (err: any) {
       const extractedError = extractSavannahErrorMessage(err);
 
@@ -515,9 +476,6 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
   };
 
   const handleProcessVerifiedClaim = async () => {
-    if (isSavannahProcessClaimsFormEnabled) {
-      await processSavannahClaim(form.getValues());
-    }
     if (pendingClaimData && otpState === OTPState.VERIFIED) {
       await processClaim(pendingClaimData);
     }
@@ -817,50 +775,15 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
           />
           <ClaimsSupportingDocumentsInput patientUuid={patientUuid} />
           <ButtonSet className={styles.buttonSet}>
-            {isSavannahProcessClaimsFormEnabled && (
-              <Button
-                className={styles.button}
-                kind="tertiary"
-                onClick={() =>
-                  launchClaimPreviewModal({
-                    title: t('claimPreview', 'Claim Preview'),
-                    billNumber: billUuid,
-                    visit_uuid: recentVisit?.uuid,
-                    receiptNumber: bill.receiptNumber,
-                    patientUuid: bill.patientUuid,
-                  })
-                }>
-                {t('previewClaim', 'Preview Claim')}
-              </Button>
-            )}
-            {isSavannahProcessClaimsFormEnabled ? (
-              <Button className={styles.button} kind="secondary" onClick={closeButton}>
-                {t('close', 'Close')}
-              </Button>
-            ) : (
-              <Button className={styles.button} kind="secondary" onClick={handleDiscardClaim}>
-                {t('discardClaim', 'Discard Claim')}{' '}
-              </Button>
-            )}
             {otpState === OTPState.NOT_STARTED && (
               <Button
                 className={styles.button}
                 kind="primary"
-                onClick={
-                  isSavannahProcessClaimsFormEnabled
-                    ? handleSubmit(handleProcessVerifiedClaim)
-                    : handleSubmit(handleInitiateOTPVerification)
-                }
-                disabled={isSavannahProcessClaimsFormEnabled ? !isFormValid || loading : isOtpDisabled}
+                onClick={handleSubmit(handleProcessVerifiedClaim)}
+                disabled={isOtpDisabled}
                 tooltipPosition="top"
                 tooltipAlignment="center">
-                {isSavannahProcessClaimsFormEnabled
-                  ? loading
-                    ? t('processing', 'Processing claim...')
-                    : t('processClaim', 'Process Claim')
-                  : isLoadingOtpSource
-                  ? t('loading', 'Loading...')
-                  : t('sendOtp', 'Send OTP')}
+                {isLoadingOtpSource ? t('loading', 'Loading...') : t('sendOtp', 'Send OTP')}
               </Button>
             )}
 

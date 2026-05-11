@@ -6,9 +6,7 @@ import { closeInsuranceClaim } from './claim.resource';
 
 type ClaimCloseModalProps = {
   onClose: () => void;
-  billUuid?: string;
-  billNumber?: string;
-  visit_uuid?: string;
+  patient_uuid?: string;
 };
 
 const REASON_OPTIONS = [
@@ -21,7 +19,7 @@ const REASON_OPTIONS = [
   'OTHER_REASONS',
 ];
 
-const ClaimCloseModal: React.FC<ClaimCloseModalProps> = ({ onClose, billUuid, visit_uuid }) => {
+const ClaimCloseModal: React.FC<ClaimCloseModalProps> = ({ onClose, patient_uuid }) => {
   const { t } = useTranslation();
   const [text, setText] = useState('');
   const [type, setType] = useState('OTHER_REASONS');
@@ -30,7 +28,7 @@ const ClaimCloseModal: React.FC<ClaimCloseModalProps> = ({ onClose, billUuid, vi
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      await closeInsuranceClaim(type, text, visit_uuid, billUuid);
+      await closeInsuranceClaim(type, text, patient_uuid);
 
       showSnackbar({
         kind: 'success',

@@ -110,7 +110,7 @@ type ClaimPreviewModalProps = {
   consentToken?: string;
   billNumber?: string;
   documentUrl?: string;
-  visit_uuid?: string;
+  patient_uuid?: string;
   receiptNumber?: string;
   patientUuid?: string;
 };
@@ -181,14 +181,7 @@ const buildPreviewBill = (claim: ClaimPreview, invoice: any, lineItems: LineItem
     closed: Boolean(invoice?.closed ?? claim.closed),
   } as MappedBill);
 
-const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
-  onClose,
-  title,
-  visit_uuid,
-  receiptNumber,
-  billNumber,
-  patientUuid,
-}) => {
+const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({ onClose, patient_uuid, receiptNumber }) => {
   const { t } = useTranslation();
   const [selectedInvoiceNumber, setSelectedInvoiceNumber] = useState('');
   const [dischargeDate, setDischargeDate] = useState('');
@@ -199,7 +192,7 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const controlSize = useLayoutType() === 'tablet' ? 'md' : 'sm';
 
-  const { claimPreview: data, isLoading, error } = useClaimPreview(visit_uuid);
+  const { claimPreview: data, isLoading, error } = useClaimPreview(patient_uuid);
 
   const invoiceNumbers = useMemo(() => {
     if (!data) {
@@ -471,7 +464,7 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
                   onClose();
                   window.setTimeout(() => {
                     const dispose = showModal('resubmit-claim-line-modal', {
-                      visit_uuid,
+                      patient_uuid,
                       onClose: () => {
                         dispose();
                       },
@@ -496,7 +489,7 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
                       claimLineId: lineItem.uuid,
                       quantity: lineItem.quantity,
                       unit_price: lineItem.price,
-                      visit_uuid,
+                      patient_uuid: patient_uuid,
                       onClose: () => {
                         dispose();
                       },
@@ -517,7 +510,7 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
                   window.setTimeout(() => {
                     const dispose = showModal('delete-claim-line-modal', {
                       claimLineId: lineItem.uuid,
-                      visit_uuid,
+                      patient_uuid: patient_uuid,
                       onClose: () => {
                         dispose();
                       },
@@ -531,7 +524,7 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
           lineItem,
         };
       }),
-    [isClosed, onClose, selectedInvoice, selectedInvoiceUuid, t, visit_uuid],
+    [isClosed, onClose, selectedInvoice, selectedInvoiceUuid, t, patient_uuid],
   );
   const patientId = data?.member_number;
   const interventionCodes = useMemo(
@@ -615,7 +608,7 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
         isInpatientClaim,
         data.authorization_code ?? '',
         receiptNumber ?? '',
-        visit_uuid ?? '',
+        patient_uuid ?? '',
         isInpatientClaim
           ? {
               otp: claimOtp,
@@ -658,9 +651,7 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
     window.setTimeout(() => {
       const dispose = showModal('close-claim-modal', {
         title: t('cancelClaim', 'Cancel Claim'),
-        billUuid: billNumber,
-        billNumber: receiptNumber,
-        visit_uuid: visit_uuid,
+        patient_uuid: patient_uuid,
         onClose: () => {
           dispose();
         },

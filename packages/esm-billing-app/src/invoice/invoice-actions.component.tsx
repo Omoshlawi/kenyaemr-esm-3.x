@@ -38,7 +38,6 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
   const { checkSHARegNum } = useCheckShareGnum();
   const { patientUuid: visitStorePatientUuid, manuallySetVisitUuid } = useVisitContextStore();
   const isProcessClaimsFormEnabled = useFeatureFlag('healthInformationExchange');
-  const isSavannahProcessClaimsFormEnabled = useFeatureFlag('savannahInformaticsInformationExchange');
 
   const isInsurancePayment = (payments) => {
     return payments?.some((payment) => payment.instanceType.name === 'Insurance');
@@ -235,19 +234,6 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
           iconDescription="Add"
           tooltipPosition="bottom">
           {activeVisit ? t('endVisitAndClaim', 'End visit and Process claims') : t('claim', 'Process claims')}
-        </Button>
-      )}
-
-      {isSavannahProcessClaimsFormEnabled && isInsurancePayment(bill?.payments) && (
-        <Button
-          onClick={handleViewClaims}
-          disabled={bill?.status !== 'PAID'}
-          kind="danger"
-          size="sm"
-          renderIcon={BaggageClaim}
-          iconDescription="Add"
-          tooltipPosition="bottom">
-          {activeVisit ? t('endVisitAndSIClaim', 'End visit and Process SI claim') : t('siClaim', 'Process SI claim')}
         </Button>
       )}
     </div>

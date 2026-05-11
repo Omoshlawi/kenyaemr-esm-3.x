@@ -25,17 +25,11 @@ interface VirtualClaimIntervention {
 /**
  * Hook that returns a list of interventions based on filters
  * @param filters - Filters for interventions (package_code, applicable_gender)
- * @param enabled - when true, uses virtual-claim interventions endpoint
  * @param patientCRId - patient CR number used by virtual-claim endpoint
  * @param subBenefitCode - selected sub-benefit code used by virtual-claim endpoint
  * @returns
  */
-export const useInterventions = (
-  filters?: InterventionsFilter,
-  enabled: boolean = false,
-  patientCRId?: string,
-  subBenefitCode?: string,
-) => {
+export const useInterventions = (filters?: InterventionsFilter, patientCRId?: string, subBenefitCode?: string) => {
   const params = new URLSearchParams();
 
   if (filters?.package_code) {
@@ -46,13 +40,17 @@ export const useInterventions = (
     params.append('applicable_gender', filters.applicable_gender.toLowerCase());
   }
 
-  const url = enabled
-    ? patientCRId && subBenefitCode
-      ? `${VIRTUAL_CLAIM_BASE}/interventions?patient_id=${patientCRId}&sub_benefit_code=${subBenefitCode}`
-      : null
+  const hasVirtualClaimParams = Boolean(patientCRId && subBenefitCode);
+  const virtualClaimParams = new URLSearchParams({
+    patient_id: patientCRId ?? '',
+    sub_benefit_code: subBenefitCode ?? '',
+  });
+
+  const url = hasVirtualClaimParams
+    ? `${VIRTUAL_CLAIM_BASE}/interventions?${virtualClaimParams.toString()}`
     : `${restBaseUrl}/insclaims/interventions?${params.toString()}`;
 
-  const allInterventionsUrl = enabled ? null : `${restBaseUrl}/insclaims/interventions`;
+  const allInterventionsUrl = hasVirtualClaimParams ? null : `${restBaseUrl}/insclaims/interventions`;
 
   const { data, isLoading, error } = useSWR<
     FetchResponse<{ data: Array<Intervention> } | { count: number; results: Array<VirtualClaimIntervention> }>
@@ -60,7 +58,7 @@ export const useInterventions = (
 
   const { data: allData } = useSWR<FetchResponse<{ data: Array<Intervention> }>>(allInterventionsUrl, openmrsFetch);
 
-  const interventions = enabled
+  const interventions = hasVirtualClaimParams
     ? data?.data && 'results' in data.data
       ? data.data.results.map((intervention) => ({
           interventionCode: intervention.code,
@@ -73,7 +71,7 @@ export const useInterventions = (
     ? data.data.data
     : [];
 
-  const allInterventions = enabled ? interventions : allData?.data?.data ?? [];
+  const allInterventions = hasVirtualClaimParams ? interventions : allData?.data?.data ?? [];
   return {
     isLoading,
     interventions,
