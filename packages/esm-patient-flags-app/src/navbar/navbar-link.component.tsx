@@ -1,8 +1,8 @@
 import React from 'react';
 import { Warning } from '@carbon/react/icons';
 import { navigate } from '@openmrs/esm-framework';
-import { useDefaultFacility } from '../hooks/useDefaultFacility';
 import styles from './navbar-link.scss';
+import { useFacilityRegistry } from '../hooks/useDefaultFacility';
 
 type NavBarLinkItemProps = {
   icon: React.ReactNode;
@@ -13,24 +13,28 @@ type NavBarLinkItemProps = {
 };
 
 const NavBarLink: React.FC<NavBarLinkItemProps> = ({ icon, label, url, hideOverlay, onClick }) => {
-  const { defaultFacility } = useDefaultFacility();
+  const { facility, notYetSynced } = useFacilityRegistry();
 
   const itemHasError = () => {
-    if (label === 'System Info') {
-      return defaultFacility?.operationalStatus !== 'Operational';
+    if (label !== 'System Info') {
+      return false;
     }
-    return false;
+    if (notYetSynced || !facility) {
+      return false;
+    }
+    return facility.sha_operational_status !== 'ACTIVE';
   };
 
   const hasError = itemHasError();
 
-  const handleClick = (url) => {
+  const handleClick = (url?: string) => {
     hideOverlay(false);
     if (!url) {
       return onClick?.();
     }
     navigate({ to: url });
   };
+
   return (
     <button
       type="button"
