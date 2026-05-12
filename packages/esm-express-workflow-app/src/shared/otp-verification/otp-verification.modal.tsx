@@ -551,7 +551,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
           return;
         }
       } catch (err) {
-        // Non-fatal: if the status check fails, fall through to the submission form
         console.warn('Pending whitelist status check failed; opening submission form:', err);
       } finally {
         setCheckingPendingRequest(false);
@@ -941,7 +940,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
               <InlineLoading
                 description={
                   biometricFinalizing
-                    ? t('biometricCreatingVisit', 'Verified — creating visit…')
+                    ? t('biometricCreatingVisit', 'Verified creating visit…')
                     : t('biometricWaitingForApproval', 'Waiting for SHA to confirm capture…')
                 }
                 status="active"
@@ -1156,13 +1155,28 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
                 </span>
               </>
             )}
+            <Button
+              kind="ghost"
+              size="md"
+              renderIcon={Renew}
+              className={styles.tryAgainButton}
+              onClick={() => checkWhitelistStatusOnce({ manual: true })}
+              disabled={manualCheckLoading}>
+              {manualCheckLoading ? (
+                <InlineLoading description={t('whitelistChecking', 'Checking status…')} />
+              ) : (
+                t('checkStatusNow', 'Check status now')
+              )}
+            </Button>
           </div>
         )}
       </ModalBody>
 
       <ModalFooter>
         <ButtonSet className={styles.buttonSet}>
-          {(mode === 'landing' || mode === 'whitelist-submit' || mode !== 'auth-landing') && (
+          {(mode === 'landing' ||
+            mode === 'whitelist-submit' ||
+            (mode !== 'auth-landing' && mode !== 'biometric' && mode !== 'biometric-failed')) && (
             <Button kind="secondary" onClick={handleCancelWhitelistWaiting} className={styles.button}>
               {t('btnCancel', 'Cancel')}
             </Button>
@@ -1210,21 +1224,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
                 <InlineLoading description={t('submittingWhitelist', 'Submitting…')} />
               ) : (
                 t('submitWhitelist', 'Submit request')
-              )}
-            </Button>
-          )}
-          {mode === 'whitelist-waiting' && (
-            <Button
-              kind={autoPollEnded ? 'primary' : 'ghost'}
-              size="md"
-              renderIcon={Renew}
-              onClick={() => checkWhitelistStatusOnce({ manual: true })}
-              disabled={manualCheckLoading}
-              className={styles.tryAgainButton}>
-              {manualCheckLoading ? (
-                <InlineLoading description={t('whitelistChecking', 'Checking status…')} />
-              ) : (
-                t('checkStatusNow', 'Check status now')
               )}
             </Button>
           )}
