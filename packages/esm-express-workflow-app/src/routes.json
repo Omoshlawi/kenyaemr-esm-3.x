@@ -336,14 +336,17 @@
       "name": "procedure-queues",
       "component": "procedureQueues",
       "online": true,
-      "offline": false
+      "offline": false,
+      "featureFlag": "procedureQueues",
+      "slot":"procedure-orders-dashboard-slot"
     },
     {
       "name": "procedure-form-extras",
       "component": "procedureFormExtras",
       "slot": "procedure-order-form-extras-slot",
       "online": true,
-      "offline": false
+      "offline": false,
+      "featureFlag": "procedureQueues"
     }
   ],
   "workspaces2": [
