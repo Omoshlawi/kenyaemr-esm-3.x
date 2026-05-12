@@ -14,18 +14,19 @@ interface CarePanelRiskScorePlotProps {
 const CarePanelRiskScorePlot: React.FC<CarePanelRiskScorePlotProps> = ({ patientUuid }) => {
   const { isLoading, error, riskScore } = usePatientIITScore(patientUuid);
   const { t } = useTranslation();
+  const riskScoreTitle = t('riskScorePercentage', 'Risk Score (%)');
   const options: LineChartOptions = {
-    title: 'KenyaHMIS ML Model',
+    title: t('mlModel', 'ML Model'),
     legend: { enabled: false },
     axes: {
       bottom: {
-        title: 'Evaluation Time',
+        title: t('evaluationTime', 'Evaluation Time'),
         mapsTo: 'evaluationDate',
         scaleType: ScaleTypes.LABELS,
       },
       left: {
         mapsTo: 'riskScore',
-        title: 'Risk Score (%)',
+        title: riskScoreTitle,
         percentage: true,
         scaleType: ScaleTypes.LINEAR,
         includeZero: true,
@@ -38,7 +39,7 @@ const CarePanelRiskScorePlot: React.FC<CarePanelRiskScorePlotProps> = ({ patient
       enabled: true,
 
       valueFormatter(value, label) {
-        if (label === 'Risk Score (%)') {
+        if (label === riskScoreTitle) {
           return `${value} (${patientRiskScore.find((r) => `${r.riskScore}` === `${value}`)?.description ?? ''})`;
         }
         return `${value}`;
