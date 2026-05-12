@@ -1,32 +1,20 @@
 import React from 'react';
 import { Drug } from '@openmrs/esm-patient-common-lib';
-import { DosingUnit, MedicationFrequency, MedicationRoute, QuantityUnit } from '../../../types';
 import { useBillableItem, useSockItemInventory } from '../useBillableItem';
 import { useTranslation } from 'react-i18next';
 import styles from './drug-order.scss';
 import { useCurrencyFormatting } from '../../../helpers/currency';
 
 type DrugOrderProps = {
-  order: {
-    drug: Drug;
-    unit: DosingUnit;
-    commonMedicationName: string;
-    dosage: number;
-    frequency: MedicationFrequency;
-    route: MedicationRoute;
-    quantityUnits: QuantityUnit;
-    patientInstructions: string;
-    asNeeded: boolean;
-    asNeededCondition: string;
-  };
+  drug: Drug;
 };
 
-const DrugOrder: React.FC<DrugOrderProps> = ({ order }) => {
+const DrugOrder: React.FC<DrugOrderProps> = ({ drug }) => {
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
 
-  const { stockItem, isLoading: isLoadingInventory } = useSockItemInventory(order?.drug?.uuid);
-  const { billableItem, isLoading } = useBillableItem(order?.drug.concept.uuid, order?.drug.uuid);
+  const { stockItem, isLoading: isLoadingInventory } = useSockItemInventory(drug?.uuid);
+  const { billableItem, isLoading } = useBillableItem(drug?.concept?.uuid, drug?.uuid);
   if (isLoading || isLoadingInventory) {
     return null;
   }
