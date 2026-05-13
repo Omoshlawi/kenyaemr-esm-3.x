@@ -10,6 +10,7 @@ import {
   Receipt,
   Renew,
   Report,
+  Review,
   User,
   VolumeFileStorage,
   WatsonHealthCrossReference,
@@ -156,6 +157,12 @@ export const useModuleLinks = () => {
       url: `${openmrsSpaBase}queues-admin/screen`,
       icon: <IbmCloudGateKeeper size={24} />,
       privilege: 'o3: View Queue Screen Dashboard',
+    },
+    {
+      label: t('serviceAvailabilityAdmin', 'Service Availability Admin'),
+      url: `${openmrsSpaBase}service-available-admin`,
+      icon: <Review size={24} />,
+      privilege: 'o3: View Service Availability Admin Dashboard',
     },
   ];
 
