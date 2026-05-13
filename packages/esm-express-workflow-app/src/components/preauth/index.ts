@@ -8,13 +8,13 @@ const options = {
 
 export const preauthDashboard = getAsyncLifecycle(() => import('./preauth-dashboard.component'), options);
 
-// t('preauthorization', 'Preauthorization')
+// t('careAuthorization', 'Care Authorizations')
 export const preauthDashboardLink = getAsyncLifecycle(
   () =>
     import('@openmrs/esm-patient-common-lib').then((m) => ({
       default: m.createDashboardLink({
         path: 'preauthorization',
-        title: 'Care Authorizations',
+        title: 'careAuthorization',
         icon: 'omrs-icon-money',
       }),
     })),
