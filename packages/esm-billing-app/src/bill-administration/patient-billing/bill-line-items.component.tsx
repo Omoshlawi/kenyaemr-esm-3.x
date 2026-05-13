@@ -66,7 +66,7 @@ const LineItemRow = ({ lineItem, bill }: { lineItem: LineItem; bill: MappedBill 
       <StructuredListCell>{lineItem.quantity}</StructuredListCell>
       <StructuredListCell>{formatCurrency(lineItem.price)}</StructuredListCell>
       <StructuredListCell>{formatCurrency(lineItem.price * lineItem.quantity)}</StructuredListCell>
-      <StructuredListCell>{lineItem.paymentStatus}</StructuredListCell>
+      <StructuredListCell>{t(lineItem.paymentStatus, lineItem.paymentStatus)}</StructuredListCell>
 
       <StructuredListCell>
         <OverflowMenu aria-label="overflow-menu">

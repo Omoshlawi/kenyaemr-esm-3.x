@@ -77,13 +77,15 @@ const ChargeSummaryTable: React.FC = () => {
       header: t('prices', 'Prices'),
     },
   ];
-
+  //Default status translations
+  // t("ENABLED", "Enabled")
+  // t("DISABLED", "Disabled")
   const rows = results.map((service) => {
     return {
       id: service.uuid,
       name: service.name,
       shortName: service.shortName,
-      serviceStatus: service.serviceStatus,
+      serviceStatus: t(service.serviceStatus, service.serviceStatus),
       serviceType: service?.serviceType?.display ?? t('stockItem', 'Stock Item'),
       servicePrices: service.servicePrices.map((price) => `${price.name} : ${formatCurrency(price.price)}`).join(', '),
     };

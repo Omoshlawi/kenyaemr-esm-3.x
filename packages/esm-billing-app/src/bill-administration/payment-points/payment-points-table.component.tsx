@@ -17,15 +17,14 @@ import { ErrorState, navigate, useLayoutType } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@openmrs/esm-patient-common-lib';
 
-const headers = [
-  { header: 'Name', key: 'name' },
-  { header: 'Description', key: 'description' },
-];
-
 export const PaymentPointsTable = () => {
   const { paymentPoints, error, isLoading } = usePaymentPoints();
   const { t } = useTranslation();
   const layout = useLayoutType();
+  const headers = [
+    { header: t('name', 'Name'), key: 'name' },
+    { header: t('description', 'Description'), key: 'description' },
+  ];
 
   if (isLoading) {
     return (
@@ -44,7 +43,7 @@ export const PaymentPointsTable = () => {
     return <ErrorState error={error} headerTitle={t('errorLoadingPaymentPoints', 'Error loading payment points')} />;
   }
 
-  if (paymentPoints.length === 0) {
+  if (paymentPoints?.length === 0) {
     return (
       <EmptyState
         displayText={t('noCashPointsConfigured', 'There are no cash points configured for this location')}

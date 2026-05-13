@@ -32,7 +32,7 @@ const BillDepositSearch: React.FC = () => {
     id: deposit.uuid,
     depositType: deposit.depositType,
     amount: deposit.amount,
-    status: deposit.status,
+    status: t(deposit.status, deposit.status),
     dateCreated: formatDate(parseDate(deposit.dateCreated)),
     referenceNumber: deposit.referenceNumber,
     availableBalance: deposit.availableBalance,

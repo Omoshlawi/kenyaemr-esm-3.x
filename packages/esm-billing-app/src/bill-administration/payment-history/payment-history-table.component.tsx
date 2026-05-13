@@ -68,6 +68,7 @@ export const PaymentHistoryTable = ({
         .map(({ attributes }) => attributes.map(({ value }) => value).join(', '))
         .filter((code) => code !== '')
         .join(', '),
+      status: t(row.status, row.status),
     };
   });
 
