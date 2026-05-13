@@ -18,7 +18,7 @@ import {
   Tag,
 } from '@carbon/react';
 import { Add, Document, DocumentAdd, Stethoscope, Upload } from '@carbon/react/icons';
-import { formatDate, showModal, usePagination } from '@openmrs/esm-framework';
+import { formatDate, showModal, useLayoutType, usePagination } from '@openmrs/esm-framework';
 import { EmptyState, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -72,6 +72,8 @@ const ShifExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
     error: diagnosisError,
     isLoading: diagnosisLoading,
   } = usePatientDiagnosis(claim.patient?.uuid ?? '');
+  const isTablet = useLayoutType() === 'tablet';
+  const controlSize = isTablet ? 'md' : 'sm';
 
   const [payerData, setPayerData] = useState<any>(null);
   const [payerLoading, setPayerLoading] = useState(false);
@@ -130,10 +132,6 @@ const ShifExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
       </div>
 
       <div className={styles.expandedButtons}>
-        {/* <Button kind="ghost" size="sm" renderIcon={Document} onClick={() => open('claim-summary-modal')}>
-          {t('viewSummary', 'View summary')}
-        </Button> */}
-
         <Tag type={isInpatient ? 'blue' : 'gray'}>
           {isInpatient ? t('inpatient', 'Inpatient') : t('outpatient', 'Outpatient')}
         </Tag>
@@ -168,7 +166,11 @@ const ShifExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
         <div className={styles.interventionsSectionHeader}>
           <p className={styles.interventionsSectionTitle}>{t('interventions', 'Interventions')}</p>
           <div className={styles.interventionActions}>
-            <Button kind="ghost" size="sm" renderIcon={Add} onClick={() => open('claim-add-intervention-modal')}>
+            <Button
+              kind="ghost"
+              size={controlSize}
+              renderIcon={Add}
+              onClick={() => open('claim-add-intervention-modal')}>
               {t('addNewIntervention', 'Add new intervention')}
             </Button>
           </div>
@@ -207,25 +209,20 @@ const ShifExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
                   </td>
                   <td>
                     <div className={styles.rowActions}>
-                      <Button
-                        kind="ghost"
-                        size="sm"
-                        renderIcon={DocumentAdd}
-                        onClick={() => open('claim-edit-intervention-modal', { intervention })}>
-                        {t('switch', 'Switch')}
-                      </Button>
-                      <Button
-                        kind="ghost"
-                        size="sm"
-                        onClick={() => open('claim-restore-intervention-modal', { intervention })}>
-                        {t('restore', 'Restore')}
-                      </Button>
-                      <Button
-                        kind="danger--ghost"
-                        size="sm"
-                        onClick={() => open('claim-retire-intervention-modal', { intervention })}>
-                        {t('retire', 'Retire')}
-                      </Button>
+                      <OverflowMenu size={controlSize} flipped>
+                        <OverflowMenuItem
+                          onClick={() => open('claim-edit-intervention-modal', { intervention })}
+                          itemText={t('edit', 'Edit')}
+                        />
+                        <OverflowMenuItem
+                          onClick={() => open('claim-restore-intervention-modal', { intervention })}
+                          itemText={t('restore', 'Restore')}
+                        />
+                        <OverflowMenuItem
+                          onClick={() => open('claim-retire-intervention-modal', { intervention })}
+                          itemText={t('retire', 'Retire')}
+                        />
+                      </OverflowMenu>
                     </div>
                   </td>
                 </tr>
@@ -314,7 +311,7 @@ const ShifExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
         {lines.length === 0 ? (
           <div className={styles.billingLinesEmpty}>
             <p>{t('noBillingLines', 'No billing lines added yet.')}</p>
-            <Button kind="ghost" size="sm" renderIcon={Add} onClick={() => open('claim-add-line-modal')}>
+            <Button kind="ghost" size={controlSize} renderIcon={Add} onClick={() => open('claim-add-line-modal')}>
               {t('addFirstLine', 'Add billing line')}
             </Button>
           </div>
@@ -358,6 +355,8 @@ const PhcExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
   const open = (modalName: string) => {
     const dispose = showModal(modalName, { closeModal: () => dispose(), claimId: claim.uuid });
   };
+  const isTablet = useLayoutType() === 'tablet';
+  const controlSize = isTablet ? 'md' : 'sm';
 
   return (
     <div className={styles.expandedPanel}>
@@ -376,7 +375,7 @@ const PhcExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
         )}
       </div>
       <div className={styles.expandedButtons}>
-        <Button kind="ghost" size="sm" renderIcon={Document} onClick={() => open('claim-summary-modal')}>
+        <Button kind="ghost" size={controlSize} renderIcon={Document} onClick={() => open('claim-summary-modal')}>
           {t('viewSummary', 'View summary')}
         </Button>
       </div>
@@ -408,17 +407,19 @@ const ClaimsTable: React.FC<TableProps> = ({
   claims = [],
 }) => {
   const { t } = useTranslation();
+  const isTablet = useLayoutType() === 'tablet';
+  const controlSize = useLayoutType() === 'tablet' ? 'md' : 'sm';
 
   const headers = [
     ...(includeClaimCode ? [{ key: 'claimCode', header: t('claimNo', 'Claim No.') }] : []),
     { key: 'patientName', header: t('patientName', 'Patient name') },
     { key: 'intervention', header: t('intervention', 'Intervention') },
-    { key: 'tariff', header: t('tariff', 'Tariff (KES)') },
     { key: 'claimedTotal', header: t('claimed', 'Claimed (KES)') },
     { key: 'status', header: t('status', 'Status') },
     { key: 'provider', header: t('provider', 'Provider') },
     ...(!isPhc ? [{ key: 'serviceType', header: t('serviceType', 'Service type') }] : []),
     { key: 'dateCreated', header: t('dateCreated', 'Date created') },
+    { key: 'actions', header: t('actions', 'Actions') },
   ];
 
   const { results, currentPage, goTo } = usePagination(claims, PAGE_SIZE);
@@ -446,6 +447,70 @@ const ClaimsTable: React.FC<TableProps> = ({
     provider: claim.provider?.display || '—',
     dateCreated: claim.dateFrom ? formatDate(new Date(claim.dateFrom)) : '—',
     visitUuid: claim.visit?.uuid ?? '',
+    actions: (
+      <OverflowMenu size={controlSize} flipped>
+        <>
+          <OverflowMenuItem
+            itemText={t('previewClaim', 'Preview Claim')}
+            onClick={() => {
+              const dispose = showModal('claim-preview-modal', {
+                patient_uuid: claim?.patient?.uuid,
+                receiptNumber: `INV-${claim?.uuid}`,
+                onClose: () => {
+                  dispose();
+                },
+                controlSize: { controlSize },
+              });
+              return dispose;
+            }}
+          />
+          <OverflowMenuItem
+            itemText={t('submitClaim', 'Submit Claim')}
+            onClick={() => {
+              const dispose = showModal('resubmit-claim-line-modal', {
+                patient_uuid: claim?.patient?.uuid,
+                onClose: () => {
+                  dispose();
+                },
+                controlSize: { controlSize },
+              });
+              return dispose;
+            }}
+          />
+          <OverflowMenuItem
+            hasDivider
+            isDelete
+            itemText={t('cancelClaim', 'Cancel claim')}
+            onClick={() => {
+              const dispose = showModal('close-claim-modal', {
+                title: t('cancelClaim', 'Cancel Claim'),
+                patient_uuid: claim?.patient?.uuid,
+                onClose: () => {
+                  dispose();
+                },
+                controlSize: { controlSize },
+              });
+              return dispose;
+            }}
+          />
+          <OverflowMenuItem
+            hasDivider
+            isDelete
+            itemText={t('resubmitClaim', 'Resubmit Claim')}
+            onClick={() => {
+              const dispose = showModal('resubmit-claim-line-modal', {
+                patient_uuid: claim?.patient?.uuid,
+                onClose: () => {
+                  dispose();
+                },
+                controlSize: { controlSize },
+              });
+              return dispose;
+            }}
+          />
+        </>
+      </OverflowMenu>
+    ),
   }));
 
   if (isLoading) {
@@ -515,70 +580,6 @@ const ClaimsTable: React.FC<TableProps> = ({
                           }
                           return <TableCell key={cell.id}>{cell.value}</TableCell>;
                         })}
-                        <TableCell className="cds--table-column-menu">
-                          <OverflowMenu size="sm" flipped>
-                            <>
-                              <OverflowMenuItem
-                                itemText={t('previewClaim', 'Preview Claim')}
-                                onClick={() => {
-                                  const dispose = showModal('claim-preview-modal', {
-                                    patient_uuid: claim?.patient?.uuid,
-                                    receiptNumber: `INV-${claim?.uuid}`,
-                                    onClose: () => {
-                                      dispose();
-                                    },
-                                    size: 'lg',
-                                  });
-                                  return dispose;
-                                }}
-                              />
-                              <OverflowMenuItem
-                                itemText={t('submitClaim', 'Submit Claim')}
-                                onClick={() => {
-                                  const dispose = showModal('resubmit-claim-line-modal', {
-                                    patient_uuid: claim?.patient?.uuid,
-                                    onClose: () => {
-                                      dispose();
-                                    },
-                                    controlSize: 'sm',
-                                  });
-                                  return dispose;
-                                }}
-                              />
-                              <OverflowMenuItem
-                                hasDivider
-                                isDelete
-                                itemText={t('cancelClaim', 'Cancel claim')}
-                                onClick={() => {
-                                  const dispose = showModal('close-claim-modal', {
-                                    title: t('cancelClaim', 'Cancel Claim'),
-                                    patient_uuid: claim?.patient?.uuid,
-                                    onClose: () => {
-                                      dispose();
-                                    },
-                                    controlSize: 'sm',
-                                  });
-                                  return dispose;
-                                }}
-                              />
-                              <OverflowMenuItem
-                                hasDivider
-                                isDelete
-                                itemText={t('resubmitClaim', 'Resubmit Claim')}
-                                onClick={() => {
-                                  const dispose = showModal('resubmit-claim-line-modal', {
-                                    patient_uuid: claim?.patient?.uuid,
-                                    onClose: () => {
-                                      dispose();
-                                    },
-                                    controlSize: 'sm',
-                                  });
-                                  return dispose;
-                                }}
-                              />
-                            </>
-                          </OverflowMenu>
-                        </TableCell>
                       </TableExpandRow>
                       <TableExpandedRow colSpan={headers.length + 1}>
                         {claim ? isPhc ? <PhcExpandedRow claim={claim} /> : <ShifExpandedRow claim={claim} /> : null}
