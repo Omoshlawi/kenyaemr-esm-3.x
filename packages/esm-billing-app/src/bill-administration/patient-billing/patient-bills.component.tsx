@@ -31,10 +31,10 @@ const PatientBills: React.FC<PatientBillsProps> = ({ bills }) => {
   const hasRefundedItems = bills.some((bill) => bill.lineItems.some((li) => Math.sign(li.price) === -1));
 
   const tableHeaders = [
-    { header: 'Date', key: 'date' },
-    { header: 'Status', key: 'status' },
-    { header: 'Total Amount', key: 'totalAmount' },
-    { header: 'Amount Paid', key: 'amountPaid' },
+    { header: t('date', 'Date'), key: 'date' },
+    { header: t('status', 'Status'), key: 'status' },
+    { header: t('totalAmount', 'Total Amount'), key: 'totalAmount' },
+    { header: t('amountPaid', 'Amount Paid'), key: 'amountPaid' },
   ];
 
   if (hasRefundedItems) {
@@ -44,14 +44,14 @@ const PatientBills: React.FC<PatientBillsProps> = ({ bills }) => {
   const tableRows = bills.map((bill) => ({
     id: `${bill.uuid}`,
     date: bill.dateCreated,
-    totalAmount: formatCurrency(bill.totalAmount),
+    totalAmount: formatCurrency(bill.totalAmount ?? 0.0),
     status:
       bill.totalAmount === bill.tenderedAmount
-        ? PaymentStatus.PAID
+        ? t(PaymentStatus.PAID, PaymentStatus.PAID) // Status translation override already exist in content package
         : bill.tenderedAmount === 0
-        ? PaymentStatus.PENDING
-        : PaymentStatus.POSTED,
-    amountPaid: formatCurrency(bill.tenderedAmount),
+        ? t(PaymentStatus.PENDING, PaymentStatus.PENDING)
+        : t(PaymentStatus.POSTED, PaymentStatus.POSTED),
+    amountPaid: formatCurrency(bill.tenderedAmount ?? 0.0),
     ...(hasRefundedItems && {
       creditAmount: formatCurrency(
         bill.lineItems.filter((li) => Math.sign(li.price) === -1).reduce((acc, curr) => acc + Math.abs(curr.price), 0),

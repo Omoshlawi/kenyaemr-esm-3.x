@@ -29,13 +29,6 @@ type PatientBillsProps = {
   onCancel: Dispatch<SetStateAction<string>>;
 };
 
-export const patientBillsHeaders = [
-  { header: 'Date', key: 'date' },
-  { header: 'Charge Item', key: 'chargeItem' },
-  { header: 'Total Amount', key: 'totalAmount' },
-  { header: 'Status', key: 'status' },
-];
-
 export const PatientBills: React.FC<PatientBillsProps> = ({ bills, onCancel, patientUuid }) => {
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
@@ -59,6 +52,13 @@ export const PatientBills: React.FC<PatientBillsProps> = ({ bills, onCancel, pat
     );
   }
 
+  const patientBillsHeaders = [
+    { header: t('date', 'Date'), key: 'date' },
+    { header: t('chargeItem', 'Charge Item'), key: 'chargeItem' },
+    { header: t('totalAmount', 'Total Amount'), key: 'totalAmount' },
+    { header: t('status', 'Status'), key: 'status' },
+  ];
+
   const tableRows = bills.map((bill) => ({
     id: `${bill.uuid}`,
     date: bill.dateCreated,
@@ -70,8 +70,8 @@ export const PatientBills: React.FC<PatientBillsProps> = ({ bills, onCancel, pat
         {bill.lineItems.map((item) => item?.billableService?.split(':')[1]).join(', ')}
       </ConfigurableLink>
     ),
-    totalAmount: formatCurrency(bill.totalAmount),
-    status: bill.status,
+    totalAmount: formatCurrency(bill.totalAmount ?? 0),
+    status: t(bill.status, bill.status),
   }));
 
   return (
