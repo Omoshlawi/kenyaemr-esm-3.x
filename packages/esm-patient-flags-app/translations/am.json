@@ -11,6 +11,7 @@
   "dispensingApp": "የመድኃኒት ማከፋፈያ መተግበሪያ",
   "emptyLinkSearchText": "የፍለጋ መስፈርቶቹን የሚያሟሉ ምንም አገናኞች የሉም",
   "errorPatientFlags": "የታካሚ ባንዲራዎችን በመጫን ላይ ስህተት",
+  "facilityActive": "Facility is active and operational",
   "facilityDashboard": "የተቋም ዳሽቦርድ",
   "formBuilder": "የቅጽ ገንቢ",
   "instanceHomeLink": "{{instanceName}}Home",
@@ -23,9 +24,11 @@
   "noMainDiagnosisSubtitle": "Main diagnosis is required for claim processing",
   "queueScreen": "Queue Screen",
   "referrals": "ሪፈራሎች",
+  "regulatoryNotActive": "Regulatory operational status is not active",
   "reports": "ሪፖርቶች",
   "search": "ሞጁል ፈልግ",
   "serviceQueuesAdmin": "የመምሪያ ዘዴዎች አስተዳደር",
+  "shaOperationalNotActive": "SHA operational status is not active",
   "suppliesDispensing": "አቅርቦቶች ማከፋፈል",
   "systemInfo": "የስርዓት መረጃ"
 }

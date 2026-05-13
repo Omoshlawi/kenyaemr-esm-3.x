@@ -11,6 +11,7 @@
   "dispensingApp": "Dispensation",
   "emptyLinkSearchText": "Aucun lien à afficher correspondant aux critères de recherche",
   "errorPatientFlags": "Erreur lors du chargement des indicateurs du patient",
+  "facilityActive": "Facility is active and operational",
   "facilityDashboard": "Tableau de bord",
   "formBuilder": "Gestion des formulaires",
   "instanceHomeLink": "{{instanceName}}Accueil",
@@ -23,9 +24,11 @@
   "noMainDiagnosisSubtitle": "Le diagnostic principal est requis pour le traitement des réclamations, veuillez l’ajouter au formulaire de consultation clinique",
   "queueScreen": "Écran de file d’attente",
   "referrals": "Références",
+  "regulatoryNotActive": "Regulatory operational status is not active",
   "reports": "Rapports",
   "search": "Recherche",
   "serviceQueuesAdmin": "Gestion des files d’attente",
+  "shaOperationalNotActive": "SHA operational status is not active",
   "suppliesDispensing": "Dispensation des fournitures",
   "systemInfo": "Informations système"
 }

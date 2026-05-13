@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 export const configSchema = {
   providerNationalIdUuid: {
     _type: Type.String,
-    _description: 'UUID for provider national id',
+    _description: 'UUID for provider national ID',
     _default: '3d152c97-2293-4a2b-802e-e0f1009b7b15',
   },
   passportNumberUuid: {
@@ -12,21 +12,17 @@ export const configSchema = {
     _description: 'UUID for passport number identification for provider',
     _default: '5b4b88e8-9db3-41e6-a175-5e39f2c8a9a5',
   },
-  providerHieFhirReference: {
+  providerUniqueIdentifierAttributeTypeUuid: {
     _type: Type.String,
-    _description: 'UUID for provider hie fhir reference',
-    _default: '67b94e8e-4d61-4810-b0f1-d86497f6e553',
+    _description: 'UUID for cross-regulator provider unique identifier (PUID)',
+    _default: 'dace9d99-9f29-4653-9eae-c05929f34a32',
   },
-  qualificationUuid: {
+  externalProviderIdentifierUuid: {
     _type: Type.String,
-    _description: 'UUID for provider hie qualification',
-    _default: '43f99413-6e7f-4812-bc60-066bb1d43f94',
+    _description: 'UUID for external provider identifier (regulator-public reference)',
+    _default: 'bbdf67e8-c020-40ff-8ad6-74ba34893882',
   },
-  licenseBodyUuid: {
-    _type: Type.String,
-    _description: 'UUID for license body',
-    _default: 'ba18bb97-d17c-4640-80d2-58e7df90ca4c',
-  },
+
   licenseNumberUuid: {
     _type: Type.String,
     _description: 'UUID for license number',
@@ -37,6 +33,31 @@ export const configSchema = {
     _description: 'UUID for license expiry date',
     _default: '00539959-a1c7-4848-a5ed-8941e9d5e835',
   },
+  licenseBodyUuid: {
+    _type: Type.String,
+    _description: 'UUID for licensing body (e.g. KMPDC, NCK, PPB, COC)',
+    _default: 'ba18bb97-d17c-4640-80d2-58e7df90ca4c',
+  },
+  qualificationUuid: {
+    _type: Type.String,
+    _description: 'UUID for provider educational qualification',
+    _default: '43f99413-6e7f-4812-bc60-066bb1d43f94',
+  },
+  specialtyUuid: {
+    _type: Type.String,
+    _description: 'UUID for provider clinical specialty',
+    _default: '7f5d8e2c-3a1b-4d6e-9c0f-2b4a1d5e8c91',
+  },
+  providerCadreUuid: {
+    _type: Type.String,
+    _description: 'UUID for provider professional cadre',
+    _default: '8a6e9f3d-4b2c-5e7f-ad10-3c5b2e6f9da2',
+  },
+  practiceTypeUuid: {
+    _type: Type.String,
+    _description: 'UUID for provider practice type (clinical, non-clinical, etc.)',
+    _default: '9b7faa4e-5c3d-6f80-be21-4d6c3f70aeb3',
+  },
   phoneNumberUuid: {
     _type: Type.String,
     _description: 'UUID for provider phone number',
@@ -44,8 +65,13 @@ export const configSchema = {
   },
   providerAddressUuid: {
     _type: Type.String,
-    _description: 'UUID for provider address',
+    _description: 'UUID for provider postal address',
     _default: '033ff604-ecf7-464f-b623-5b77c733667f',
+  },
+  providerHieFhirReference: {
+    _type: Type.String,
+    _description: 'UUID for provider HIE FHIR reference',
+    _default: '67b94e8e-4d61-4810-b0f1-d86497f6e553',
   },
   personEmailAttributeUuid: {
     _type: Type.String,
@@ -57,48 +83,6 @@ export const configSchema = {
     _description: 'UUID for person phone number attribute',
     _default: 'b2c38640-2603-4629-aebd-3b54f33f1e3a',
   },
-  providerUniqueIdentifierAttributeTypeUuid: {
-    _type: Type.String,
-    _description: 'UUID for provider unique identifier attribute type',
-    _default: 'dace9d99-9f29-4653-9eae-c05929f34a32',
-  },
-  identifierTypes: {
-    _type: Type.Array,
-    _elements: {
-      _type: Type.Object,
-      properties: {
-        key: { _type: Type.String },
-        name: { _type: Type.String },
-      },
-    },
-    _default: [
-      { key: 'National ID', name: 'National ID' },
-      { key: 'registration_number', name: 'Registration Number' },
-      { key: 'Passport', name: 'Passport Number' },
-    ],
-    _description: 'List of identifier types with unique keys for each.',
-  },
-  regulatorOptions: {
-    _type: Type.Array,
-    _elements: {
-      _type: Type.Object,
-      properties: {
-        key: { _type: Type.String },
-        name: { _type: Type.String },
-      },
-    },
-    _default: [
-      { key: 'Clinical Officers Council', name: 'Clinical Officers Council' },
-      { key: 'Pharmacy and Poisons Board', name: 'Pharmacy and Poisons Board' },
-      { key: 'Nursing Council', name: 'Nursing Council' },
-      { key: 'KMPDC', name: 'Kenya Medical Practitioners and Dentists Council (KMPDC)' },
-      {
-        key: 'Kenya Medical Laboratory Technicians & Technologists Board',
-        name: 'Kenya Medical Laboratory Technicians & Technologists Board',
-      },
-    ],
-    _description: 'List of regulator options with unique keys for each.',
-  },
 };
 
 export interface UserProperties {
@@ -109,22 +93,18 @@ export interface UserProperties {
 export interface ConfigObject {
   providerNationalIdUuid: string;
   passportNumberUuid: string;
-  providerHieFhirReference: string;
   providerUniqueIdentifierAttributeTypeUuid: string;
+  externalProviderIdentifierUuid: string;
+  licenseNumberUuid: string;
+  licenseExpiryDateUuid: string;
+  licenseBodyUuid: string;
+  qualificationUuid: string;
+  specialtyUuid: string;
+  providerCadreUuid: string;
+  practiceTypeUuid: string;
   phoneNumberUuid: string;
   providerAddressUuid: string;
-  qualificationUuid: string;
-  licenseBodyUuid: string;
-  licenseNumberUuid: string;
+  providerHieFhirReference: string;
   personEmailAttributeUuid: string;
   personPhonenumberAttributeUuid: string;
-  licenseExpiryDateUuid: string;
-  identifierTypes: Array<{
-    key: string;
-    name: string;
-  }>;
-  regulatorOptions: Array<{
-    key: string;
-    name: string;
-  }>;
 }

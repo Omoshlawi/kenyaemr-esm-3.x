@@ -6,11 +6,42 @@
   background-color: colors.$red-30 !important;
 }
 
-.navError {
+.healthy {
+  background-color: colors.$green-20 !important;
+
+  &:hover {
+    background-color: colors.$green-30 !important;
+  }
+}
+
+.navErrorTooltip {
   position: absolute;
-  color: colors.$red-70;
   top: layout.$spacing-01;
   right: layout.$spacing-01;
+  z-index: 1;
+}
+
+.navHealthyTooltip {
+  position: absolute;
+  top: layout.$spacing-01;
+  right: layout.$spacing-01;
+  z-index: 1;
+}
+
+.navErrorWrapper,
+.navHealthyWrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+}
+
+.navError {
+  color: colors.$red-70;
+}
+
+.navHealthy {
+  color: colors.$green-70;
 }
 
 .navLinkItem {

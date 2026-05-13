@@ -11,6 +11,7 @@
   "dispensingApp": "Dispensing App",
   "emptyLinkSearchText": "There are no links to display that match the search criteria",
   "errorPatientFlags": "Error loading patient flags",
+  "facilityActive": "Facility is active and operational",
   "facilityDashboard": "Facility Dashboard",
   "formBuilder": "Form Builder",
   "instanceHomeLink": "{{instanceName}}Home",
@@ -23,9 +24,11 @@
   "noMainDiagnosisSubtitle": "Main diagnosis is required for claim processing",
   "queueScreen": "Queue Screen",
   "referrals": "Referrals",
+  "regulatoryNotActive": "Regulatory operational status is not active",
   "reports": "Reports",
   "search": "Search for a module",
   "serviceQueuesAdmin": "Service Queues Admin",
+  "shaOperationalNotActive": "SHA operational status is not active",
   "suppliesDispensing": "Supplies Dispensing",
   "systemInfo": "System Info"
 }

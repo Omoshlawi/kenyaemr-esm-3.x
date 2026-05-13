@@ -1,37 +1,128 @@
+@use '@carbon/colors';
 @use '@carbon/layout';
 @use '@carbon/type';
-@use '@carbon/colors';
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
+.providerDetailsContainer {
+  width: 100%;
+  background-color: colors.$gray-10;
+  padding: layout.$spacing-04;
+}
+
+.patientBanner {
+  display: flex;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05 layout.$spacing-06;
+  background-color: colors.$white;
+  border-radius: 6px;
+  border: 1px solid colors.$gray-20;
+}
+
+.patientAvatar {
+  flex-shrink: 0;
+  width: 4rem;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: colors.$gray-10;
+  overflow: hidden;
+
+  :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.patientInfo {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: layout.$spacing-04;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+}
+
+.patientNameRow {
+  align-items: flex-start;
+}
+
+.flexRow {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  gap: layout.$spacing-03;
+  row-gap: layout.$spacing-02;
+}
+
+.tagRow {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+}
+
 .patientName {
-  @include type.type-style('label-02');
+  @include type.type-style('heading-03');
   color: colors.$gray-100;
-  font-weight: 800;
-  margin-left: layout.$spacing-04;
-  margin-right: layout.$spacing-01;
-}
-.middot {
-  margin: 0 layout.$spacing-01;
-}
-.spanField {
-  margin-left: layout.$spacing-04;
-  margin-right: layout.$spacing-01;
+  font-weight: 600;
+  margin: 0;
 }
 
 .gender {
-  display: flex;
-  align-items: center;
+  @include type.type-style('body-01');
   color: colors.$gray-70;
-  gap: layout.$spacing-01;
-  margin-left: layout.$spacing-02;
 }
+
 .statusTag {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  color: colors.$gray-70;
-  gap: layout.$spacing-01;
-  margin-left: layout.$spacing-02;
 }
+
+.puidBadge {
+  @include type.type-style('label-02');
+  display: inline-block;
+  background-color: colors.$gray-10;
+  color: colors.$gray-90;
+  padding: layout.$spacing-02 layout.$spacing-03;
+  border-radius: 4px;
+  border: 1px solid colors.$gray-20;
+  align-self: flex-start;
+
+  strong {
+    color: colors.$gray-100;
+    font-weight: 600;
+  }
+}
+
+.spanField {
+  @include type.type-style('body-01');
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-01;
+  color: colors.$gray-90;
+}
+
+.fieldLabel {
+  color: colors.$gray-70;
+  font-weight: 400;
+}
+
+.fieldValue {
+  color: colors.$gray-100;
+  font-weight: 500;
+}
+
+.middot {
+  color: colors.$gray-50;
+  user-select: none;
+}
+
 .demographics {
   display: flex;
   align-items: center;
@@ -40,36 +131,74 @@
   text-transform: uppercase;
 }
 
-.patientBanner {
-  display: flex;
-}
-
-.patientInfo {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.flexRow {
-  display: flex;
-  flex-flow: row wrap;
-  align-items: center;
-  margin-top: layout.$spacing-04;
-}
-.patientAvatar {
-  margin-top: layout.$spacing-06;
-}
 .viewRoles {
-  margin-top: layout.$spacing-06;
+  margin-top: layout.$spacing-04;
+  padding-top: layout.$spacing-04;
+  border-top: 1px solid colors.$gray-20;
+
+  :global(.cds--accordion) {
+    border-top: none;
+  }
+
+  :global(.cds--accordion__heading) {
+    @include type.type-style('label-02');
+    padding: layout.$spacing-03 0;
+  }
+
+  :global(.cds--accordion__title) {
+    color: colors.$gray-100;
+    font-weight: 600;
+  }
 }
+
 .roleContainer {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: layout.$spacing-02;
+  padding: layout.$spacing-03 0;
+}
+
+.roleName {
+  color: colors.$gray-100;
+  font-weight: 600;
 }
 
 .roleDescription {
+  @include type.type-style('body-01');
   margin: 0;
   color: colors.$gray-70;
-  font-size: type.type-scale(1);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+
+@media (max-width: 768px) {
+  .patientBanner {
+    flex-direction: column;
+    gap: layout.$spacing-04;
+    padding: layout.$spacing-04;
+  }
+
+  .patientAvatar {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .patientName {
+    @include type.type-style('heading-02');
+  }
+
+  .flexRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: layout.$spacing-02;
+  }
+
+  .middot {
+    display: none;
+  }
+
+  .spanField {
+    width: 100%;
+  }
 }

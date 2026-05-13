@@ -49,15 +49,53 @@ import UserManagementFormSchema from '../userManagementFormSchema';
 import { ChevronLeft, Query, ChevronRight } from '@carbon/react/icons';
 import { useSystemUserRoleConfigSetting } from '../../hook/useSystemRoleSetting';
 import { Provider, User } from '../../../types';
-import { searchHealthCareWork, HealthWorkerAdapter, NormalizedPractitioner } from '../../hook/healthWorkerAdapter';
 import { ROLE_CATEGORIES, SECTIONS } from '../../../constants';
 import { ConfigObject } from '../../../config-schema';
 import { mutate } from 'swr';
 import { createProviderAttribute, updateProviderAttributes } from '../../modal/hwr-sync.resource';
 import { useUsers } from './user-list/user-list.resource';
+import { searchHealthCareWork, ProfessionalRegistryResponse } from '../../hook/healthWorkerRegistry';
+import {
+  useProfessionalRegistryIdentificationTypes,
+  useProfessionalRegistryRegulators,
+} from '../../hook/useProfessionalRegistryEnums';
 
 type ManageUserWorkspaceProps = DefaultWorkspaceProps & {
   initialUserValue?: User;
+};
+
+/**
+ * Pick the active license: latest end-date that hasn't expired yet.
+ * Fall back to the most recently expired license if none are current,
+ * so the UI surfaces something concrete rather than nothing.
+ */
+const pickCurrentLicense = (licenses: ProfessionalRegistryResponse['professional']['licenses']) => {
+  if (!licenses || licenses.length === 0) {
+    return undefined;
+  }
+  const sorted = [...licenses]
+    .filter((l) => l.license_end)
+    .sort((a, b) => new Date(b.license_end).getTime() - new Date(a.license_end).getTime());
+  const now = Date.now();
+  return sorted.find((l) => new Date(l.license_end).getTime() >= now) ?? sorted[0];
+};
+
+/**
+ * Savannah returns "Male"/"Female"; OpenMRS uses "M"/"F".
+ * Normalize the upstream gender to the OpenMRS shape, or undefined if unknown.
+ */
+const normalizeGender = (upstream?: string): 'M' | 'F' | undefined => {
+  if (!upstream) {
+    return undefined;
+  }
+  const v = upstream.trim().toUpperCase();
+  if (v === 'MALE' || v === 'M') {
+    return 'M';
+  }
+  if (v === 'FEMALE' || v === 'F') {
+    return 'F';
+  }
+  return undefined;
 };
 
 const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspaceProps, {}, {}>> = ({
@@ -68,7 +106,7 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
   const isTablet = useLayoutType() === 'tablet';
   const [activeSection, setActiveSection] = useState('demographic');
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [healthWorker, setHealthWorker] = useState(null);
+  const [healthWorker, setHealthWorker] = useState<ProfessionalRegistryResponse | null>(null);
   const { provider = [], loadingProvider, providerError } = useProvider(initialUserValue.systemId);
   const { users, isLoading: isLoadingUsers, error: usersError } = useUsers();
   const usernames =
@@ -77,63 +115,77 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const { userManagementFormSchema } = UserManagementFormSchema(usernames);
-
   const { providerAttributeType = [] } = useProviderAttributeType();
-
   const { roles = [], isLoading } = useRoles();
   const { rolesConfig, error } = useSystemUserRoleConfigSetting();
+
   const {
-    identifierTypes,
-    regulatorOptions,
-    licenseBodyUuid,
+    providerNationalIdUuid,
     passportNumberUuid,
-    personEmailAttributeUuid,
-    personPhonenumberAttributeUuid,
+    providerUniqueIdentifierAttributeTypeUuid,
+    externalProviderIdentifierUuid,
+    licenseNumberUuid,
+    licenseExpiryDateUuid,
+    licenseBodyUuid,
+    qualificationUuid,
+    specialtyUuid,
+    providerCadreUuid,
+    practiceTypeUuid,
     phoneNumberUuid,
     providerAddressUuid,
     providerHieFhirReference,
-    qualificationUuid,
-    providerNationalIdUuid,
-    licenseNumberUuid,
-    licenseExpiryDateUuid,
-    providerUniqueIdentifierAttributeTypeUuid,
+    personEmailAttributeUuid,
+    personPhonenumberAttributeUuid,
   } = useConfig<ConfigObject>();
+
+  const { regulators } = useProfessionalRegistryRegulators();
+  const { identificationTypes } = useProfessionalRegistryIdentificationTypes();
+
   const [searchHWR, setSearchHWR] = useState({
-    identifierType: identifierTypes[0]?.key ?? '',
-    regulator: regulatorOptions[0]?.key ?? '',
+    identifierType: '',
+    regulator: '',
     identifier: '',
     isHWRLoading: false,
   });
-  const defaultIdentifierType = identifierTypes.find((item) => item.key === searchHWR.identifierType);
-  const defaultRegulator = regulatorOptions.find((item) => item.key === searchHWR.regulator);
 
   const attributeTypeMapping = useMemo(() => {
     return {
-      licenseNumber: providerAttributeType.find((type) => type.uuid === licenseNumberUuid)?.uuid || '',
-      licenseExpiry: providerAttributeType.find((type) => type.uuid === licenseExpiryDateUuid)?.uuid || '',
       providerNationalId: providerAttributeType.find((type) => type.uuid === providerNationalIdUuid)?.uuid || '',
-      providerHieFhirReference:
-        providerAttributeType.find((type) => type.uuid === providerHieFhirReference)?.uuid || '',
-      qualification: providerAttributeType.find((type) => type.uuid === qualificationUuid)?.uuid || '',
-      licenseBody: providerAttributeType.find((type) => type.uuid === licenseBodyUuid)?.uuid || '',
-      phoneNumber: providerAttributeType.find((type) => type.uuid === phoneNumberUuid)?.uuid || '',
-      providerAddress: providerAttributeType.find((type) => type.uuid === providerAddressUuid)?.uuid || '',
       passportNumber: providerAttributeType.find((type) => type.uuid === passportNumberUuid)?.uuid || '',
       providerUniqueIdentifier:
         providerAttributeType.find((type) => type.uuid === providerUniqueIdentifierAttributeTypeUuid)?.uuid || '',
+      externalProviderIdentifier:
+        providerAttributeType.find((type) => type.uuid === externalProviderIdentifierUuid)?.uuid || '',
+      providerHieFhirReference:
+        providerAttributeType.find((type) => type.uuid === providerHieFhirReference)?.uuid || '',
+
+      licenseNumber: providerAttributeType.find((type) => type.uuid === licenseNumberUuid)?.uuid || '',
+      licenseExpiry: providerAttributeType.find((type) => type.uuid === licenseExpiryDateUuid)?.uuid || '',
+      licenseBody: providerAttributeType.find((type) => type.uuid === licenseBodyUuid)?.uuid || '',
+      qualification: providerAttributeType.find((type) => type.uuid === qualificationUuid)?.uuid || '',
+      specialty: providerAttributeType.find((type) => type.uuid === specialtyUuid)?.uuid || '',
+      providerCadre: providerAttributeType.find((type) => type.uuid === providerCadreUuid)?.uuid || '',
+      practiceType: providerAttributeType.find((type) => type.uuid === practiceTypeUuid)?.uuid || '',
+
+      phoneNumber: providerAttributeType.find((type) => type.uuid === phoneNumberUuid)?.uuid || '',
+      providerAddress: providerAttributeType.find((type) => type.uuid === providerAddressUuid)?.uuid || '',
     };
   }, [
-    licenseBodyUuid,
-    licenseExpiryDateUuid,
-    licenseNumberUuid,
+    providerAttributeType,
+    providerNationalIdUuid,
     passportNumberUuid,
+    providerUniqueIdentifierAttributeTypeUuid,
+    externalProviderIdentifierUuid,
+    providerHieFhirReference,
+    licenseNumberUuid,
+    licenseExpiryDateUuid,
+    licenseBodyUuid,
+    qualificationUuid,
+    specialtyUuid,
+    providerCadreUuid,
+    practiceTypeUuid,
     phoneNumberUuid,
     providerAddressUuid,
-    providerAttributeType,
-    providerHieFhirReference,
-    providerNationalIdUuid,
-    qualificationUuid,
-    providerUniqueIdentifierAttributeTypeUuid,
   ]);
 
   const providerAttributes = useMemo(() => provider.flatMap((item) => item.attributes || []), [provider]);
@@ -165,7 +217,7 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
     () => getProviderAttributeValue(attributeTypeMapping.passportNumber),
     [attributeTypeMapping, getProviderAttributeValue],
   );
-  const registrationNumber = useMemo(
+  const licenseBody = useMemo(
     () => getProviderAttributeValue(attributeTypeMapping.licenseBody),
     [attributeTypeMapping, getProviderAttributeValue],
   );
@@ -181,25 +233,37 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
     () => getProviderAttributeValue(attributeTypeMapping.providerUniqueIdentifier),
     [attributeTypeMapping, getProviderAttributeValue],
   );
+  const specialty = useMemo(
+    () => getProviderAttributeValue(attributeTypeMapping.specialty),
+    [attributeTypeMapping, getProviderAttributeValue],
+  );
+  const providerCadre = useMemo(
+    () => getProviderAttributeValue(attributeTypeMapping.providerCadre),
+    [attributeTypeMapping, getProviderAttributeValue],
+  );
+  const practiceType = useMemo(
+    () => getProviderAttributeValue(attributeTypeMapping.practiceType),
+    [attributeTypeMapping, getProviderAttributeValue],
+  );
+
   type UserFormSchema = z.infer<typeof userManagementFormSchema>;
+
   const formDefaultValues = useMemo(() => {
     if (isInitialValuesEmpty) {
       return {};
     }
     const extractNameParts = (display = '') => {
       const nameParts = display.split(' ');
-
       const [givenName = '', middleName = '', familyName = ''] =
         nameParts.length === 3 ? nameParts : [nameParts[0], '', nameParts[1] || ''];
-
       return { givenName, middleName, familyName };
     };
 
     return {
       ...initialUserValue,
       ...extractNameParts(initialUserValue.person?.display || ''),
-      phoneNumber: phoneNumber,
-      email: email,
+      phoneNumber,
+      email,
       roles:
         initialUserValue.roles?.map((role) => ({
           uuid: role.uuid,
@@ -209,11 +273,14 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
       gender: initialUserValue.person?.gender,
       providerLicense: providerLicenseNumber,
       licenseExpiryDate: licenseExpiryDate ? new Date(licenseExpiryDate) : undefined,
-      qualification: qualification,
-      nationalId: nationalId,
-      passportNumber: passportNumber,
-      registrationNumber: registrationNumber,
-      providerUniqueIdentifier: providerUniqueIdentifier,
+      qualification,
+      nationalId,
+      passportNumber,
+      licenseBody,
+      providerUniqueIdentifier,
+      specialty,
+      providerCadre,
+      practiceType,
     };
   }, [
     isInitialValuesEmpty,
@@ -225,8 +292,11 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
     qualification,
     nationalId,
     passportNumber,
-    registrationNumber,
+    licenseBody,
     providerUniqueIdentifier,
+    specialty,
+    providerCadre,
+    practiceType,
   ]);
 
   const userFormMethods = useForm<UserFormSchema>({
@@ -236,7 +306,6 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
   });
 
   const { reset, setValue } = userFormMethods;
-
   const { errors, isSubmitting, isDirty } = userFormMethods.formState;
 
   useEffect(() => {
@@ -251,54 +320,59 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
     }
   }, [isDirty, setHasUnsavedChanges]);
 
-  const setPractitionerValuesFromNormalized = (normalized: NormalizedPractitioner) => {
-    setValue('givenName', normalized.firstName || '');
-    setValue('middleName', normalized.middleName || '');
-    setValue('familyName', normalized.lastName || '');
-    setValue('nationalId', normalized.nationalId || '');
-    setValue('providerLicense', normalized.licenseNumber || '');
-    setValue('registrationNumber', normalized.registrationId || '');
-    setValue('providerUniqueIdentifier', normalized.providerUniqueIdentifier || '');
-    setValue('phoneNumber', normalized.phoneNumber || '');
-    setValue('email', normalized.email || '');
-    setValue('qualification', normalized.qualification || '');
-    setValue('passportNumber', normalized.passportNumber || '');
-    setValue(
-      'licenseExpiryDate',
-      normalized.licenseEndDate ? parseDate(normalized.licenseEndDate) : parseDate(t('unknown', 'Unknown')),
-    );
+  const setHealthWorkerValues = (response: ProfessionalRegistryResponse) => {
+    const { membership, contacts, identifiers, professional_details, licenses } = response.professional;
+    const currentLicense = pickCurrentLicense(licenses);
+    const gender = normalizeGender(membership.gender);
+
+    setValue('givenName', membership.first_name || '');
+    setValue('middleName', membership.middle_name || '');
+    setValue('familyName', membership.last_name || '');
+
+    if (gender) {
+      setValue('gender', gender, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      });
+    }
+
+    setValue('nationalId', identifiers?.identification_number || '');
+    setValue('passportNumber', '');
+    setValue('providerLicense', currentLicense?.external_reference_id || '');
+    setValue('licenseBody', membership.licensing_body || '');
+    setValue('providerUniqueIdentifier', membership.id || '');
+    setValue('phoneNumber', contacts?.phone || '');
+    setValue('email', contacts?.email || '');
+    setValue('qualification', professional_details?.educational_qualifications || '');
+    setValue('specialty', membership.specialty || '');
+    setValue('providerCadre', professional_details?.professional_cadre || '');
+    setValue('practiceType', professional_details?.practice_type || '');
+    setValue('licenseExpiryDate', currentLicense?.license_end ? parseDate(currentLicense.license_end) : undefined);
   };
 
   const handleSearch = async () => {
     try {
-      setSearchHWR({ ...searchHWR, isHWRLoading: true });
-      const unifiedResponse = await searchHealthCareWork(
-        searchHWR.identifierType,
-        searchHWR.identifier,
-        searchHWR.regulator,
-      );
+      setSearchHWR((prev) => ({ ...prev, isHWRLoading: true }));
+      const response = await searchHealthCareWork(searchHWR.identifierType, searchHWR.identifier, searchHWR.regulator);
 
-      const normalizedData = HealthWorkerAdapter.normalize(unifiedResponse);
-
-      if (!normalizedData) {
+      if (!response?.professional) {
         showModal('hwr-empty-modal', { errorCode: t('noResults', 'No results found') });
         return;
       }
 
       const dispose = showModal('hwr-confirmation-modal', {
-        healthWorker: unifiedResponse.data,
-        normalizedData: normalizedData,
-        fhirFormat: unifiedResponse.fhirFormat,
+        healthWorker: response,
         onConfirm: () => {
           dispose();
-          setPractitionerValuesFromNormalized(normalizedData);
-          setHealthWorker(unifiedResponse.data);
+          setHealthWorkerValues(response);
+          setHealthWorker(response);
         },
       });
-    } catch (error) {
-      showModal('hwr-empty-modal', { errorCode: error.message });
+    } catch (err: any) {
+      showModal('hwr-empty-modal', { errorCode: err?.message ?? t('searchFailed', 'Search failed') });
     } finally {
-      setSearchHWR({ ...searchHWR, isHWRLoading: false });
+      setSearchHWR((prev) => ({ ...prev, isHWRLoading: false }));
     }
   };
 
@@ -314,35 +388,27 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
           attributeType: attributeTypeMapping.licenseExpiry,
           value: data.licenseExpiryDate ? data.licenseExpiryDate.toISOString() : '',
         },
-        { attributeType: attributeTypeMapping.licenseBody, value: data.registrationNumber },
+        { attributeType: attributeTypeMapping.licenseBody, value: data.licenseBody },
+
+        { attributeType: attributeTypeMapping.providerUniqueIdentifier, value: data.providerUniqueIdentifier },
         {
-          attributeType: attributeTypeMapping?.providerHieFhirReference,
-          value: JSON.stringify(healthWorker),
+          attributeType: attributeTypeMapping.externalProviderIdentifier,
+          value: healthWorker?.professional?.membership?.external_reference_id ?? '',
         },
         {
-          attributeType: attributeTypeMapping.providerUniqueIdentifier,
-          value: data.providerUniqueIdentifier,
+          attributeType: attributeTypeMapping.providerHieFhirReference,
+          value: healthWorker?.professional?.membership?.id ?? '',
         },
-        {
-          attributeType: attributeTypeMapping.providerNationalId,
-          value: data.nationalId,
-        },
-        {
-          attributeType: attributeTypeMapping.qualification,
-          value: data.qualification,
-        },
-        {
-          attributeType: attributeTypeMapping.passportNumber,
-          value: data.passportNumber,
-        },
-        {
-          attributeType: attributeTypeMapping.phoneNumber,
-          value: data.phoneNumber,
-        },
-        {
-          attributeType: attributeTypeMapping.providerAddress,
-          value: data.email,
-        },
+        { attributeType: attributeTypeMapping.providerNationalId, value: data.nationalId },
+        { attributeType: attributeTypeMapping.passportNumber, value: data.passportNumber },
+
+        { attributeType: attributeTypeMapping.qualification, value: data.qualification },
+        { attributeType: attributeTypeMapping.specialty, value: data.specialty },
+        { attributeType: attributeTypeMapping.providerCadre, value: data.providerCadre },
+        { attributeType: attributeTypeMapping.practiceType, value: data.practiceType },
+
+        { attributeType: attributeTypeMapping.phoneNumber, value: data.phoneNumber },
+        { attributeType: attributeTypeMapping.providerAddress, value: data.email },
       ].filter((attr) => attr.value),
     };
 
@@ -387,7 +453,7 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
             if (providerResponse.ok) {
               showSnackbarMessage(t('providerSaved', 'Provider saved successfully'), '', 'success');
             }
-          } catch (error) {
+          } catch {
             showSnackbarMessage(
               t('providerFail', 'Failed to save provider'),
               t('providerFailedSubtitle', 'An error occurred while creating provider'),
@@ -395,27 +461,20 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
             );
           }
         }
+
         if (editProvider) {
           const updatableAttributes = [
+            { attributeType: licenseBodyUuid, value: data?.licenseBody },
+            { attributeType: providerNationalIdUuid, value: data?.nationalId },
+            { attributeType: licenseNumberUuid, value: data?.providerLicense },
+            { attributeType: passportNumberUuid, value: data?.passportNumber },
+            { attributeType: providerUniqueIdentifierAttributeTypeUuid, value: data?.providerUniqueIdentifier },
+            { attributeType: specialtyUuid, value: data?.specialty },
+            { attributeType: providerCadreUuid, value: data?.providerCadre },
+            { attributeType: practiceTypeUuid, value: data?.practiceType },
             {
-              attributeType: licenseBodyUuid,
-              value: data?.registrationNumber,
-            },
-            {
-              attributeType: providerNationalIdUuid,
-              value: data?.nationalId,
-            },
-            {
-              attributeType: licenseNumberUuid,
-              value: data?.providerLicense,
-            },
-            {
-              attributeType: passportNumberUuid,
-              value: data?.passportNumber,
-            },
-            {
-              attributeType: providerUniqueIdentifierAttributeTypeUuid,
-              value: data?.providerUniqueIdentifier,
+              attributeType: externalProviderIdentifierUuid,
+              value: healthWorker?.professional?.membership?.external_reference_id,
             },
           ].filter((attr) => attr?.value !== undefined && attr?.value !== null && attr?.value !== '');
 
@@ -425,15 +484,15 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                 (at) => at?.attributeType?.uuid === attr?.attributeType,
               )?.uuid;
 
-              const payload = {
+              const attrPayload = {
                 attributeType: attr?.attributeType,
                 value: attr?.value,
               };
 
               if (!existingAttributes) {
-                return createProviderAttribute(payload, providerUUID);
+                return createProviderAttribute(attrPayload, providerUUID);
               }
-              return updateProviderAttributes(payload, providerUUID, existingAttributes);
+              return updateProviderAttributes(attrPayload, providerUUID, existingAttributes);
             }),
           );
           showSnackbar({
@@ -445,10 +504,11 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
       } else {
         throw new Error('User creation failed');
       }
+
       handleMutation(`${restBaseUrl}/user`);
       mutate((key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/provider`));
       closeWorkspace({ discardUnsavedChanges: true });
-    } catch (error) {
+    } catch (err) {
       showSnackbarMessage(
         t('userSaveFailed', 'Failed to save user'),
         t('userCreationFailedSubtitle', 'An error occurred while saving user form '),
@@ -457,12 +517,12 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
     }
   };
 
-  const handleError = (error, response) => {
+  const handleError = (err, response) => {
     showSnackbar({
       title: String(t('userSaveFailed', 'Fail to save {{error}}', response)),
       subtitle: String(
         t('userCreationFailedSubtitle', 'An error occurred while creating user {{errorMessage}}', {
-          errorMessage: JSON.stringify(error, null, 2),
+          errorMessage: JSON.stringify(err, null, 2),
         }),
       ),
       kind: 'error',
@@ -494,12 +554,9 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
   const hasProviderAccount = activeSection === SECTIONS.PROVIDER;
 
   const isSaveAndClose = () => !(hasDemographicInfo || hasLoginInfo || hasProviderAccount);
-
   const getSubmitButtonText = () =>
     t(isSaveAndClose() ? 'saveAndClose' : 'next', isSaveAndClose() ? 'Save & close' : 'Next');
-
   const getSubmitButtonType = () => (isSaveAndClose() ? 'submit' : 'button');
-
   const getSubmitButtonIcon = () => (isSaveAndClose() ? ChevronLeft : ChevronRight);
 
   const handleBackClick = () => {
@@ -535,7 +592,7 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                   setCurrentIndex(newIndex);
                 }
               }}>
-              {steps.map((step, index) => (
+              {steps.map((step) => (
                 <ProgressStep key={step.id} label={step.label} className={styles.ProgresStep} />
               ))}
             </ProgressIndicator>
@@ -546,199 +603,198 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                     <Stack className={styles.formStackControl} gap={7}>
                       {hasDemographicInfo && (
                         <ResponsiveWrapper>
-                          <span className={styles.formHeaderSection}>
-                            {t('healthWorkVerify', 'Health worker registry verification')}
-                          </span>
-                          {searchHWR.isHWRLoading ? (
-                            <InlineLoading
-                              className={styles.formLoading}
-                              description={t('pullDetailsfromHWR', 'Pulling data from Health worker registry...')}
-                            />
-                          ) : (
+                          {isInitialValuesEmpty && (
                             <>
-                              <Column>
-                                <ComboBox
-                                  onChange={({ selectedItem }) => {
-                                    setSearchHWR({ ...searchHWR, identifierType: selectedItem?.key ?? '' });
-                                  }}
-                                  id="formIdentifierType"
-                                  titleText={t('identificationType', 'Identification Type')}
-                                  placeholder={t('chooseIdentifierType', 'Choose identifier type')}
-                                  initialSelectedItem={defaultIdentifierType}
-                                  items={identifierTypes}
-                                  itemToString={(item) => (item ? item.name : '')}
-                                  disabled={!isInitialValuesEmpty}
-                                />
-                              </Column>
-                              <Column>
-                                <ComboBox
-                                  onChange={({ selectedItem }) => {
-                                    setSearchHWR({ ...searchHWR, regulator: selectedItem?.key ?? '' });
-                                  }}
-                                  id="formRegulatorOptions"
-                                  titleText={t('regulator', 'Regulator')}
-                                  placeholder={t('chooseRegulatorType', 'Choose regulator option')}
-                                  initialSelectedItem={defaultRegulator}
-                                  items={regulatorOptions}
-                                  itemToString={(item) => (item ? item.name : '')}
-                                  disabled={!isInitialValuesEmpty}
-                                />
-                              </Column>
-                              <Column>
-                                <span className={styles.formIdentifierType}>
-                                  {t('identifierNumber', 'Identifier number*')}
-                                </span>
-                                <Row className={styles.formRow}>
-                                  <Search
-                                    labelText={t('enterIdentifierNumber', 'Enter identifier number')}
-                                    className={styles.formSearch}
-                                    defaultValue={searchHWR.identifier}
-                                    placeholder={t('enterIdentifierNumber', 'Enter identifier number')}
-                                    id="formSearchHealthWorkers"
-                                    disabled={!isInitialValuesEmpty}
-                                    onChange={(value) => {
-                                      setSearchHWR({ ...searchHWR, identifier: value.target.value });
-                                    }}
-                                  />
-                                  <Button
-                                    kind="secondary"
-                                    size="md"
-                                    renderIcon={Query}
-                                    disabled={
-                                      !searchHWR.identifier ||
-                                      searchHWR.isHWRLoading ||
-                                      !searchHWR.identifierType ||
-                                      !searchHWR.regulator ||
-                                      !isInitialValuesEmpty
-                                    }
-                                    iconDescription={t('search', 'Search')}
-                                    hasIconOnly
-                                    className={styles.formSearchButton}
-                                    onClick={handleSearch}
-                                  />
-                                </Row>
-                              </Column>
                               <span className={styles.formHeaderSection}>
-                                {t('demographicInfo', 'Demographic info')}
+                                {t('healthWorkVerify', 'Health worker registry verification')}
                               </span>
-                              <ResponsiveWrapper>
-                                <Controller
-                                  name="givenName"
-                                  control={userFormMethods.control}
-                                  render={({ field }) => (
-                                    <TextInput
-                                      {...field}
-                                      id="givenName"
-                                      type="text"
-                                      labelText={t('givenName', 'Given Name')}
-                                      placeholder={t('userGivenName', 'Enter Given Name')}
-                                      invalid={!!errors.givenName}
-                                      invalidText={errors.givenName?.message}
-                                    />
-                                  )}
+
+                              {searchHWR.isHWRLoading ? (
+                                <InlineLoading
+                                  className={styles.formLoading}
+                                  description={t('pullDetailsfromHWR', 'Pulling data from Health worker registry...')}
                                 />
-                              </ResponsiveWrapper>
-                              <ResponsiveWrapper>
-                                <Controller
-                                  name="middleName"
-                                  control={userFormMethods.control}
-                                  render={({ field }) => (
-                                    <TextInput
-                                      {...field}
-                                      id="middleName"
-                                      labelText={t('middleName', 'Middle Name')}
-                                      placeholder={t('middleName', 'Middle Name')}
+                              ) : (
+                                <>
+                                  <Column>
+                                    <ComboBox
+                                      onChange={({ selectedItem }) => {
+                                        setSearchHWR({
+                                          ...searchHWR,
+                                          identifierType: selectedItem?.code ?? '',
+                                        });
+                                      }}
+                                      id="formIdentifierType"
+                                      titleText={t('identificationType', 'Identification Type')}
+                                      placeholder={t('chooseIdentifierType', 'Choose identifier type')}
+                                      items={identificationTypes}
+                                      itemToString={(item) => item?.label ?? ''}
                                     />
-                                  )}
-                                />
-                              </ResponsiveWrapper>
-                              <ResponsiveWrapper>
-                                <Controller
-                                  name="familyName"
-                                  control={userFormMethods.control}
-                                  render={({ field }) => (
-                                    <TextInput
-                                      {...field}
-                                      id="familyName"
-                                      labelText={t('familyName', 'Family Name')}
-                                      placeholder={t('familyName', 'Family Name')}
-                                      invalid={!!errors.familyName}
-                                      invalidText={errors.familyName?.message}
+                                  </Column>
+                                  <Column>
+                                    <ComboBox
+                                      onChange={({ selectedItem }) => {
+                                        setSearchHWR({
+                                          ...searchHWR,
+                                          regulator: selectedItem?.code ?? '',
+                                        });
+                                      }}
+                                      id="formRegulatorOptions"
+                                      titleText={t('regulator', 'Regulator')}
+                                      placeholder={t('chooseRegulatorType', 'Choose regulator option')}
+                                      items={regulators}
+                                      itemToString={(item) => item?.label ?? ''}
                                     />
-                                  )}
-                                />
-                              </ResponsiveWrapper>
-                              <ResponsiveWrapper>
-                                <Controller
-                                  name="phoneNumber"
-                                  control={userFormMethods.control}
-                                  render={({ field }) => (
-                                    <TextInput
-                                      {...field}
-                                      id="phoneNumber"
-                                      type="text"
-                                      disabled={isInitialValuesEmpty}
-                                      labelText={t('phoneNumber', 'Phone Number')}
-                                      placeholder={t('phoneNumber', 'Enter Phone Number')}
-                                      invalid={!!errors.phoneNumber}
-                                      invalidText={errors.phoneNumber?.message}
-                                    />
-                                  )}
-                                />
-                              </ResponsiveWrapper>
-                              <ResponsiveWrapper>
-                                <Controller
-                                  name="email"
-                                  control={userFormMethods.control}
-                                  render={({ field }) => (
-                                    <TextInput
-                                      {...field}
-                                      id="email"
-                                      type="email"
-                                      disabled={isInitialValuesEmpty}
-                                      labelText={t('email', 'Email')}
-                                      placeholder={t('email', 'Enter Email')}
-                                      invalid={!!errors.email}
-                                      invalidText={errors.email?.message}
-                                      className={styles.checkboxLabelSingleLine}
-                                    />
-                                  )}
-                                />
-                              </ResponsiveWrapper>
-                              <ResponsiveWrapper>
-                                <Controller
-                                  name="gender"
-                                  control={userFormMethods.control}
-                                  render={({ field }) => (
-                                    <RadioButtonGroup
-                                      {...field}
-                                      legendText={t('sex', 'Sex')}
-                                      orientation="vertical"
-                                      invalid={!!errors.gender}
-                                      invalidText={errors.gender?.message}>
-                                      <RadioButton
-                                        value="M"
-                                        id="M"
-                                        labelText={t('male', 'Male')}
-                                        checked={field.value === 'M'}
+                                  </Column>
+                                  <Column>
+                                    <span className={styles.formIdentifierType}>
+                                      {t('identifierNumber', 'Identifier number*')}
+                                    </span>
+                                    <Row className={styles.formRow}>
+                                      <Search
+                                        labelText={t('enterIdentifierNumber', 'Enter identifier number')}
+                                        className={styles.formSearch}
+                                        defaultValue={searchHWR.identifier}
+                                        placeholder={t('enterIdentifierNumber', 'Enter identifier number')}
+                                        id="formSearchHealthWorkers"
+                                        onChange={(value) => {
+                                          setSearchHWR({ ...searchHWR, identifier: value.target.value });
+                                        }}
                                       />
-                                      <RadioButton
-                                        value="F"
-                                        id="F"
-                                        labelText={t('female', 'Female')}
-                                        checked={field.value === 'F'}
+                                      <Button
+                                        kind="secondary"
+                                        size="md"
+                                        renderIcon={Query}
+                                        disabled={
+                                          !searchHWR.identifier ||
+                                          searchHWR.isHWRLoading ||
+                                          !searchHWR.identifierType ||
+                                          !searchHWR.regulator
+                                        }
+                                        iconDescription={t('search', 'Search')}
+                                        hasIconOnly
+                                        className={styles.formSearchButton}
+                                        onClick={handleSearch}
                                       />
-                                    </RadioButtonGroup>
-                                  )}
-                                />
-                              </ResponsiveWrapper>
+                                    </Row>
+                                  </Column>
+                                </>
+                              )}
                             </>
                           )}
+
+                          <span className={styles.formHeaderSection}>{t('demographicInfo', 'Demographic info')}</span>
+                          <ResponsiveWrapper>
+                            <Controller
+                              name="givenName"
+                              control={userFormMethods.control}
+                              render={({ field }) => (
+                                <TextInput
+                                  {...field}
+                                  id="givenName"
+                                  type="text"
+                                  labelText={t('givenName', 'Given Name')}
+                                  placeholder={t('userGivenName', 'Enter Given Name')}
+                                  invalid={!!errors.givenName}
+                                  invalidText={errors.givenName?.message}
+                                />
+                              )}
+                            />
+                          </ResponsiveWrapper>
+                          <ResponsiveWrapper>
+                            <Controller
+                              name="middleName"
+                              control={userFormMethods.control}
+                              render={({ field }) => (
+                                <TextInput
+                                  {...field}
+                                  id="middleName"
+                                  labelText={t('middleName', 'Middle Name')}
+                                  placeholder={t('middleName', 'Middle Name')}
+                                />
+                              )}
+                            />
+                          </ResponsiveWrapper>
+                          <ResponsiveWrapper>
+                            <Controller
+                              name="familyName"
+                              control={userFormMethods.control}
+                              render={({ field }) => (
+                                <TextInput
+                                  {...field}
+                                  id="familyName"
+                                  labelText={t('familyName', 'Family Name')}
+                                  placeholder={t('familyName', 'Family Name')}
+                                  invalid={!!errors.familyName}
+                                  invalidText={errors.familyName?.message}
+                                />
+                              )}
+                            />
+                          </ResponsiveWrapper>
+                          <ResponsiveWrapper>
+                            <Controller
+                              name="phoneNumber"
+                              control={userFormMethods.control}
+                              render={({ field }) => (
+                                <TextInput
+                                  {...field}
+                                  id="phoneNumber"
+                                  type="text"
+                                  disabled={isInitialValuesEmpty}
+                                  labelText={t('phoneNumber', 'Phone Number')}
+                                  placeholder={t('phoneNumber', 'Enter Phone Number')}
+                                  invalid={!!errors.phoneNumber}
+                                  invalidText={errors.phoneNumber?.message}
+                                />
+                              )}
+                            />
+                          </ResponsiveWrapper>
+                          <ResponsiveWrapper>
+                            <Controller
+                              name="email"
+                              control={userFormMethods.control}
+                              render={({ field }) => (
+                                <TextInput
+                                  {...field}
+                                  id="email"
+                                  type="email"
+                                  disabled={isInitialValuesEmpty}
+                                  labelText={t('email', 'Email')}
+                                  placeholder={t('email', 'Enter Email')}
+                                  invalid={!!errors.email}
+                                  invalidText={errors.email?.message}
+                                  className={styles.checkboxLabelSingleLine}
+                                />
+                              )}
+                            />
+                          </ResponsiveWrapper>
+                          <ResponsiveWrapper>
+                            <Controller
+                              name="gender"
+                              control={userFormMethods.control}
+                              render={({ field: { onChange, value } }) => (
+                                <RadioButtonGroup
+                                  legendText={t('sex', 'Sex')}
+                                  orientation="vertical"
+                                  name="gender"
+                                  valueSelected={value ?? ''}
+                                  key={value ?? 'empty'}
+                                  onChange={(selected) => onChange(selected)}
+                                  invalid={!!errors.gender}
+                                  invalidText={errors.gender?.message}>
+                                  <RadioButton value="M" id="genderMale" labelText={t('male', 'Male')} />
+                                  <RadioButton value="F" id="genderFemale" labelText={t('female', 'Female')} />
+                                </RadioButtonGroup>
+                              )}
+                            />
+                          </ResponsiveWrapper>
                         </ResponsiveWrapper>
                       )}
+
                       {hasProviderAccount && (
                         <ResponsiveWrapper>
                           <span className={styles.formHeaderSection}>{t('providerDetails', 'Provider details')}</span>
+
                           <ResponsiveWrapper>
                             <Controller
                               name="providerUniqueIdentifier"
@@ -748,17 +804,16 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                                   {...field}
                                   id="providerUniqueIdentifier"
                                   type="text"
+                                  disabled
                                   labelText={t('providerUniqueIdentifier', 'Provider Unique Identifier')}
-                                  placeholder={t(
-                                    'providerUniqueIdentifierPlaceholder',
-                                    'Enter Provider Unqiue Identifier',
-                                  )}
+                                  placeholder={t('providerUniqueIdentifierPlaceholder', 'e.g. PUID-0002011-6')}
                                   invalid={!!errors.providerUniqueIdentifier}
                                   invalidText={errors.providerUniqueIdentifier?.message}
                                 />
                               )}
                             />
                           </ResponsiveWrapper>
+
                           <ResponsiveWrapper>
                             <Controller
                               name="nationalId"
@@ -769,8 +824,8 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                                   id="nationalId"
                                   disabled={isInitialValuesEmpty}
                                   type="text"
-                                  labelText={t('nationalID', 'National id')}
-                                  placeholder={t('nationalID', 'National id')}
+                                  labelText={t('nationalID', 'National ID')}
+                                  placeholder={t('nationalID', 'National ID')}
                                   invalid={!!errors.nationalId}
                                   invalidText={errors.nationalId?.message}
                                   className={styles.checkboxLabelSingleLine}
@@ -778,6 +833,7 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                               )}
                             />
                           </ResponsiveWrapper>
+
                           <ResponsiveWrapper>
                             <Controller
                               name="passportNumber"
@@ -790,13 +846,14 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                                   type="text"
                                   labelText={t('passportNumber', 'Passport number')}
                                   placeholder={t('passportNumber', 'Passport number')}
-                                  invalid={!!errors.nationalId}
-                                  invalidText={errors.nationalId?.message}
+                                  invalid={!!errors.passportNumber}
+                                  invalidText={errors.passportNumber?.message}
                                   className={styles.checkboxLabelSingleLine}
                                 />
                               )}
                             />
                           </ResponsiveWrapper>
+
                           <ResponsiveWrapper>
                             <Controller
                               name="providerLicense"
@@ -806,31 +863,33 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                                   {...field}
                                   id="providerLicense"
                                   type="text"
-                                  disabled={isInitialValuesEmpty}
+                                  disabled
                                   labelText={t('providerLicense', 'License Number')}
-                                  placeholder={t('providerLicense', 'License Number')}
+                                  placeholder={t('providerLicensePlaceholder', 'e.g. GP/2026/638333')}
                                   className={styles.checkboxLabelSingleLine}
                                 />
                               )}
                             />
                           </ResponsiveWrapper>
+
                           <ResponsiveWrapper>
                             <Controller
-                              name="registrationNumber"
+                              name="licenseBody"
                               control={userFormMethods.control}
                               render={({ field }) => (
                                 <TextInput
                                   {...field}
-                                  id="registrationNumber"
+                                  id="licenseBody"
                                   type="text"
-                                  disabled={isInitialValuesEmpty}
-                                  labelText={t('registrationNumber', 'Registration Number')}
-                                  placeholder={t('registrationNumber', 'Registration Number')}
+                                  disabled
+                                  labelText={t('licenseBody', 'License body')}
+                                  placeholder={t('licenseBodyPlaceholder', 'e.g. KMPDC')}
                                   className={styles.checkboxLabelSingleLine}
                                 />
                               )}
                             />
                           </ResponsiveWrapper>
+
                           <ResponsiveWrapper>
                             <Controller
                               name="qualification"
@@ -839,12 +898,66 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                                 <TextInput
                                   {...field}
                                   id="qualification"
-                                  type="qualification"
+                                  type="text"
                                   disabled
                                   labelText={t('qualification', 'Qualification')}
-                                  placeholder={t('qualification', 'Qualification')}
+                                  placeholder={t('qualificationPlaceholder', 'e.g. MBChB(UON)2009')}
                                   invalid={!!errors.qualification}
                                   invalidText={errors.qualification?.message}
+                                  className={styles.checkboxLabelSingleLine}
+                                />
+                              )}
+                            />
+                          </ResponsiveWrapper>
+
+                          <ResponsiveWrapper>
+                            <Controller
+                              name="specialty"
+                              control={userFormMethods.control}
+                              render={({ field }) => (
+                                <TextInput
+                                  {...field}
+                                  id="specialty"
+                                  type="text"
+                                  disabled
+                                  labelText={t('specialty', 'Specialty')}
+                                  placeholder={t('specialtyPlaceholder', 'e.g. MEDICAL DOCTOR')}
+                                  className={styles.checkboxLabelSingleLine}
+                                />
+                              )}
+                            />
+                          </ResponsiveWrapper>
+
+                          <ResponsiveWrapper>
+                            <Controller
+                              name="providerCadre"
+                              control={userFormMethods.control}
+                              render={({ field }) => (
+                                <TextInput
+                                  {...field}
+                                  id="providerCadre"
+                                  type="text"
+                                  disabled
+                                  labelText={t('providerCadre', 'Provider cadre')}
+                                  placeholder={t('providerCadrePlaceholder', 'e.g. MEDICINE')}
+                                  className={styles.checkboxLabelSingleLine}
+                                />
+                              )}
+                            />
+                          </ResponsiveWrapper>
+
+                          <ResponsiveWrapper>
+                            <Controller
+                              name="practiceType"
+                              control={userFormMethods.control}
+                              render={({ field }) => (
+                                <TextInput
+                                  {...field}
+                                  id="practiceType"
+                                  type="text"
+                                  disabled
+                                  labelText={t('practiceType', 'Practice type')}
+                                  placeholder={t('practiceTypePlaceholder', 'e.g. Clinical Practice')}
                                   className={styles.checkboxLabelSingleLine}
                                 />
                               )}
@@ -879,69 +992,67 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                               )}
                             />
                           </ResponsiveWrapper>
+
                           {loadingProvider || providerError ? (
                             <InlineLoading status="active" iconDescription="Loading" description="Loading data..." />
                           ) : provider.length > 0 ? (
-                            <>
-                              <ResponsiveWrapper>
-                                <Controller
-                                  name="systemId"
-                                  control={userFormMethods.control}
-                                  render={({ field }) => (
-                                    <TextInput
-                                      {...field}
-                                      id="systemeId"
-                                      type="text"
-                                      labelText={t('providerId', 'Provider Id')}
-                                      placeholder={t('providerId', 'Provider Id')}
-                                      invalid={!!errors.systemId}
-                                      invalidText={errors.systemId?.message}
-                                      className={styles.checkboxLabelSingleLine}
-                                    />
-                                  )}
-                                />
-                                <Controller
-                                  name="isEditProvider"
-                                  control={userFormMethods.control}
-                                  render={({ field }) => (
-                                    <CheckboxGroup
-                                      legendText={t('editProvider', 'Edit Provider Details')}
-                                      className={styles.multilineCheckboxLabel}>
-                                      <Checkbox
-                                        className={styles.checkboxLabelSingleLine}
-                                        id="isEditProvider"
-                                        labelText={t('EditProviderDetails', 'Edit provider details?')}
-                                        checked={field.value || false}
-                                        onChange={(e) => field.onChange(e.target.checked)}
-                                      />
-                                    </CheckboxGroup>
-                                  )}
-                                />
-                              </ResponsiveWrapper>
-                            </>
-                          ) : (
-                            <>
+                            <ResponsiveWrapper>
                               <Controller
-                                name="providerIdentifiers"
+                                name="systemId"
+                                control={userFormMethods.control}
+                                render={({ field }) => (
+                                  <TextInput
+                                    {...field}
+                                    id="systemeId"
+                                    type="text"
+                                    labelText={t('providerId', 'Provider Id')}
+                                    placeholder={t('providerId', 'Provider Id')}
+                                    invalid={!!errors.systemId}
+                                    invalidText={errors.systemId?.message}
+                                    className={styles.checkboxLabelSingleLine}
+                                  />
+                                )}
+                              />
+                              <Controller
+                                name="isEditProvider"
                                 control={userFormMethods.control}
                                 render={({ field }) => (
                                   <CheckboxGroup
-                                    legendText={t('providerIdentifiers', 'Provider Details')}
+                                    legendText={t('editProvider', 'Edit Provider Details')}
                                     className={styles.multilineCheckboxLabel}>
                                     <Checkbox
                                       className={styles.checkboxLabelSingleLine}
-                                      id="providerIdentifiersa"
-                                      labelText={t('providerIdentifiers', 'Create a Provider account for this user')}
+                                      id="isEditProvider"
+                                      labelText={t('EditProviderDetails', 'Edit provider details?')}
                                       checked={field.value || false}
                                       onChange={(e) => field.onChange(e.target.checked)}
                                     />
                                   </CheckboxGroup>
                                 )}
                               />
-                            </>
+                            </ResponsiveWrapper>
+                          ) : (
+                            <Controller
+                              name="providerIdentifiers"
+                              control={userFormMethods.control}
+                              render={({ field }) => (
+                                <CheckboxGroup
+                                  legendText={t('providerIdentifiers', 'Provider Details')}
+                                  className={styles.multilineCheckboxLabel}>
+                                  <Checkbox
+                                    className={styles.checkboxLabelSingleLine}
+                                    id="providerIdentifiersa"
+                                    labelText={t('providerIdentifiers', 'Create a Provider account for this user')}
+                                    checked={field.value || false}
+                                    onChange={(e) => field.onChange(e.target.checked)}
+                                  />
+                                </CheckboxGroup>
+                              )}
+                            />
                           )}
                         </ResponsiveWrapper>
                       )}
+
                       {hasLoginInfo && (
                         <ResponsiveWrapper>
                           <span className={styles.formHeaderSection}>{t('loginInfo', 'Login Info')}</span>
@@ -960,7 +1071,6 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                               )}
                             />
                           </ResponsiveWrapper>
-
                           <ResponsiveWrapper>
                             <Controller
                               name="password"
@@ -1056,7 +1166,6 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                                       control={userFormMethods.control}
                                       render={({ field }) => {
                                         const selectedRoles = field.value || [];
-
                                         return (
                                           <>
                                             {roles
@@ -1068,7 +1177,6 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                                                     r.description === role.description &&
                                                     r.uuid === role.uuid,
                                                 );
-
                                                 return (
                                                   <label
                                                     key={role.display}
@@ -1092,7 +1200,6 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                                                           : selectedRoles.filter(
                                                               (selectedRole) => selectedRole.display !== role.display,
                                                             );
-
                                                         field.onChange(updatedValue);
                                                       }}
                                                     />
@@ -1117,7 +1224,6 @@ const ManageUserWorkspace: React.FC<Workspace2DefinitionProps<ManageUserWorkspac
                     <Button kind="secondary" onClick={handleBackClick} className={styles.btn}>
                       {t(hasDemographicInfo ? 'cancel' : 'back', hasDemographicInfo ? 'Cancel' : 'Back')}
                     </Button>
-
                     <Button
                       kind="primary"
                       type={getSubmitButtonType()}

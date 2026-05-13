@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { optional, z } from 'zod';
+import { z } from 'zod';
 
 const UserManagementFormSchema = (existingUsernames: Array<string>, isEdit?: boolean) => {
   const { t } = useTranslation();
@@ -13,9 +13,10 @@ const UserManagementFormSchema = (existingUsernames: Array<string>, isEdit?: boo
         message: t('genderRequired', 'Gender is required'),
       }),
     }),
+
     phoneNumber: z.string().optional(),
     email: z.string().optional(),
-    providerIdentifiers: z.boolean().optional(),
+
     username: z
       .string()
       .nonempty(t('usernameRequired', 'Username is required'))
@@ -25,25 +26,33 @@ const UserManagementFormSchema = (existingUsernames: Array<string>, isEdit?: boo
     password: z.string().optional(),
     confirmPassword: z.string().optional(),
     forcePasswordChange: z.boolean().optional(),
+
     roles: z
       .array(
         z.object({
-          uuid: z.string().min(1, 'UUI is required'),
+          uuid: z.string().min(1, 'UUID is required'),
           display: z.string().min(1, 'Role name is required'),
           description: z.string().nullable().optional(),
         }),
       )
       .optional(),
     primaryRole: z.string().optional(),
+
+    providerIdentifiers: z.boolean().optional(),
+    isEditProvider: z.boolean().optional(),
     systemId: z.string().optional(),
-    providerLicense: z.string().optional(),
-    licenseExpiryDate: z.date().optional(),
-    registrationNumber: z.string().optional(),
-    qualification: z.string().optional(),
+
     nationalId: z.string().optional(),
     passportNumber: z.string().optional(),
-    isEditProvider: z.boolean().optional(),
+
     providerUniqueIdentifier: z.string().optional(),
+    providerLicense: z.string().optional(),
+    licenseExpiryDate: z.date().optional(),
+    licenseBody: z.string().optional(),
+    qualification: z.string().optional(),
+    specialty: z.string().optional(),
+    providerCadre: z.string().optional(),
+    practiceType: z.string().optional(),
   });
 
   return { userManagementFormSchema };

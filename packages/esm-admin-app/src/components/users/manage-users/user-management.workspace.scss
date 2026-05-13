@@ -2,39 +2,143 @@
 @use '@carbon/layout';
 @use '@carbon/type';
 
+.leftContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: colors.$gray-10;
+}
+
+.leftLayout {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  min-height: 0;
+}
+
+.sections {
+  flex: 1;
+  padding: layout.$spacing-06 layout.$spacing-07;
+  overflow-y: auto;
+  background-color: colors.$white;
+}
+
+.progressIndicator {
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  padding: layout.$spacing-07 layout.$spacing-05;
+  background-color: colors.$gray-10;
+  border-right: 1px solid colors.$gray-20;
+  flex-shrink: 0;
+}
+
 .form {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
+  min-height: 0;
 }
 
 .formContainer {
-  margin-right: layout.$spacing-05;
-  margin-left: 0;
+  flex: 1;
+  margin: 0 0 layout.$spacing-05 0;
+  overflow-y: auto;
+}
+
+.formStackControl {
+  display: flex;
+  flex-direction: column;
+  row-gap: layout.$spacing-06;
+}
+
+.formHeaderSection {
+  @include type.type-style('heading-03');
+  display: block;
+  position: relative;
+  padding-bottom: layout.$spacing-04;
   margin-top: layout.$spacing-05;
   margin-bottom: layout.$spacing-05;
+  color: colors.$gray-100;
+  border-bottom: 1px solid colors.$gray-20;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: layout.$spacing-09;
+    height: 3px;
+    background-color: var(--brand-03, #{colors.$blue-60});
+    border-radius: 2px;
+  }
+
+  & > span {
+    @include type.type-style('body-01');
+    color: colors.$gray-70;
+    font-weight: 400;
+  }
+}
+
+.formLoading {
+  padding: layout.$spacing-05;
+  border-radius: 4px;
+  margin: layout.$spacing-05 0;
+}
+
+.formIdentifierType {
+  display: block;
+  color: colors.$gray-70;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 400;
+  margin-bottom: layout.$spacing-03;
+  letter-spacing: 0.32px;
+}
+
+.formRow {
+  display: flex;
+  align-items: flex-end;
+  gap: layout.$spacing-03;
+  width: 100%;
+}
+
+.formSearch {
+  flex: 1;
+}
+
+.formSearchButton {
+  flex-shrink: 0;
+  height: 2.5rem;
+  align-self: flex-end;
+}
+
+.btn {
+  min-width: 50%;
 }
 
 .tablet {
   padding: layout.$spacing-06 layout.$spacing-05;
-  background-color: colors.$white;
+  background-color: colors.$gray-10;
+  border-top: 1px solid colors.$gray-20;
 }
 
 .desktop {
-  padding: 0;
+  padding: layout.$spacing-05 layout.$spacing-06;
+  background-color: colors.$gray-10;
+  border-top: 1px solid colors.$gray-20;
   width: 100%;
-}
-
-.formStackControl {
-  row-gap: layout.$layout-01;
+  display: flex;
+  gap: layout.$spacing-04;
 }
 
 .checkBoxColumn {
   background-color: colors.$gray-10;
-  margin: layout.$spacing-05;
-  padding: layout.$spacing-03;
-  border-radius: layout.$spacing-05;
+  margin: layout.$spacing-04 0;
+  padding: layout.$spacing-05;
+  border-radius: 6px;
+  border: 1px solid colors.$gray-20;
 }
 
 .checkboxLabelSingleLine {
@@ -42,73 +146,120 @@
   overflow: hidden;
   text-overflow: ellipsis;
   display: inline-block;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .checkboxGroupGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   row-gap: layout.$spacing-03;
-  column-gap: layout.$spacing-02;
-  font-size: 14px;
+  column-gap: layout.$spacing-04;
+  font-size: 0.875rem;
+  margin-top: layout.$spacing-03;
 
   :global(.cds--fieldset-legend) {
-    font-size: 14px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: colors.$gray-90;
+    margin-bottom: layout.$spacing-03;
   }
 }
 
-.CheckboxGroup .bx--fieldset-legend {
-  font-size: 14px;
-}
+.checkboxLabel,
+.checkboxLabelSelected {
+  border-radius: 4px;
+  padding: layout.$spacing-03 layout.$spacing-04;
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  border: 1px solid transparent;
 
-.btn {
-  min-width: 50%;
+  &:hover {
+    background-color: colors.$gray-10;
+  }
+
+  input[type='checkbox'] {
+    margin-right: layout.$spacing-02;
+    cursor: pointer;
+  }
 }
 
 .checkboxLabelSelected {
   background-color: colors.$green-10;
-  border-radius: layout.$spacing-05;
-  padding: layout.$spacing-02;
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  transition: background-color 0.3s ease;
+  border-color: colors.$green-30;
+
+  &:hover {
+    background-color: colors.$green-20;
+  }
 }
 
-.checkboxLabel {
-  background-color: transparent;
-  border-radius: layout.$spacing-05;
-  padding: layout.$spacing-02;
-  display: flex;
-  align-items: center;
-  transition: background-color 0.3s ease;
-  font-size: 14px;
+.multilineCheckboxLabel {
+  margin-bottom: layout.$spacing-04;
+
+  :global(.cds--checkbox-label) {
+    display: block;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.4;
+  }
 }
 
-.leftContainer {
-  display: flex;
-  flex-direction: column;
-  border-radius: layout.$spacing-05;
-  overflow: hidden;
-}
-
-.leftLayout {
-  display: flex;
-  flex-direction: row;
-  height: 100%;
-}
-
-.progressIndicator {
+.roleStockFields {
   display: flex;
   flex-direction: column;
-  min-width: 200px;
-  padding-top: layout.$spacing-03;
-  border-right: 1px solid colors.$gray-30;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+  background-color: colors.$gray-10;
+  border: 1px solid colors.$gray-20;
+  border-radius: 6px;
 }
 
-.sections {
-  flex: 1;
+.formDatePicker {
+  width: 100%;
+
+  :global(.cds--date-picker) {
+    width: 100%;
+  }
+
+  :global(.cds--date-picker-container) {
+    width: 100%;
+  }
+
+  :global(.cds--date-picker__input) {
+    width: 100%;
+  }
+}
+
+.contactValue {
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+  color: colors.$gray-90;
+}
+
+.adminCard {
+  background-color: colors.$gray-10;
+  border: 1px solid colors.$gray-20;
+  border-radius: 6px;
   padding: layout.$spacing-04;
+  margin-top: layout.$spacing-03;
+}
+
+.adminName {
+  margin: 0 0 layout.$spacing-02 0;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: colors.$gray-100;
+}
+
+.adminDetail {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: colors.$gray-70;
+  line-height: 1.4;
 }
 
 @media (max-width: 768px) {
@@ -119,63 +270,50 @@
   .progressIndicator {
     flex-direction: row;
     border-right: none;
-    border-bottom: 1px solid colors.$gray-30;
+    border-bottom: 1px solid colors.$gray-20;
     min-width: unset;
+    width: 100%;
     justify-content: space-between;
-    padding: layout.$spacing-02;
+    padding: layout.$spacing-04;
+    overflow-x: auto;
   }
 
   .sections {
+    padding: layout.$spacing-04;
+  }
+
+  .checkboxGroupGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .formRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .formSearchButton {
+    width: 100%;
+    align-self: stretch;
+  }
+
+  .desktop,
+  .tablet {
+    flex-direction: column;
+    gap: layout.$spacing-03;
+  }
+
+  .btn {
+    width: 100%;
+    min-width: unset;
+  }
+}
+
+@media (max-width: 480px) {
+  .sections {
     padding: layout.$spacing-03;
   }
-}
 
-.multilineCheckboxLabel .cds--checkbox-label {
-  display: block;
-  white-space: normal;
-  word-wrap: break-word;
-  line-height: 1.4;
-}
-
-.formHeaderSection {
-  @include type.type-style('heading-02');
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  row-gap: layout.$spacing-06;
-  position: relative;
-
-  &::after {
-    content: '';
-    display: block;
-    width: layout.$spacing-07;
-    border-bottom: 0.375rem solid var(--brand-03);
-    position: absolute;
-    bottom: -0.75rem;
-    left: 0;
+  .formHeaderSection {
+    @include type.type-style('heading-02');
   }
-
-  & > span {
-    @include type.type-style('body-01');
-  }
-}
-.formIdentifierType {
-  color: colors.$gray-70;
-  display: inline-block;
-  font-size: layout.$spacing-04;
-  line-height: layout.$spacing-05;
-  line-height: layout.$spacing-05;
-  margin-bottom: layout.$spacing-03;
-  vertical-align: baseline;
-}
-.formRow {
-  display: flex;
-  align-items: center;
-}
-.roleStockFields {
-  display: flex;
-  flex-direction: column;
-  gap: layout.$spacing-05;
-  outline: 1px solid colors.$gray-10;
-  padding: layout.$spacing-05;
 }
