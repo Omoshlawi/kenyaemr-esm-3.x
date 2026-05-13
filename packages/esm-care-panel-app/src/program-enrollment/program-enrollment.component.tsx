@@ -22,6 +22,7 @@ import orderBy from 'lodash/orderBy';
 import { mutate } from 'swr';
 import { useHeiOutcome } from '../hooks/useHeiOutcome';
 import { usePatientChartStore } from '@openmrs/esm-patient-common-lib/src';
+import { TFunction } from 'i18next';
 
 export interface ProgramEnrollmentProps {
   patientUuid: string;
@@ -29,54 +30,57 @@ export interface ProgramEnrollmentProps {
   enrollments: Array<any>;
   formEntrySub: any;
 }
-const shareObjProperty = { dateEnrolled: 'Enrolled on', dateCompleted: 'Date Completed' };
-const programDetailsMap = {
+const shareObjProperty = (t: TFunction) => ({
+  dateEnrolled: t('enrolledOn', 'Enrolled on'),
+  dateCompleted: t('dateCompleted', 'Date Completed'),
+});
+const programDetailsMap = (t: TFunction) => ({
   HIV: {
-    dateEnrolled: 'Enrolled on',
-    whoStage: 'WHO Stage',
-    entryPoint: 'Entry Point',
-    reason: 'Reason for discontinuation',
+    dateEnrolled: t('enrolledOn', 'Enrolled on'),
+    whoStage: t('whoStage', 'WHO Stage'),
+    entryPoint: t('entryPoint', 'Entry Point'),
+    reason: t('reasonOfDiscontinuation', 'Reason for discontinuation'),
   },
   TB: {
-    ...shareObjProperty,
-    startDate: 'Date started regimen',
-    regimenShortName: 'Regimen',
+    ...shareObjProperty(t),
+    startDate: t('dateStartedRegimen', 'Date started regimen'),
+    regimenShortName: t('regimen', 'Regimen'),
   },
   TPT: {
-    ...shareObjProperty,
-    tptDrugName: 'Regimen',
-    tptDrugStartDate: 'Date started regimen',
-    tptIndication: 'Indication for TPT',
+    ...shareObjProperty(t),
+    tptDrugName: t('regimen', 'Regimen'),
+    tptDrugStartDate: t('dateStartedRegimen', 'Date started regimen'),
+    tptIndication: t('indicationForTpt', 'Indication for TPT'),
   },
   'MCH - Mother Services': {
-    ...shareObjProperty,
-    lmp: 'LMP',
-    eddLmp: 'EDD',
-    gravida: 'Gravida',
-    parity: 'Parity',
-    gestationInWeeks: 'Gestation in weeks',
+    ...shareObjProperty(t),
+    lmp: t('lmp', 'LMP'),
+    eddLmp: t('edd', 'EDD'),
+    gravida: t('gravida', 'Gravida'),
+    parity: t('parity', 'Parity'),
+    gestationInWeeks: t('gestationInWeeks', 'Gestation in weeks'),
   },
-  'MCH - Child Services': { ...shareObjProperty, entryPoint: 'Entry Point' },
+  'MCH - Child Services': { ...shareObjProperty(t), entryPoint: t('entryPoint', 'Entry Point') },
   mchMother: {},
   mchChild: {},
   VMMC: {
-    ...shareObjProperty,
+    ...shareObjProperty(t),
   },
-};
+});
 
 const ProgramEnrollment: React.FC<ProgramEnrollmentProps> = ({ enrollments = [], programName, patientUuid }) => {
   const { t } = useTranslation();
   const { mutateVisitContext, visitContext, patient: fhirPatient } = usePatientChartStore(patientUuid);
   const { currentVisit } = useVisit(patientUuid);
-  const { heiOutcome } = useHeiOutcome(currentVisit?.patient?.uuid);
+  const { heiOutcome } = useHeiOutcome(currentVisit?.patient?.uuid as string);
   const orderedEnrollments = orderBy(enrollments, 'dateEnrolled', 'desc');
   const headers: Array<DataTableHeader> = useMemo(
     () =>
-      Object.entries(programDetailsMap[programName] ?? { ...shareObjProperty }).map(([key, value]) => ({
+      Object.entries(programDetailsMap(t)[programName] ?? { ...shareObjProperty(t) }).map(([key, value]) => ({
         key,
         header: value as ReactNode,
       })),
-    [programName],
+    [programName, t],
   );
   const rows = useMemo(
     () =>
