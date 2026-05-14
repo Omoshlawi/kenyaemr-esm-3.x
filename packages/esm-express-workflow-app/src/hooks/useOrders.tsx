@@ -8,7 +8,7 @@ export const careSettingUuid = '6f0c9a92-6f24-11e3-af88-005056821db0';
 const patientChartAppModuleName = '@openmrs/esm-patient-chart-app';
 
 export const drugCustomRepresentation =
-  'custom:(uuid,dosingType,orderNumber,accessionNumber,' +
+  'custom:(uuid,dosingType,orderNumber,accessionNumber,orderReason:(uuid,display)' +
   'patient:ref,action,careSetting:ref,previousOrder:ref,dateActivated,scheduledDate,dateStopped,autoExpireDate,' +
   'orderType:ref,encounter:ref,orderer:(uuid,display,person:(display)),orderReason,orderReasonNonCoded,orderType,urgency,instructions,' +
   'commentToFulfiller,drug:(uuid,display,strength,dosageForm:(display,uuid),concept),dose,doseUnits:ref,' +
@@ -16,7 +16,7 @@ export const drugCustomRepresentation =
   'duration,durationUnits:ref,route:ref,brandName,dispenseAsWritten)';
 
 const orderCustomRepresentation =
-  'custom:(uuid,orderNumber,patient,concept:full,action,careSetting,dateActivated,encounter,orderer,orderType,urgency,fulfillerStatus)';
+  'custom:(uuid,orderNumber,patient,concept:full,action,careSetting,dateActivated,encounter,orderer,orderType,urgency,fulfillerStatus,orderReason:(uuid,display))';
 
 export function usePatientOrders(
   patientUuid: string,
