@@ -4,7 +4,6 @@ import {
   ModalBody,
   ModalFooter,
   Button,
-  InlineLoading,
   StructuredListWrapper,
   StructuredListHead,
   StructuredListRow,
@@ -31,18 +30,36 @@ const PromptPaymentModal: React.FC = () => {
   const { format: formatCurrency } = useCurrencyFormatting();
   const patientUuid = getPatientUuidFromUrl();
 
-  const { shouldShowBillingPrompt, isLoading, bills } = useBillingPrompt(patientUuid, 'patient-chart');
-  const [showModal, setShowModal] = useState({ loadingModal: true, billingModal: true });
+  const { shouldShowBillingPrompt, isLoading, bills, isInsuranceVisit } = useBillingPrompt(
+    patientUuid,
+    'patient-chart',
+  );
+  const [showModal, setShowModal] = useState({ billingModal: true });
   const { enforceBillPayment } = useConfig<BillingConfig>();
+
   const closeButtonText = enforceBillPayment
     ? t('navigateBack', 'Navigate back')
     : t('proceedToCare', 'Proceed to care');
 
   const handleCloseModal = () => {
-    enforceBillPayment
-      ? navigate({ to: `\${openmrsSpaBase}/home` })
-      : setShowModal((prevState) => ({ ...prevState, billingModal: false }));
+    if (enforceBillPayment) {
+      navigate({ to: `\${openmrsSpaBase}/home` });
+    } else {
+      setShowModal((prevState) => ({ ...prevState, billingModal: false }));
+    }
   };
+
+  if (isLoading) {
+    return null;
+  }
+
+  if (isInsuranceVisit) {
+    return null;
+  }
+
+  if (!shouldShowBillingPrompt) {
+    return null;
+  }
 
   const lineItems = bills
     .filter((bill) => bill.status !== 'PAID')
@@ -51,61 +68,48 @@ const PromptPaymentModal: React.FC = () => {
       (lineItem) => lineItem?.paymentStatus !== 'EXEMPTED' && lineItem?.paymentStatus !== 'PAID' && !lineItem?.voided,
     );
 
-  if (!shouldShowBillingPrompt) {
+  if (lineItems.length === 0) {
     return null;
   }
 
   return (
     <ComposedModal preventCloseOnClickOutside open={showModal.billingModal}>
-      {isLoading ? (
-        <ModalBody>
-          <Heading className={styles.modalTitle}>{t('billingStatus', 'Billing status')}</Heading>
-          <InlineLoading
-            status="active"
-            iconDescription="Loading"
-            description={t('verifyingPatientBills', 'Verifying patient bills')}
-          />
-        </ModalBody>
-      ) : (
-        <ModalBody>
-          <Heading className={styles.modalTitle}>{t('patientBillingAlert', 'Patient Billing Alert')}</Heading>
-          <p className={styles.bodyShort02}>
-            {t('billPaymentRequiredMessage', 'The current patient has pending bill. Advice patient to settle bill.')}
-          </p>
-          <StructuredListWrapper isCondensed>
-            <StructuredListHead>
-              <StructuredListRow head>
-                <StructuredListCell head>{t('item', 'Item')}</StructuredListCell>
-                <StructuredListCell head>{t('quantity', 'Quantity')}</StructuredListCell>
-                <StructuredListCell head>{t('unitPrice', 'Unit price')}</StructuredListCell>
-                <StructuredListCell head>{t('status', 'Status')}</StructuredListCell>
-                <StructuredListCell head>{t('total', 'Total')}</StructuredListCell>
+      <ModalBody>
+        <Heading className={styles.modalTitle}>{t('patientBillingAlert', 'Patient Billing Alert')}</Heading>
+        <p className={styles.bodyShort02}>
+          {t('billPaymentRequiredMessage', 'The current patient has pending bill. Advice patient to settle bill.')}
+        </p>
+        <StructuredListWrapper isCondensed>
+          <StructuredListHead>
+            <StructuredListRow head>
+              <StructuredListCell head>{t('item', 'Item')}</StructuredListCell>
+              <StructuredListCell head>{t('quantity', 'Quantity')}</StructuredListCell>
+              <StructuredListCell head>{t('unitPrice', 'Unit price')}</StructuredListCell>
+              <StructuredListCell head>{t('status', 'Status')}</StructuredListCell>
+              <StructuredListCell head>{t('total', 'Total')}</StructuredListCell>
+            </StructuredListRow>
+          </StructuredListHead>
+          <StructuredListBody>
+            {lineItems.map((lineItem) => (
+              <StructuredListRow key={lineItem.uuid}>
+                <StructuredListCell>{extractString(lineItem.billableService || lineItem.item)}</StructuredListCell>
+                <StructuredListCell>{lineItem.quantity}</StructuredListCell>
+                <StructuredListCell>{formatCurrency(lineItem.price)}</StructuredListCell>
+                <StructuredListCell>{t(lineItem.paymentStatus)}</StructuredListCell>
+                <StructuredListCell>{formatCurrency(lineItem.quantity * lineItem.price)}</StructuredListCell>
               </StructuredListRow>
-            </StructuredListHead>
-            <StructuredListBody>
-              {lineItems.map((lineItem) => {
-                return (
-                  <StructuredListRow key={lineItem.uuid}>
-                    <StructuredListCell>{extractString(lineItem.billableService || lineItem.item)}</StructuredListCell>
-                    <StructuredListCell>{lineItem.quantity}</StructuredListCell>
-                    <StructuredListCell>{formatCurrency(lineItem.price)}</StructuredListCell>
-                    <StructuredListCell>{t(lineItem.paymentStatus)}</StructuredListCell>
-                    <StructuredListCell>{formatCurrency(lineItem.quantity * lineItem.price)}</StructuredListCell>
-                  </StructuredListRow>
-                );
-              })}
-            </StructuredListBody>
-          </StructuredListWrapper>
-          {!enforceBillPayment && (
-            <p className={styles.providerMessage}>
-              {t(
-                'providerMessage',
-                'By clicking Proceed to care, you acknowledge that you have advised the patient to settle the bill.',
-              )}
-            </p>
-          )}
-        </ModalBody>
-      )}
+            ))}
+          </StructuredListBody>
+        </StructuredListWrapper>
+        {!enforceBillPayment && (
+          <p className={styles.providerMessage}>
+            {t(
+              'providerMessage',
+              'By clicking Proceed to care, you acknowledge that you have advised the patient to settle the bill.',
+            )}
+          </p>
+        )}
+      </ModalBody>
       <ModalFooter>
         <Button kind="secondary" onClick={() => navigate({ to: `\${openmrsSpaBase}/home` })}>
           {t('cancel', 'Cancel')}
