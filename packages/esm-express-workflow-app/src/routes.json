@@ -354,11 +354,26 @@
       "name": "custom-start-visit-workspace-form",
       "component": "visitFormWorkspace",
       "window": "ewf-start-visit"
+    },
+    {
+      "name": "anaesthetic-record-workspace-form",
+      "component": "anaestheticFormWorkspace",
+      "window": "ewf-anaesthetic-record"
+    },
+    {
+      "name": "interoperative-drug-given-workspace-form",
+      "component": "interoperativeDrugGivenFormWorkspace",
+      "window": "ewf-anaesthetic-record"
     }
   ],
   "workspaceWindows2": [
     {
       "name": "ewf-start-visit",
+      "group": "ewf-patient-chart",
+      "width": "wider"
+    },
+    {
+      "name": "ewf-anaesthetic-record",
       "group": "ewf-patient-chart",
       "width": "wider"
     }

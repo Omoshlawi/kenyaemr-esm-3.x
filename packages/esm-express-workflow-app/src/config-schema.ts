@@ -141,6 +141,23 @@ export const configSchema = {
     _description: 'Concept class UUID for procedures orders',
     _default: '8d490bf4-c2cc-11de-8d13-0010c6dffd0f',
   },
+  maintenanceAgentOptions: {
+    _type: Type.Array,
+    _elements: {
+      _type: Type.Object,
+      properties: {
+        value: { _type: Type.ConceptUuid },
+        label: { _type: Type.String },
+      },
+    },
+    _description:
+      'Configurable list of maintenance-of-anaesthesia agents shown in the interoperative drug form (e.g. Halothane, Isoflurane). Override per deployment.',
+    _default: [
+      { value: '77343AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Halothane' },
+      { value: '83872AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Evoflurane' },
+      { value: '78258AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Isoflurane' },
+    ],
+  },
   proceduresOrderTypeUuid: {
     _type: Type.String,
     _description: 'Procedure Order type UUID',
@@ -241,6 +258,149 @@ export const configSchema = {
     _description: 'Whether the workflow is DHA Workflow',
     _default: true,
   },
+
+  anaesthetic: {
+    _type: Type.Object,
+    _description: 'Anaesthetic module configuration',
+    _default: {
+      conceptMappings: {
+        'fetal-heart-rate': ['1440AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'],
+        'blood-pressure': ['5085AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', '5086AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'],
+        'maternal-pulse': ['5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'],
+        temperature: ['5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'],
+        'cervical-dilation': ['162261AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'],
+        'descent-of-head': ['1810AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'],
+        'uterine-contractions': ['163750AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'],
+        'urine-analysis': [
+          '161442AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          '887AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          '165438AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        ],
+        'drugs-fluids': ['1282AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', '161911AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'],
+        'progress-events': [
+          '162879AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          '160632AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          '1440AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          '162261AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          '163750AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        ],
+      },
+      stationDisplayMapping: {
+        '160769AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '0/5',
+        '162135AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '1/5',
+        '166065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '2/5',
+        '166066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '3/5',
+        '166067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '4/5',
+        '163734AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '5/5',
+      },
+      stationValueMapping: {
+        '160769AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 0,
+        '162135AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 1,
+        '166065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 2,
+        '166066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 3,
+        '166067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 4,
+        '163734AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 5,
+      },
+      encounterPatterns: [
+        'mch-partograph',
+        'partography',
+        'fetal-monitoring',
+        'maternal-monitoring',
+        'obstetric-vitals',
+        'labor-monitoring',
+        'labour-monitoring',
+      ],
+      fallbackEncounterMapping: {
+        'fetal-heart-rate': ['mch-mother-consultation', 'vitals', 'obstetric', 'maternal', 'consultation', 'clinical'],
+        'cervical-dilation': ['mch-mother-consultation', 'obstetric', 'maternal', 'consultation', 'clinical'],
+        'maternal-pulse': ['vitals', 'maternal', 'consultation', 'clinical'],
+        'blood-pressure': ['vitals', 'maternal', 'consultation', 'clinical'],
+        temperature: ['vitals', 'consultation', 'clinical'],
+        'urine-analysis': ['vitals', 'laboratory', 'consultation', 'clinical'],
+        'drugs-fluids': ['medication', 'treatment', 'consultation', 'clinical'],
+        'progress-events': ['obstetric', 'maternal', 'consultation', 'clinical'],
+      },
+      defaultFallbackSequence: ['consultation', 'clinical'],
+      retryFallbackTypes: ['vitals', 'consultation', 'clinical'],
+      defaultEncounterProviderRole: 'a0b03050-c99b-11e0-9572-0800200c9a66',
+      defaultLocationUuid: '1',
+      storage: {
+        maxLocalEntries: 100,
+        storageKeyPrefix: 'partography_',
+        cacheKeyPrefix: 'partography_encounters_',
+      },
+      timeConfig: {
+        defaultEncounterOffset: 300000,
+        retryEncounterOffset: 3600000,
+        cacheInvalidationDelay: 1000,
+      },
+      progressEventConceptNames: {
+        '1440AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
+          name: 'Fetal Heart Rate',
+          unit: 'BPM',
+        },
+        '162261AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
+          name: 'Cervical Dilation',
+          unit: 'cm',
+        },
+        '163750AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
+          name: 'Uterine Contractions',
+          unit: 'per 10min',
+        },
+      },
+
+      uuids: {
+        timeSlot: 'a1b2c3d4-1111-2222-3333-444455556666',
+        mchPartographyEncounterUuid: 'd14dde5b-95dc-40a1-8ff0-acad34fb58b2',
+        drugsFluidsEncounterUuid: '39da3525-afe4-45ff-8977-c53b7b359158',
+        contractionStrongConceptUuid: '4b90b73a-ad11-4650-91b0-baea131974e0',
+      },
+      graphTypeDisplayNames: {
+        'fetal-heart-rate': 'Fetal Heart Rate',
+        'cervical-dilation': 'Cervical Dilation',
+        'descent-of-head': 'Descent of Head',
+        'uterine-contractions': 'Uterine Contractions',
+        'maternal-pulse': 'Maternal Pulse',
+        'blood-pressure': 'Blood Pressure',
+        temperature: 'Temperature',
+        'urine-analysis': 'Urine Analysis',
+        'drugs-fluids': 'Drugs & Fluids',
+        'progress-events': 'Progress & Events',
+      },
+      amnioticFluidMap: {
+        'Membrane intact': '164899AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'Clear liquor': '159484AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'Meconium Stained': '134488AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        Absent: '163747AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'Blood Stained': '1077AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
+      mouldingMap: {
+        '0': '1107AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '+': '1362AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '++': '1363AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '+++': '1364AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
+      testData: {
+        testGraphTypes: ['fetal-heart-rate', 'cervical-dilation', 'maternal-pulse', 'temperature', 'blood-pressure'],
+        sampleDataPoints: [
+          { value: 120, time: '10:00' },
+          { value: 125, time: '11:00' },
+          { value: 130, time: '12:00' },
+          { value: 128, time: '13:00' },
+        ],
+        valueIncrement: 10,
+        bloodPressureDecrement: 40,
+      },
+      descentOfHeadUuidToValue: {
+        '160769AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 0,
+        '162135AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 1,
+        '166065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 2,
+        '166066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 3,
+        '166067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 4,
+        '163734AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 5,
+      },
+    },
+  },
 };
 
 export type ExpressWorkflowConfig = {
@@ -310,3 +470,203 @@ export type ExpressWorkflowConfig = {
   excludedVisitTypeUuids: Array<string>;
   isDHAWorkflow: boolean;
 };
+export interface ConfigObject {
+  requireMaritalStatusOnAgeGreaterThanOrEqualTo: number;
+  peerEducatorRelationship: string;
+  morgueVisitTypeUuid: string;
+  morgueDischargeEncounterUuid: string;
+  caseManagementForms: Array<{ id: string; title: string; formUuid: string; encounterTypeUuid: string }>;
+  peerCalendarOutreactForm: string;
+  htsClientTracingConceptsUuids: {
+    modeOfClienttracingConceptUuid: string;
+    reasonNotContactedConceptUuid: string;
+    tracingStatusConceptUuid: string;
+    remarksConceptUuid: string;
+  };
+  encounterTypes: {
+    mchMotherConsultation: string;
+    hivTestingServices: string;
+    kpPeerCalender: string;
+    htsEcounterUuid: string;
+    triage: string;
+  };
+  formsList: {
+    labourAndDelivery: string;
+    antenatal: string;
+    postnatal: string;
+    admissionRequestFormUuid: string;
+    htsScreening: string;
+    htsInitialTest: string;
+    htsRetest: string;
+    defaulterTracingFormUuid: string;
+    clinicalEncounterFormUuid: string;
+    peerCalendarOutreactForm: string;
+    autopsyFormUuid: string;
+    htsClientTracingFormUuid: string;
+    complaintsFormUuid: string;
+  };
+  defaulterTracingEncounterUuid: string;
+  autopsyEncounterFormUuid: string;
+  clinicalEncounterUuid: string;
+  registrationEncounterUuid: string;
+  registrationObs: {
+    encounterTypeUuid: string | null;
+    encounterProviderRoleUuid: string;
+    registrationFormUuid: string | null;
+  };
+  openmrsIDUuid: string;
+  openmrsIdentifierSourceUuid: string;
+  maritalStatusUuid: string;
+  hivProgramUuid: string;
+  kvpProgramUuid: string;
+  concepts: Record<string, string>;
+  specialClinics: Array<{ id: string; formUuid: string; encounterTypeUuid: string; title: string }>;
+  contactPersonAttributesUuid: {
+    telephone: string;
+    baselineHIVStatus: string;
+    contactCreated: string;
+    preferedPnsAproach: string;
+    livingWithContact: string;
+    contactIPVOutcome: string;
+  };
+  relationshipTypesList: Array<{
+    uuid: string;
+    display: string;
+    category: Array<'sexual' | 'pns' | 'family'>;
+  }>;
+  partography: {
+    conceptMappings: Record<string, string[]>;
+    stationDisplayMapping: Record<string, string>;
+    stationValueMapping: Record<string, number>;
+    encounterPatterns: string[];
+    fallbackEncounterMapping: Record<string, string[]>;
+    defaultFallbackSequence: string[];
+    retryFallbackTypes: string[];
+    defaultEncounterProviderRole: string;
+    defaultLocationUuid: string;
+    storage: {
+      maxLocalEntries: number;
+      storageKeyPrefix: string;
+      cacheKeyPrefix: string;
+    };
+    timeConfig: {
+      defaultEncounterOffset: number;
+      retryEncounterOffset: number;
+      cacheInvalidationDelay: number;
+    };
+    progressEventConceptNames: Record<string, { name: string; unit: string }>;
+    graphTypeDisplayNames: Record<string, string>;
+    testData: {
+      testGraphTypes: string[];
+      sampleDataPoints: Array<{ value: number; time: string }>;
+      valueIncrement: number;
+      bloodPressureDecrement: number;
+    };
+    uuids?: {
+      timeSlot: string;
+      mchPartographyEncounterUuid: string;
+      drugsFluidsEncounterUuid: string;
+      contractionStrongConceptUuid: string;
+    };
+  };
+  caseManagerRelationshipType: string;
+  complaintsConceptUuids: Array<string>;
+  complaints: {
+    chiefComplaintConceptUuid: string;
+    complaintMemberConceptUuid: string;
+    durationConceptUuid: string;
+    onsetConceptUuid: string;
+  };
+  icd11DataSourceUuid: string;
+  proceduresConceptClassUuid: string;
+  maintenanceAgentOptions: Array<{ value: string; label: string }>;
+}
+
+// Maintenance of Anaesthesia options – configurable so each deployment (Kenya, DRC, Congo …) can specify its own agents
+export const DEFAULT_MAINTENANCE_AGENT_OPTIONS = [
+  { value: '77343AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Halothane' },
+  { value: '83872AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Evoflurane' },
+  { value: '78258AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Isoflurane' },
+];
+
+// Fetal Heart Rate Graph
+export const FETAL_HEART_RATE_CONCEPT = '1440AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const FETAL_HEART_RATE_TIME_CONCEPT = 'bb3724c9-fbcc-49c5-9702-6cde0be325ca';
+export const FETAL_HEART_RATE_HOUR_CONCEPT = '160632AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+// Membrane Amniotic Fluid Graph
+export const AMNIOTIC_FLUID_CONCEPT = '162653AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const RUPTURED_MEMBRANES_CONCEPT = '164900AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const AMNIOTIC_CLEAR_LIQUOR_CONCEPT = '159484AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const AMNIOTIC_MECONIUM_STAINED_CONCEPT = '134488AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const AMNIOTIC_ABSENT_CONCEPT = '163747AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const AMNIOTIC_BLOOD_STAINED_CONCEPT = '1077AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const AMNIOTIC_MEMBRANE_INTACT_CONCEPT = 'd1787a76-7310-4223-a645-9fd410d418c1';
+
+//Contractions Graph
+export const UTERINE_CONTRACTIONS_CONCEPT = '163750AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const CONTRACTION_LEVEL_MILD_CONCEPT = '1498AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const CONTRACTION_LEVEL_MODERATE_CONCEPT = '1499AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const CONTRACTION_LEVEL_STRONG_CONCEPT = '166788AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const UTERINE_CONTRACTION_FREQUENCY_CONCEPT = '166529AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const UTERINE_CONTRACTION_DURATION_CONCEPT = '159368AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+// Oxytocin Graph
+
+export const OXYTOCIN_TIME_CONCEPT = 'bb3724c9-fbcc-49c5-9702-6cde0be325ca';
+export const OXYTOCIN_DROPS_PER_MINUTE_CONCEPT = '1d109b10-7b30-4bfa-8a7c-6ecb73357fc2';
+export const OXYTOCIN_DOSE_CONCEPT = '81369AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const ROUTE_CONCEPT = '8878f9c0-a1ce-47ec-a88f-69ef0f6576ba';
+export const FREQUENCY_CONCEPT = 'fd9f82fd-f327-4502-ac8e-5d9144dbd504';
+
+// Drugs IV Fluids Graph
+export const MEDICATION_CONCEPT = 'c3082af8-f935-40c5-aa5b-74c684e81aea';
+export const IV_FLUIDS_CONCEPT = '161911AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const DOSAGE_CONCEPT = 'b71ddb80-2d7f-4bde-a44b-236e62d4c1b6';
+export const DRUG_DOSE_CONCEPT = '162384AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+// Pulse BP Graph
+export const MATERNAL_PULSE_CONCEPT = '5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const SYSTOLIC_BP_CONCEPT = '5085AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const DIASTOLIC_BP_CONCEPT = '5086AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const PULSE_BP_TIME_CONCEPT = 'bb3724c9-fbcc-49c5-9702-6cde0be325ca';
+
+// Urine Test Graph
+export const PROTEIN_LEVEL_CONCEPT = '161442AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const GLUCOSE_LEVEL_CONCEPT = '887AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const KETONE_LEVEL_CONCEPT = '165438AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const URINE_VOLUME_CONCEPT = '159660AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const URINE_CHARACTERISTICS_CONCEPT = '56AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const TIME_RESULTS_RETURNED = '67c3d4c6-465e-4c12-9b7f-d8587ca90603';
+export const TIME_SAMPLE_COLLECTED = 'c554f157-2e16-4585-af29-c48f5e765ce0';
+
+// Cervix / Cervical Monitoring During Labor
+export const CERVIX_CONCEPT = '162261AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const DESCENT_OF_HEAD_CONCEPT = '1810AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const STATION_0_CONCEPT = '160769AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const STATION_1_CONCEPT = '162135AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const STATION_2_CONCEPT = '166065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const STATION_3_CONCEPT = '166066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const STATION_4_CONCEPT = '166067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const STATION_5_CONCEPT = '163734AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+export const DRUG_ORDER_TYPE_UUID = '131168f4-15f5-102d-96e4-000c29c2a5d7';
+export const ENCOUNTER_ROLE = '240b26f9-dd88-4172-823d-4a8bfeb7841f';
+export const MOULDING_NONE_CONCEPT = '1107AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const MOULDING_SLIGHT_CONCEPT = '1362AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const MOULDING_MODERATE_CONCEPT = '1363AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const MOULDING_SEVERE_CONCEPT = '1364AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const TEMPERATURE_CONCEPT = '5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const CONTRACTION_COUNT_CONCEPT = '159682AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const MEDICATION_NAME_CONCEPT = '164231AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const EVENT_TYPE_CONCEPT = '162879AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const EVENT_DESCRIPTION_CONCEPT = '160632AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const MOULDING_CONCEPT = '166527AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const BLOOD_GROUP_CONCEPT = '300AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const TIME_SLOT_CONCEPT = '163286AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const LABOR_PATTERN_CONCEPT = '164135AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const HOURS_SINCE_RUPTURE_CONCEPT = '167149AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const DATE_OF_ADMISSION_CONCEPT = '1640AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const GESTATION_WEEKS_CONCEPT = '1789AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const ESTIMATED_DELIVERY_DATE_CONCEPT = '5596AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+export const LAST_MENSTRUAL_PERIOD_CONCEPT = '1427AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';

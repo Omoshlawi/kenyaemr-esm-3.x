@@ -61,6 +61,16 @@ export const visitFormWorkspace = getAsyncLifecycle(
   options,
 );
 
+export const anaestheticFormWorkspace = getAsyncLifecycle(
+  () => import('./components/anaesthetic/forms/anaesthetic-form.component'),
+  options,
+);
+
+export const interoperativeDrugGivenFormWorkspace = getAsyncLifecycle(
+  () => import('./components/anaesthetic/forms/interoperative-record-drug-given-form.component'),
+  options,
+);
+
 export const queuesAdminHome = getAsyncLifecycle(() => import('./shared/queue/queues-home.component'), options);
 
 export const homepageDashboardLink = getAsyncLifecycle(

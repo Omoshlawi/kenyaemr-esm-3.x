@@ -1,0 +1,278 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.modalContent {
+  padding: layout.$spacing-05;
+}
+
+.normalRangeInfo {
+  margin-bottom: layout.$spacing-04;
+  padding: layout.$spacing-03;
+  background-color: colors.$gray-10;
+  border-radius: layout.$spacing-02;
+  border: 1px solid colors.$gray-20;
+}
+
+.dataEntryForm {
+  margin-bottom: layout.$spacing-05;
+}
+
+.measurementSection {
+  margin-top: layout.$spacing-05;
+  margin-bottom: layout.$spacing-05;
+}
+
+.timeInputContainer {
+  margin-bottom: layout.$spacing-04;
+
+  .timeLabel {
+    @include type.type-style('label-01');
+    color: colors.$gray-100;
+    margin-bottom: layout.$spacing-02;
+    display: block;
+  }
+
+  .timeInputGroup {
+    display: flex;
+    align-items: center;
+    gap: layout.$spacing-02;
+
+    .timeInput {
+      flex: 1;
+      min-width: layout.$spacing-10;
+    }
+
+    .timePeriodSelect {
+      min-width: layout.$spacing-10;
+    }
+  }
+}
+
+.formGrid {
+  gap: 1rem;
+}
+
+.fieldRow {
+  margin-bottom: 1rem;
+}
+
+.formField {
+  margin-bottom: 1rem;
+}
+// Ensure Carbon dropdown menus overlap modal buttons
+// :global(.cds--list-box__menu) {
+//   z-index: 9999 !important;
+//   position: absolute !important;
+//   overflow: visible !important;
+// }
+// Prevent parent overflow from hiding dropdowns
+.modalContent,
+.cds--modal-content,
+.cds--modal-container {
+  overflow: visible !important;
+  z-index: 1 !important;
+}
+
+.fieldLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-100;
+  margin-bottom: layout.$spacing-02;
+  display: block;
+}
+
+.cds--number input {
+  text-align: left;
+}
+
+.modal {
+  .cds--modal-content {
+    padding: 0;
+  }
+
+  .cds--modal-container {
+    max-width: 600px;
+  }
+}
+
+.workspaceForm {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.workspaceContent {
+  padding: layout.$spacing-05;
+}
+
+.workspaceButtonSet {
+  margin-top: auto;
+  padding: layout.$spacing-05;
+  border-top: 1px solid colors.$gray-20;
+  justify-content: flex-end;
+}
+
+.patientSummary {
+  @include type.type-style('body-01');
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-05;
+}
+
+.cervixModal {
+  .cds--modal-content {
+    padding: 0;
+  }
+
+  .cds--modal-container {
+    max-width: 600px;
+  }
+}
+
+.cds--form-item {
+  margin-bottom: 1rem;
+}
+
+.cds--number__controls {
+  display: flex;
+  flex-direction: column;
+}
+
+.cds--number__control-btn {
+  height: 1.5rem;
+  width: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.validationHint {
+  font-size: 0.75rem;
+  color: #6f6f6f;
+  margin-top: 0.25rem;
+  font-style: italic;
+  background-color: #f4f4f4;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  border-left: 3px solid #0f62fe;
+}
+
+.requiredFieldsNote {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background-color: #e8f4fd;
+  border-left: 4px solid #0f62fe;
+  border-radius: 4px;
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #161616;
+    font-weight: 500;
+  }
+}
+
+.workspaceLauncherSection {
+  margin-bottom: layout.$spacing-06;
+  padding: layout.$spacing-05;
+  background-color: colors.$blue-10;
+  border-radius: layout.$spacing-03;
+  border: 1px solid colors.$blue-20;
+
+  h4 {
+    @include type.type-style('heading-03');
+    color: colors.$gray-100;
+    margin-bottom: layout.$spacing-03;
+  }
+
+  .helperText {
+    @include type.type-style('body-01');
+    color: colors.$gray-70;
+    margin-bottom: layout.$spacing-04;
+  }
+
+  .workspaceLauncherButton {
+    min-height: layout.$spacing-09;
+  }
+}
+
+.manualEntrySection {
+  background-color: var(--cds-layer-01);
+  border: 1px solid var(--cds-border-subtle-01);
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+
+  h4 {
+    margin-bottom: 0.5rem;
+    color: var(--cds-text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .helperText {
+    color: var(--cds-text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+  }
+}
+
+.orderSource {
+  background-color: var(--cds-support-success);
+  color: var(--cds-text-on-color);
+  padding: 0.125rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.manualSource {
+  background-color: var(--cds-support-info);
+  color: var(--cds-text-on-color);
+  padding: 0.125rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.noValidation {
+  .cds--select__invalid-icon,
+  .cds--number__invalid-icon {
+    display: none !important;
+  }
+
+  .cds--select--invalid,
+  .cds--number--invalid {
+    border-bottom-color: var(--cds-border-strong-01) !important;
+  }
+
+  .cds--select--invalid .cds--select-input,
+  .cds--number--invalid .cds--number input {
+    border-bottom-color: var(--cds-border-strong-01) !important;
+    background-color: var(--cds-field-01) !important;
+  }
+
+  .cds--form-requirement {
+    display: none !important;
+  }
+}
+
+.disabledHourOption {
+  color: colors.$gray-40 !important;
+  background-color: colors.$gray-10 !important;
+  opacity: 0.6 !important;
+  font-style: italic;
+
+  &:hover {
+    background-color: colors.$gray-10 !important;
+    color: colors.$gray-40 !important;
+  }
+}
+
+.hourSelectionHelper {
+  @include type.type-style('helper-text-01');
+  color: colors.$blue-60;
+  margin-top: layout.$spacing-02;
+}

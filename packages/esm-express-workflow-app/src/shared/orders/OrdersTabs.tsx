@@ -6,6 +6,11 @@ import { DocumentMultiple_02, RequestQuote } from '@carbon/react/icons';
 import { usePatientOrders } from '../../hooks/useOrders';
 import { type Order } from '../../types/order/order';
 
+type AdditionalTab = {
+  label: string;
+  content: React.ReactNode;
+};
+
 type OrdersTabsProps = {
   patientUuid: string;
   patient: fhir.Patient;
@@ -14,6 +19,7 @@ type OrdersTabsProps = {
   orderTypeUuid: string;
   filter?: (o: Order) => boolean;
   Table: React.ComponentType<{ orders: Order[]; mutateOrders: () => void }>;
+  additionalTabs?: AdditionalTab[];
 };
 
 export const OrdersTabs: React.FC<OrdersTabsProps> = ({
@@ -24,6 +30,7 @@ export const OrdersTabs: React.FC<OrdersTabsProps> = ({
   orderTypeUuid,
   filter,
   Table,
+  additionalTabs,
 }) => {
   const { t } = useTranslation();
   const state = useMemo(() => ({ patientUuid, patient, basePath }), [patientUuid, patient, basePath]);
@@ -46,6 +53,9 @@ export const OrdersTabs: React.FC<OrdersTabsProps> = ({
         <TabList contained>
           <Tab renderIcon={RequestQuote}>{t('orders', 'Orders')}</Tab>
           <Tab renderIcon={DocumentMultiple_02}>{t('results', 'Results')}</Tab>
+          {additionalTabs?.map((tab, index) => (
+            <Tab key={`${tab.label}-${index}`}>{tab.label}</Tab>
+          ))}
         </TabList>
         <TabPanels>
           <TabPanel>
@@ -54,6 +64,9 @@ export const OrdersTabs: React.FC<OrdersTabsProps> = ({
           <TabPanel>
             <ExtensionSlot state={state} name={resultsSlotName} />
           </TabPanel>
+          {additionalTabs?.map((tab, index) => (
+            <TabPanel key={`${tab.label}-panel-${index}`}>{tab.content}</TabPanel>
+          ))}
         </TabPanels>
       </Tabs>
     </Layer>

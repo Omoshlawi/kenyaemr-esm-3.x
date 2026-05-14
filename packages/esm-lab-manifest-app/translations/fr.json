@@ -33,7 +33,7 @@
   "errorRemovingSample": "Erreur lors de la suppression de l’échantillon {{sample}} du manifeste",
   "facilityEmail": "Email de l’établissement",
   "facilityPhoneContact": "Contact téléphonique de l’établissement",
- "incompleteWithErrors": "Incomplet avec des erreurs",
+  "incompleteWithErrors": "Incomplet avec des erreurs",
   "incompleteWithResults": "Incomplet avec résultats",
   "labManifest": "Manifeste de laboratoire",
   "labManifestDashboard": "Tableau de bord des manifestes de laboratoire",
