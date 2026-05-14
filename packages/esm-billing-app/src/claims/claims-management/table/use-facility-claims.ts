@@ -33,6 +33,7 @@ const url =
     'invoiceNumber',
     'interventions',
     'packages',
+    'externalApiErrors',
     'provider:(uuid,display)',
     'patient:(uuid,display)',
     'visit:(uuid,display,visitType:(uuid,display),location:(uuid,display),startDatetime,stopDatetime),' +

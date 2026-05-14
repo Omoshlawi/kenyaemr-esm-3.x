@@ -1,4 +1,6 @@
 import {
+  Accordion,
+  AccordionItem,
   Button,
   DataTable,
   DataTableSkeleton,
@@ -28,6 +30,7 @@ import capitalize from 'lodash-es/capitalize';
 import { formatCurrency } from '../../../helpers/currency';
 import usePatientDiagnosis from '../../../hooks/usePatientDiagnosis';
 import { getClaimPayerPreview } from './claim-summary-modal/claim.resource';
+import { parseExternalApiErrors } from '../../../utils';
 
 const WORKFLOW_STATE_CONFIG: Record<string, { label: string; type: string }> = {
   DRAFT: { label: 'Draft', type: 'gray' },
@@ -103,6 +106,8 @@ const ShifExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
   };
 
   const lines = claim.invoices?.[0]?.lines ?? [];
+  const externalErrors = parseExternalApiErrors(claim.externalApiErrors);
+  const showExternalErrors = externalErrors.length > 0 && ws !== 'APPROVED';
 
   return (
     <div className={styles.expandedPanel}>
@@ -251,63 +256,96 @@ const ShifExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
         )}
       </div>
 
-      <div className={styles.submissionStatusSection}>
-        <p className={styles.submissionStatusTitle}>{t('submissionStatus', 'Submission Status')}</p>
-        {payerLoading && <span>{t('loadingSubmissionStatus', 'Loading submission status...')}</span>}
-        {payerError && (
-          <span className={styles.errorText}>
-            {payerError?.message || t('errorLoadingStatus', 'Error loading submission status')}
-          </span>
-        )}
-        {!payerLoading && !payerError && payerData ? (
-          <div className={styles.statusDetails}>
-            <div className={styles.statusRow}>
-              <strong>{t('workflowState', 'Workflow State')}:</strong>
-              <Tag
-                type={
-                  payerData.workflowState?.includes('APPROVED')
-                    ? 'green'
-                    : payerData.workflowState?.includes('REJECTED') ||
-                      payerData.workflowState?.includes('CLARIFICATION')
-                    ? 'red'
-                    : payerData.workflowState?.includes('PENDING')
-                    ? 'blue'
-                    : 'gray'
-                }>
-                {payerData.workflowDisplayName || payerData.workflowState || '—'}
-              </Tag>
-            </div>
-            {payerData.created && (
-              <div className={styles.statusRow}>
-                <strong>{t('submissionDate', 'Submission Date')}:</strong>
-                <span>{formatDate(new Date(payerData.created))}</span>
-              </div>
-            )}
-            {payerData.claimNotes && payerData.claimNotes.length > 0 && (
-              <div className={styles.statusRow}>
-                <strong>{t('notes', 'Notes')}:</strong>
-                <div className={styles.notesList}>
-                  {payerData.claimNotes.map((note: any, idx: number) => (
-                    <div key={idx} className={styles.noteItem}>
-                      <p className={styles.noteText}>{note.note}</p>
-                      <small className={styles.noteMetadata}>
-                        {note.author && (
-                          <span>
-                            {t('by', 'By')}: {note.author}
-                          </span>
-                        )}
-                        {note.workflowState && <span> ({note.workflowState})</span>}
-                      </small>
-                    </div>
-                  ))}
+      {showExternalErrors && (
+        <Accordion className={styles.externalErrorsSection}>
+          <AccordionItem title={t('submissionErrors', 'Submission Errors')}>
+            <div className={styles.notesList}>
+              {externalErrors.map((e: any, idx: number) => (
+                <div key={idx} className={styles.noteItem}>
+                  <p className={styles.noteText}>
+                    {e.timestamp && <strong>{e.timestamp}</strong>}
+                    {e.action && (
+                      <>
+                        &nbsp;<em>{e.action}</em>:
+                      </>
+                    )}
+                    &nbsp;
+                    {e.parsed
+                      ? e.parsed.error
+                        ? `${e.parsed.error}: ${e.parsed.message}`
+                        : e.parsed.message || JSON.stringify(e.parsed)
+                      : e.raw}
+                  </p>
+                  {e.parsed?.inner && (
+                    <small className={styles.noteMetadata}>
+                      {typeof e.parsed.inner === 'object' ? JSON.stringify(e.parsed.inner) : String(e.parsed.inner)}
+                    </small>
+                  )}
                 </div>
+              ))}
+            </div>
+          </AccordionItem>
+        </Accordion>
+      )}
+
+      <Accordion className={styles.submissionStatusSection}>
+        <AccordionItem title={t('submissionStatus', 'Submission Status')}>
+          {payerLoading && <span>{t('loadingSubmissionStatus', 'Loading submission status...')}</span>}
+          {payerError && (
+            <span className={styles.errorText}>
+              {payerError?.message || t('errorLoadingStatus', 'Error loading submission status')}
+            </span>
+          )}
+          {!payerLoading && !payerError && payerData ? (
+            <div className={styles.statusDetails}>
+              <div className={styles.statusRow}>
+                <strong>{t('workflowState', 'Workflow State')}:</strong>
+                <Tag
+                  type={
+                    payerData.workflowState?.includes('APPROVED')
+                      ? 'green'
+                      : payerData.workflowState?.includes('REJECTED') ||
+                        payerData.workflowState?.includes('CLARIFICATION')
+                      ? 'red'
+                      : payerData.workflowState?.includes('PENDING')
+                      ? 'blue'
+                      : 'gray'
+                  }>
+                  {payerData.workflowDisplayName || payerData.workflowState || '—'}
+                </Tag>
               </div>
-            )}
-          </div>
-        ) : (
-          !payerLoading && !payerError && <p>{t('noSubmissionData', 'No submission data available')}</p>
-        )}
-      </div>
+              {payerData.created && (
+                <div className={styles.statusRow}>
+                  <strong>{t('submissionDate', 'Submission Date')}:</strong>
+                  <span>{formatDate(new Date(payerData.created))}</span>
+                </div>
+              )}
+              {payerData.claimNotes && payerData.claimNotes.length > 0 && (
+                <div className={styles.statusRow}>
+                  <strong>{t('notes', 'Notes')}:</strong>
+                  <div className={styles.notesList}>
+                    {payerData.claimNotes.map((note: any, idx: number) => (
+                      <div key={idx} className={styles.noteItem}>
+                        <p className={styles.noteText}>{note.note}</p>
+                        <small className={styles.noteMetadata}>
+                          {note.author && (
+                            <span>
+                              {t('by', 'By')}: {note.author}
+                            </span>
+                          )}
+                          {note.workflowState && <span> ({note.workflowState})</span>}
+                        </small>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            !payerLoading && !payerError && <p>{t('noSubmissionData', 'No submission data available')}</p>
+          )}
+        </AccordionItem>
+      </Accordion>
 
       <div className={styles.billingLinesSection}>
         <p className={styles.billingLinesTitle}>{t('billingLines', 'Billing lines')}</p>

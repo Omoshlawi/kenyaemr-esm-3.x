@@ -721,6 +721,7 @@ export interface ClaimResponse {
   dateProcessed?: string | null;
   isResubmitted?: string | null;
   hasClaimReview?: string | null;
+  externalApiErrors?: string;
 }
 
 export type BillingPromptType = 'patient-chart' | 'billing-orders';
