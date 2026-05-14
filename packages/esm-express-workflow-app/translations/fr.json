@@ -167,6 +167,7 @@
   "order": "Prescription",
   "orderBy": "Trier par",
   "orderNo": "Numéro de prescription",
+  "orderReason": "Raison de la commande",
   "orders": "Prescriptions",
   "otpExpired": "OTP expiré",
   "otpExpiredMessage": "L’OTP a expiré. Veuillez en demander un nouveau.",

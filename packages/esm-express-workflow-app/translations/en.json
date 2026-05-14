@@ -166,6 +166,7 @@
   "order": "Order",
   "orderBy": "Order By",
   "orderNo": "Order No",
+  "orderReason": "Order reason",
   "orders": "Orders",
   "otpExpired": "OTP Expired",
   "otpExpiredMessage": "OTP has expired. Please request a new one.",
