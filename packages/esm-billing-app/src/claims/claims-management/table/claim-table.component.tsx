@@ -50,18 +50,21 @@ const STATUS_FALLBACK: Record<string, { label: string; type: string }> = {
   VALUATED: { label: 'Valuated', type: 'blue' },
   ERRORED: { label: 'Errored', type: 'red' },
   PENDING: { label: 'Pending', type: 'orange' },
+  SUBMISSION_READY: { label: 'Submission ready', type: 'blue' },
+  CLOSED: { label: 'Closed', type: 'red' },
+  SUBMITTED: { label: 'Submitted', type: 'blue' },
 };
 
 function getStatusBadge(claim: ClaimResponse) {
-  const ws = claim.workflowState?.trim() || null;
-  const cfg = (ws && WORKFLOW_STATE_CONFIG[ws]) ??
-    STATUS_FALLBACK[claim.status ?? ''] ?? { label: claim.status ?? '—', type: 'gray' };
+  const state = claim.claimAuthStatus?.trim() || claim.workflowState?.trim() || null;
+  const cfg = (state && WORKFLOW_STATE_CONFIG[state]) ??
+    STATUS_FALLBACK[state ?? ''] ?? { label: state ?? claim.status ?? '—', type: 'gray' };
   return <Tag type={cfg.type as any}>{cfg.label}</Tag>;
 }
 
 const ShifExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
   const { t } = useTranslation();
-  const ws = claim.workflowState?.trim() || null;
+  const ws = claim.claimAuthStatus?.trim() || claim.workflowState?.trim() || null;
   const isInpatient = claim.serviceType === 'INPATIENT';
   const isDraft = ws === 'DRAFT' || (!ws && claim.status === 'DRAFT');
   const isPreauth = ws === 'PREAUTH_APPROVED';
@@ -350,39 +353,6 @@ const ShifExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
   );
 };
 
-const PhcExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
-  const { t } = useTranslation();
-  const open = (modalName: string) => {
-    const dispose = showModal(modalName, { closeModal: () => dispose(), claimId: claim.uuid });
-  };
-  const isTablet = useLayoutType() === 'tablet';
-  const controlSize = isTablet ? 'md' : 'sm';
-
-  return (
-    <div className={styles.expandedPanel}>
-      <div className={styles.expandedInfo}>
-        <span>
-          <strong>{t('claimCode', 'Claim code')}:</strong> <code>{claim.claimCode ?? '—'}</code>
-        </span>
-        <span>
-          <strong>{t('claimed', 'Claimed')}:</strong>{' '}
-          {claim.claimedTotal ? formatCurrency(Number(claim.claimedTotal)) : '—'}
-        </span>
-        {claim.interventions?.length && (
-          <span>
-            <strong>{t('interventions', 'Interventions')}:</strong> {claim.interventions.join(', ')}
-          </span>
-        )}
-      </div>
-      <div className={styles.expandedButtons}>
-        <Button kind="ghost" size={controlSize} renderIcon={Document} onClick={() => open('claim-summary-modal')}>
-          {t('viewSummary', 'View summary')}
-        </Button>
-      </div>
-    </div>
-  );
-};
-
 interface TableProps {
   title: string;
   emptyStateText: string;
@@ -442,7 +412,7 @@ const ClaimsTable: React.FC<TableProps> = ({
     })(),
     claimedTotal:
       claim.claimedTotal != null && Number(claim.claimedTotal) > 0 ? formatCurrency(Number(claim.claimedTotal)) : '—',
-    status: claim.workflowState?.trim() || claim.status || '',
+    status: claim.claimAuthStatus?.trim() || claim.workflowState?.trim() || claim.status || '',
     serviceType: claim.serviceType ?? '',
     provider: claim.provider?.display || '—',
     dateCreated: claim.dateFrom ? formatDate(new Date(claim.dateFrom)) : '—',
@@ -582,7 +552,7 @@ const ClaimsTable: React.FC<TableProps> = ({
                         })}
                       </TableExpandRow>
                       <TableExpandedRow colSpan={headers.length + 1}>
-                        {claim ? isPhc ? <PhcExpandedRow claim={claim} /> : <ShifExpandedRow claim={claim} /> : null}
+                        {claim ? <ShifExpandedRow claim={claim} /> : null}
                       </TableExpandedRow>
                     </React.Fragment>
                   );

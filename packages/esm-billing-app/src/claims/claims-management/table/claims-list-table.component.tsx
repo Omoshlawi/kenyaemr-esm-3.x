@@ -55,11 +55,20 @@ const ClaimsManagementTable: React.FC = () => {
   };
 
   const shifClaims = useMemo(
-    () => claims.filter((c) => c.adjustment === 'Virtual claim' && !c.workflowState?.startsWith('ELECTIVE')),
+    () =>
+      claims.filter(
+        (c) =>
+          c.adjustment === 'Virtual claim' &&
+          !c.workflowState?.startsWith('ELECTIVE') &&
+          c.serviceType !== 'CAPITATION',
+      ),
     [claims],
   );
 
-  const phcClaims = useMemo(() => claims.filter((c) => c.guaranteeId === 'auto' && !c.authorizationCode), [claims]);
+  const phcClaims = useMemo(
+    () => claims.filter((c) => c.guaranteeId === 'virtual claim' && c.serviceType === 'CAPITATION'),
+    [claims],
+  );
 
   const applyFilters = (list: typeof claims) => {
     const term = search.trim().toLowerCase();
