@@ -2,7 +2,7 @@ import React from 'react';
 import { DataTable, Table, TableHead, TableRow, TableHeader, TableBody, TableCell, Layer, Button } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
-import { parseDate, formatDatetime, translateFrom } from '@openmrs/esm-framework';
+import { parseDate, formatDatetime, translateFrom, OpenmrsResource } from '@openmrs/esm-framework';
 import { PriorityPill, StatusPill } from './OrderPills';
 import { type Order } from '../../types/order/order';
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
@@ -22,6 +22,7 @@ const defaultHeaders = (t: (k: string, d: string) => string) => [
   { header: t('orderNo', 'Order No'), key: 'orderNo' },
   { header: t('dateOrdered', 'Date Ordered'), key: 'dateOrdered' },
   { header: t('order', 'Order'), key: 'order' },
+  { header: t('orderReason', 'Order reason'), key: 'orderReason' },
   { header: t('priority', 'Priority'), key: 'priority' },
   { header: t('orderBy', 'Order By'), key: 'orderBy' },
   { header: t('status', 'Status'), key: 'status' },
@@ -52,6 +53,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
       />
     ),
     orderBy: order.orderer?.display ?? '--',
+    orderReason: (order.orderReason as unknown as OpenmrsResource)?.display,
     status: (
       <StatusPill
         value={translateFrom(module, order.fulfillerStatus, order.fulfillerStatus)}
