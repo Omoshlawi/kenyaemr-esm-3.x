@@ -57,7 +57,7 @@ const InPatientSummary: React.FC<InPatientSummaryProps> = ({ patientUuid, encoun
   if (error) {
     return <ErrorState error={error} headerTitle={t('inPatientSummary', 'In Patient Summary')} />;
   }
-  if (encounters.length === 0) {
+  if (!encounters?.length) {
     return (
       <EmptyState
         displayText={t('inPatientSummary', 'In Patient Summary')}

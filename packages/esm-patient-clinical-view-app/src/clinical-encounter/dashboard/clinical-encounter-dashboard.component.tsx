@@ -43,8 +43,10 @@ interface ClinicalEncounterDashboardProps {
 
 const ClinicalEncounterDashboard: React.FC<ClinicalEncounterDashboardProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const { currentVisit } = useVisit(patientUuid);
-  const isInPatient = currentVisit?.visitType?.display?.toLocaleLowerCase() === 'inpatient';
+  const { activeVisit } = useVisit(patientUuid);
+  const normalizedVisitType = activeVisit?.visitType?.display?.toLocaleLowerCase().replace(/[^a-z]/g, '');
+  const isInPatient = normalizedVisitType?.includes('inpatient');
+
   const {
     clinicalEncounterUuid,
     formsList: { clinicalEncounterFormUuid },
@@ -82,11 +84,11 @@ const ClinicalEncounterDashboard: React.FC<ClinicalEncounterDashboardProps> = ({
         <TabList contained activation="manual" aria-label="List of tabs">
           <Tab renderIcon={Friendship}>{t('socialHistory', 'Social History')}</Tab>
           <Tab renderIcon={ReminderMedical}>{t('medicalHistory', 'Medical History')}</Tab>
-          {isInPatient && <Tab renderIcon={CloudMonitoring}>{t('encounterDetails', 'Encounter details')}</Tab>}
+          <Tab renderIcon={CloudMonitoring}>{t('admissionRequest', 'Admission request')}</Tab>
           {isInPatient && <Tab renderIcon={Activity}>{t('surgicalSummary', 'Surgical Summary')}</Tab>}
           {isInPatient && <Tab renderIcon={UserMultiple}>{t('neonatalSummary', 'Neonatal Summary')}</Tab>}
           {isInPatient && <Tab renderIcon={UserFollow}>{t('maternalSummary', 'Maternal Summary')}</Tab>}
-          {isInPatient && <Tab renderIcon={Dashboard}>{t('inPatientSummary', 'In-Patient Summary')}</Tab>}
+          <Tab renderIcon={Dashboard}>{t('inpatientDetail', 'Inpatient Detail')}</Tab>
         </TabList>
         <TabPanels>
           <TabPanel>
@@ -125,22 +127,28 @@ const ClinicalEncounterDashboard: React.FC<ClinicalEncounterDashboardProps> = ({
               />
             }
           </TabPanel>
-          <TabPanel>
-            <SurgicalSummary
-              patientUuid={patientUuid}
-              encounters={encounters}
-              isLoading={isLoading}
-              error={error}
-              mutate={mutate}
-              isValidating={isValidating}
-            />
-          </TabPanel>
-          <TabPanel>
-            <NeonatalSummary patientUuid={patientUuid} />
-          </TabPanel>
-          <TabPanel>
-            <MaternalSummary patientUuid={patientUuid} />
-          </TabPanel>
+          {isInPatient && (
+            <TabPanel>
+              <SurgicalSummary
+                patientUuid={patientUuid}
+                encounters={encounters}
+                isLoading={isLoading}
+                error={error}
+                mutate={mutate}
+                isValidating={isValidating}
+              />
+            </TabPanel>
+          )}
+          {isInPatient && (
+            <TabPanel>
+              <NeonatalSummary patientUuid={patientUuid} />
+            </TabPanel>
+          )}
+          {isInPatient && (
+            <TabPanel>
+              <MaternalSummary patientUuid={patientUuid} />
+            </TabPanel>
+          )}
           <TabPanel>
             <InPatientSummary
               patientUuid={patientUuid}

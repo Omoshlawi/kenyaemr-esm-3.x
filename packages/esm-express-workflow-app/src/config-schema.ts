@@ -183,6 +183,22 @@ export const configSchema = {
     _description: 'Concept UUID for radiology service',
     _default: '160463AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   },
+  inpatientDrugOrderTypeUuid: {
+    _type: Type.String,
+    _description: 'Order type UUID for inpatient drug orders.',
+    _default: '131168f4-15f5-102d-96e4-000c29c2a5d7',
+  },
+  inpatientCareSettingUuid: {
+    _type: Type.String,
+    _description: 'Care setting UUID for inpatient orders.',
+    _default: '6f0c9a92-6f24-11e3-af88-005056821db0',
+  },
+  inpatientLocationTags: {
+    _default: {
+      maternityWard: 'b95dd376-fa35-40a6-b140-d144c5f22f62',
+      labourWard: '7680b7ee-6880-450c-8b7e-2a748b6f9dc7',
+    },
+  },
   outpatientVisitTypeUuid: {
     _type: Type.String,
     _description: 'The UUID of the outpatient visit type.',
@@ -452,6 +468,12 @@ export type ExpressWorkflowConfig = {
   labServiceConceptUuid: string;
   pharmacyServiceConceptUuid: string;
   radiologyServiceConceptUuid: string;
+  inpatientDrugOrderTypeUuid: string;
+  inpatientCareSettingUuid: string;
+  inpatientLocationTags: {
+    maternityWard: string;
+    labourWard: string;
+  };
   outpatientVisitTypeUuid: string;
   inPatientVisitTypeUuid: string;
   defaultFacilityUrl: string; //done
