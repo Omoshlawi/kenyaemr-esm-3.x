@@ -347,6 +347,16 @@
       "online": true,
       "offline": false,
       "featureFlag": "procedureQueues"
+    },
+    {
+      "name": "admission-medication-summary",
+      "component": "admissionsMedicationSummary",
+      "slot": "inpatient-dashboard-tabs-slot",
+      "online": true,
+      "offline": false,
+      "meta":{
+        "title": "medicationSummary"
+      }
     }
   ],
   "workspaces2": [
