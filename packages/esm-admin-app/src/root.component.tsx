@@ -9,6 +9,7 @@ import FacilitySetup from './components/facility-setup/facility-setup.component'
 import HomeComponent from './components/locations/home/home-locations.component';
 
 import styles from './root.scss';
+import GlobalPropertyDashboard from './components/global-property/dashboard/global-property-dashboard.component';
 
 const Root: React.FC = () => {
   const spaBasePath = globalThis.spaBase;
@@ -28,6 +29,7 @@ const Root: React.FC = () => {
           <Route path="/etl-administration" element={<EtlAdminDashboard />} />
           <Route path="/facility-setup" element={<FacilitySetup />} />
           <Route path="/locations" element={<HomeComponent />} />
+          <Route path="/global-property" element={<GlobalPropertyDashboard />} />
         </Routes>
       </main>
     </BrowserRouter>

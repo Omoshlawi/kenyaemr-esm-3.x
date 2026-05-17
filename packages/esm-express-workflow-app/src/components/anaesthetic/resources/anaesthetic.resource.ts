@@ -358,7 +358,7 @@ export async function deleteCervixEncounter(encounterUuid: string): Promise<Save
     if (!response.ok) {
       return {
         success: false,
-        message: t('Failed to delete encounter: {{status}} {{statusText}}', {
+        message: t('failedToDeleteEncounter', '{{status}} {{statusText}}', {
           status: response.status,
           statusText: response.statusText,
         }),
@@ -369,7 +369,7 @@ export async function deleteCervixEncounter(encounterUuid: string): Promise<Save
   } catch (error) {
     return {
       success: false,
-      message: t('Failed to delete encounter: {{message}}', {
+      message: t('failedToDeleteEncounter', 'Failed to delete encounter: {{message}}', {
         message: error instanceof Error ? error.message : t('Unknown error'),
       }),
       error: 'EXCEPTION',

@@ -152,6 +152,7 @@
   "etco2": "EtCO2",
   "Failed to load membrane amniotic fluid data": "Échec du chargement des données du liquide amniotique",
   "Failed to save membrane amniotic fluid data": "Échec de l’enregistrement des données du liquide amniotique",
+  "failedToDeleteEncounter": "{{status}} {{statusText}}",
   "failedToLoadDrugOrders": "Échec du chargement des prescriptions",
   "failedToSaveAnaestheticRecord": "Échec de l’enregistrement du dossier anesthésique",
   "failedToSaveDrugsIvFluids": "Échec de l’enregistrement des données des médicaments et liquides IV",

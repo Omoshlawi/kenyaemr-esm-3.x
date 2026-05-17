@@ -9,7 +9,7 @@ const options = {
 };
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
-
+export * from './components/global-property/index';
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
 
 export function startupApp() {
@@ -74,6 +74,14 @@ export const addLocation = getAsyncLifecycle(
 );
 export const searchLocationWorkspace = getAsyncLifecycle(
   () => import('./components/locations/forms/search-location/search-location.workspace'),
+  options,
+);
+export const globalPropertyWorkspace = getAsyncLifecycle(
+  () => import('./components/global-property/workspace/global-property.workspace'),
+  options,
+);
+export const deleteGlobalPropertyModal = getAsyncLifecycle(
+  () => import('./components/global-property/modal/delete-global-property-modal.component'),
   options,
 );
 

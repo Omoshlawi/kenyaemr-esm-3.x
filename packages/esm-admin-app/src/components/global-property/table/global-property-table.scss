@@ -1,0 +1,34 @@
+@use '@carbon/layout';
+
+.dataTableContainer {
+  height: 100%;
+  margin: layout.$layout-01;
+}
+
+.tableHeaderSection {
+  display: flex;
+  align-items: center;
+}
+
+.actionsCell {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.emptyState {
+  padding: 2rem;
+  text-align: center;
+  color: var(--cds-text-secondary);
+}

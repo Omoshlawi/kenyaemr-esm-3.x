@@ -30,10 +30,19 @@
       "slot": "admin-left-panel-slot"
     },
     {
+      "name":"global-property-link",
+      "component":"globalPropertyLink",
+      "slot": "admin-left-panel-slot"
+    },
+    {
       "component": "providerBanner",
       "name": "provider-banner",
       "slot": "provider-banner-info-slot",
       "order": 1
+    },
+    {
+      "component": "globalPropertyDashboard",
+      "name": "global-property-dashboard"
     }
   ],
   "modals": [
@@ -52,6 +61,10 @@
     {
       "component": "hwrSyncModal",
       "name": "hwr-syncing-modal"
+    },
+    {
+      "component": "deleteGlobalPropertyModal",
+      "name": "delete-global-property-modal"
     }
   ],
   "workspaces2": [
@@ -74,13 +87,19 @@
       "name": "search-location-workspace",
       "component": "searchLocationWorkspace",
       "window": "esm-admin-workspace-window"
+    },
+    {
+      "name": "global-property-workspace",
+      "component": "globalPropertyWorkspace",
+      "window": "esm-admin-workspace-window"
     }
   ],
   "workspaceWindows2": [
     {
       "name": "esm-admin-workspace-window",
       "canMaximize": true,
-      "group": "esm-admin-workspace-group"
+      "group": "esm-admin-workspace-group",
+      "width":"wider"
     },
     {
       "name": "esm-admin-extra-wide-workspace-window",

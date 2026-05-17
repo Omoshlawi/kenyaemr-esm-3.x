@@ -152,6 +152,7 @@
   "etco2": "EtCO2",
   "Failed to load membrane amniotic fluid data": "",
   "Failed to save membrane amniotic fluid data": "",
+  "failedToDeleteEncounter": "{{status}} {{statusText}}",
   "failedToLoadDrugOrders": "Failed to load drug orders",
   "failedToSaveAnaestheticRecord": "Failed to save anaesthetic record",
   "failedToSaveDrugsIvFluids": "Failed to save drugs and IV fluids data",

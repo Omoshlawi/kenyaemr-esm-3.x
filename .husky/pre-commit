@@ -5,3 +5,4 @@ set -e  # die on error
 
 yarn prettier && npx lint-staged
 yarn turbo run extract-translations
+npx vitest run packages/esm-admin-app

@@ -1,5 +1,3 @@
-import { fhirBaseUrl, Type } from '@openmrs/esm-framework';
-
 export interface ETLResponse {
   script_name: string;
   start_time: string;
@@ -411,3 +409,14 @@ export interface CustomHIEPractitionerResponse {
   };
   fhirFormat: boolean;
 }
+
+export type SystemSettings = {
+  property: string;
+  description?: string;
+  datatypeClassname?: string;
+  datatypeConfig?: string;
+  preferredHandlerClassname?: string;
+  handlerConfig?: string | null;
+  value: string;
+  uuid?: string;
+};

@@ -12,6 +12,7 @@ import {
 } from '../logs-table/operation-log-resource';
 import LogTable from '../logs-table/operation-log-table.component';
 import { showModal, showSnackbar } from '@openmrs/esm-framework';
+import { extractErrorMessagesFromResponse } from '../locations/helpers';
 
 const Dashboard: React.FC = () => {
   const { t } = useTranslation();
@@ -59,7 +60,9 @@ const Dashboard: React.FC = () => {
         } catch (error) {
           showSnackbar({
             title: t('operationError', '{{operationName}} failed', { operationName }),
-            subtitle: t('operationErrorSubtitle', 'An error occurred during the operation.'),
+            subtitle: t('operationErrorSubtitle', 'An error occurred during the operation. {{error}}', {
+              error: extractErrorMessagesFromResponse(error),
+            }),
             kind: 'error',
             isLowContrast: true,
           });
