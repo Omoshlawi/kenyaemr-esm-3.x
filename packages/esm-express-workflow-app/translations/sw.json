@@ -207,7 +207,7 @@
   "medication": "Medication",
   "medicationOrders": "Medication Orders",
   "medicationsGiven": "Medications given",
-  "medicationSummary": "Medication Summary",
+  "treatmentChart": "Chati ya matibabu",
   "minimumCharacters": "Type at least 3 characters to search",
   "missingSubmitHandler": "No submit handler was provided for this form",
   "missingVisitType": "Missing visit type",

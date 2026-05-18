@@ -45,12 +45,12 @@ type FluidRow = {
   reviewDate: string;
 };
 
-type AdmissionMedicationSummaryProps = {
+type AdmissiontreatmentChartProps = {
   patientUuid: string;
   patient: FHIRResource;
 };
-// t("medicationSummary", "Medication Summary")
-const AdmissionMedicationSummary: React.FC<AdmissionMedicationSummaryProps> = ({ patient, patientUuid }) => {
+// t("treatmentChart", "Treatment chart")
+const AdmissionTreatmentChart: React.FC<AdmissiontreatmentChartProps> = ({ patient, patientUuid }) => {
   const { t } = useTranslation();
   const formatAdministrationInstructionsWithTranslation = useFormatAdministrationInstructions();
   const { inpatientDrugOrderTypeUuid, inpatientCareSettingUuid } = useConfig<ExpressWorkflowConfig>();
@@ -299,4 +299,4 @@ const AdmissionMedicationSummary: React.FC<AdmissionMedicationSummaryProps> = ({
   );
 };
 
-export default AdmissionMedicationSummary;
+export default AdmissionTreatmentChart;
