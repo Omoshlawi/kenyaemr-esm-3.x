@@ -350,12 +350,12 @@
     },
     {
       "name": "admission-medication-summary",
-      "component": "admissionsMedicationSummary",
+      "component": "admissionTreatmentChart",
       "slot": "inpatient-dashboard-tabs-slot",
       "online": true,
       "offline": false,
       "meta":{
-        "title": "medicationSummary"
+        "title": "treatmentChart"
       }
     }
   ],

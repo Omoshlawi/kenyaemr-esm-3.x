@@ -207,7 +207,7 @@
   "medication": "Médicament",
   "medicationOrders": "Prescriptions médicamenteuses",
   "medicationsGiven": "Médicaments administrés",
-  "medicationSummary": "Résumé des médicaments",
+  "treatmentChart": "Feuille de traitement",
   "minimumCharacters": "Tapez au moins 3 caractères pour rechercher",
   "missingSubmitHandler": "Aucun gestionnaire de soumission n’a été fourni pour ce formulaire",
   "missingVisitType": "Type de visite manquant",
