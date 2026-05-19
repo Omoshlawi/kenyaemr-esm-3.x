@@ -75,7 +75,7 @@
     {
       "name": "mortuary-mark-patient-deceased-workspace-form",
       "component": "markPatientDeceasedForm",
-      "window": "morgue-workspace-window"
+      "window": "patient-chart-workspace-window"
     },
     {
       "name": "discharge-body-form",
@@ -100,6 +100,10 @@
     "canHide": true,
     "group": "morgue-workspace-group",
     "width": "wider"
+  },
+  {
+    "name": "patient-chart-workspace-window",
+    "group": "patient-chart"
   }
 ],
   "workspaceGroups2": [

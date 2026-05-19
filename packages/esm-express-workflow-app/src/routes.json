@@ -379,7 +379,7 @@
   "workspaceWindows2": [
     {
       "name": "ewf-start-visit",
-      "group": "ewf-patient-chart",
+      "group": "patient-chart",
       "width": "wider"
     },
     {
