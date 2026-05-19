@@ -332,6 +332,12 @@
       "online": true,
       "offline": true
     },
+     {
+      "name": "custom-stop-visit-overflow-menu-item",
+      "component": "customStopVisitOverflowMenuItem",
+      "online": true,
+      "offline": true
+    },
     {
       "name": "procedure-queues",
       "component": "procedureQueues",
@@ -402,6 +408,10 @@
     {
       "component": "facilityDashboardAuthorizationModal",
       "name": "facility-dashboard-authorization-form-modal"
+    },
+    {
+      "name": "custom-end-visit-dialog",
+      "component": "customEndVisitModal"
     }
   ]
 }

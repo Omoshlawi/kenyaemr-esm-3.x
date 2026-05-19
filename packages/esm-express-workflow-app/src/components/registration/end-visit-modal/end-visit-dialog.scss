@@ -1,0 +1,7 @@
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.bodyShort02 {
+  @include type.type-style('body-compact-02');
+  color: colors.$gray-70;
+}

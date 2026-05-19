@@ -51,7 +51,14 @@ export const patientSummaryDashboard = getAsyncLifecycle(
 export const customStartVisitOverflowMenuItem = getAsyncLifecycle(
   () => import('./components/registration/start-visit-form/overflow-menu-extension/overflow-menu-item.extension'),
   {
-    featureName: 'patient-actions-slot-deceased-button',
+    featureName: 'patient-actions-slot-start-visit-button',
+    moduleName,
+  },
+);
+export const customStopVisitOverflowMenuItem = getAsyncLifecycle(
+  () => import('./components/registration/start-visit-form/overflow-menu-extension/custom-end-active-visit.extension'),
+  {
+    featureName: 'patient-actions-slot-stop-visit-button',
     moduleName,
   },
 );
@@ -59,6 +66,14 @@ export const customStartVisitOverflowMenuItem = getAsyncLifecycle(
 export const visitFormWorkspace = getAsyncLifecycle(
   () => import('./components/registration/start-visit-form/visit-form-workspace/visit-form.workspace'),
   options,
+);
+
+export const customEndVisitModal = getAsyncLifecycle(
+  () => import('./components/registration/end-visit-modal/end-visit-dialog.modal'),
+  {
+    featureName: 'custom-patient-actions-end-visit-modal',
+    moduleName,
+  },
 );
 
 export const anaestheticFormWorkspace = getAsyncLifecycle(
