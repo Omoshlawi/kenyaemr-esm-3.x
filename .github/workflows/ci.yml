@@ -76,6 +76,9 @@ jobs:
     timeout-minutes: 60
     needs: build
     if: github.event_name == 'push'
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -85,8 +88,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
-          registry-url: "https://registry.npmjs.org"
+          node-version: "24"
           cache: 'yarn'
 
       - name: Install dependencies
@@ -111,12 +113,9 @@ jobs:
           git config user.name "KenyaEMR CI"
 
       - name: Publish pre-release
-        run: |
-          yarn config set npmPublishRegistry "https://registry.npmjs.org"
-          yarn config set npmAuthToken "${NODE_AUTH_TOKEN}"
-          yarn run ci:prepublish
+        run: yarn run ci:prepublish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
   # dev server build dispatch
   Trigger_server_build:
@@ -148,7 +147,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "18"
-          registry-url: "https://registry.npmjs.org"
           cache: 'yarn'
 
       - name: Download build artifacts
@@ -166,9 +164,6 @@ jobs:
         run: yarn turbo run build --cache-dir=".turbo" --concurrency=5 --no-daemon
 
       - name: Publish release
-        run: |
-          yarn config set npmPublishRegistry "https://registry.npmjs.org"
-          yarn config set npmAuthToken "${NODE_AUTH_TOKEN}"
-          yarn run ci:publish
+        run: yarn run ci:publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
