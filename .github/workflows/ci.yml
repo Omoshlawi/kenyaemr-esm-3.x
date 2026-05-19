@@ -112,6 +112,7 @@ jobs:
 
       - name: Publish pre-release
         run: |
+          yarn config set npmPublishRegistry "https://registry.npmjs.org"
           yarn config set npmAuthToken "${NODE_AUTH_TOKEN}"
           yarn run ci:prepublish
         env:
@@ -166,6 +167,7 @@ jobs:
 
       - name: Publish release
         run: |
+          yarn config set npmPublishRegistry "https://registry.npmjs.org"
           yarn config set npmAuthToken "${NODE_AUTH_TOKEN}"
           yarn run ci:publish
         env:
