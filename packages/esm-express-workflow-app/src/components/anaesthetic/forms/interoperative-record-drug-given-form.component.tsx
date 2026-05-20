@@ -26,8 +26,6 @@ export type InteroperativeRecordDrugGivenWorkspaceProps = {
 };
 
 // ── Zod schema ────────────────────────────────────────────────────────────────
-const concentrationRatePattern = /^(?:\d+(?:\.\d+)?|\.\d+)%?$/;
-
 const schema = z
   .object({
     maintenanceAgent: z.string(),
@@ -37,7 +35,6 @@ const schema = z
   })
   .superRefine((val, ctx) => {
     const hasMaintenance = Boolean(val.maintenanceAgent);
-    const concentrationRate = val.concentrationRate.trim();
     const hasMedication = Boolean(val.medicationGiven.trim());
     const hasFluids = Boolean(val.fluidsGiven.trim());
 
@@ -46,22 +43,6 @@ const schema = z
         code: z.ZodIssueCode.custom,
         path: ['medicationGiven'],
         message: 'Enter a maintenance agent, medication given, or fluids given before saving',
-      });
-    }
-
-    if (hasMaintenance && !concentrationRate) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['concentrationRate'],
-        message: 'Concentration rate is required when a maintenance agent is selected',
-      });
-    }
-
-    if (concentrationRate && !concentrationRatePattern.test(concentrationRate)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['concentrationRate'],
-        message: 'Use 1, 2.3, 3%, or 4.5% only',
       });
     }
   });
@@ -186,14 +167,9 @@ const InteroperativeRecordDrugGivenForm: React.FC<
                   <TextInput
                     id="concentration-rate-input"
                     labelText={t('concentrationRate', 'Concentration rate')}
-                    placeholder={t('enterConcentrationRate', 'Enter 1, 2.3, 3%, 4.5%')}
+                    placeholder={t('enterConcentrationRate', 'Enter concentration rate')}
                     value={field.value}
-                    onChange={(e) => {
-                      const nextValue = e.target.value;
-                      if (nextValue === '' || /^(?:\d+(?:\.\d*)?|\.\d*)%?$/.test(nextValue)) {
-                        field.onChange(nextValue);
-                      }
-                    }}
+                    onChange={field.onChange}
                     invalid={!!fieldState.error}
                     invalidText={fieldState.error?.message}
                   />

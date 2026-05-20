@@ -268,8 +268,11 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
   const getInteroperativeRecordDrugGivenTableData = () => {
     const MAINTENANCE_OF_ANAESTHESIA_UUID = '164254AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
     const HALOTHANE_UUID = '77343AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-    const EVOFLURANE_UUID = '83872AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+    const SEVOFLURANE_UUID = '83872AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
     const ISOFLURANE_UUID = '78258AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+    const PROPOFOL_UUID = '82726AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+    const KETAMINE_UUID = '78467AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+    const DEXMEDETOMIDINE_UUID = '74640AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
     const CONCENTRATION_RATE_UUID = '160632AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
     const MEDICATION_GIVEN_UUID = '164231AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
     const IV_FLUIDS_UUID = '161911AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
@@ -277,8 +280,11 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
 
     const maintenanceLabels: Record<string, string> = {
       [HALOTHANE_UUID]: 'Halothane',
-      [EVOFLURANE_UUID]: 'Evoflurane',
+      [SEVOFLURANE_UUID]: 'Sevoflurane',
       [ISOFLURANE_UUID]: 'Isoflurane',
+      [PROPOFOL_UUID]: 'Propofol',
+      [KETAMINE_UUID]: 'Ketamine',
+      [DEXMEDETOMIDINE_UUID]: 'Dexmedetomidine',
     };
 
     const resolveMaintenanceLabel = (value: string) => {
@@ -290,7 +296,7 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
       }
       const normalized = value.toLowerCase();
       if (normalized === 'sevoflurane') {
-        return 'Evoflurane';
+        return 'Sevoflurane';
       }
       const matched = Object.values(maintenanceLabels).find((label) => label.toLowerCase() === normalized);
       return matched || value;
@@ -330,7 +336,7 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
             }
             return String(o.value).trim();
           })
-          .find((value) => /^(?:\d+(?:\.\d+)?|\.\d+)%?$/.test(value));
+          .find((value) => value.length > 0);
 
         const medicationValues = obs
           .filter((o) => o.concept.uuid === MEDICATION_GIVEN_UUID || o.concept.uuid === DRUG_NAME_UUID)

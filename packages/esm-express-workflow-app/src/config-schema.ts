@@ -154,8 +154,11 @@ export const configSchema = {
       'Configurable list of maintenance-of-anaesthesia agents shown in the interoperative drug form (e.g. Halothane, Isoflurane). Override per deployment.',
     _default: [
       { value: '77343AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Halothane' },
-      { value: '83872AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Evoflurane' },
+      { value: '83872AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Sevoflurane' },
       { value: '78258AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Isoflurane' },
+      { value: '82726AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Propofol' },
+      { value: '78467AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Ketamine' },
+      { value: '74640AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', label: 'Dexmedetomidine' },
     ],
   },
   proceduresOrderTypeUuid: {

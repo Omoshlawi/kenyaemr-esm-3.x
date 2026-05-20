@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@carbon/react';
+import { Button, Pagination } from '@carbon/react';
 import { Add, ChartColumn, Table as TableIcon } from '@carbon/react/icons';
 import { launchWorkspace2 } from '@openmrs/esm-framework';
+import { usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import InteroperativeRecordDrugGivenGraph, {
   InteroperativeRecordDrugGivenData,
 } from './interoperative-record-drug-given-graph.component';
@@ -48,15 +49,39 @@ const InteroperativeRecordDrugGivenGraphWrapper: React.FC<InteroperativeRecordDr
   data = [],
   tableData = [],
   viewMode = 'graph',
+  currentPage = 1,
+  pageSize = 5,
+  totalItems = 0,
   controlSize = 'sm',
   onAddData,
   onViewModeChange,
+  onPageChange,
+  onPageSizeChange,
   isAddButtonDisabled = false,
   patient,
   onInteroperativeRecordDrugGivenSubmit,
   onDataSaved,
 }) => {
   const { t } = useTranslation();
+  const [internalPage, setInternalPage] = useState(currentPage);
+  const [internalPageSize, setInternalPageSize] = useState(pageSize);
+
+  React.useEffect(() => {
+    setInternalPage(currentPage);
+  }, [currentPage]);
+
+  React.useEffect(() => {
+    setInternalPageSize(pageSize);
+  }, [pageSize]);
+
+  const { pageSizes: calculatedPageSizes, itemsDisplayed } = usePaginationInfo(
+    internalPageSize,
+    Math.ceil((totalItems || 0) / internalPageSize),
+    internalPage,
+    totalItems || 0,
+  );
+
+  const paginatedTableData = tableData.slice((internalPage - 1) * internalPageSize, internalPage * internalPageSize);
 
   const handleAddData = () => {
     onAddData?.();
@@ -117,30 +142,46 @@ const InteroperativeRecordDrugGivenGraphWrapper: React.FC<InteroperativeRecordDr
         ) : (
           <div className={styles.tableContainer}>
             {tableData && tableData.length > 0 ? (
-              <div className={styles.drugsIVFluidsTable}>
-                <table className={styles.dataTable}>
-                  <thead>
-                    <tr>
-                      <th>{t('date', 'Date')}</th>
-                      <th>{t('maintenanceOfAnaesthesia', 'Maintenance of Anaesthesia')}</th>
-                      <th>{t('concentrationRate', 'Concentration rate')}</th>
-                      <th>{t('medicationsGiven', 'Medications given')}</th>
-                      <th>{t('fluidsGiven', 'Fluids given')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tableData.map((item, index) => (
-                      <tr key={index}>
-                        <td>{item.date}</td>
-                        <td>{item.maintenanceAgent || '-'}</td>
-                        <td>{item.concentrationRate || '-'}</td>
-                        <td>{item.medicationGiven || '-'}</td>
-                        <td>{item.fluidsGiven || '-'}</td>
+              <>
+                <div className={styles.drugsIVFluidsTable}>
+                  <table className={styles.dataTable}>
+                    <thead>
+                      <tr>
+                        <th>{t('date', 'Date')}</th>
+                        <th>{t('maintenanceOfAnaesthesia', 'Maintenance of Anaesthesia')}</th>
+                        <th>{t('concentrationRate', 'Concentration rate')}</th>
+                        <th>{t('medicationsGiven', 'Medications given')}</th>
+                        <th>{t('fluidsGiven', 'Fluids given')}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {paginatedTableData.map((item, index) => (
+                        <tr key={index}>
+                          <td>{item.date}</td>
+                          <td>{item.maintenanceAgent || '-'}</td>
+                          <td>{item.concentrationRate || '-'}</td>
+                          <td>{item.medicationGiven || '-'}</td>
+                          <td>{item.fluidsGiven || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <Pagination
+                  page={internalPage}
+                  pageSize={internalPageSize}
+                  pageSizes={calculatedPageSizes}
+                  totalItems={totalItems || tableData.length}
+                  onChange={({ page, pageSize }) => {
+                    setInternalPage(page);
+                    setInternalPageSize(pageSize);
+                    onPageChange?.(page);
+                    onPageSizeChange?.(pageSize);
+                  }}
+                  className={styles.pagination}
+                />
+                {(totalItems || tableData.length) > 0 && <div className={styles.paginationInfo}>{itemsDisplayed}</div>}
+              </>
             ) : (
               <div className={styles.emptyTable}>
                 <p>{t('noInteroperativeRecordDrugGivenData', 'No interoperative record data available')}</p>
