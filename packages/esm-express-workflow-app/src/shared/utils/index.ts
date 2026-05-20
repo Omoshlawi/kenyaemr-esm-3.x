@@ -187,7 +187,7 @@ export interface SavannahErrorResponse {
 
 /**
  * Returns the most specific human-readable error message available.
- * Priority: upstream_error.message > upstream_error.error > error > message > fallback
+ * Priority: upstream_error.message > upstream_error.error > message > error > fallback
  */
 export function extractUpstreamError(
   response: SavannahErrorResponse | string | unknown,
@@ -213,14 +213,14 @@ export function extractUpstreamError(
     return upstreamErr;
   }
 
-  const topError = res.error?.trim();
-  if (topError && !res.upstream_error) {
-    return topError;
-  }
-
   const topMsg = res.message?.trim();
   if (topMsg) {
     return topMsg;
+  }
+
+  const topError = res.error?.trim();
+  if (topError && !res.upstream_error) {
+    return topError;
   }
 
   if (topError) {

@@ -1,9 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { showSnackbar, updateVisit, useVisit } from '@openmrs/esm-framework';
-import { usePatientChartStore } from '@openmrs/esm-patient-common-lib';
+import { showSnackbar, useVisit } from '@openmrs/esm-framework';
+import { extractFetchError } from '../../../shared/utils';
 import styles from './end-visit-dialog.scss';
+import { processVisitInsuranceClaim } from './end-visit.resource';
 
 interface EndVisitDialogProps {
   patientUuid: string;
@@ -12,39 +13,41 @@ interface EndVisitDialogProps {
 
 const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal }) => {
   const { t } = useTranslation();
-  const { activeVisit, mutate } = useVisit(patientUuid);
-  const { visitContext, setVisitContext } = usePatientChartStore(patientUuid);
+  const { activeVisit } = useVisit(patientUuid);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const handleEndVisit = () => {
     if (activeVisit) {
-      const endVisitPayload = {
-        stopDatetime: new Date(),
-      };
-
-      const abortController = new AbortController();
-
-      updateVisit(activeVisit.uuid, endVisitPayload, abortController)
+      setIsSubmitting(true);
+      processVisitInsuranceClaim(activeVisit.uuid)
         .then((response) => {
-          mutate();
-          window.dispatchEvent(new CustomEvent('queue-entry-updated'));
-          closeModal();
-          if (visitContext?.uuid == activeVisit.uuid) {
-            setVisitContext(null, null);
-          }
+          const responseMessage =
+            typeof response?.data === 'string'
+              ? response.data
+              : response?.data?.message || JSON.stringify(response?.data);
+
           showSnackbar({
             isLowContrast: true,
             kind: 'success',
-            subtitle: t('visitEndSuccessfully', `${response?.data?.visitType?.display} ended successfully`),
+            subtitle: responseMessage,
             title: t('visitEnded', 'Visit ended'),
           });
+
+          closeModal();
+          setIsSubmitting(false);
         })
         .catch((error) => {
           showSnackbar({
-            title: t('errorEndingVisit', 'Error ending visit'),
+            isLowContrast: true,
             kind: 'error',
-            isLowContrast: false,
-            subtitle: error?.message,
+            subtitle: extractFetchError(
+              error,
+              t('insuranceClaimProcessingFailed', 'Insurance claim processing failed'),
+            ),
+            title: t('claimProcessingError', 'Error'),
           });
+          closeModal();
+          setIsSubmitting(false);
         });
     }
   };
@@ -64,8 +67,8 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
         <Button kind="secondary" onClick={closeModal}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button kind="danger" onClick={handleEndVisit}>
-          {t('endVisitTitle', 'End Visit')}
+        <Button kind="danger" onClick={handleEndVisit} disabled={isSubmitting || !activeVisit}>
+          {t('endVisit_title', 'End Visit')}
         </Button>
       </ModalFooter>
     </div>
