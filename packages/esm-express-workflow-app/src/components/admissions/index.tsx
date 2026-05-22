@@ -8,7 +8,6 @@ const options = {
 };
 
 export const admissionsDashboard = getAsyncLifecycle(() => import('./admissions-dashboard.component'), options);
-export const admissionTreatmentChart = getAsyncLifecycle(() => import('./admission-medication-summary'), options);
 // t('inPatient', 'In-Patient')
 export const admissionsDashboardLink = getAsyncLifecycle(
   () =>

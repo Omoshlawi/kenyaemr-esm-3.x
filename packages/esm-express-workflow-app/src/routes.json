@@ -353,16 +353,6 @@
       "online": true,
       "offline": false,
       "featureFlag": "procedureQueues"
-    },
-    {
-      "name": "admission-medication-summary",
-      "component": "admissionTreatmentChart",
-      "slot": "inpatient-dashboard-tabs-slot",
-      "online": true,
-      "offline": false,
-      "meta":{
-        "title": "treatmentChart"
-      }
     }
   ],
   "workspaces2": [
