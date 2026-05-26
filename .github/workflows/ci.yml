@@ -113,7 +113,9 @@ jobs:
           git config user.name "KenyaEMR CI"
 
       - name: Publish pre-release
-        run: yarn run ci:prepublish
+        run: |
+          yarn config set npmAuthToken "${NODE_AUTH_TOKEN}"
+          yarn run ci:prepublish
         env:
           NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
