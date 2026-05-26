@@ -61,8 +61,8 @@ const PatientDiagnosisContent: React.FC<PatientDiagnosisContentProps> = ({ patie
       lowContrast={true}
       statusIconDescription="notification"
       subtitle={t(
-        'noMainDiagnosisSubtitle',
-        'Main diagnosis is required for claim processing, please add main diagnosis to the clinical encounter form',
+        'noMainDiagnosisSubtitlecWarning',
+        'Main diagnosis is required, please add main diagnosis to the clinical encounter form',
       )}
       title={t('noMainDiagnosis', 'Main diagnosis required')}
       hideCloseButton={true}
