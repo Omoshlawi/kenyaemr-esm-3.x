@@ -420,7 +420,7 @@
       "component": "patientClinicalEncounter",
       "slot": "clinical-encounter-tabs-slot",
       "meta": {
-        "title": "clinicalEncounter",
+        "title": "clinicalEncounterTab",
         "slot": "ewf-clinical-encounter-slot"
       }
     },
