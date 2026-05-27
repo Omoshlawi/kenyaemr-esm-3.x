@@ -357,7 +357,7 @@
       "component": "patientSummary",
       "slot": "ewf-patient-chart-patient-summary-tabs-extension-slot",
       "meta": {
-        "title": "patientSummary",
+        "title": "patientSummaryTab",
         "slot": "ewf-patient-summary-slot"
       }
     },
