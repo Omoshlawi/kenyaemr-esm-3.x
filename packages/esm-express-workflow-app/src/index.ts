@@ -1,7 +1,6 @@
 import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle, registerFeatureFlag } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 export * from './components/procedures/procedure-queues';
-
 const moduleName = '@kenyaemr/esm-express-workflow-app';
 
 const options = {

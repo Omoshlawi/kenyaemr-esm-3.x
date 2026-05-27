@@ -1,6 +1,7 @@
-import { getAsyncLifecycle } from '@openmrs/esm-framework';
+import { getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 
 import { moduleName } from '../../constants';
+import { createTabExtension } from '../../shared/tabs/create-tab-extension';
 
 const options = {
   featureName: 'express-workflow',
@@ -18,5 +19,13 @@ export const laboratoryLeftPanelLink = getAsyncLifecycle(
         icon: 'omrs-icon-microscope',
       }),
     })),
+  options,
+);
+
+// t("results", "Results")
+export const patientLaboratoryOrdersResults = getSyncLifecycle(createTabExtension(), options);
+// t("order", "Orders")
+export const patientLaboratoryOrdersTab = getAsyncLifecycle(
+  () => import('../../components/laboratory/lab-table.component'),
   options,
 );

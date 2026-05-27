@@ -1,41 +1,59 @@
-import React, { useState } from 'react';
-import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@carbon/react';
-import { ExtensionSlot } from '@openmrs/esm-framework';
-
-export type ExtensionTabItem = {
-  label: React.ReactNode;
-  icon?: React.ComponentType<unknown>;
-  slotName: string;
-  slotClassName?: string;
-};
+import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs, TabsSkeleton } from '@carbon/react';
+import { ErrorState, Extension, translateFrom, usePatient } from '@openmrs/esm-framework';
+import { ComponentContext, useExtensionSlot } from '@openmrs/esm-framework/src/internal';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type ExtensionTabsProps = {
-  items: Array<ExtensionTabItem>;
-  state?: Record<string, unknown>;
-  contained?: boolean;
+  extensionSlotName: string;
+  patientUuid: string;
 };
 
-const ExtensionTabs: React.FC<ExtensionTabsProps> = ({ items, state, contained = true }) => {
-  const [activeTab, setActiveTab] = useState<number>(0);
+const ExtensionTabs: React.FC<ExtensionTabsProps> = ({ extensionSlotName, patientUuid }) => {
+  const { t } = useTranslation();
+  const { patient, isLoading, error } = usePatient(patientUuid);
+  const state = useMemo(() => ({ patientUuid, patient }), [patientUuid, patient]);
+
+  const { extensions, extensionSlotModuleName } = useExtensionSlot(extensionSlotName, state);
+  if (isLoading) {
+    return <TabsSkeleton />;
+  }
+
+  if (error) {
+    return <ErrorState headerTitle={t('consultation', 'Consultation')} error={error} />;
+  }
+
   return (
-    <Tabs selectedIndex={activeTab} onChange={({ selectedIndex }) => setActiveTab(selectedIndex)}>
-      <TabList contained={contained}>
-        {items.map((item) => (
-          <Tab key={item.slotName} renderIcon={item.icon}>
-            {item.label}
-          </Tab>
-        ))}
-      </TabList>
-      <TabPanels>
-        {items.map((item, index) => (
-          <TabPanel key={item.slotName}>
-            {index === activeTab ? (
-              <ExtensionSlot className={item.slotClassName} name={item.slotName} state={state} />
-            ) : null}
-          </TabPanel>
-        ))}
-      </TabPanels>
-    </Tabs>
+    <Layer>
+      <Tabs>
+        <TabList contained>
+          {extensions.map((ext) => (
+            <Tab key={ext.name}>{translateFrom(extensionSlotModuleName, ext.meta.title, ext.meta.title)}</Tab>
+          ))}
+        </TabList>
+        <TabPanels
+          data-extension-slot-name={extensionSlotName}
+          data-extension-slot-module-name={extensionSlotModuleName}>
+          {extensions.map((ext) => (
+            <TabPanel key={ext.name}>
+              <ComponentContext.Provider
+                key={ext.id}
+                value={{
+                  featureName: ext.meta.featureName,
+                  moduleName: ext.moduleName,
+                  extension: {
+                    extensionId: ext.id,
+                    extensionSlotName: extensionSlotName,
+                    extensionSlotModuleName: ext.moduleName,
+                  },
+                }}>
+                <Extension state={state} />
+              </ComponentContext.Provider>
+            </TabPanel>
+          ))}
+        </TabPanels>
+      </Tabs>
+    </Layer>
   );
 };
 

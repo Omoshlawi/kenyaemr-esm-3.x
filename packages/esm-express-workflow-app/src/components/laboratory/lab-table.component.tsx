@@ -1,34 +1,47 @@
 import React, { useMemo } from 'react';
-import { Order } from '../../types/order/order';
-import { Layer } from '@carbon/react';
+import { DataTableSkeleton, Layer } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
-import { useConfig } from '@openmrs/esm-framework';
+import { ErrorState, useConfig } from '@openmrs/esm-framework';
 import styles from './laboratory-tabs.scss';
 import { EmptyState, useLaunchWorkspaceRequiringVisit, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
 import { ExpressWorkflowConfig } from '../../config-schema';
 import OrderTable from '../../shared/orders/OrderTable';
+import { usePatientOrders } from '../../hooks/useOrders';
 
 type LabTableProps = {
-  orders: Array<Order>;
   patientUuid: string;
-  mutateOrders: () => void;
 };
 
-const LabTable: React.FC<LabTableProps> = ({ orders, patientUuid, mutateOrders }) => {
+const LabTable: React.FC<LabTableProps> = ({ patientUuid }) => {
+  const { labOrderTypeUuid, orderableConceptSets } = useConfig<ExpressWorkflowConfig>();
+  const {
+    data: orders,
+    isLoading,
+    error,
+    mutate: mutateOrders,
+  } = usePatientOrders(patientUuid, 'any', labOrderTypeUuid, undefined, undefined);
+
   const { t } = useTranslation();
   const { patient } = usePatientChartStore(patientUuid);
-  const windowProps = useMemo(() => ({ encounterUuid: orders[0]?.encounter?.uuid }), [orders[0]?.encounter?.uuid]);
+  const windowProps = useMemo(() => ({ encounterUuid: orders?.[0]?.encounter?.uuid }), [orders]);
   const groupProps = useMemo(
     () => ({
       patient,
       patientUuid: patient?.id,
-      visitContext: orders[0]?.encounter?.visit,
+      visitContext: orders?.[0]?.encounter?.visit,
       mutateVisitContext: mutateOrders,
     }),
-    [patient, orders[0]?.encounter?.visit, mutateOrders],
+    [patient, orders, mutateOrders],
   );
-  const { labOrderTypeUuid, orderableConceptSets } = useConfig<ExpressWorkflowConfig>();
   const launchAddLabOrder = useLaunchWorkspaceRequiringVisit(patientUuid, 'order-basket');
+
+  if (isLoading) {
+    return <DataTableSkeleton />;
+  }
+
+  if (error) {
+    return <ErrorState headerTitle={t('laboratoryOrders', 'Laboratory Orders')} error={error} />;
+  }
 
   if (orders?.length === 0) {
     return (
@@ -47,8 +60,8 @@ const LabTable: React.FC<LabTableProps> = ({ orders, patientUuid, mutateOrders }
   return (
     <OrderTable
       title={t('laboratoryOrders', 'Laboratory Orders')}
-      orders={orders}
-      onAdd={() => launchAddLabOrder(null, { encounterUuid: '' }, groupProps)}
+      orders={orders ?? []}
+      onAdd={() => launchAddLabOrder(undefined, { encounterUuid: '' }, groupProps)}
       containerClassName={styles.labTableContainer}
       tableCellClassName={styles.tableCell}
       priorityPillClassName={styles.priorityPill}

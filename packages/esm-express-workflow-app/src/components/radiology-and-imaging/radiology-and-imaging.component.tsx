@@ -1,28 +1,12 @@
 import React from 'react';
-import { useConfig } from '@openmrs/esm-framework';
-import OrdersTabs from '../../shared/orders/OrdersTabs';
-import RadiologyAndImagingTable from './radiology-and-imaging-table.component';
-import { ExpressWorkflowConfig } from '../../config-schema';
+import ExtensionTabs from '../../shared/tabs/extension-tabs.component';
 
 type RadiologyAndImagingTabsProps = {
   patientUuid: string;
-  patient: fhir.Patient;
 };
-const imagingRadiologyConceptClassUuid = '8caa332c-efe4-4025-8b18-3398328e1323';
 
-const RadiologyAndImagingTabs: React.FC<RadiologyAndImagingTabsProps> = ({ patientUuid, patient }) => {
-  const { imagingOrderTypeUuid } = useConfig<ExpressWorkflowConfig>();
-  return (
-    <OrdersTabs
-      patientUuid={patientUuid}
-      patient={patient}
-      basePath="radiology-and-imaging"
-      resultsSlotName="ewf-radiology-and-imaging-results-slot"
-      orderTypeUuid={imagingOrderTypeUuid}
-      filter={(order) => order.concept?.conceptClass?.uuid === imagingRadiologyConceptClassUuid}
-      Table={({ orders }) => <RadiologyAndImagingTable orders={orders} patientUuid={patientUuid} patient={patient} />}
-    />
-  );
+const RadiologyAndImagingTabs: React.FC<RadiologyAndImagingTabsProps> = ({ patientUuid }) => {
+  return <ExtensionTabs extensionSlotName="patient-imaging-tabs-slot" patientUuid={patientUuid} />;
 };
 
 export default RadiologyAndImagingTabs;

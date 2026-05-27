@@ -1,6 +1,7 @@
-import { getAsyncLifecycle } from '@openmrs/esm-framework';
+import { getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 
 import { moduleName } from '../../constants';
+import { createTabExtension } from '../../shared/tabs/create-tab-extension';
 
 const options = {
   featureName: 'express-workflow',
@@ -21,5 +22,13 @@ export const radiologyAndImagingLeftPanelLink = getAsyncLifecycle(
         icon: 'omrs-icon-user-xray',
       }),
     })),
+  options,
+);
+
+// t("results", "Results")
+export const patientImagingOrdersResults = getSyncLifecycle(createTabExtension(), options);
+// t("order", "Orders")
+export const patientImagingOrdersTab = getAsyncLifecycle(
+  () => import('../../components/radiology-and-imaging/radiology-and-imaging-table.component'),
   options,
 );
