@@ -947,23 +947,6 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({ onClose, patient_
         <Button kind="secondary" onClick={onClose} type="button">
           {t('closeModal', 'Close modal')}
         </Button>
-        <Button kind="danger" onClick={handleCloseClaim} className={styles.actionButton} disabled={isClosed}>
-          {t('cancelClaim', 'Cancel Claim')}
-        </Button>
-        <Button
-          kind="primary"
-          onClick={() => handleDispatchClaim()}
-          disabled={
-            isClosed ||
-            !data ||
-            !selectedInvoiceNumber ||
-            isSubmitting ||
-            (!isInpatientClaim && false) ||
-            (isInpatientClaim && (!hasRequestedOtp || !claimOtp.trim() || !dischargeDate || !dischargeReason))
-          }
-          type="button">
-          {isSubmitting ? t('submitting', 'Submitting...') : t('submitClaim', 'Submit Claim')}
-        </Button>
       </ModalFooter>
     </>
   );

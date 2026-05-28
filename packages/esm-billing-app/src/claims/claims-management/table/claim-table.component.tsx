@@ -472,50 +472,6 @@ const ClaimsTable: React.FC<TableProps> = ({
               return dispose;
             }}
           />
-          <OverflowMenuItem
-            itemText={t('submitClaim', 'Submit Claim')}
-            onClick={() => {
-              const dispose = showModal('resubmit-claim-line-modal', {
-                patient_uuid: claim?.patient?.uuid,
-                onClose: () => {
-                  dispose();
-                },
-                controlSize: { controlSize },
-              });
-              return dispose;
-            }}
-          />
-          <OverflowMenuItem
-            hasDivider
-            isDelete
-            itemText={t('cancelClaim', 'Cancel claim')}
-            onClick={() => {
-              const dispose = showModal('close-claim-modal', {
-                title: t('cancelClaim', 'Cancel Claim'),
-                patient_uuid: claim?.patient?.uuid,
-                onClose: () => {
-                  dispose();
-                },
-                controlSize: { controlSize },
-              });
-              return dispose;
-            }}
-          />
-          <OverflowMenuItem
-            hasDivider
-            isDelete
-            itemText={t('resubmitClaim', 'Resubmit Claim')}
-            onClick={() => {
-              const dispose = showModal('resubmit-claim-line-modal', {
-                patient_uuid: claim?.patient?.uuid,
-                onClose: () => {
-                  dispose();
-                },
-                controlSize: { controlSize },
-              });
-              return dispose;
-            }}
-          />
         </>
       </OverflowMenu>
     ),
