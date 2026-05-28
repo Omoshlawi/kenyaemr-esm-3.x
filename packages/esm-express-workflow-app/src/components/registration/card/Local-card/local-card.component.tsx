@@ -115,12 +115,12 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
   }, []);
 
   const launchCheckInWorkspace = async (patient: any, patientUuid: string) => {
-    await launchWorkspaceGroup2('ewf-patient-chart', {
+    const groupProps = {
       patient,
       patientUuid,
       visitContext: null as unknown as Visit,
       mutateVisitContext: () => {},
-    });
+    };
 
     launchWorkspace2<VisitFormProps, {}, {}>(
       'custom-start-visit-workspace-form',
@@ -129,7 +129,7 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
         showPatientHeader: false,
       },
       {},
-      null,
+      groupProps,
     );
   };
 
