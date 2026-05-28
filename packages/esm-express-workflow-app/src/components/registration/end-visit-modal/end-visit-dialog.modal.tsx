@@ -177,7 +177,7 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
         otpLength: 6,
         expiryMinutes: 5,
         centerBoxes: true,
-        authMode: 'otp-only',
+        authMode: 'multi',
         whitelistedForOTP: isPatientWhiteListed,
         patientCRId: crId,
 
