@@ -330,7 +330,6 @@
   "results": "Résultats",
   "resultsOfOperation": "Résultats de l’opération",
   "resultsOfOperationRequired": "Les résultats de l’opération sont requis",
-  "resultsTab": "Résultats",
   "revisitPatientResults_one": "Patient(s) en revisite ({{count}})",
   "revisitPatientResults_many": "Patients en revisite ({{count}})",
   "revisitPatientResults_other": "Patient(s) en revisite ({{count}})",
