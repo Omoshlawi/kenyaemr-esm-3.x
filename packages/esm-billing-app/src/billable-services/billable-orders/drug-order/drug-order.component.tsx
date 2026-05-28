@@ -1,9 +1,10 @@
 import React from 'react';
 import { Drug } from '@openmrs/esm-patient-common-lib';
-import { useBillableItem, useSockItemInventory } from '../useBillableItem';
+import { useBillableItem, useDrugQuantityByConceptUuid, useSockItemInventory } from '../useBillableItem';
 import { useTranslation } from 'react-i18next';
 import styles from './drug-order.scss';
 import { useCurrencyFormatting } from '../../../helpers/currency';
+import { InlineLoading } from '@carbon/react';
 
 type DrugOrderProps = {
   drug: Drug;
@@ -12,26 +13,23 @@ type DrugOrderProps = {
 const DrugOrder: React.FC<DrugOrderProps> = ({ drug }) => {
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
-
-  const { stockItem, isLoading: isLoadingInventory } = useSockItemInventory(drug?.uuid);
+  const {
+    quantity,
+    quantityUoM,
+    isLoading: isLoadingInventory,
+  } = useDrugQuantityByConceptUuid(drug?.concept?.display ?? '');
   const { billableItem, isLoading } = useBillableItem(drug?.concept?.uuid, drug?.uuid);
   if (isLoading || isLoadingInventory) {
-    return null;
+    return <InlineLoading />;
   }
   return (
     <div className={styles.drugOrderContainer}>
-      {stockItem && stockItem.length > 0 ? (
+      {quantity > 0 ? (
         <>
           <div className={styles.bold}>{t('inStock', 'In Stock')}</div>
-          {stockItem.map((item, index) => (
-            <div key={index} className={styles.itemContainer}>
-              <span>{item.partyName}</span>
-              <span>
-                {' '}
-                {Math.round(item.quantity)} {item.quantityUoM}(s){' '}
-              </span>
-            </div>
-          ))}
+          <div className={styles.itemContainer}>
+            {Math.round(quantity)} {quantityUoM}(s){' '}
+          </div>
         </>
       ) : (
         <div className={styles.red}>{t('drugNotAvailable', 'Drug Is Not Available / Out of Stock')}</div>
