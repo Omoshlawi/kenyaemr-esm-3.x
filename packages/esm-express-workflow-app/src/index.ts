@@ -1,6 +1,20 @@
-import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle, registerFeatureFlag } from '@openmrs/esm-framework';
+import { defineConfigSchema, getAsyncLifecycle, registerFeatureFlag } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
+export * from './components/accounting';
+export * from './components/admissions';
+export * from './components/appointments';
+export * from './components/consultation';
+export * from './components/facility-dashboard';
+export * from './components/laboratory';
+export * from './components/mch';
+export * from './components/pharmacy';
+export * from './components/preauth';
+export * from './components/procedures';
 export * from './components/procedures/procedure-queues';
+export * from './components/radiology-and-imaging';
+export * from './components/registration';
+export * from './components/reports';
+export * from './components/triage';
 const moduleName = '@kenyaemr/esm-express-workflow-app';
 
 const options = {
@@ -18,20 +32,6 @@ export function startupApp() {
     'Enable/Disable procedure queue in procedure pannel and procedure form',
   );
 }
-export * from './components/facility-dashboard';
-export * from './components/registration';
-export * from './components/triage';
-export * from './components/accounting';
-export * from './components/consultation';
-export * from './components/mch';
-export * from './components/reports';
-export * from './components/pharmacy';
-export * from './components/laboratory';
-export * from './components/radiology-and-imaging';
-export * from './components/procedures';
-export * from './components/admissions';
-export * from './components/preauth';
-export * from './components/appointments';
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
 export const otpVerificationModal = getAsyncLifecycle(
@@ -98,5 +98,10 @@ export const homepageDashboardLink = getAsyncLifecycle(
         }),
       }),
     ),
+  options,
+);
+
+export const procedureAndOrdersTab = getAsyncLifecycle(
+  () => import('./shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
   options,
 );

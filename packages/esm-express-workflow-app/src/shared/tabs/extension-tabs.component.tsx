@@ -20,7 +20,7 @@ const ExtensionTabs: React.FC<ExtensionTabsProps> = ({ extensionSlotName, patien
   }
 
   if (error) {
-    return <ErrorState headerTitle={t('consultation', 'Consultation')} error={error} />;
+    return <ErrorState headerTitle={t('error', 'Error')} error={error} />;
   }
 
   return (

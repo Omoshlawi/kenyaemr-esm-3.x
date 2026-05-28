@@ -23,17 +23,22 @@ type ProceduresTableProps = {
 };
 const ProceduresTable: React.FC<ProceduresTableProps> = ({ patientUuid, patient }) => {
   const { t } = useTranslation();
-  const { imagingOrderTypeUuid, imagingOrderableConceptSets } = useConfig<ExpressWorkflowConfig>();
+  const { imagingOrderTypeUuid, imagingOrderableConceptSets, proceduresConceptClassUuid } =
+    useConfig<ExpressWorkflowConfig>();
   const {
     data: orders,
     isLoading,
     error,
     mutate: mutateOrders,
   } = usePatientOrders(patientUuid, 'any', imagingOrderTypeUuid, undefined, undefined);
+  const filteredOrders = useMemo(
+    () => orders?.filter((order) => order.concept?.conceptClass?.uuid === proceduresConceptClassUuid),
+    [orders, proceduresConceptClassUuid],
+  );
 
   const { visitContext } = usePatientChartStore(patientUuid);
   const { mutate: globalMutate } = useSWRConfig();
-  const windowProps = useMemo(() => ({ encounterUuid: orders?.[0]?.encounter?.uuid }), [orders]);
+  const windowProps = useMemo(() => ({ encounterUuid: filteredOrders?.[0]?.encounter?.uuid }), [filteredOrders]);
   const groupProps = useMemo(
     () => ({
       patient,
@@ -55,7 +60,7 @@ const ProceduresTable: React.FC<ProceduresTableProps> = ({ patientUuid, patient 
   if (error) {
     return <ErrorState headerTitle={t('proceduresOrders', 'Procedures Orders')} error={error} />;
   }
-  if (orders?.length === 0) {
+  if (filteredOrders?.length === 0) {
     return (
       <Layer>
         <EmptyState
@@ -79,7 +84,7 @@ const ProceduresTable: React.FC<ProceduresTableProps> = ({ patientUuid, patient 
   return (
     <OrderTable
       title={t('proceduresOrders', 'Procedures Orders')}
-      orders={orders ?? []}
+      orders={filteredOrders ?? []}
       onAdd={() =>
         launchOrderBasket(
           {

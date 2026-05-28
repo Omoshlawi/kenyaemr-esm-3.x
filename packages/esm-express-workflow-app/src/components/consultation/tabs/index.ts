@@ -1,5 +1,4 @@
-import { getSyncLifecycle } from '@openmrs/esm-framework';
-import { createTabExtension } from '../../../shared/tabs/create-tab-extension';
+import { getAsyncLifecycle } from '@openmrs/esm-framework';
 
 const options = {
   featureName: 'express-workflow',
@@ -7,28 +6,62 @@ const options = {
 };
 
 // t('patientSummaryTab', 'Patient Summary')
-export const patientSummary = getSyncLifecycle(createTabExtension(), options);
+export const patientSummary = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
 // t('vitalsAndAnthropometric', 'Vitals & Anthropometric')
-export const patientVitals = getSyncLifecycle(createTabExtension(), options);
+export const patientVitals = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
 // t('carePanel', 'Care Panel')
-export const carePanel = getSyncLifecycle(createTabExtension(), options);
+export const carePanel = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
 // t('immunizations', 'Immunizations')
-export const immunization = getSyncLifecycle(createTabExtension(), options);
+export const immunization = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
 // t('relationships', 'Relationships')
-export const relationships = getSyncLifecycle(createTabExtension(), options);
+export const relationships = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
 // t('appointments', 'Appointments')
-export const appointments = getSyncLifecycle(createTabExtension(), options);
+export const appointments = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
 // t("attachments", "Attachments")
-export const attachments = getSyncLifecycle(createTabExtension(), options);
+export const attachments = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
 // t('clinicalEncounterTab', 'Clinical Encounter')
-export const patientClinicalEncounter = getSyncLifecycle(createTabExtension(), options);
+export const patientClinicalEncounter = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
 // t('visits', 'Visits')
-export const patientVisits = getSyncLifecycle(createTabExtension(), options);
+export const patientVisits = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
 // t('specialClinics', 'Special Clinics')
-export const specialClinics = getSyncLifecycle(createTabExtension(), options);
+export const specialClinics = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
 // t('clinicalNotes', 'Clinical Notes')
-export const clinicalNotes = getSyncLifecycle(createTabExtension(), options);
-// t('proceduresAndOrders', 'Procedures & Orders')
-export const proceduresAndOrders = getSyncLifecycle(createTabExtension(), options);
-// t('resultsTab', 'Results')
-export const proceduresAndOrdersResults = getSyncLifecycle(createTabExtension(), options);
+export const clinicalNotes = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
+// t('proceduresAndOrders', 'Investigation & Orders')
+export const proceduresAndOrders = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);

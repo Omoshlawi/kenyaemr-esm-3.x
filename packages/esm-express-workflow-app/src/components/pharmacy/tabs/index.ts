@@ -1,13 +1,21 @@
-import { getSyncLifecycle } from '@openmrs/esm-framework';
-import { createTabExtension } from '../../../shared/tabs/create-tab-extension';
+import { getAsyncLifecycle } from '@openmrs/esm-framework';
 
 const options = {
   featureName: 'express-workflow',
   moduleName: '@kenyaemr/esm-express-workflow-app',
 };
 // t('orders', 'Orders')
-export const pharmacyOrdersTab = getSyncLifecycle(createTabExtension(), options);
+export const pharmacyOrdersTab = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
 // t('activeMedications', 'Active Medications')
-export const pharmacyActiveMedicationsTab = getSyncLifecycle(createTabExtension(), options);
+export const pharmacyActiveMedicationsTab = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
 // t('pastMedications', 'Past Medications')
-export const pharmacyPastMedicationsTab = getSyncLifecycle(createTabExtension(), options);
+export const pharmacyPastMedicationsTab = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);

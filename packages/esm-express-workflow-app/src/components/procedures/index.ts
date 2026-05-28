@@ -1,7 +1,6 @@
-import { getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
+import { getAsyncLifecycle } from '@openmrs/esm-framework';
 
 import { moduleName } from '../../constants';
-import { createTabExtension } from '../../shared/tabs/create-tab-extension';
 
 const options = {
   featureName: 'express-workflow',
@@ -23,7 +22,10 @@ export const proceduresLeftPanelLink = getAsyncLifecycle(
 );
 
 // t("results", "Results")
-export const patientProcedureOrdersResults = getSyncLifecycle(createTabExtension(), options);
+export const patientProcedureOrdersResults = getAsyncLifecycle(
+  () => import('../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
 // t("order", "Orders")
 export const patientProcedureOrdersTab = getAsyncLifecycle(
   () => import('../../components/procedures/procedures-table.component'),

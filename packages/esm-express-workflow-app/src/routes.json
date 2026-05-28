@@ -459,14 +459,6 @@
       }
     },
     {
-      "name": "ewf-procedures-and-orders-results-tab",
-      "component": "proceduresAndOrdersResults",
-      "meta": {
-        "title": "resultsTab",
-        "slot": "ewf-procedures-and-orders-results-slot"
-      }
-    },
-    {
       "name": "ewf-pharmacy-orders-tab",
       "component": "pharmacyOrdersTab",
       "slot": "pharmacy-tabs-slot",
