@@ -109,6 +109,10 @@ export const peerCalendarFormEntry = getAsyncLifecycle(
   () => import('./peer-calendar/forms/form-entry.workspace'),
   options,
 );
+export const exportedPatientFormEntryWorkspace = getAsyncLifecycle(
+  () => import('./forms/custom-form-entry.workspace'),
+  options,
+);
 
 export const maternalAndChildHealthDashboardLink = getAsyncLifecycle(
   () =>

@@ -58,7 +58,7 @@ const GlobalPropertyTable: React.FC = () => {
 
   const { pageSizes } = usePaginationInfo(DEFAULT_PAGE_SIZE, totalCount, currentPage, globalProperties.length);
 
-  const headers: DataTableHeader[] = useMemo(
+  const headers: Array<DataTableHeader> = useMemo(
     () => [
       { key: 'property', header: t('property', 'Property') },
       { key: 'value', header: t('value', 'Value') },

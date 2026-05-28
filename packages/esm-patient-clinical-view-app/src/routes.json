@@ -348,7 +348,7 @@
     },
     {
       "name": "custom-form-entry-workspace",
-      "component": "@openmrs/esm-patient-forms-app#exportedPatientFormEntryWorkspace",
+      "component": "exportedPatientFormEntryWorkspace",
       "window": "custom-form-entry-workspace-window"
     },
     {
