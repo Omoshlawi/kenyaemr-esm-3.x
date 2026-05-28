@@ -164,6 +164,12 @@ export const useModuleLinks = () => {
       icon: <Review size={24} />,
       privilege: 'o3: View Service Availability Admin Dashboard',
     },
+    {
+      label: t('claimsAdmin', 'Claims Admin'),
+      url: `${openmrsSpaBase}claims-admin`,
+      icon: <Review size={24} />,
+      privilege: 'o3: View Claims Admin Dashboard',
+    },
   ];
 
   return moduleLinks.filter((link) => !excludeLinks.includes(link.label));
