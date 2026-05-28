@@ -4,6 +4,11 @@
     "kenyaemr": "^19.0.0"
   },
   "pages": [],
+  "extensionSlots": {
+    "navbar-items-slot": {
+      "add": []
+    }
+  },
   "extensions": [
     {
       "name": "patient-flag",

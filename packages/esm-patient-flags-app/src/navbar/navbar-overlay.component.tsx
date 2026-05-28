@@ -2,7 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Layer, Search, Tile } from '@carbon/react';
 import { EmptyDataIllustration } from '@openmrs/esm-patient-common-lib';
-import { UserHasAccess } from '@openmrs/esm-framework';
+import { ExtensionSlot, UserHasAccess } from '@openmrs/esm-framework';
 import NavBarLink from './navbar-link.component';
 import styles from './navbar-action-button.scss';
 
@@ -87,7 +87,10 @@ const NavBarOverlay: React.FC<NavBarOverlayProps> = ({ setSearchTerm, modules, s
         />
 
         {modules.length === 0 && renderEmptyState()}
-        {modules.length > 0 && <div className={styles.navLinks}>{renderModuleLinks}</div>}
+        <div className={styles.navLinks}>
+          {renderModuleLinks}
+          <ExtensionSlot name="navbar-items-slot" state={{ hideOverlay }} />
+        </div>
       </div>
     </div>
   );

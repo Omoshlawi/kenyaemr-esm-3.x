@@ -22,6 +22,7 @@
   display: grid;
   grid-template-rows: auto 1fr auto;
   z-index: 999;
+  overflow-y: auto;
 }
 
 :global(.omrs-breakpoint-lt-small-desktop) .overlay {
@@ -54,6 +55,7 @@
   column-gap: 0.5rem;
   row-gap: 1rem;
   padding: 0 1rem 1rem 1rem;
+  overflow-y: auto;
 }
 
 .navLinkItem {
