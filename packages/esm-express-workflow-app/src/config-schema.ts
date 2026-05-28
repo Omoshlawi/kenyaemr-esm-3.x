@@ -277,6 +277,17 @@ export const configSchema = {
     _description: 'Whether the workflow is DHA Workflow',
     _default: true,
   },
+  crIdentificationNumberUUID: {
+    _type: Type.String,
+    _description:
+      'The patient identifier type UUID for the SHA Client Registry (CR) number, used for virtual claims and OTP/biometric authentication.',
+    _default: '24aedd37-b5be-4e08-8311-3721b8d5100d',
+  },
+  providerNationalIdUuid: {
+    _type: Type.String,
+    _description: 'The provider attribute type UUID for the national ID, used in SHA biometric authorization requests.',
+    _default: '3d152c97-2293-4a2b-802e-e0f1009b7b15',
+  },
 
   anaesthetic: {
     _type: Type.Object,
@@ -494,6 +505,8 @@ export type ExpressWorkflowConfig = {
   showUpcomingAppointments: boolean; //done
   excludedVisitTypeUuids: Array<string>;
   isDHAWorkflow: boolean;
+  crIdentificationNumberUUID: string;
+  providerNationalIdUuid: string;
 };
 export interface ConfigObject {
   requireMaritalStatusOnAgeGreaterThanOrEqualTo: number;

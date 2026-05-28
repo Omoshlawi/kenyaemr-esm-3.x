@@ -5,3 +5,8 @@
   @include type.type-style('body-compact-02');
   color: colors.$gray-70;
 }
+
+.dischargeModalBody {
+  overflow: visible;
+  min-height: 14rem;
+}

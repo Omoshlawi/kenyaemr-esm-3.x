@@ -362,3 +362,103 @@ export interface QueueRoom {
 export interface OTPSource {
   otpSource?: string;
 }
+
+export const DISCHARGE_REASONS = [
+  { id: 'RECOVERED', label: 'Recovered' },
+  { id: 'REFERRED', label: 'Referred' },
+  { id: 'ABSCONDED', label: 'Absconded' },
+  { id: 'OTHER', label: 'Other' },
+];
+
+export type AuthorizingDeviceOS = 'windows' | 'android';
+
+export type OTPResponse = {
+  success: boolean;
+  otp?: string;
+  otp_found?: boolean;
+  raw_response?: { message: string };
+  error?: string;
+};
+
+export type BiometricAuthorizeRequest = {
+  agent_id: string;
+  patient_id: string;
+  interventions: string[];
+  service_type: string;
+  workstation_id: string;
+  authorizing_device_os: string;
+  is_emergency?: boolean;
+  payment_mechanism?: string;
+  patient_uuid?: string;
+};
+
+export type BiometricAuthorizeResponse = {
+  success: boolean;
+  embed_url?: string;
+  authorization_code?: string;
+  consent_token?: string;
+  token?: string;
+  guid?: string;
+  error?: string;
+  upstream_error?: { error?: string; message?: string };
+};
+
+export type BiometricAuthorizationStatus = {
+  success: boolean;
+  token: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  is_complete: boolean;
+  is_approved: boolean;
+  authorization_code: string | null;
+  guid: string | null;
+};
+
+export type BiometricConfigResponse = {
+  agent_url: string;
+  agent_timeout_ms: number;
+  default_factors: string[];
+};
+
+export type ProviderAttributesResponse = {
+  attributes: Array<{
+    attributeType: { display: string; uuid: string };
+    value: string;
+  }>;
+};
+
+export type WhitelistReason = {
+  code: string;
+  label: string;
+  description: string;
+  review_type: 'AUTOMATIC' | 'MANUAL';
+  requires_attachments: boolean;
+};
+
+export type WhitelistSubmitResponse = {
+  success: boolean;
+  review_type?: 'AUTOMATIC' | 'MANUAL';
+  error?: string;
+};
+
+export type WhitelistStatusPoll = {
+  beneficiary_cr_id: string;
+  is_whitelisted: boolean;
+  has_pending: boolean;
+  is_rejected: boolean;
+  can_submit_new: boolean;
+  latest_status: string | null;
+  total: number;
+  requests: Array<{
+    request_id: string | null;
+    status: string | null;
+    reason_type: string | null;
+    reason: string | null;
+    biometric_attempts: string | null;
+    beneficiary_name: string | null;
+    facility_name: string | null;
+    reviewed_by: string | null;
+    reviewer_note: string | null;
+    created_on: string | null;
+    reviewed_on: string | null;
+  }>;
+};

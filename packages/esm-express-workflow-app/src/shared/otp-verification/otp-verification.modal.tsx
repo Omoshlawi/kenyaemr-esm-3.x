@@ -10,8 +10,6 @@ import {
   ModalHeader,
   NumberInput,
   TextArea,
-  TextInput,
-  IconButton,
 } from '@carbon/react';
 import {
   Phone,
@@ -21,8 +19,6 @@ import {
   RuleLocked,
   Renew,
   ChevronRight,
-  WarningAlt,
-  CheckmarkFilled,
   ArrowLeft,
   Time,
 } from '@carbon/react/icons';
@@ -275,7 +271,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
     try {
       setRequestingOtp(true);
       await onRequestOtp?.(phone);
-
       setOtp('');
       setCurrentPhoneNumber(phone);
       setMode('verify-otp');
@@ -730,7 +725,6 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
     review_type: r.review_type,
     requires_attachments: r.requires_attachments,
   }));
-
   return (
     <React.Fragment>
       <ModalHeader className={styles.sectionHeader} closeModal={handleClose}>

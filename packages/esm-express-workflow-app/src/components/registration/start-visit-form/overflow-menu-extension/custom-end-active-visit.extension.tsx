@@ -9,13 +9,22 @@ interface StopVisitOverflowMenuItemProps {
   closeMenu?: () => void;
 }
 
+let isEndVisitDialogOpen = false;
+
 const StopVisitOverflowMenuItem: React.FC<StopVisitOverflowMenuItemProps> = ({ patientUuid, closeMenu }) => {
   const { t } = useTranslation();
   const { activeVisit } = useVisit(patientUuid);
 
   const handleLaunchModal = useCallback(() => {
+    if (isEndVisitDialogOpen) {
+      return;
+    }
+    isEndVisitDialogOpen = true;
     const dispose = showModal('custom-end-visit-dialog', {
-      closeModal: () => dispose(),
+      closeModal: () => {
+        isEndVisitDialogOpen = false;
+        dispose();
+      },
       patientUuid,
     });
   }, [patientUuid]);
