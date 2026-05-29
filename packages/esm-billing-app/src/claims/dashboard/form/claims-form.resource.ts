@@ -365,21 +365,21 @@ type ClaimPreviewResponse = {
   claim_preview?: ClaimPreview;
 } & Partial<ClaimPreview>;
 
-const claimPreviewFetcher = async ([url, patient_uuid]: [string, string]): Promise<ClaimPreview> => {
+const claimPreviewFetcher = async ([url, consentToken]: [string, string]): Promise<ClaimPreview> => {
   const response = await openmrsFetch<ClaimPreviewResponse>(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ patient_uuid }),
+    body: JSON.stringify({ consentToken }),
   });
 
   return response.data.claim_preview ?? response.data;
 };
 
-export const useClaimPreview = (patient_uuid?: string) => {
+export const useClaimPreview = (consentToken?: string) => {
   const url = `${restBaseUrl}/insuranceclaims/bill/preview`;
-  const { data, isLoading, error } = useSWR<ClaimPreview>([url, patient_uuid], claimPreviewFetcher);
+  const { data, isLoading, error } = useSWR<ClaimPreview>([url, consentToken], claimPreviewFetcher);
 
   return {
     claimPreview: data,

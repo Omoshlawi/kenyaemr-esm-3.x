@@ -27,27 +27,26 @@ const ClaimCloseModal: React.FC<ClaimCloseModalProps> = ({ onClose, patient_uuid
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    try {
-      await closeInsuranceClaim(type, text, patient_uuid);
+    const result = await closeInsuranceClaim(type, text, patient_uuid);
 
+    if (result.success) {
       showSnackbar({
         kind: 'success',
         title: t('cancelClaim', 'Cancel Claim'),
         subtitle: t('claimCanceledSuccessfully', 'Claim canceled successfully'),
         timeoutInMs: 3000,
       });
-
       onClose();
-    } catch (err: any) {
+    } else {
       showSnackbar({
         kind: 'error',
         title: t('cancelClaimError', 'Cancel Claim Error'),
-        subtitle: err?.message ?? t('cancelClaimFailed', 'Failed to cancel claim'),
+        subtitle: result.upstreamError || t('cancelClaimFailed', 'Failed to cancel claim'),
         timeoutInMs: 4000,
       });
-    } finally {
-      setIsSubmitting(false);
     }
+
+    setIsSubmitting(false);
   };
 
   return (

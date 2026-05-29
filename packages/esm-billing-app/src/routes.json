@@ -18,6 +18,10 @@
     {
       "component": "billingAdmin",
       "route": "billing-admin"
+    },
+    {
+      "component": "resubmitClaimPage",
+      "route": "billing/resubmit-claim"
     }
   ],
   "extensions": [
@@ -459,6 +463,11 @@
     {
       "name": "elective-preauth-form-workspace",
       "component": "electivePreauthFormWorkspace",
+      "window": "billing-workspace-window"
+    },
+    {
+      "name": "preauth-operation-workspace",
+      "component": "preauthOperationWorkspace",
       "window": "billing-workspace-window"
     }
   ],

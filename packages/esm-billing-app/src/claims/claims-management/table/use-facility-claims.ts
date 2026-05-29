@@ -36,6 +36,7 @@ const url =
     'externalApiErrors',
     'provider:(uuid,display)',
     'patient:(uuid,display)',
+    'externalApiErrors',
     'visit:(uuid,display,visitType:(uuid,display),location:(uuid,display),startDatetime,stopDatetime),' +
       'bill:(uuid,totalAmount,paymentStatus,diagnosis)',
     'interventionDetails:(intervention_code,intervention_name,tariff,payment_mechanism,' +

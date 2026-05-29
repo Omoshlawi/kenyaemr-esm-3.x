@@ -272,3 +272,16 @@ export const paymentWorkspace = getAsyncLifecycle(
   () => import('./invoice/payments/payment-form/payment.workspace'),
   options,
 );
+
+export const preauthOperationWorkspace = getAsyncLifecycle(
+  () =>
+    import(
+      './claims/claims-management/table/virtual-claim-preauth/patient-preauth-history/preauth-operations/preauth-operation.workspace'
+    ),
+  options,
+);
+
+export const resubmitClaimPage = getAsyncLifecycle(
+  () => import('./claims/claims-management/pages/resubmit-claim-page.component'),
+  options,
+);

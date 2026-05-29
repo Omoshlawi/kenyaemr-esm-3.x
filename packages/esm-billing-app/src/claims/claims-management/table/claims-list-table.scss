@@ -15,9 +15,11 @@
   flex-shrink: 0;
   margin-right: layout.$spacing-02;
 }
+
 .searchInput {
   width: layout.$spacing-12 * 2 + layout.$spacing-05;
 }
+
 .tabsRow {
   display: flex;
   align-items: stretch;
@@ -33,77 +35,6 @@
   background: var(--cds-layer-01);
 }
 
-.expandedInfo {
-  display: flex;
-  flex-wrap: wrap;
-  gap: layout.$spacing-04 layout.$spacing-07;
-  font-size: 0.8125rem;
-  color: var(--cds-text-secondary);
-
-  code {
-    font-size: 0.75rem;
-    color: var(--cds-text-primary);
-    background: var(--cds-layer-02);
-    padding: 1px 5px;
-  }
-}
-
-.expandedButtons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: layout.$spacing-03;
-  align-items: center;
-}
-
-.billingLinesPreview {
-  border-top: 1px solid var(--cds-border-subtle);
-  padding-top: layout.$spacing-04;
-}
-
-.billingLinesTitle {
-  @include type.type-style('label-01');
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--cds-text-secondary);
-  margin-bottom: layout.$spacing-03;
-}
-
-.billingLinesTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8125rem;
-
-  th {
-    padding: layout.$spacing-02 layout.$spacing-04;
-    text-align: left;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--cds-text-secondary);
-    background: var(--cds-layer-02);
-    border-bottom: 1px solid var(--cds-border-subtle);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  td {
-    padding: layout.$spacing-03 layout.$spacing-04;
-    border-bottom: 1px solid var(--cds-border-subtle);
-    vertical-align: middle;
-
-    code {
-      font-size: 0.75rem;
-    }
-  }
-
-  tr:last-child td {
-    border-bottom: none;
-  }
-
-  tr:hover td {
-    background: var(--cds-layer-hover);
-  }
-}
-
 .expandedPanel {
   padding: layout.$spacing-04 layout.$spacing-05;
   background: var(--cds-layer-01);
@@ -114,14 +45,14 @@
 }
 
 .expandedInfo {
+  @include type.type-style('body-compact-01');
   display: flex;
   flex-wrap: wrap;
   gap: layout.$spacing-03 layout.$spacing-06;
-  font-size: 0.8125rem;
   color: var(--cds-text-secondary);
 
   code {
-    font-size: 0.75rem;
+    @include type.type-style('label-01');
     color: var(--cds-text-primary);
     background: var(--cds-layer-02);
     padding: 1px 5px;
@@ -135,84 +66,33 @@
   align-items: center;
 }
 
+.interventionsSection,
+.submissionStatusSection,
 .billingLinesSection {
-  border-top: 1px solid var(--cds-border-subtle);
-  padding-top: layout.$spacing-04;
+  margin-top: layout.$spacing-04;
+  padding: layout.$spacing-05;
+  background: var(--cds-layer-01);
+  border: 1px solid var(--cds-border-subtle);
+  border-radius: layout.$spacing-02;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
-.billingLinesTitle {
-  @include type.type-style('label-01');
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--cds-text-secondary);
-  margin-bottom: layout.$spacing-03;
-}
-
-.billingLinesEmpty {
-  display: flex;
-  align-items: center;
-  gap: layout.$spacing-04;
-  padding: layout.$spacing-04;
-  background: var(--cds-layer-02);
-  color: var(--cds-text-secondary);
-  font-size: 0.875rem;
-}
-
-.billingLinesTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8125rem;
-
-  th {
-    padding: layout.$spacing-02 layout.$spacing-04;
-    text-align: left;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--cds-text-secondary);
-    background: var(--cds-layer-02);
-    border-bottom: 1px solid var(--cds-border-subtle);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
-  }
-
-  td {
-    padding: layout.$spacing-03 layout.$spacing-04;
-    border-bottom: 1px solid var(--cds-border-subtle);
-    vertical-align: middle;
-
-    code {
-      font-size: 0.75rem;
-    }
-  }
-
-  tr:last-child td {
-    border-bottom: none;
-  }
-  tr:hover td {
-    background: var(--cds-layer-hover);
-  }
-}
-
-.netAmount {
-  color: var(--cds-support-success);
-  font-weight: 500;
-}
-
-// Interventions Section Styles
 .interventionsSection {
-  border-top: 1px solid var(--cds-border-subtle);
-  padding-top: layout.$spacing-04;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
 }
 
 .interventionsSectionHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: layout.$spacing-03;
+  gap: layout.$spacing-04;
 }
 
-.interventionsSectionTitle {
+.interventionsSectionTitle,
+.submissionStatusTitle,
+.billingLinesTitle {
   @include type.type-style('label-01');
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -220,20 +100,28 @@
   margin: 0;
 }
 
+.interventionsSectionTitle,
+.submissionStatusTitle,
+.billingLinesTitle {
+  margin-bottom: layout.$spacing-03;
+}
+
 .interventionActions {
   display: flex;
   gap: layout.$spacing-02;
+  flex-wrap: wrap;
 }
 
-.interventionsTable {
+.interventionsTable,
+.billingLinesTable {
+  @include type.type-style('body-compact-01');
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8125rem;
 
   th {
     padding: layout.$spacing-02 layout.$spacing-04;
     text-align: left;
-    font-size: 0.75rem;
+    @include type.type-style('label-01');
     font-weight: 600;
     color: var(--cds-text-secondary);
     background: var(--cds-layer-02);
@@ -249,7 +137,7 @@
     vertical-align: middle;
 
     code {
-      font-size: 0.75rem;
+      @include type.type-style('label-01');
     }
   }
 
@@ -269,11 +157,13 @@
 }
 
 .fallbackMessage {
+  @include type.type-style('body-compact-01');
   padding: layout.$spacing-04;
-  background: var(--cds-layer-02);
+  background: linear-gradient(180deg, var(--cds-layer-02), var(--cds-layer-01));
   color: var(--cds-text-secondary);
-  font-size: 0.875rem;
+  border: 1px solid var(--cds-border-subtle);
   border-left: 4px solid var(--cds-interactive);
+  border-radius: layout.$spacing-02;
 
   p {
     margin: 0 0 layout.$spacing-02 0;
@@ -290,54 +180,86 @@
 }
 
 .noInterventions {
+  @include type.type-style('body-compact-01');
   color: var(--cds-text-secondary);
-  font-size: 0.875rem;
   margin: 0;
-  padding: layout.$spacing-03 0;
+  padding: layout.$spacing-03 0 0;
 }
 
-// Submission Status Section Styles
-.submissionStatusSection {
-  border-top: 1px solid var(--cds-border-subtle);
-  padding-top: layout.$spacing-04;
-}
-
-.submissionStatusTitle {
-  @include type.type-style('label-01');
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.billingLinesEmpty {
+  @include type.type-style('body-compact-01');
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-04;
+  background: linear-gradient(180deg, var(--cds-layer-02), var(--cds-layer-01));
   color: var(--cds-text-secondary);
-  margin: 0 0 layout.$spacing-03 0;
+  border: 1px solid var(--cds-border-subtle);
+  border-radius: layout.$spacing-02;
+}
+
+.netAmount {
+  color: var(--cds-support-success);
+  font-weight: 500;
+}
+
+.submissionStatusSection {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
 }
 
 .statusDetails {
   display: flex;
   flex-direction: column;
-  gap: layout.$spacing-04;
+  gap: layout.$spacing-03;
 }
 
 .statusRow {
+  @include type.type-style('body-compact-01');
   display: flex;
   gap: layout.$spacing-03;
   align-items: flex-start;
+  padding: layout.$spacing-03 layout.$spacing-04;
+  background: var(--cds-layer-02);
+  border: 1px solid var(--cds-border-subtle);
+  border-radius: layout.$spacing-02;
 
   strong {
-    min-width: 140px;
+    min-width: 150px;
     color: var(--cds-text-primary);
-    font-size: 0.875rem;
   }
 
   span,
   .notesList {
     flex: 1;
     color: var(--cds-text-secondary);
-    font-size: 0.875rem;
   }
 }
 
 .errorText {
+  @include type.type-style('body-compact-01');
   color: var(--cds-support-error);
-  font-size: 0.875rem;
+  padding: layout.$spacing-03 layout.$spacing-04;
+  background: var(--cds-layer-02);
+  border: 1px solid var(--cds-support-error);
+  border-radius: layout.$spacing-02;
+}
+
+.workflowStatusText {
+  @include type.type-style('body-compact-01');
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: layout.$spacing-02 layout.$spacing-03;
+  color: var(--cds-support-error);
+  background: rgba(218, 30, 40, 0.08);
+  border: 1px solid var(--cds-support-error);
+  border-radius: layout.$spacing-02;
+  font-weight: 600;
+  line-height: 1.2;
+  word-break: break-word;
 }
 
 .notesList {
@@ -348,23 +270,24 @@
 
 .noteItem {
   padding: layout.$spacing-03;
-  background: var(--cds-layer-02);
+  background: var(--cds-layer-01);
+  border: 1px solid var(--cds-border-subtle);
   border-left: 4px solid var(--cds-interactive);
-  border-radius: 2px;
+  border-radius: layout.$spacing-02;
 }
 
 .noteText {
+  @include type.type-style('body-compact-01');
   margin: 0 0 layout.$spacing-02 0;
   color: var(--cds-text-primary);
-  font-size: 0.875rem;
   line-height: 1.5;
 }
 
 .noteMetadata {
+  @include type.type-style('label-01');
   display: flex;
   gap: layout.$spacing-03;
   color: var(--cds-text-secondary);
-  font-size: 0.75rem;
   font-style: italic;
 
   span {

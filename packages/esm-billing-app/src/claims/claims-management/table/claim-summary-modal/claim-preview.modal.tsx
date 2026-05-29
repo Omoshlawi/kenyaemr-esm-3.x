@@ -181,7 +181,12 @@ const buildPreviewBill = (claim: ClaimPreview, invoice: any, lineItems: LineItem
     closed: Boolean(invoice?.closed ?? claim.closed),
   } as MappedBill);
 
-const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({ onClose, patient_uuid, receiptNumber }) => {
+const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
+  onClose,
+  consentToken,
+  receiptNumber,
+  patient_uuid,
+}) => {
   const { t } = useTranslation();
   const [selectedInvoiceNumber, setSelectedInvoiceNumber] = useState('');
   const [dischargeDate, setDischargeDate] = useState('');
@@ -192,7 +197,7 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({ onClose, patient_
   const [isSubmitting, setIsSubmitting] = useState(false);
   const controlSize = useLayoutType() === 'tablet' ? 'md' : 'sm';
 
-  const { claimPreview: data, isLoading, error } = useClaimPreview(patient_uuid);
+  const { claimPreview: data, isLoading, error } = useClaimPreview(consentToken);
 
   const invoiceNumbers = useMemo(() => {
     if (!data) {
@@ -490,6 +495,8 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({ onClose, patient_
                       quantity: lineItem.quantity,
                       unit_price: lineItem.price,
                       patient_uuid: patient_uuid,
+                      item: lineItem.item,
+                      consent_token: consentToken,
                       onClose: () => {
                         dispose();
                       },
@@ -603,21 +610,21 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({ onClose, patient_
 
     setIsSubmitting(true);
 
-    try {
-      await submitInsuranceClaim(
-        isInpatientClaim,
-        data.authorization_code ?? '',
-        receiptNumber ?? '',
-        patient_uuid ?? '',
-        isInpatientClaim
-          ? {
-              otp: claimOtp,
-              dischargeDate: dischargeDate,
-              dischargeReason: dischargeReason,
-            }
-          : undefined,
-      );
+    const result = await submitInsuranceClaim(
+      isInpatientClaim,
+      data.authorization_code ?? '',
+      receiptNumber ?? '',
+      patient_uuid ?? '',
+      isInpatientClaim
+        ? {
+            otp: claimOtp,
+            dischargeDate: dischargeDate,
+            dischargeReason: dischargeReason,
+          }
+        : undefined,
+    );
 
+    if (result.success) {
       showToast({
         critical: false,
         kind: 'success',
@@ -626,23 +633,19 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({ onClose, patient_
           ? t('inpatientClaimSubmittedDescription', 'Inpatient claim submitted successfully.')
           : t('outpatientClaimSubmittedDescription', 'Outpatient claim submitted successfully.'),
       });
-
       onClose();
-    } catch (err: unknown) {
-      const errorDescription = getDispatchErrorMessage(
-        err,
-        t('claimDispatchErrorDescription', 'An error occurred while dispatching the claim. Please try again.'),
-      );
-
+    } else {
       showToast({
         critical: true,
         kind: 'error',
         title: t('claimDispatchError', 'Claim Dispatch Error'),
-        description: errorDescription,
+        description:
+          result.upstreamError ||
+          t('claimDispatchErrorDescription', 'An error occurred while dispatching the claim. Please try again.'),
       });
-    } finally {
-      setIsSubmitting(false);
     }
+
+    setIsSubmitting(false);
   };
 
   const handleCloseClaim = () => {

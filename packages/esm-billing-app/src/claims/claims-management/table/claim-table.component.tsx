@@ -20,17 +20,18 @@ import {
   Tag,
 } from '@carbon/react';
 import { Add, Document, DocumentAdd, Stethoscope, Upload } from '@carbon/react/icons';
-import { formatDate, showModal, useLayoutType, usePagination } from '@openmrs/esm-framework';
+import { formatDate, showModal, useLayoutType, usePagination, navigate } from '@openmrs/esm-framework';
 import { EmptyState, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ClaimResponse } from '../../../types';
+import { ClaimResponse, PAYER_VALID_RESUBMISSION_STATES } from '../../../types';
 import styles from './claims-list-table.scss';
 import capitalize from 'lodash-es/capitalize';
 import { formatCurrency } from '../../../helpers/currency';
 import usePatientDiagnosis from '../../../hooks/usePatientDiagnosis';
 import { getClaimPayerPreview } from './claim-summary-modal/claim.resource';
 import { parseExternalApiErrors } from '../../../utils';
+import { spaBasePath } from '../../../constants';
 
 const WORKFLOW_STATE_CONFIG: Record<string, { label: string; type: string }> = {
   DRAFT: { label: 'Draft', type: 'gray' },
@@ -457,22 +458,48 @@ const ClaimsTable: React.FC<TableProps> = ({
     visitUuid: claim.visit?.uuid ?? '',
     actions: (
       <OverflowMenu size={controlSize} flipped>
-        <>
-          <OverflowMenuItem
-            itemText={t('previewClaim', 'Preview Claim')}
-            onClick={() => {
-              const dispose = showModal('claim-preview-modal', {
-                patient_uuid: claim?.patient?.uuid,
-                receiptNumber: `INV-${claim?.uuid}`,
-                onClose: () => {
-                  dispose();
-                },
-                controlSize: { controlSize },
-              });
-              return dispose;
-            }}
-          />
-        </>
+        <OverflowMenuItem
+          itemText={t('previewClaim', 'Preview Claim')}
+          onClick={() => {
+            const dispose = showModal('claim-preview-modal', {
+              patient_uuid: claim?.patient?.uuid,
+              receiptNumber: `INV-${claim?.uuid}`,
+              consentToken: claim?.authorizationCode,
+              onClose: () => {
+                dispose();
+              },
+              controlSize: { controlSize },
+            });
+            return dispose;
+          }}
+        />
+        <OverflowMenuItem
+          hasDivider
+          isDelete
+          itemText={t('cancelClaim', 'Cancel claim')}
+          onClick={() => {
+            const dispose = showModal('close-claim-modal', {
+              title: t('cancelClaim', 'Cancel Claim'),
+              patient_uuid: claim?.patient?.uuid,
+              onClose: () => {
+                dispose();
+              },
+              controlSize: { controlSize },
+            });
+            return dispose;
+          }}
+        />
+        <OverflowMenuItem
+          hasDivider
+          isDelete
+          // disabled={!PAYER_VALID_RESUBMISSION_STATES.includes(payerData.workflowState)}
+          itemText={t('resubmitClaim', 'Resubmit Claim')}
+          onClick={() => {
+            navigate({
+              to: `${spaBasePath}/accounting/resubmit-claim/${claim?.patient?.uuid}/consent-token/${claim?.authorizationCode}`,
+            });
+          }}
+        />
       </OverflowMenu>
     ),
   }));

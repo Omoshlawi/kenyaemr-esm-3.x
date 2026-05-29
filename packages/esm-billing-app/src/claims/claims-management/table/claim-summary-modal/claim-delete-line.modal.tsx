@@ -19,27 +19,27 @@ const ClaimDeleteLineModal: React.FC<ClaimDeleteLineModalProps> = ({ onClose, cl
       return;
     }
     setIsSubmitting(true);
-    try {
-      await deleteInsuranceClaimLine(claimLineId, visit_uuid || '');
+    const result = await deleteInsuranceClaimLine(claimLineId, visit_uuid || '');
 
+    if (result.success) {
       showSnackbar({
         kind: 'success',
         title: t('deleteLine', 'Delete line'),
         subtitle: t('lineDeleted', 'Line deleted successfully'),
         timeoutInMs: 3000,
       });
-
       onClose();
-    } catch (err: any) {
+    } else {
       showSnackbar({
         kind: 'error',
         title: t('deleteLineError', 'Delete line error'),
-        subtitle: err?.message ?? t('deleteLineFailed', 'Failed to delete line'),
+        subtitle: result.upstreamError || t('deleteLineFailed', 'Failed to delete line'),
         timeoutInMs: 4000,
       });
-    } finally {
-      setIsSubmitting(false);
+      onClose();
     }
+
+    setIsSubmitting(false);
   };
 
   return (

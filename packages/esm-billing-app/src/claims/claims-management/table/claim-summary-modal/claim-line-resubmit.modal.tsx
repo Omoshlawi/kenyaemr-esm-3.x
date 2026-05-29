@@ -19,27 +19,26 @@ const ClaimLineResubmitModal: React.FC<ClaimLineResubmitModalProps> = ({ onClose
       return;
     }
     setIsSubmitting(true);
-    try {
-      await resubmitInsuranceClaimLine(visit_uuid);
+    const result = await resubmitInsuranceClaimLine(visit_uuid);
 
+    if (result.success) {
       showSnackbar({
         kind: 'success',
         title: t('resubmitClaimLine', 'Resubmit Claim Line'),
         subtitle: t('claimLineResubmitted', 'Claim line resubmitted successfully'),
         timeoutInMs: 3000,
       });
-
       onClose();
-    } catch (err: any) {
+    } else {
       showSnackbar({
         kind: 'error',
         title: t('resubmitClaimLineError', 'Resubmit Claim Line Error'),
-        subtitle: err?.message ?? t('resubmitClaimLineFailed', 'Failed to resubmit claim line'),
+        subtitle: result.upstreamError || t('resubmitClaimLineFailed', 'Failed to resubmit claim line'),
         timeoutInMs: 4000,
       });
-    } finally {
-      setIsSubmitting(false);
     }
+
+    setIsSubmitting(false);
   };
 
   return (

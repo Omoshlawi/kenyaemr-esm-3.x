@@ -556,7 +556,18 @@ export interface ClaimResponse {
   dateTo: string;
   claimedTotal: number;
   approvedTotal: null | number;
-  status: 'REJECTED' | 'ENTERED' | 'CHECKED' | 'VALUATED' | 'ERRORED' | 'APPROVED' | 'DRAFT' | 'PENDING';
+  status:
+    | 'REJECTED'
+    | 'ENTERED'
+    | 'CHECKED'
+    | 'VALUATED'
+    | 'ERRORED'
+    | 'APPROVED'
+    | 'DRAFT'
+    | 'PENDING'
+    | 'SUBMITTED'
+    | 'CLOSED'
+    | 'SUBMISSION_READY';
   workflowState?: string | null;
   authorizationCode?: string | null;
   authorizationGuid?: string | null;
@@ -854,3 +865,27 @@ export interface PatientIdentifierResponse {
 export interface OTPSource {
   otpSource?: string;
 }
+
+export enum PayerClaimWorkflowState {
+  CLARIFICATION_AFTER_AUTOMATIC_CHECKS = 'CLARIFICATION_AFTER_AUTOMATIC_CHECKS',
+  CLARIFICATION_AFTER_PAYER_CHECKS = 'CLARIFICATION_AFTER_PAYER_CHECKS',
+  CLARIFICATION_AFTER_PAYER_REVIEW = 'CLARIFICATION_AFTER_PAYER_REVIEW',
+  DRAFT_PROVIDER_RESUBMITTED = 'DRAFT_PROVIDER_RESUBMITTED',
+  REJECTED = 'REJECTED',
+  SENT_BACK = 'SENT_BACK',
+  MISSING_DOCUMENTS = 'MISSING_DOCUMENTS',
+  DRAFT_PROVIDER_RESUBMITTED_MISSING_DOCUMENTS = 'DRAFT_PROVIDER_RESUBMITTED_MISSING_DOCUMENTS',
+  PROVIDER_RESUBMISSION_FINALISED = 'PROVIDER_RESUBMISSION_FINALISED',
+}
+
+export const PAYER_VALID_RESUBMISSION_STATES = [
+  PayerClaimWorkflowState.CLARIFICATION_AFTER_AUTOMATIC_CHECKS,
+  PayerClaimWorkflowState.CLARIFICATION_AFTER_PAYER_CHECKS,
+  PayerClaimWorkflowState.CLARIFICATION_AFTER_PAYER_REVIEW,
+  PayerClaimWorkflowState.DRAFT_PROVIDER_RESUBMITTED,
+  PayerClaimWorkflowState.REJECTED,
+  PayerClaimWorkflowState.SENT_BACK,
+  PayerClaimWorkflowState.MISSING_DOCUMENTS,
+  PayerClaimWorkflowState.DRAFT_PROVIDER_RESUBMITTED_MISSING_DOCUMENTS,
+  PayerClaimWorkflowState.PROVIDER_RESUBMISSION_FINALISED,
+];

@@ -12,6 +12,8 @@ type ClaimEditLineModalProps = {
   scheme_code?: string;
   unit_price?: string | number;
   visit_uuid?: string;
+  item?: string;
+  consent_token?: string;
 };
 
 const ClaimEditLineModal: React.FC<ClaimEditLineModalProps> = ({
@@ -21,6 +23,8 @@ const ClaimEditLineModal: React.FC<ClaimEditLineModalProps> = ({
   scheme_code,
   unit_price,
   visit_uuid,
+  consent_token,
+  item,
 }) => {
   const { t } = useTranslation();
   const [q, setQ] = useState<number>(Number(quantity ?? 1));
@@ -32,33 +36,36 @@ const ClaimEditLineModal: React.FC<ClaimEditLineModalProps> = ({
       return;
     }
     setIsSubmitting(true);
-    try {
-      await editInsuranceClaimLine(claimLineId, Number(q), String(price), visit_uuid);
+    const result = await editInsuranceClaimLine(claimLineId, Number(q), String(price), visit_uuid, consent_token);
 
+    if (result.success) {
       showSnackbar({
         kind: 'success',
         title: t('editLine', 'Edit line'),
         subtitle: t('lineEdited', 'Line edited successfully'),
         timeoutInMs: 3000,
       });
-
       onClose();
-    } catch (err: any) {
+    } else {
       showSnackbar({
         kind: 'error',
         title: t('editLineError', 'Edit line error'),
-        subtitle: err?.message ?? t('editLineFailed', 'Failed to edit line'),
+        subtitle: result.upstreamError || t('editLineFailed', 'Failed to edit line'),
         timeoutInMs: 4000,
       });
-    } finally {
-      setIsSubmitting(false);
+      onClose();
     }
+
+    setIsSubmitting(false);
   };
 
   return (
     <>
       <ModalHeader closeModal={onClose}>{t('editLine', 'Edit line item')}</ModalHeader>
       <ModalBody>
+        <p className={styles.formField}>
+          {t('itemName', 'Item Name')} : {item}
+        </p>
         <div className={styles.formField}>
           <TextInput
             id="claim-line-quantity"
