@@ -4,6 +4,7 @@ export type ProcessVisitResponse = {
   service_type: string;
   consentToken?: string;
   invoiceNumber?: string | null;
+  interventions?: string[];
   message?: string;
   [key: string]: unknown;
 };

@@ -37,7 +37,7 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
   const serviceTypeRef = useRef('OUTPATIENT');
   const consentTokenRef = useRef<string>('');
   const invoiceNumberRef = useRef<string>('');
-
+  const interventionsRef = useRef<string[]>([]);
   const phoneNumber = usePatientPhone(patientUuid);
   const patientCRId = usePatientCRId(patientUuid);
   const { isPatientWhiteListed } = usePatientWhitelistStatus(patientCRId);
@@ -67,10 +67,11 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
             ),
           );
         }
+
         const res = await createSHABiometricAuthorize({
           agent_id: providerNationalid,
           patient_id: crId,
-          interventions: [],
+          interventions: interventionsRef.current,
           service_type: serviceTypeRef.current,
           workstation_id: workstationId,
           authorizing_device_os: deviceOs,
@@ -132,6 +133,9 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
       serviceTypeRef.current = response?.data?.service_type ?? 'OUTPATIENT';
       consentTokenRef.current = String(response?.data?.consentToken ?? '');
       invoiceNumberRef.current = String(response?.data?.invoiceNumber ?? '');
+      interventionsRef.current = Array.isArray(response?.data?.intervention_codes)
+        ? response?.data?.intervention_codes
+        : [];
       setStep('discharge-reason');
     } catch (error) {
       showSnackbar({
