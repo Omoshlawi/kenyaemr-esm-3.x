@@ -76,6 +76,7 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
           workstation_id: workstationId,
           authorizing_device_os: deviceOs,
           patient_uuid: patientUuid,
+          is_biometrics_discharge_authorization: true,
         });
         if (!res.success || !res.embed_url || !res.token || !res.guid) {
           throw new Error(

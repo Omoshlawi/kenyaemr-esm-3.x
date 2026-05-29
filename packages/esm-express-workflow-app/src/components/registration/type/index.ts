@@ -390,6 +390,7 @@ export type BiometricAuthorizeRequest = {
   is_emergency?: boolean;
   payment_mechanism?: string;
   patient_uuid?: string;
+  is_biometrics_discharge_authorization?: boolean;
 };
 
 export type BiometricAuthorizeResponse = {
