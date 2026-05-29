@@ -116,6 +116,7 @@ type OTPVerificationModalProps = {
 
   onRejected?: () => void;
   ekycOrigin?: string;
+  visitAction?: 'start' | 'end';
 };
 
 const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
@@ -142,6 +143,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
   onRequestWhitelist,
   onRejected,
   ekycOrigin,
+  visitAction = 'start',
 }) => {
   const { t } = useTranslation();
   const [otp, setOtp] = useState('');
@@ -203,6 +205,35 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
       biometricPollTimeoutRef.current = null;
     }
   }, []);
+
+  // Reset mode and critical state when authMode or context changes (e.g., when modal is reused for different flows)
+  useEffect(() => {
+    const initialMode = authMode === 'multi' ? 'auth-landing' : 'landing';
+    setMode(initialMode);
+    setError(null);
+    setOtp('');
+    setFailedVerifyCount(0);
+
+    // Reset biometric state
+    setBiometricEmbedUrl(null);
+    setBiometricLoading(false);
+    setBiometricRetrying(false);
+    setBiometricFinalizing(false);
+    setBiometricPollElapsedSec(0);
+    biometricResultRef.current = null;
+
+    // Reset phone number and whitelist states
+    setNewPhoneNumber(phoneNumber);
+    setCurrentPhoneNumber(phoneNumber);
+    setWhitelistReasonCode('');
+    setWhitelistReasonText('');
+    setWhitelistBiometricAttempts(0);
+    setWhitelistAttachment(null);
+    setWhitelistSubmitting(false);
+
+    // Stop any active polling
+    stopBiometricPolling();
+  }, [authMode, phoneNumber, patientCRId, stopBiometricPolling]);
 
   useEffect(() => {
     return () => {
@@ -934,7 +965,9 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
               <InlineLoading
                 description={
                   biometricFinalizing
-                    ? t('biometricCreatingVisit', 'Verified creating visit…')
+                    ? visitAction === 'end'
+                      ? t('biometricEndingVisit', 'Verified ending visit…')
+                      : t('biometricCreatingVisit', 'Verified creating visit…')
                     : t('biometricWaitingForApproval', 'Waiting for SHA to confirm capture…')
                 }
                 status="active"

@@ -134,6 +134,9 @@ export type OTPVerificationModalOptions = {
 
   /** Expected origin of eKYC postMessage events. Defaults to https://test.ekyc.pesaflow.com. */
   ekycOrigin?: string;
+
+  /** Whether this modal is being used to start or end a visit. Defaults to 'start'. Affects progress message text. */
+  visitAction?: 'start' | 'end';
 };
 
 /**

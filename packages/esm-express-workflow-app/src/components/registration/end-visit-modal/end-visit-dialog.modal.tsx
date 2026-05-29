@@ -184,6 +184,7 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
         authMode: 'multi',
         whitelistedForOTP: isPatientWhiteListed,
         patientCRId: crId,
+        visitAction: 'end',
 
         onRequestOtp: async () => {
           const res = await sendDischargeOtp(crId, consentTokenRef.current);
