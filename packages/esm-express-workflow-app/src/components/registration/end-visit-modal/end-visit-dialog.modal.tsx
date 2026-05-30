@@ -17,7 +17,7 @@ import {
   useOtpWhitelistReasons,
   usePatientCRId,
   usePatientPhone,
-  usePatientWhitelistStatus,
+  useSHAEligibility,
   useProviderNationalId,
 } from './sha-end-visit.resource';
 import { DISCHARGE_REASONS } from '../type';
@@ -40,7 +40,7 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
   const interventionsRef = useRef<string[]>([]);
   const phoneNumber = usePatientPhone(patientUuid);
   const patientCRId = usePatientCRId(patientUuid);
-  const { isPatientWhiteListed } = usePatientWhitelistStatus(patientCRId);
+  const { isPatientWhiteListed } = useSHAEligibility(patientUuid);
   const { currentProvider } = useSession();
   const { providerNationalid } = useProviderNationalId(currentProvider?.uuid ?? '');
   const { agentUrl } = useBiometricConfig();

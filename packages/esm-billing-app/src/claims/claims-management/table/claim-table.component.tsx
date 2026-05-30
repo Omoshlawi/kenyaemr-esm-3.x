@@ -492,7 +492,11 @@ const ClaimsTable: React.FC<TableProps> = ({
         <OverflowMenuItem
           hasDivider
           isDelete
-          // disabled={!PAYER_VALID_RESUBMISSION_STATES.includes(payerData.workflowState)}
+          disabled={
+            !PAYER_VALID_RESUBMISSION_STATES.includes(
+              (claim.claimAuthStatus ?? claim.workflowState ?? claim.status ?? '') as any,
+            )
+          }
           itemText={t('resubmitClaim', 'Resubmit Claim')}
           onClick={() => {
             navigate({

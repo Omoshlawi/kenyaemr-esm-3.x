@@ -9,9 +9,7 @@ type ClaimEditLineModalProps = {
   onClose: () => void;
   claimLineId?: string;
   quantity?: number;
-  scheme_code?: string;
   unit_price?: string | number;
-  visit_uuid?: string;
   item?: string;
   consent_token?: string;
 };
@@ -20,9 +18,7 @@ const ClaimEditLineModal: React.FC<ClaimEditLineModalProps> = ({
   onClose,
   claimLineId,
   quantity,
-  scheme_code,
   unit_price,
-  visit_uuid,
   consent_token,
   item,
 }) => {
@@ -36,7 +32,7 @@ const ClaimEditLineModal: React.FC<ClaimEditLineModalProps> = ({
       return;
     }
     setIsSubmitting(true);
-    const result = await editInsuranceClaimLine(claimLineId, Number(q), String(price), visit_uuid, consent_token);
+    const result = await editInsuranceClaimLine(claimLineId, Number(q), String(price), consent_token);
 
     if (result.success) {
       showSnackbar({

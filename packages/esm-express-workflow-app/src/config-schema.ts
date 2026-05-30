@@ -288,6 +288,11 @@ export const configSchema = {
     _description: 'The provider attribute type UUID for the national ID, used in SHA biometric authorization requests.',
     _default: '3d152c97-2293-4a2b-802e-e0f1009b7b15',
   },
+  nationalIdUUID: {
+    _type: Type.String,
+    _description: 'The patient identifier type UUID for the national ID, used for SHA eligibility checks.',
+    _default: '49af6cdc-7968-4abb-bf46-de10d7f4859f',
+  },
 
   anaesthetic: {
     _type: Type.Object,
@@ -492,6 +497,7 @@ export type ExpressWorkflowConfig = {
   inPatientVisitTypeUuid: string;
   defaultFacilityUrl: string; //done
   offlineVisitTypeUuid: string;
+  nationalIdUUID: string;
   showRecommendedVisitTypeTab: boolean;
   visitTypeResourceUrl: string;
   disableChangingVisitLocation: boolean;

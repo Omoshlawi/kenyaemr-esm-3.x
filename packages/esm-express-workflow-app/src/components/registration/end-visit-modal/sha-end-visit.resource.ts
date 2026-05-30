@@ -1,4 +1,4 @@
-import { openmrsFetch, restBaseUrl, useConfig, type FetchResponse } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig, usePatient, type FetchResponse } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { type ExpressWorkflowConfig } from '../../../config-schema';
 import {
@@ -49,15 +49,46 @@ export const usePatientCRId = (patientUuid: string): string | null => {
   );
 };
 
-export const usePatientWhitelistStatus = (crId: string | null) => {
-  const url = crId ? `${virtualClaimBaseUrl}/otp-whitelist-status?beneficiary_cr_id=${encodeURIComponent(crId)}` : null;
-  const { data } = useSWR<FetchResponse<WhitelistStatusPoll>>(url, openmrsFetch, {
-    revalidateOnFocus: false,
+export interface EligibilityResponse {
+  requestIdType: number;
+  requestIdNumber: string;
+  memberCrNumber: string;
+  whitelistedForOTP: boolean;
+  fullName: string;
+  statusCode: string;
+  statusDesc: string;
+  schemes: Array<any>;
+  dateOfBirth?: string;
+  gender?: string;
+  age?: number;
+}
+
+export const useSHAEligibility = (patientUuid: string) => {
+  const { patient } = usePatient(patientUuid);
+  const { nationalIdUUID } = useConfig<ExpressWorkflowConfig>();
+
+  const nationalId = patient?.identifier?.find((id: any) =>
+    id?.type?.coding?.some((c: any) => c?.code === nationalIdUUID),
+  )?.value;
+
+  const url = nationalId
+    ? `${virtualClaimBaseUrl}/eligibility?identification_number=${encodeURIComponent(
+        nationalId,
+      )}&identification_type=${encodeURIComponent('National ID')}`
+    : null;
+
+  const { data, error, isLoading, mutate } = useSWR<{ data: EligibilityResponse }>(url, openmrsFetch, {
     errorRetryCount: 0,
+    revalidateOnFocus: false,
     dedupingInterval: 60_000,
   });
+
   return {
-    isPatientWhiteListed: data?.data?.is_whitelisted ?? false,
+    data: data?.data,
+    isPatientWhiteListed: data?.data?.whitelistedForOTP ?? false,
+    isLoading,
+    error,
+    mutate,
   };
 };
 

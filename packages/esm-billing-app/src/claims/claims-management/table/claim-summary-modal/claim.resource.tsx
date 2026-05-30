@@ -72,14 +72,12 @@ export async function editInsuranceClaimLine(
   claimLineId: string,
   quantity: number,
   unitPrice: string,
-  patient_uuid?: string,
   consent_token?: string,
 ): Promise<EditClaimLineResult> {
   const body = {
     line_id: String(claimLineId),
     quantity,
     unit_price: String(unitPrice),
-    patient_uuid: patient_uuid,
     consent_token: consent_token,
   };
 
@@ -112,11 +110,11 @@ export async function editInsuranceClaimLine(
 
 export async function deleteInsuranceClaimLine(
   claimLineId: string,
-  patient_uuid: string,
+  consent_token: string,
 ): Promise<DeleteClaimLineResult> {
   const body = {
     line_guid: String(claimLineId),
-    patient_uuid: patient_uuid,
+    consent_token: consent_token,
   };
 
   const url = `${restBaseUrl}/insuranceclaims/bill/line/delete`;

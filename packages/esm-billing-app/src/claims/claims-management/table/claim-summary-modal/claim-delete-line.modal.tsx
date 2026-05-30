@@ -7,10 +7,10 @@ import { deleteInsuranceClaimLine } from './claim.resource';
 type ClaimDeleteLineModalProps = {
   onClose: () => void;
   claimLineId?: string;
-  visit_uuid?: string;
+  consentToken?: string;
 };
 
-const ClaimDeleteLineModal: React.FC<ClaimDeleteLineModalProps> = ({ onClose, claimLineId, visit_uuid }) => {
+const ClaimDeleteLineModal: React.FC<ClaimDeleteLineModalProps> = ({ onClose, claimLineId, consentToken }) => {
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -19,7 +19,7 @@ const ClaimDeleteLineModal: React.FC<ClaimDeleteLineModalProps> = ({ onClose, cl
       return;
     }
     setIsSubmitting(true);
-    const result = await deleteInsuranceClaimLine(claimLineId, visit_uuid || '');
+    const result = await deleteInsuranceClaimLine(claimLineId, consentToken || '');
 
     if (result.success) {
       showSnackbar({

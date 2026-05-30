@@ -41,6 +41,10 @@ export interface BillingConfig {
   providerNationalIdUuid: string;
   licenseNumberUuid: string;
   licenseBodyUuid: string;
+  clinicalEncounter: {
+    encounterTypeUuid: string;
+    formUuid: string;
+  };
 }
 
 export const configSchema: ConfigSchema = {
@@ -257,5 +261,13 @@ export const configSchema: ConfigSchema = {
     _type: Type.String,
     _description: 'The provider attribute type uuid for license body',
     _default: 'ba18bb97-d17c-4640-80d2-58e7df90ca4c',
+  },
+  clinicalEncounter: {
+    _type: Type.Object,
+    _description: 'Clinical encounter type UUID and form UUID',
+    _default: {
+      encounterTypeUuid: '465a92f2-baf8-42e9-9612-53064be868e8',
+      formUuid: 'e958f902-64df-4819-afd4-7fb061f59308',
+    },
   },
 };

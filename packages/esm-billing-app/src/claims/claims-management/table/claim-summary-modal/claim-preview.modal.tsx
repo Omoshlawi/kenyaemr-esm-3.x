@@ -249,11 +249,6 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
   const summaryRows = useMemo(
     () => [
       {
-        id: 'claim-id',
-        label: t('claimId', 'Claim ID'),
-        value: data?.id ?? data?.member_number ?? '-',
-      },
-      {
         id: 'patient',
         label: t('patient', 'Patient'),
         value: data?.patient_name || data?.patientName || '-',
@@ -279,14 +274,14 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
         value: data?.service_type || '-',
       },
       {
-        id: 'claim-type',
-        label: t('claimType', 'Claim Type'),
-        value: isInpatientClaim ? t('inpatient', 'Inpatient') : t('outpatient', 'Outpatient'),
+        id: 'consent-token',
+        label: t('consentToken', 'Consent Token'),
+        value: data?.authorization_code || '-',
       },
       {
         id: 'authorization-status',
         label: t('authorizationStatus', 'Authorization Status'),
-        value: data?.claim_auth_status ?? data?.status ?? '-',
+        value: data?.claim_auth_status ?? data?.workflow_state ?? '-',
       },
       {
         id: 'visit-start',

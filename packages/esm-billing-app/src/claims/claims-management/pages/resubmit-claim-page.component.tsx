@@ -16,15 +16,17 @@ import {
   TableRow,
   Tag,
 } from '@carbon/react';
-import { Add, ArrowLeft, Document, Edit, Reset, TrashCan } from '@carbon/react/icons';
+import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
+import { Add, ArrowLeft, Document, Stethoscope } from '@carbon/react/icons';
 import {
   launchWorkspace2,
   showModal,
   showSnackbar,
   navigate,
-  CardHeader,
   ExtensionSlot,
   usePatient,
+  useConfig,
+  CardHeader,
 } from '@openmrs/esm-framework';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -36,10 +38,10 @@ import {
   submitInsuranceClaim,
   resubmitInsuranceClaimLine,
 } from '../table/claim-summary-modal/claim.resource';
-import { extractSavannahErrorMessage } from '../../../helpers';
 import { parseExternalApiErrors } from '../../utils';
 import styles from './resubmit-claim-page.scss';
 import { spaBasePath } from '../../../constants';
+import { BillingConfig } from '../../../config-schema';
 
 type ResubmitClaimFormValues = {
   packages: Array<string>;
@@ -147,7 +149,6 @@ const ResubmitClaimPage: React.FC = () => {
       claimPreview?.uuid ??
       '',
   );
-  const claimId = claimPreview?.id ?? claimPreview?.uuid ?? claimPreview?.identifier;
 
   const invoices = useMemo(() => {
     const rawInvoices = claimPreview?.invoices ?? [];
@@ -278,13 +279,26 @@ const ResubmitClaimPage: React.FC = () => {
       },
     });
   };
+  const {
+    clinicalEncounter: { formUuid },
+  } = useConfig<BillingConfig>();
+  const launchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit(
+    routePatientUuid,
+    'patient-form-entry-workspace',
+  );
+
+  const handleOpenOrEditClinicalEncounterForm = (encounterUuid?: string) => {
+    launchWorkspaceRequiringVisit({
+      form: { uuid: formUuid },
+      encounterUuid: encounterUuid ?? '',
+    });
+  };
 
   const openEditLineModal = (line: InvoiceLine) => {
     const dispose = showModal('edit-claim-line-modal', {
       claimLineId: line.lineItemId,
       quantity: line.quantity,
       unit_price: line.unitPrice,
-      visit_uuid: patientUuid,
       item: line.item,
       consent_token: consentToken,
       onClose: () => dispose(),
@@ -294,7 +308,7 @@ const ResubmitClaimPage: React.FC = () => {
   const openDeleteLineModal = (line: InvoiceLine) => {
     const dispose = showModal('delete-claim-line-modal', {
       claimLineId: line.lineItemId,
-      visit_uuid: patientUuid,
+      consent_token: consentToken,
       onClose: () => dispose(),
     });
   };
@@ -630,6 +644,13 @@ const ResubmitClaimPage: React.FC = () => {
                   <p className={styles.sectionLabel}>{t('diagnosis', 'Diagnosis')}</p>
                   <h3 className={styles.sectionTitle}>{t('claimDiagnosis', 'Claim diagnosis')}</h3>
                 </div>
+                <Button
+                  renderIcon={Stethoscope}
+                  size="md"
+                  kind="ghost"
+                  onClick={() => handleOpenOrEditClinicalEncounterForm()}>
+                  {t('editClinicalEncounter', 'Edit clinical encounter')}
+                </Button>
               </div>
 
               {diagnoses.length > 0 ? (
