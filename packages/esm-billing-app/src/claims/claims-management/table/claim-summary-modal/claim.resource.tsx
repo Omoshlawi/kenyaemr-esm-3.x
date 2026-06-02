@@ -260,8 +260,76 @@ export async function getClaimPayerPreview(invoiceNumber: string) {
   return { data: null };
 }
 
-// add a function for removing a claim line
+export interface AttachmentResult {
+  success: boolean;
+  message?: string;
+  upstreamError?: string;
+}
 
-// add a function for removing a claim line attachment
+export async function addClaimAttachment(
+  consentToken: string,
+  interventionCode: string,
+  documentType: string,
+  file: File,
+): Promise<AttachmentResult> {
+  const formData = new FormData();
+  formData.append('consent_token', consentToken);
+  formData.append('intervention_code', interventionCode);
+  formData.append('document_type', documentType);
+  formData.append('file_blob', file, file.name);
 
-// add a function for removing a claim diagnosis
+  const url = `${restBaseUrl}/insuranceclaims/bill-attachment`;
+
+  const response = await fetch(`/openmrs${url}`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+  });
+
+  const data = await response.json();
+
+  if (response.ok && data.success !== false) {
+    return { success: true, message: data.message };
+  }
+
+  return {
+    success: false,
+    upstreamError: data.upstream_error?.message ?? data.error ?? 'Failed to add attachment',
+  };
+}
+
+export async function deleteClaimAttachment(
+  attachmentId: string,
+  interventionCode: string,
+  consentToken: string,
+): Promise<AttachmentResult> {
+  const body = {
+    attachment_id: attachmentId,
+    intervention_code: interventionCode,
+    consent_token: consentToken,
+  };
+
+  const url = `${restBaseUrl}/insuranceclaims/bill/attachment/delete`;
+
+  const response = await fetch(`/openmrs${url}`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  });
+
+  const data = await response.json();
+
+  if (response.ok && data.success !== false) {
+    return { success: true, message: data.message };
+  }
+
+  return {
+    success: false,
+    upstreamError: data.upstream_error?.message ?? data.error ?? 'Failed to delete attachment',
+  };
+}

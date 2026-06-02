@@ -247,6 +247,23 @@
   color: #8d8d8d;
 }
 
+.addDocumentForm {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-04;
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+  border-radius: 4px;
+  margin-bottom: layout.$spacing-04;
+}
+
+.addDocumentActions {
+  display: flex;
+  gap: layout.$spacing-03;
+  justify-content: flex-end;
+}
+
 .attachmentEditor {
   margin-top: layout.$spacing-04;
   padding-top: layout.$spacing-04;

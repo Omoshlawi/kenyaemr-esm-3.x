@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Button,
-  ButtonSet,
   DataTable,
   InlineLoading,
   ModalBody,
@@ -16,16 +15,13 @@ import {
   TableHeader,
   TableRow,
   Tag,
-  TextInput,
 } from '@carbon/react';
-import { ErrorState, formatDate, showModal, showToast, useLayoutType } from '@openmrs/esm-framework';
+import { ErrorState, formatDate, useLayoutType } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
-import { sendSHAOtp } from '../../../../billing-form/social-health-authority/sha-virtual-claim.resource';
 import { ClaimPreview, ClaimPreviewInvoiceLine, useClaimPreview } from '../../../dashboard/form/claims-form.resource';
-import { submitInsuranceClaim } from './claim.resource';
 import styles from './claim-modals.scss';
 import { type LineItem, type MappedBill } from '../../../../types';
-import { Document, Edit, TrashCan, WatsonHealthRotate_360 } from '@carbon/react/icons';
+import { Document } from '@carbon/react/icons';
 import { formatAmount } from '../../../../helpers';
 
 const formatDateValue = (value?: string | number) => {
@@ -54,56 +50,6 @@ const formatDateValue = (value?: string | number) => {
   return formatDate(date);
 };
 
-const getDispatchErrorMessage = (error: unknown, fallback: string): string => {
-  if (!error || typeof error !== 'object') {
-    return fallback;
-  }
-
-  const err = error as {
-    message?: string;
-    upstream_error?: { message?: string; error?: string };
-    responseBody?: unknown;
-    response?: { data?: unknown };
-    cause?: { responseBody?: unknown; response?: { data?: unknown } };
-  };
-
-  const parseMaybeJson = (value: unknown): any => {
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return undefined;
-      }
-    }
-
-    if (value && typeof value === 'object') {
-      return value;
-    }
-
-    return undefined;
-  };
-
-  const candidates = [err.responseBody, err.response?.data, err.cause?.responseBody, err.cause?.response?.data, err]
-    .map(parseMaybeJson)
-    .filter(Boolean);
-
-  for (const candidate of candidates) {
-    const message =
-      candidate?.upstream_error?.message ||
-      candidate?.responseBody?.upstream_error?.message ||
-      candidate?.message ||
-      candidate?.error?.message ||
-      candidate?.upstream_error?.error ||
-      candidate?.error;
-
-    if (typeof message === 'string' && message.trim().length > 0) {
-      return message;
-    }
-  }
-
-  return err.message || fallback;
-};
-
 type ClaimPreviewModalProps = {
   onClose: () => void;
   title?: string;
@@ -119,8 +65,7 @@ type ClaimDiagnosis = {
   claim_diagnosis_id: number;
   diagnosis_code?: string;
   diagnosis_name?: string;
-  is_flagged_diagnosis?: boolean;
-  is_inpatient?: boolean;
+  intervention_code?: string;
 };
 
 type PreviewInvoice = {
@@ -189,13 +134,6 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const [selectedInvoiceNumber, setSelectedInvoiceNumber] = useState('');
-  const [dischargeDate, setDischargeDate] = useState('');
-  const [dischargeReason, setDischargeReason] = useState('ABSCONDED');
-  const [claimOtp, setClaimOtp] = useState('');
-  const [isRequestingOtp, setIsRequestingOtp] = useState(false);
-  const [hasRequestedOtp, setHasRequestedOtp] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const controlSize = useLayoutType() === 'tablet' ? 'md' : 'sm';
 
   const { claimPreview: data, isLoading, error } = useClaimPreview(consentToken);
 
@@ -310,16 +248,14 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
   const diagnosisHeaders = [
     { key: 'diagnosisCode', header: t('diagnosisCode', 'Code') },
     { key: 'diagnosisName', header: t('diagnosisName', 'Diagnosis') },
-    { key: 'inpatient', header: t('inpatient', 'Inpatient') },
-    { key: 'flagged', header: t('flagged', 'Flagged') },
+    { key: 'interventionCode', header: t('interventionCode', 'Intervention Code') },
   ];
 
   const diagnosisRows = (data?.claim_diagnoses ?? []).map((diagnosis: ClaimDiagnosis, index: number) => ({
     id: `diagnosis-${diagnosis.claim_diagnosis_id ?? index}`,
     diagnosisCode: diagnosis.diagnosis_code || '-',
     diagnosisName: diagnosis.diagnosis_name || '-',
-    inpatient: diagnosis.is_inpatient ? t('yes', 'Yes') : t('no', 'No'),
-    flagged: diagnosis.is_flagged_diagnosis ? t('yes', 'Yes') : t('no', 'No'),
+    interventionCode: diagnosis.intervention_code || '-',
   }));
 
   const interventionHeaders = [
@@ -437,13 +373,11 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
     { key: 'unitPrice', header: t('unitPrice', 'Unit Price') },
     { key: 'total', header: t('total', 'Total') },
     { key: 'status', header: t('status', 'Status') },
-    { key: 'actions', header: t('actions', 'Actions') },
   ];
 
   const lineItemRows = useMemo(
     () =>
       (selectedInvoice?.lineItems ?? []).map((lineItem: LineItem, index) => {
-        const isLineItemReturned = lineItem?.is_return === true;
         const isLineItemCancelled = lineItem?.is_cancellation === true;
 
         return {
@@ -453,210 +387,11 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
           unitPrice: formatAmount(Number(lineItem.price ?? 0)),
           total: formatAmount(Number((lineItem.price ?? 0) * (lineItem.quantity ?? 1))),
           status: isLineItemCancelled ? t('cancelled', 'Cancelled') : lineItem.paymentStatus || '-',
-          actions: selectedInvoiceUuid ? (
-            <ButtonSet aria-label={t('lineItemActions', 'Line item actions')}>
-              <Button
-                kind="ghost"
-                hasIconOnly
-                disabled={isClosed || !isLineItemReturned || !isLineItemCancelled}
-                renderIcon={(props) => <WatsonHealthRotate_360 size={16} {...props} />}
-                onClick={() => {
-                  onClose();
-                  window.setTimeout(() => {
-                    const dispose = showModal('resubmit-claim-line-modal', {
-                      patient_uuid,
-                      onClose: () => {
-                        dispose();
-                      },
-                      controlSize: 'sm',
-                    });
-                  }, 0);
-                }}
-                className={styles.actionButton}>
-                {t('resubmitClaimLine', 'Resubmit Claim Line')}
-              </Button>
-              <Button
-                hasIconOnly
-                kind="ghost"
-                disabled={isClosed || !isLineItemReturned || !isLineItemCancelled}
-                renderIcon={(props) => <Edit size={16} {...props} />}
-                title={t('editLineItem', 'Edit line item')}
-                onClick={() => {
-                  onClose();
-                  window.setTimeout(() => {
-                    const dispose = showModal('edit-claim-line-modal', {
-                      billUuid: selectedInvoiceUuid,
-                      claimLineId: lineItem.uuid,
-                      quantity: lineItem.quantity,
-                      unit_price: lineItem.price,
-                      patient_uuid: patient_uuid,
-                      item: lineItem.item,
-                      consent_token: consentToken,
-                      onClose: () => {
-                        dispose();
-                      },
-                      controlSize: 'sm',
-                    });
-                  }, 0);
-                }}
-              />
-              <Button
-                hasIconOnly
-                kind="ghost"
-                renderIcon={(props) => <TrashCan size={16} {...props} />}
-                title={t('deleteLineItem', 'Delete line item')}
-                className={styles.deleteActionButton}
-                disabled={isClosed}
-                onClick={async () => {
-                  onClose();
-                  window.setTimeout(() => {
-                    const dispose = showModal('delete-claim-line-modal', {
-                      claimLineId: lineItem.uuid,
-                      patient_uuid: patient_uuid,
-                      onClose: () => {
-                        dispose();
-                      },
-                      controlSize: 'sm',
-                    });
-                  }, 0);
-                }}
-              />
-            </ButtonSet>
-          ) : null,
           lineItem,
         };
       }),
     [isClosed, onClose, selectedInvoice, selectedInvoiceUuid, t, patient_uuid],
   );
-  const patientId = data?.member_number;
-  const interventionCodes = useMemo(
-    () => (data?.interventions ?? []).map((i: any) => i.intervention_code).filter(Boolean) as string[],
-    [data?.interventions],
-  );
-
-  const handleRequestOtp = async () => {
-    if (!patientId || interventionCodes.length === 0) {
-      showToast({
-        critical: true,
-        kind: 'error',
-        title: t('otpRequestError', 'OTP request error'),
-        description: t('otpRequestMissingData', 'Patient ID and intervention codes are required to request OTP.'),
-      });
-      return;
-    }
-
-    setIsRequestingOtp(true);
-
-    try {
-      await sendSHAOtp(patientId, interventionCodes);
-      setHasRequestedOtp(true);
-      showToast({
-        critical: false,
-        kind: 'success',
-        title: t('otpSent', 'OTP sent'),
-        description: t('otpSentDescription', 'An OTP has been sent to the patient.'),
-      });
-    } catch (err) {
-      showToast({
-        critical: true,
-        kind: 'error',
-        title: t('otpRequestError', 'OTP request error'),
-        description: t('otpRequestFailed', 'Unable to request OTP. Please try again.'),
-      });
-    } finally {
-      setIsRequestingOtp(false);
-    }
-  };
-
-  const handleDispatchClaim = async () => {
-    if (!data || !selectedInvoiceNumber) {
-      return;
-    }
-
-    if (isInpatientClaim && !hasRequestedOtp) {
-      showToast({
-        critical: true,
-        kind: 'error',
-        title: t('otpNotRequested', 'OTP not requested'),
-        description: t('requestOtpBeforeSubmitting', 'Request OTP first before entering it and submitting.'),
-      });
-      return;
-    }
-
-    if (isInpatientClaim && !claimOtp.trim()) {
-      showToast({
-        critical: true,
-        kind: 'error',
-        title: t('otpRequired', 'OTP required'),
-        description: t('otpRequiredDescription', 'Enter the OTP received before submitting the claim.'),
-      });
-      return;
-    }
-
-    if (isInpatientClaim && (!dischargeDate || !dischargeReason)) {
-      showToast({
-        critical: true,
-        kind: 'error',
-        title: t('inpatientDetailsRequired', 'Inpatient details required'),
-        description: t('inpatientDetailsRequiredDescription', 'Discharge date and discharge reason are required.'),
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    const result = await submitInsuranceClaim(
-      isInpatientClaim,
-      data.authorization_code ?? '',
-      receiptNumber ?? '',
-      patient_uuid ?? '',
-      isInpatientClaim
-        ? {
-            otp: claimOtp,
-            dischargeDate: dischargeDate,
-            dischargeReason: dischargeReason,
-          }
-        : undefined,
-    );
-
-    if (result.success) {
-      showToast({
-        critical: false,
-        kind: 'success',
-        title: t('claimSubmitted', 'Claim submitted'),
-        description: isInpatientClaim
-          ? t('inpatientClaimSubmittedDescription', 'Inpatient claim submitted successfully.')
-          : t('outpatientClaimSubmittedDescription', 'Outpatient claim submitted successfully.'),
-      });
-      onClose();
-    } else {
-      showToast({
-        critical: true,
-        kind: 'error',
-        title: t('claimDispatchError', 'Claim Dispatch Error'),
-        description:
-          result.upstreamError ||
-          t('claimDispatchErrorDescription', 'An error occurred while dispatching the claim. Please try again.'),
-      });
-    }
-
-    setIsSubmitting(false);
-  };
-
-  const handleCloseClaim = () => {
-    onClose();
-
-    window.setTimeout(() => {
-      const dispose = showModal('close-claim-modal', {
-        title: t('cancelClaim', 'Cancel Claim'),
-        patient_uuid: patient_uuid,
-        onClose: () => {
-          dispose();
-        },
-        controlSize: 'sm',
-      });
-    }, 0);
-  };
 
   return (
     <>
@@ -740,7 +475,6 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
                             <TableCell>{row.unitPrice}</TableCell>
                             <TableCell>{row.total}</TableCell>
                             <TableCell>{row.status}</TableCell>
-                            <TableCell>{row.actions}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -748,60 +482,6 @@ const ClaimPreviewModal: React.FC<ClaimPreviewModalProps> = ({
                   </div>
                 )}
               </div>
-            )}
-
-            {isInpatientClaim && (
-              <div className={styles.sectionSpacing}>
-                <div className={styles.otpRow}>
-                  <Button
-                    kind="secondary"
-                    onClick={handleRequestOtp}
-                    type="button"
-                    disabled={isRequestingOtp || isClosed}>
-                    {isRequestingOtp ? t('sendingOtp', 'Sending OTP...') : t('sendOtp', 'Send OTP')}
-                  </Button>
-
-                  <div className={styles.otpInputContainer}>
-                    <TextInput
-                      id="claim-otp"
-                      labelText={t('otp', 'OTP')}
-                      value={claimOtp}
-                      onChange={(e) => {
-                        setClaimOtp(e.target.value);
-                        setHasRequestedOtp(true);
-                      }}
-                      placeholder={t('enterOtp', 'Enter OTP')}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {isInpatientClaim && (
-              <>
-                <TextInput
-                  id="discharge-date"
-                  type="date"
-                  labelText={t('dischargeDate', 'Discharge Date')}
-                  value={dischargeDate}
-                  onChange={(e) => setDischargeDate(e.target.value)}
-                />
-
-                <Select
-                  id="discharge-reason"
-                  labelText={t('dischargeReason', 'Discharge Reason')}
-                  value={dischargeReason}
-                  onChange={(e) => setDischargeReason((e.target as HTMLSelectElement).value)}>
-                  <SelectItem value="ABSCONDED" text="ABSCONDED" />
-                  <SelectItem value="DISCHARGED" text="DISCHARGED" />
-                  <SelectItem value="DIED" text="DIED" />
-                  <SelectItem value="REFERRED" text="REFERRED" />
-                </Select>
-
-                <p>
-                  {t('dischargeOtpNote', 'The OTP entered above will be used when submitting the inpatient claim.')}
-                </p>
-              </>
             )}
 
             {diagnosisRows.length > 0 && (

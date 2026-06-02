@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   ButtonSet,
+  Dropdown,
+  FileUploader,
   Form,
   InlineLoading,
   InlineNotification,
@@ -16,8 +18,7 @@ import {
   TableRow,
   Tag,
 } from '@carbon/react';
-import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
-import { Add, ArrowLeft, Document, Stethoscope } from '@carbon/react/icons';
+import { Add, ArrowLeft, Document, Stethoscope, TrashCan } from '@carbon/react/icons';
 import {
   launchWorkspace2,
   showModal,
@@ -31,14 +32,16 @@ import {
 import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useParams } from 'react-router-dom';
-import ClaimsSupportingDocumentsInput from '../../dashboard/form/claims-supporting-documents-inputs.form';
 import { useClaimPreview, useVisit, uploadAttachments } from '../../dashboard/form/claims-form.resource';
 import {
   getClaimPayerPreview,
   submitInsuranceClaim,
   resubmitInsuranceClaimLine,
+  addClaimAttachment,
+  deleteClaimAttachment,
 } from '../table/claim-summary-modal/claim.resource';
 import { parseExternalApiErrors } from '../../utils';
+import { navigateAndLaunchWorkspace } from '../../../billable-services/billable-orders/order-actions/hooks/useModalHandler';
 import styles from './resubmit-claim-page.scss';
 import { spaBasePath } from '../../../constants';
 import { BillingConfig } from '../../../config-schema';
@@ -54,10 +57,13 @@ type InvoiceLine = {
   invoiceNumber: string;
   lineItemId: string;
   item: string;
+  interventionCode: string;
   quantity: number;
   unitPrice: string;
   total: string;
-  status: string;
+  isActive: boolean;
+  isCancellation: boolean;
+  isReturn: boolean;
 };
 
 type PayerPreview = {
@@ -84,6 +90,7 @@ const ResubmitClaimPage: React.FC = () => {
   const location = useLocation();
   const { patientUuid: routePatientUuid, consentToken } = useParams<{ patientUuid?: string; consentToken?: string }>();
   const { patient, isLoading: isLoadingPatient, error: patientError } = usePatient(routePatientUuid);
+  const { visits, isLoading: isVisitLoading } = useVisit(routePatientUuid || '');
 
   const state = location.state as {
     payerData?: any;
@@ -94,15 +101,24 @@ const ResubmitClaimPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [payerPreview, setPayerPreview] = useState<PayerPreview | null>(null);
   const [isPayerPreviewLoading, setIsPayerPreviewLoading] = useState(false);
+  const [showAddDoc, setShowAddDoc] = useState(false);
+  const [newDocFile, setNewDocFile] = useState<File | null>(null);
+  const [newDocType, setNewDocType] = useState('');
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [deletingAttachmentId, setDeletingAttachmentId] = useState<string | null>(null);
+  const [docUploaderKey, setDocUploaderKey] = useState(0);
   const mutate = state?.mutate;
   const autoResubmit = state?.autoResubmit ?? false;
   const payerData = state?.payerData;
 
-  const { claimPreview, isLoading: isPreviewLoading, error: previewError } = useClaimPreview(consentToken);
+  const {
+    claimPreview,
+    isLoading: isPreviewLoading,
+    error: previewError,
+    mutate: mutateClaimPreview,
+  } = useClaimPreview(consentToken);
   const claim = claimPreview ?? null;
   const patientUuid = claim?.patient?.uuid ?? claim?.patient_uuid ?? claim?.patientUuid ?? '';
-
-  const { visits, isLoading: isVisitLoading } = useVisit(patientUuid || undefined);
 
   const form = useForm<ResubmitClaimFormValues>({
     defaultValues: {
@@ -177,13 +193,18 @@ const ResubmitClaimPage: React.FC = () => {
           invoiceNumber: invoice.invoiceNumber,
           lineItemId: String(lineItem?.uuid ?? lineItem?.id ?? `${invoice.uuid}-line-${lineIndex}`),
           item: String(lineItem?.display ?? lineItem?.item_name ?? lineItem?.item ?? lineItem?.billableService ?? '-'),
+          interventionCode: String(
+            lineItem?.intervention_code ?? lineItem?.interventionCode ?? lineItem?.item_code ?? '-',
+          ),
           quantity: Number(lineItem?.quantity ?? lineItem?.qty ?? 1),
           unitPrice: String(lineItem?.unit_price ?? lineItem?.unitPrice ?? lineItem?.price ?? 0),
           total: String(
             Number(lineItem?.unit_price ?? lineItem?.unitPrice ?? lineItem?.price ?? 0) *
               Number(lineItem?.quantity ?? lineItem?.qty ?? 1),
           ),
-          status: String(lineItem?.workflow_state ?? lineItem?.paymentStatus ?? lineItem?.status ?? '-'),
+          isActive: Boolean(lineItem?.is_active ?? true),
+          isCancellation: Boolean(lineItem?.is_cancellation ?? false),
+          isReturn: Boolean(lineItem?.is_return ?? false),
         })),
       ),
     [invoices],
@@ -279,19 +300,26 @@ const ResubmitClaimPage: React.FC = () => {
       },
     });
   };
+
   const {
     clinicalEncounter: { formUuid },
   } = useConfig<BillingConfig>();
-  const launchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit(
-    routePatientUuid,
-    'patient-form-entry-workspace',
-  );
 
   const handleOpenOrEditClinicalEncounterForm = (encounterUuid?: string) => {
-    launchWorkspaceRequiringVisit({
-      form: { uuid: formUuid },
-      encounterUuid: encounterUuid ?? '',
-    });
+    if (!routePatientUuid) {
+      return;
+    }
+    navigateAndLaunchWorkspace(
+      `\${openmrsSpaBase}/patient/${routePatientUuid}/chart`,
+      `patient/${routePatientUuid}`,
+      'patient-form-entry-workspace',
+      {
+        patientUuid: routePatientUuid,
+        form: { uuid: formUuid },
+        encounterUuid: encounterUuid ?? '',
+      },
+      routePatientUuid,
+    );
   };
 
   const openEditLineModal = (line: InvoiceLine) => {
@@ -311,6 +339,63 @@ const ResubmitClaimPage: React.FC = () => {
       consent_token: consentToken,
       onClose: () => dispose(),
     });
+  };
+
+  const handleAddDocument = async () => {
+    if (!newDocFile || !newDocType || !consentToken) {
+      return;
+    }
+    const interventionCode = defaultInterventions[0] ?? '';
+    setIsUploadingDoc(true);
+    const claimUuid = claimPreview?.uuid ?? '';
+    const result = await addClaimAttachment(consentToken, interventionCode, newDocType, newDocFile);
+    setIsUploadingDoc(false);
+    if (result.success) {
+      showSnackbar({
+        kind: 'success',
+        title: t('documentAdded', 'Document added'),
+        subtitle: t('documentAddedDescription', 'The document was uploaded successfully.'),
+        isLowContrast: true,
+      });
+      setShowAddDoc(false);
+      setNewDocFile(null);
+      setNewDocType('');
+      setDocUploaderKey((k) => k + 1);
+      mutateClaimPreview();
+    } else {
+      showSnackbar({
+        kind: 'error',
+        title: t('documentAddFailed', 'Document upload failed'),
+        subtitle: result.upstreamError,
+        isLowContrast: true,
+      });
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!consentToken) {
+      return;
+    }
+    const interventionCode = defaultInterventions[0] ?? '';
+    setDeletingAttachmentId(attachmentId);
+    const result = await deleteClaimAttachment(attachmentId, interventionCode, consentToken);
+    setDeletingAttachmentId(null);
+    if (result.success) {
+      showSnackbar({
+        kind: 'success',
+        title: t('documentDeleted', 'Document deleted'),
+        subtitle: t('documentDeletedDescription', 'The document was removed from the claim.'),
+        isLowContrast: true,
+      });
+      mutateClaimPreview();
+    } else {
+      showSnackbar({
+        kind: 'error',
+        title: t('documentDeleteFailed', 'Document delete failed'),
+        subtitle: result.upstreamError,
+        isLowContrast: true,
+      });
+    }
   };
 
   // Auto-trigger resubmit if requested
@@ -367,7 +452,7 @@ const ResubmitClaimPage: React.FC = () => {
       const visitUuid = visits?.uuid;
 
       if (supportingDocuments.length > 0 && visitUuid) {
-        await uploadAttachments(supportingDocuments, defaultInterventions[0] ?? '', visitUuid);
+        await uploadAttachments(supportingDocuments, defaultInterventions[0] ?? '', consentToken);
       } else if (supportingDocuments.length > 0 && !visitUuid) {
         showSnackbar({
           kind: 'warning',
@@ -744,6 +829,7 @@ const ResubmitClaimPage: React.FC = () => {
                   <TableRow>
                     <TableHeader>{t('invoiceNumber', 'Invoice Number')}</TableHeader>
                     <TableHeader>{t('item', 'Item')}</TableHeader>
+                    <TableHeader>{t('interventionCode', 'Intervention Code')}</TableHeader>
                     <TableHeader>{t('qty', 'Qty')}</TableHeader>
                     <TableHeader>{t('unitPrice', 'Unit Price')}</TableHeader>
                     <TableHeader>{t('total', 'Total')}</TableHeader>
@@ -752,27 +838,40 @@ const ResubmitClaimPage: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {lineItems.map((line) => (
-                    <TableRow key={line.lineItemId}>
-                      <TableCell>{line.invoiceNumber}</TableCell>
-                      <TableCell>{line.item}</TableCell>
-                      <TableCell>{line.quantity}</TableCell>
-                      <TableCell>{line.unitPrice}</TableCell>
-                      <TableCell>{line.total}</TableCell>
-                      <TableCell>
-                        <Tag type="blue">{line.status}</Tag>
-                      </TableCell>
-                      <TableCell>
-                        <OverflowMenu className={styles.rowActions}>
-                          <OverflowMenuItem onClick={() => openEditLineModal(line)} itemText={t('edit', 'Edit')} />
-                          <OverflowMenuItem
-                            onClick={() => openDeleteLineModal(line)}
-                            itemText={t('delete', 'Delete')}
-                          />
-                        </OverflowMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {lineItems.map((line) => {
+                    const statusTag = line.isCancellation
+                      ? { type: 'red' as const, label: t('cancelled', 'Cancelled') }
+                      : line.isReturn
+                      ? { type: 'purple' as const, label: t('return', 'Return') }
+                      : line.isActive
+                      ? { type: 'green' as const, label: t('active', 'Active') }
+                      : { type: 'gray' as const, label: t('inactive', 'Inactive') };
+
+                    return (
+                      <TableRow key={line.lineItemId}>
+                        <TableCell>{line.invoiceNumber}</TableCell>
+                        <TableCell>{line.item}</TableCell>
+                        <TableCell>
+                          <code>{line.interventionCode}</code>
+                        </TableCell>
+                        <TableCell>{line.quantity}</TableCell>
+                        <TableCell>{line.unitPrice}</TableCell>
+                        <TableCell>{line.total}</TableCell>
+                        <TableCell>
+                          <Tag type={statusTag.type}>{statusTag.label}</Tag>
+                        </TableCell>
+                        <TableCell>
+                          <OverflowMenu className={styles.rowActions}>
+                            <OverflowMenuItem onClick={() => openEditLineModal(line)} itemText={t('edit', 'Edit')} />
+                            <OverflowMenuItem
+                              onClick={() => openDeleteLineModal(line)}
+                              itemText={t('delete', 'Delete')}
+                            />
+                          </OverflowMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -783,16 +882,93 @@ const ResubmitClaimPage: React.FC = () => {
                   <p className={styles.sectionLabel}>{t('documents', 'Documents')}</p>
                   <h3 className={styles.sectionTitle}>{t('previewDocuments', 'Preview documents')}</h3>
                 </div>
+                <Button kind="secondary" renderIcon={Add} size="sm" onClick={() => setShowAddDoc((v) => !v)}>
+                  {t('addDocument', 'Add document')}
+                </Button>
               </div>
+
+              {showAddDoc && (
+                <div className={styles.addDocumentForm}>
+                  <FileUploader
+                    key={docUploaderKey}
+                    accept={['.jpg', '.png', '.pdf']}
+                    buttonKind="tertiary"
+                    buttonLabel={t('selectFile', 'Select file')}
+                    filenameStatus="edit"
+                    labelTitle={t('uploadDocument', 'Upload document')}
+                    labelDescription={t(
+                      'supportDocsInstruction',
+                      'Max file size is 1 MB. Only .jpg, .png, and .pdf files.',
+                    )}
+                    onChange={({ target: { files } }: React.ChangeEvent<HTMLInputElement>) => {
+                      const file = files?.[0];
+                      if (file instanceof File) {
+                        setNewDocFile(file);
+                      }
+                    }}
+                    onDelete={() => setNewDocFile(null)}
+                  />
+                  <Dropdown
+                    id="new-doc-type"
+                    titleText={t('documentType', 'Document type')}
+                    label={t('selectDocumentType', 'Select document type')}
+                    selectedItem={newDocType || null}
+                    onChange={({ selectedItem }: { selectedItem: string }) => setNewDocType(selectedItem)}
+                    items={[
+                      'CLAIM_FORM',
+                      'PREAUTH_FORM',
+                      'DISCHARGE_SUMMARY',
+                      'PRESCRIPTION',
+                      'LAB_ORDER',
+                      'INVOICE',
+                      'BIO_DETAILS',
+                      'IMAGING_ORDER',
+                      'OTHER',
+                      'FINAL_BILL',
+                      'LAB_RESULTS',
+                      'DEATH_NOTICE',
+                      'THEATRE_NOTES',
+                      'BIRTH_NOTIFICATION',
+                    ]}
+                    itemToString={(item: string) => item?.toLowerCase().replace(/_/g, ' ') ?? ''}
+                  />
+                  <div className={styles.addDocumentActions}>
+                    <Button
+                      kind="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setShowAddDoc(false);
+                        setNewDocFile(null);
+                        setNewDocType('');
+                        setDocUploaderKey((k) => k + 1);
+                      }}>
+                      {t('cancel', 'Cancel')}
+                    </Button>
+                    <Button
+                      kind="primary"
+                      size="sm"
+                      disabled={!newDocFile || !newDocType || isUploadingDoc}
+                      onClick={handleAddDocument}>
+                      {isUploadingDoc ? (
+                        <InlineLoading description={t('uploading', 'Uploading...')} />
+                      ) : (
+                        t('upload', 'Upload')
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {attachments.length > 0 ? (
                 <div className={styles.documentList}>
                   {attachments.map((attachment: any, index: number) => {
+                    const attachmentId = String(attachment.id ?? attachment.uuid ?? '');
                     const previewUrl =
                       attachment.data ?? attachment.uploaded_file ?? attachment.file_url ?? attachment.url ?? '';
                     const attachmentLabel =
                       attachment.title ?? attachment.document_title ?? attachment.attachment ?? `Document ${index + 1}`;
                     const attachmentType = attachment.attachment_type ?? attachment.document_type ?? 'FILE';
+                    const isDeleting = deletingAttachmentId === attachmentId;
 
                     return (
                       <div
@@ -816,6 +992,16 @@ const ResubmitClaimPage: React.FC = () => {
                         ) : (
                           <span className={styles.muted}>—</span>
                         )}
+                        <Button
+                          hasIconOnly
+                          kind="danger--ghost"
+                          size="sm"
+                          renderIcon={isDeleting ? undefined : TrashCan}
+                          iconDescription={t('delete', 'Delete')}
+                          disabled={isDeleting || !attachmentId}
+                          onClick={() => handleDeleteAttachment(attachmentId)}>
+                          {isDeleting && <InlineLoading />}
+                        </Button>
                       </div>
                     );
                   })}
@@ -825,16 +1011,9 @@ const ResubmitClaimPage: React.FC = () => {
                   kind="info"
                   hideCloseButton
                   title={t('noDocumentsYet', 'No documents attached')}
-                  subtitle={t(
-                    'noDocumentsYetDescription',
-                    'Use the add attachment action below to upload new documents.',
-                  )}
+                  subtitle={t('noDocumentsYetDescription', 'Click "Add document" above to upload a new document.')}
                 />
               )}
-
-              <div className={styles.attachmentEditor}>
-                <ClaimsSupportingDocumentsInput patientUuid={patientUuid} />
-              </div>
             </div>
           </Stack>
 

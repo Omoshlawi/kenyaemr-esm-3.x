@@ -204,13 +204,13 @@ export const submitDiagnoses = async (diagnoses: string[], defaultInterventionCo
 export const uploadAttachments = async (
   supportingDocuments: any[],
   defaultInterventionCode: string,
-  visitUuid?: string,
+  consentToken?: string,
 ) => {
   for (const doc of supportingDocuments) {
     const formData = new FormData();
     formData.append('document_type', doc.purpose);
     formData.append('intervention_code', doc.intervention || defaultInterventionCode);
-    formData.append('visit_uuid', visitUuid || '');
+    formData.append('consent_token', consentToken || '');
     const fileBlob = base64ToBlob(doc.base64, doc.type);
     formData.append('file_blob', fileBlob, doc.name || 'attachment');
 
@@ -379,12 +379,13 @@ const claimPreviewFetcher = async ([url, consentToken]: [string, string]): Promi
 
 export const useClaimPreview = (consentToken?: string) => {
   const url = `${restBaseUrl}/insuranceclaims/bill/preview`;
-  const { data, isLoading, error } = useSWR<ClaimPreview>([url, consentToken], claimPreviewFetcher);
+  const { data, isLoading, error, mutate } = useSWR<ClaimPreview>([url, consentToken], claimPreviewFetcher);
 
   return {
     claimPreview: data,
     isLoading,
     error,
+    mutate,
   };
 };
 
