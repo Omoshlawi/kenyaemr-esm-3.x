@@ -436,6 +436,16 @@ export const configSchema = {
       },
     },
   },
+  historyAndExaminationFormUuid: {
+    _type: Type.UUID,
+    _description: 'History and examination form Uuid',
+    _default: '0f1b2479-9ee8-4b40-abb0-94cce0ee9d92',
+  },
+  diagnosisAndManagement: {
+    _type: Type.UUID,
+    _description: 'Diagnosis and management form Uuid',
+    _default: '54a862b1-0964-4c97-b825-21c0f7201160',
+  },
 };
 
 export type ExpressWorkflowConfig = {
@@ -513,6 +523,8 @@ export type ExpressWorkflowConfig = {
   isDHAWorkflow: boolean;
   crIdentificationNumberUUID: string;
   providerNationalIdUuid: string;
+  historyAndExaminationFormUuid: string;
+  diagnosisAndManagement: string;
 };
 export interface ConfigObject {
   requireMaritalStatusOnAgeGreaterThanOrEqualTo: number;

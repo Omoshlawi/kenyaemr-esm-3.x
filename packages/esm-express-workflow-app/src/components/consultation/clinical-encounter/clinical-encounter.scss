@@ -1,0 +1,11 @@
+@use '@carbon/layout';
+@use '@carbon/colors';
+@use '@carbon/type';
+
+.actionsSlot {
+  display: flex;
+  flex-direction: row;
+  justify-content: end;
+  gap: layout.$spacing-03;
+  margin-bottom: layout.$spacing-03;
+}

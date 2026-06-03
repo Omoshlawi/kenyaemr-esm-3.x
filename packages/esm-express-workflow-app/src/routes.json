@@ -443,19 +443,34 @@
       }
     },
     {
-      "name": "ewf-clinical-notes-tab",
-      "component": "clinicalNotes",
+      "name": "ewf-history-and-examinations-tab",
+      "component": "historyAndExamination",
       "meta": {
-        "title": "clinicalNotes",
-        "slot": "ewf-clinical-notes-slot"
+        "title": "historyAndExamination"
       }
     },
     {
-      "name": "ewf-procedures-and-orders-tab",
-      "component": "proceduresAndOrders",
+      "name": "ewf-patient-investigations-tab",
+      "component": "investigationsTab",
       "meta": {
-        "title": "proceduresAndOrders",
-        "slot": "ewf-procedures-and-orders-slot"
+        "title": "investigations",
+        "slot": "ewf-patient-investigations-slot"
+      }
+    },
+    {
+      "name": "ewf-patient-procedures-tab",
+      "component": "proceduresTab",
+      "meta": {
+        "title": "procedures",
+        "slot": "ewf-patient-procedures-slot"
+      }
+    },
+    {
+      "name": "ewf-patient-results-tab",
+      "component": "resultsTab",
+      "meta": {
+        "title": "results",
+        "slot": "ewf-patient-results-slot"
       }
     },
     {
@@ -546,6 +561,18 @@
         "slot": "ewf-radiology-and-imaging-results-slot",
         "basePath": "radiology-and-imaging"
       }
+    },
+    {
+      "name": "ewf-patient-diagnosis-and-management-tab",
+      "component": "diagnosisAndManagement",
+      "meta": {
+        "title": "diagnosisAndManagement"
+      }
+    },
+    {
+      "name": "asign-patient-to-next-queue-action",
+      "slot":"clinical-encounter-actions-slot",
+      "component": "assignToNextQueueAction"
     }
   ],
   "workspaces2": [

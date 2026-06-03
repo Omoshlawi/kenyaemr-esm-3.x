@@ -42,3 +42,17 @@ export const encounterDetails = getAsyncLifecycle(
   () => import('./clinical-encounter/encounter-details.component'),
   options,
 );
+// t("historyAndExamination", "History & Examination")
+export const historyAndExamination = getAsyncLifecycle(
+  () => import('./clinical-encounter/history-and-examination.components'),
+  options,
+);
+// t("diagnosisAndManagement", "Diagnosis & Management")
+export const diagnosisAndManagement = getAsyncLifecycle(
+  () => import('./clinical-encounter/diagnosis-and-management.component'),
+  options,
+);
+export const assignToNextQueueAction = getAsyncLifecycle(
+  () => import('./actions/assign-next-queue.component'),
+  options,
+);

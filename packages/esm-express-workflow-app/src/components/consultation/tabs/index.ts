@@ -60,8 +60,18 @@ export const clinicalNotes = getAsyncLifecycle(
   () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
   options,
 );
-// t('proceduresAndOrders', 'Investigation & Orders')
-export const proceduresAndOrders = getAsyncLifecycle(
+// t('investigations', 'Investigations')
+export const investigationsTab = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
+// t('procedures', 'Procedures')
+export const proceduresTab = getAsyncLifecycle(
+  () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
+// t('results', 'Results')
+export const resultsTab = getAsyncLifecycle(
   () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
   options,
 );
