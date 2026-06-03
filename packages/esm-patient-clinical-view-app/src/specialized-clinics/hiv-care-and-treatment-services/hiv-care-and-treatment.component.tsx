@@ -1,5 +1,12 @@
 import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs, TabsSkeleton } from '@carbon/react';
-import { AssignedExtension, ErrorState, Extension, useAssignedExtensions, usePatient } from '@openmrs/esm-framework';
+import {
+  AssignedExtension,
+  ErrorState,
+  Extension,
+  translateFrom,
+  useAssignedExtensions,
+  usePatient,
+} from '@openmrs/esm-framework';
 import { ComponentContext } from '@openmrs/esm-framework/src/internal';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,7 +38,7 @@ const HivCareAndTreatment = ({ patientUuid }: HivCareAndTreatmentProps) => {
       <Tabs>
         <TabList contained>
           {sortedExtensions.map((ext) => (
-            <Tab key={ext.name}>{t(ext.meta.title)}</Tab>
+            <Tab key={ext.name}>{translateFrom(ext.moduleName, ext.meta.title, ext.meta.title)}</Tab>
           ))}
         </TabList>
         <TabPanels>

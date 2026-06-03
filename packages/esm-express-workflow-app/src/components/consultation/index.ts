@@ -1,5 +1,5 @@
 import { getAsyncLifecycle } from '@openmrs/esm-framework';
-
+export * from './tabs';
 import { moduleName } from '../../constants';
 
 const options = {

@@ -20,3 +20,14 @@ export const laboratoryLeftPanelLink = getAsyncLifecycle(
     })),
   options,
 );
+
+// t("results", "Results")
+export const patientLaboratoryOrdersResults = getAsyncLifecycle(
+  () => import('./../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
+// t("order", "Orders")
+export const patientLaboratoryOrdersTab = getAsyncLifecycle(
+  () => import('../../components/laboratory/lab-table.component'),
+  options,
+);

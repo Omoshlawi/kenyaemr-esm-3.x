@@ -23,3 +23,14 @@ export const radiologyAndImagingLeftPanelLink = getAsyncLifecycle(
     })),
   options,
 );
+
+// t("results", "Results")
+export const patientImagingOrdersResults = getAsyncLifecycle(
+  () => import('../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
+// t("order", "Orders")
+export const patientImagingOrdersTab = getAsyncLifecycle(
+  () => import('../../components/radiology-and-imaging/radiology-and-imaging-table.component'),
+  options,
+);

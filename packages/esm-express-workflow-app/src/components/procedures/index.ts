@@ -20,3 +20,19 @@ export const proceduresLeftPanelLink = getAsyncLifecycle(
     })),
   options,
 );
+
+// t("results", "Results")
+export const patientProcedureOrdersResults = getAsyncLifecycle(
+  () => import('../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
+  options,
+);
+// t("order", "Orders")
+export const patientProcedureOrdersTab = getAsyncLifecycle(
+  () => import('../../components/procedures/procedures-table.component'),
+  options,
+);
+// t('anaesthetic', 'Anaesthetic')
+export const patientProcedureAnaestheticTab = getAsyncLifecycle(
+  () => import('../../components/anaesthetic/anaesthetic.component'),
+  options,
+);

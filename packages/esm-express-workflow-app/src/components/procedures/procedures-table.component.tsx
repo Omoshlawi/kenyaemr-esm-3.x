@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { useConfig } from '@openmrs/esm-framework';
+import { DataTableSkeleton, Layer } from '@carbon/react';
+import { ErrorState, FHIRResource, useConfig } from '@openmrs/esm-framework';
 import {
   EmptyState,
   invalidateVisitAndEncounterData,
@@ -7,42 +7,60 @@ import {
   useLaunchWorkspaceRequiringVisit,
   usePatientChartStore,
 } from '@openmrs/esm-patient-common-lib';
-import { Layer } from '@carbon/react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import OrderTable from '../../shared/orders/OrderTable';
 
-import { type Order } from '../../types/order/order';
-import { type ExpressWorkflowConfig } from '../../config-schema';
-import styles from './procedures.scss';
 import { useSWRConfig } from 'swr';
+import { type ExpressWorkflowConfig } from '../../config-schema';
+import { usePatientOrders } from '../../hooks/useOrders';
+import styles from './procedures.scss';
 
 type ProceduresTableProps = {
-  orders: Order[];
   patientUuid: string;
-  patient: fhir.Patient;
+  patient?: FHIRResource;
 };
-const ProceduresTable: React.FC<ProceduresTableProps> = ({ orders, patientUuid, patient }) => {
+const ProceduresTable: React.FC<ProceduresTableProps> = ({ patientUuid, patient }) => {
   const { t } = useTranslation();
-  const { imagingOrderTypeUuid, imagingOrderableConceptSets } = useConfig<ExpressWorkflowConfig>();
+  const { imagingOrderTypeUuid, imagingOrderableConceptSets, proceduresConceptClassUuid } =
+    useConfig<ExpressWorkflowConfig>();
+  const {
+    data: orders,
+    isLoading,
+    error,
+    mutate: mutateOrders,
+  } = usePatientOrders(patientUuid, 'any', imagingOrderTypeUuid, undefined, undefined);
+  const filteredOrders = useMemo(
+    () => orders?.filter((order) => order.concept?.conceptClass?.uuid === proceduresConceptClassUuid),
+    [orders, proceduresConceptClassUuid],
+  );
+
   const { visitContext } = usePatientChartStore(patientUuid);
   const { mutate: globalMutate } = useSWRConfig();
-  const windowProps = useMemo(() => ({ encounterUuid: orders[0]?.encounter?.uuid }), [orders[0]?.encounter?.uuid]);
+  const windowProps = useMemo(() => ({ encounterUuid: filteredOrders?.[0]?.encounter?.uuid }), [filteredOrders]);
   const groupProps = useMemo(
     () => ({
       patient,
-      patientUuid: patient?.id,
+      patientUuid,
       visitContext: visitContext,
       mutateVisitContext: () => {
+        mutateOrders();
         invalidateVisitByUuid(globalMutate, visitContext.uuid);
-        invalidateVisitAndEncounterData(globalMutate, patient.id);
+        invalidateVisitAndEncounterData(globalMutate, patientUuid);
       },
     }),
-    [globalMutate, visitContext, patient.id],
+    [patient, patientUuid, visitContext, mutateOrders, globalMutate],
   );
   const launchOrderBasket = useLaunchWorkspaceRequiringVisit(patientUuid ?? '', 'order-basket');
 
-  if (orders?.length === 0) {
+  if (isLoading) {
+    return <DataTableSkeleton />;
+  }
+  if (error) {
+    return <ErrorState headerTitle={t('proceduresOrders', 'Procedures Orders')} error={error} />;
+  }
+  if (filteredOrders?.length === 0) {
     return (
       <Layer>
         <EmptyState
@@ -66,7 +84,7 @@ const ProceduresTable: React.FC<ProceduresTableProps> = ({ orders, patientUuid, 
   return (
     <OrderTable
       title={t('proceduresOrders', 'Procedures Orders')}
-      orders={orders}
+      orders={filteredOrders ?? []}
       onAdd={() =>
         launchOrderBasket(
           {

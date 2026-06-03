@@ -24,7 +24,7 @@
         "slot": "appointments-dashboard-slot",
         "title": "Appointments"
       }
-        },
+    },
     {
       "name": "ewf-preauth-dashboard-link",
       "component": "preauthDashboardLink",
@@ -38,10 +38,8 @@
         "layoutMode": "anchored",
         "hideDashboardTitle": true
       }
-
     },
     {
-
       "name": "ewf-preauth-dashboard",
       "component": "preauthDashboard",
       "slot": "ewf-patient-chart-preauth-dashboard-slot",
@@ -332,7 +330,7 @@
       "online": true,
       "offline": true
     },
-     {
+    {
       "name": "custom-stop-visit-overflow-menu-item",
       "component": "customStopVisitOverflowMenuItem",
       "online": true,
@@ -344,7 +342,7 @@
       "online": true,
       "offline": false,
       "featureFlag": "procedureQueues",
-      "slot":"procedure-orders-dashboard-slot"
+      "slot": "procedure-orders-dashboard-slot"
     },
     {
       "name": "procedure-form-extras",
@@ -353,6 +351,201 @@
       "online": true,
       "offline": false,
       "featureFlag": "procedureQueues"
+    },
+    {
+      "name": "ewf-patient-summary-tab",
+      "component": "patientSummary",
+      "slot": "ewf-patient-chart-patient-summary-tabs-extension-slot",
+      "meta": {
+        "title": "patientSummaryTab",
+        "slot": "ewf-patient-summary-slot"
+      }
+    },
+    {
+      "name": "ewf-patient-vitals-tab",
+      "component": "patientVitals",
+      "slot": "ewf-patient-chart-patient-summary-tabs-extension-slot",
+      "meta": {
+        "title": "vitalsAndAnthropometric",
+        "slot": "ewf-vitals-slot"
+      }
+    },
+    {
+      "name": "ewf-patient-care-panel-tab",
+      "component": "carePanel",
+      "slot": "ewf-patient-chart-patient-summary-tabs-extension-slot",
+      "meta": {
+        "title": "carePanel",
+        "slot": "ewf-care-panel-slot"
+      }
+    },
+    {
+      "name": "ewf-patient-immunization-tab",
+      "component": "immunization",
+      "slot": "ewf-patient-chart-patient-summary-tabs-extension-slot",
+      "meta": {
+        "title": "immunizations",
+        "slot": "ewf-immunizations-slot"
+      }
+    },
+    {
+      "name": "ewf-patient-relationships-tab",
+      "component": "relationships",
+      "slot": "ewf-patient-chart-patient-summary-tabs-extension-slot",
+      "meta": {
+        "title": "relationships",
+        "slot": "ewf-relationships-slot"
+      }
+    },
+    {
+      "name": "ewf-patient-appointments-tab",
+      "component": "appointments",
+      "slot": "ewf-patient-chart-patient-summary-tabs-extension-slot",
+      "meta": {
+        "title": "appointments",
+        "slot": "ewf-appointments-slot"
+      }
+    },
+    {
+      "name": "ewf-patient-attachments-tab",
+      "component": "attachments",
+      "slot": "ewf-patient-chart-patient-summary-tabs-extension-slot",
+      "meta": {
+        "title": "attachments",
+        "slot": "ewf-attachments-slot"
+      }
+    },
+    {
+      "name": "ewf-patient-clinical-encounter-tab",
+      "component": "patientClinicalEncounter",
+      "slot": "clinical-encounter-tabs-slot",
+      "meta": {
+        "title": "clinicalEncounterTab",
+        "slot": "ewf-clinical-encounter-slot"
+      }
+    },
+    {
+      "name": "ewf-patient-visits-tab",
+      "component": "patientVisits",
+      "slot": "clinical-encounter-tabs-slot",
+      "meta": {
+        "title": "visits",
+        "slot": "ewf-visits-slot"
+      }
+    },
+    {
+      "name": "ewf-patient-special-clinics-tab",
+      "component": "specialClinics",
+      "slot": "clinical-encounter-tabs-slot",
+      "meta": {
+        "title": "specialClinics",
+        "slot": "ewf-special-clinics-slot"
+      }
+    },
+    {
+      "name": "ewf-clinical-notes-tab",
+      "component": "clinicalNotes",
+      "meta": {
+        "title": "clinicalNotes",
+        "slot": "ewf-clinical-notes-slot"
+      }
+    },
+    {
+      "name": "ewf-procedures-and-orders-tab",
+      "component": "proceduresAndOrders",
+      "meta": {
+        "title": "proceduresAndOrders",
+        "slot": "ewf-procedures-and-orders-slot"
+      }
+    },
+    {
+      "name": "ewf-pharmacy-orders-tab",
+      "component": "pharmacyOrdersTab",
+      "slot": "pharmacy-tabs-slot",
+      "meta": {
+        "title": "orders",
+        "slot": "ewf-orders-slot"
+      }
+    },
+    {
+      "name": "ewf-pharmacy-active-medication-tab",
+      "component": "pharmacyActiveMedicationsTab",
+      "slot": "pharmacy-tabs-slot",
+      "meta": {
+        "title": "activeMedications",
+        "slot": "ewf-active-medications-slot"
+      }
+    },
+    {
+      "name": "ewf-pharmacy-past-medication-tab",
+      "component": "pharmacyPastMedicationsTab",
+      "slot": "pharmacy-tabs-slot",
+      "meta": {
+        "title": "pastMedications",
+        "slot": "ewf-past-medications-slot"
+      }
+    },
+    {
+      "name": "ewf-patient-lab-orders-tab",
+      "component": "patientLaboratoryOrdersTab",
+      "slot": "patient-laboratory-tabs-slot",
+      "meta": {
+        "title": "orders"
+      }
+    },
+    {
+      "name": "ewf-patient-lab-order-results-tab",
+      "component": "patientLaboratoryOrdersResults",
+      "slot": "patient-laboratory-tabs-slot",
+      "meta": {
+        "title": "results",
+        "slot": "ewf-laboratory-results-slot",
+        "basePath": "laboratory"
+      }
+    },
+    {
+      "name": "ewf-patient-procedure-orders-tab",
+      "component": "patientProcedureOrdersTab",
+      "slot": "patient-procedure-tabs-slot",
+      "meta": {
+        "title": "orders"
+      }
+    },
+    {
+      "name": "ewf-patient-procedure-order-results-tab",
+      "component": "patientProcedureOrdersResults",
+      "slot": "patient-procedure-tabs-slot",
+      "meta": {
+        "title": "results",
+        "slot": "ewf-procedures-results-slot",
+        "basePath": "procedures"
+      }
+    },
+    {
+      "name": "ewf-patient-procedure-anaesthetic-tab",
+      "component": "patientProcedureAnaestheticTab",
+      "slot": "patient-procedure-tabs-slot",
+      "meta": {
+        "title": "anaesthetic"
+      }
+    },
+    {
+      "name": "ewf-patient-imaging-orders-tab",
+      "component": "patientImagingOrdersTab",
+      "slot": "patient-imaging-tabs-slot",
+      "meta": {
+        "title": "orders"
+      }
+    },
+    {
+      "name": "ewf-patient-imaging-order-results-tab",
+      "component": "patientImagingOrdersResults",
+      "slot": "patient-imaging-tabs-slot",
+      "meta": {
+        "title": "results",
+        "slot": "ewf-radiology-and-imaging-results-slot",
+        "basePath": "radiology-and-imaging"
+      }
     }
   ],
   "workspaces2": [

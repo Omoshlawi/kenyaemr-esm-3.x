@@ -1,37 +1,57 @@
 import React, { useMemo } from 'react';
-import { useConfig } from '@openmrs/esm-framework';
-import { EmptyState, useLaunchWorkspaceRequiringVisit, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
-import { Layer } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
+import { DataTableSkeleton, Layer } from '@carbon/react';
+import { ErrorState, FHIRResource, useConfig } from '@openmrs/esm-framework';
+import { EmptyState, useLaunchWorkspaceRequiringVisit, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
 import OrderTable from '../../shared/orders/OrderTable';
-
-import { type Order } from '../../types/order/order';
 import { type ExpressWorkflowConfig } from '../../config-schema';
+import { usePatientOrders } from '../../hooks/useOrders';
 import styles from './radiology-and-imaging.scss';
 
 type RadiologyAndImagingTableProps = {
-  orders: Array<Order>;
   patientUuid: string;
-  patient: fhir.Patient;
+  patient: FHIRResource;
 };
-const RadiologyAndImagingTable: React.FC<RadiologyAndImagingTableProps> = ({ orders, patientUuid, patient }) => {
+const RadiologyAndImagingTable: React.FC<RadiologyAndImagingTableProps> = ({ patientUuid, patient }) => {
   const { t } = useTranslation();
-  const { imagingOrderTypeUuid, imagingOrderableConceptSets } = useConfig<ExpressWorkflowConfig>();
+  const { imagingOrderTypeUuid, imagingOrderableConceptSets, imagingConceptClassUuid } =
+    useConfig<ExpressWorkflowConfig>();
+  const {
+    data: orders,
+    isLoading,
+    error,
+    mutate: mutateOrders,
+  } = usePatientOrders(patientUuid, 'any', imagingOrderTypeUuid, undefined, undefined);
+  const filteredOrders = useMemo(
+    () => orders?.filter((order) => order.concept?.conceptClass?.uuid === imagingConceptClassUuid),
+    [imagingConceptClassUuid, orders],
+  );
   const { mutateVisitContext, visitContext } = usePatientChartStore(patientUuid);
 
-  const windowProps = useMemo(() => ({ encounterUuid: orders[0]?.encounter?.uuid }), [orders[0]?.encounter?.uuid]);
+  const windowProps = useMemo(() => ({ encounterUuid: filteredOrders?.[0]?.encounter?.uuid }), [filteredOrders]);
   const groupProps = useMemo(
     () => ({
       patient,
-      patientUuid: patient?.id,
+      patientUuid,
       visitContext: visitContext,
-      mutateVisitContext: mutateVisitContext,
+      mutateVisitContext: () => {
+        mutateOrders();
+        mutateVisitContext();
+      },
     }),
-    [patient, visitContext, mutateVisitContext],
+    [patient, patientUuid, visitContext, mutateOrders, mutateVisitContext],
   );
   const launchAddLabOrder = useLaunchWorkspaceRequiringVisit(patientUuid, 'order-basket');
 
-  if (orders?.length === 0) {
+  if (isLoading) {
+    return <DataTableSkeleton />;
+  }
+
+  if (error) {
+    return <ErrorState headerTitle={t('radiologyAndImagingOrders', 'Radiology & Imaging Orders')} error={error} />;
+  }
+
+  if (filteredOrders?.length === 0) {
     return (
       <Layer>
         <EmptyState
@@ -55,7 +75,7 @@ const RadiologyAndImagingTable: React.FC<RadiologyAndImagingTableProps> = ({ ord
   return (
     <OrderTable
       title={t('radiologyAndImagingOrders', 'Radiology & Imaging Orders')}
-      orders={orders}
+      orders={filteredOrders ?? []}
       onAdd={() =>
         launchAddLabOrder(
           {

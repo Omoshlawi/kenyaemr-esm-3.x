@@ -1,7 +1,7 @@
 import { getAsyncLifecycle } from '@openmrs/esm-framework';
 
 import { moduleName } from '../../constants';
-
+export * from './tabs';
 const options = {
   featureName: 'express-workflow',
   moduleName,
