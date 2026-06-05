@@ -84,7 +84,9 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     visitAttributeTypes: { isPatientExempted },
     inPatientVisitTypeUuid,
     crIdentificationNumberUUID,
+    enableSHAVerification,
   } = useConfig<BillingConfig>();
+  const shaEnabled = hieFeatureFlags && enableSHAVerification;
 
   const { patient } = usePatient(patientUuid);
   const phoneNumber = usePatientPhone(patientUuid);
@@ -317,7 +319,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
 
   const launchSHAOtpFlow = useCallback((): Promise<boolean> => {
     return new Promise((resolve) => {
-      if (!hieFeatureFlags || !isInsuranceSchemeSha) {
+      if (!shaEnabled || !isInsuranceSchemeSha) {
         resolve(true);
         return;
       }
@@ -480,7 +482,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
       buildModalConfig(patientCRId, codes, paymentMechanism);
     });
   }, [
-    hieFeatureFlags,
+    shaEnabled,
     isInsuranceSchemeSha,
     patientCRId,
     isPatientWhiteListed,
@@ -526,7 +528,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
           await handleCreateBill(billPayload);
         }
 
-        if (hieFeatureFlags && isInsuranceSchemeSha && shaClaimResponseRef.current) {
+        if (shaEnabled && isInsuranceSchemeSha && shaClaimResponseRef.current) {
           const claimResponse = shaClaimResponseRef.current;
           const authCode = claimResponse.authorization_code ?? claimResponse.claim?.authorization_code;
 
@@ -568,7 +570,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     setVisitFormCallbacks({
       onVisitCreatedOrUpdated,
       onBeforeVisitSave: launchSHAOtpFlow,
-      isSHAVisit: !!(hieFeatureFlags && isInsuranceSchemeSha),
+      isSHAVisit: !!(shaEnabled && isInsuranceSchemeSha),
       isElectiveNotApproved,
     });
   }, [
@@ -576,7 +578,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     selectedBillingServices,
     createBillPayload,
     handleCreateBill,
-    hieFeatureFlags,
+    shaEnabled,
     isInsuranceSchemeSha,
     isElectiveVisit,
     launchSHAOtpFlow,
@@ -615,9 +617,9 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   return (
     <FormProvider {...formMethods}>
       <VisitAttributesForm setAttributes={setAttributes} />
-      {hieFeatureFlags && <SHANumberValidity paymentMethod={attributes} patientUuid={patientUuid} />}
+      {shaEnabled && <SHANumberValidity paymentMethod={attributes} patientUuid={patientUuid} />}
 
-      {hieFeatureFlags && isInsuranceSchemeSha && (
+      {shaEnabled && isInsuranceSchemeSha && (
         <section className={styles.sectionContainer}>
           <div className={styles.sectionTitle}>{t('electiveVisitQuestion', 'Is this an elective visit?')}</div>
           <RadioButtonGroup
@@ -756,7 +758,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         </section>
       )}
 
-      {hieFeatureFlags && isInsuranceSchemeSha && isElectiveVisit === 'no' && (
+      {shaEnabled && isInsuranceSchemeSha && isElectiveVisit === 'no' && (
         <SHABenefitPackagesAndInterventions
           patientUuid={patientUuid}
           visitTypeUuid={visitTypeUuid}
