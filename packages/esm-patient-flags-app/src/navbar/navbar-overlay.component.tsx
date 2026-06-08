@@ -89,7 +89,7 @@ const NavBarOverlay: React.FC<NavBarOverlayProps> = ({ setSearchTerm, modules, s
         {modules.length === 0 && renderEmptyState()}
         <div className={styles.navLinks}>
           {renderModuleLinks}
-          <ExtensionSlot name="navbar-items-slot" state={{ hideOverlay }} />
+          <ExtensionSlot className={styles.extensionSlot} name="navbar-items-slot" state={{ hideOverlay }} />
         </div>
       </div>
     </div>
