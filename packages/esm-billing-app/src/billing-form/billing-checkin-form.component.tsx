@@ -96,7 +96,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     [patient, crIdentificationNumberUUID],
   );
 
-  const { isPatientWhiteListed } = useSHAEligibility(patientUuid);
+  const { isPatientWhiteListed, facilityBiometricsEnforced } = useSHAEligibility(patientUuid);
   const { reasons: whitelistReasons } = useOtpWhitelistReasons();
 
   const { currentProvider } = useSession();
@@ -408,6 +408,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
 
           authMode: 'multi',
           whitelistedForOTP: isPatientWhiteListed,
+          facilityBiometricsEnforced,
 
           // Biometric path
           onStartBiometric: buildBiometricStarter(crIdToUse, codes, paymentMechanism),
@@ -486,6 +487,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     isInsuranceSchemeSha,
     patientCRId,
     isPatientWhiteListed,
+    facilityBiometricsEnforced,
     whitelistReasons,
     phoneNumber,
     selectedInterventions,

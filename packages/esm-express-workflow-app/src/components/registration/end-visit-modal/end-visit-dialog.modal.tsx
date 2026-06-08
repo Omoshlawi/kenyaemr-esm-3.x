@@ -40,7 +40,7 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
   const interventionsRef = useRef<string[]>([]);
   const phoneNumber = usePatientPhone(patientUuid);
   const patientCRId = usePatientCRId(patientUuid);
-  const { isPatientWhiteListed } = useSHAEligibility(patientUuid);
+  const { isPatientWhiteListed, facilityBiometricsEnforced } = useSHAEligibility(patientUuid);
   const { currentProvider } = useSession();
   const { providerNationalid } = useProviderNationalId(currentProvider?.uuid ?? '');
   const { agentUrl } = useBiometricConfig();
@@ -184,6 +184,7 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
         centerBoxes: true,
         authMode: 'multi',
         whitelistedForOTP: isPatientWhiteListed,
+        facilityBiometricsEnforced,
         patientCRId: crId,
         visitAction: 'end',
 
@@ -252,6 +253,7 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
     closeModal,
     phoneNumber,
     isPatientWhiteListed,
+    facilityBiometricsEnforced,
     buildBiometricStarter,
     whitelistReasons,
     handleSubmitWhitelist,

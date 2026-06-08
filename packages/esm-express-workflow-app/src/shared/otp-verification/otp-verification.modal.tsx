@@ -79,6 +79,7 @@ type OTPVerificationModalProps = {
 
   authMode?: 'otp-only' | 'multi';
   whitelistedForOTP?: boolean;
+  facilityBiometricsEnforced?: boolean;
   onStartBiometric?: () => Promise<{
     embed_url: string;
     authorization_code: string;
@@ -132,6 +133,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
   onCleanup,
   authMode = 'otp-only',
   whitelistedForOTP = false,
+  facilityBiometricsEnforced = false,
   onStartBiometric,
   onBiometricSuccess,
   onBiometricCancel,
@@ -146,6 +148,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
   visitAction = 'start',
 }) => {
   const { t } = useTranslation();
+  const canUseOtp = !facilityBiometricsEnforced || whitelistedForOTP;
   const [otp, setOtp] = useState('');
   const [newPhoneNumber, setNewPhoneNumber] = useState(phoneNumber);
   const [isLoading, setIsLoading] = useState(false);
@@ -667,7 +670,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
   };
 
   const handleEscapeHatchFromVerifyOtp = () => {
-    if (whitelistedForOTP) {
+    if (canUseOtp) {
       setOtp('');
       setIsCountdownActive(false);
       setMode('auth-landing');
@@ -807,16 +810,16 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
             </button>
 
             <button
-              className={`${styles.methodCard} ${!whitelistedForOTP ? styles.methodCardDisabled : ''}`}
+              className={`${styles.methodCard} ${!canUseOtp ? styles.methodCardDisabled : ''}`}
               onClick={handleSwitchToOtpFromAuthLanding}
-              disabled={!whitelistedForOTP}>
+              disabled={!canUseOtp}>
               <div className={`${styles.methodIconWrap} ${styles.methodIconWarning}`}>
                 <ChatBot size={22} />
               </div>
               <div className={styles.methodContent}>
                 <div className={styles.methodTitleRow}>
                   <p className={styles.methodTitle}>{t('btnUseOtp', 'Use OTP')}</p>
-                  {!whitelistedForOTP && (
+                  {!canUseOtp && (
                     <span className={styles.badgeRequired}>{t('whitelistingRequired', 'Whitelisting required')}</span>
                   )}
                 </div>
@@ -827,10 +830,10 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
                   )}
                 </p>
               </div>
-              {whitelistedForOTP && <ChevronRight size={18} className={styles.methodArrow} />}
+              {canUseOtp && <ChevronRight size={18} className={styles.methodArrow} />}
             </button>
 
-            {!whitelistedForOTP && (
+            {!canUseOtp && (
               <>
                 <div className={styles.dividerWithText}>{t('or', 'or')}</div>
                 <button
@@ -923,10 +926,12 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
                           'otpFailedWhitelistedSubtitle',
                           'Try biometrics instead — biometric capture is available for whitelisted patients.',
                         )
-                      : t(
+                      : facilityBiometricsEnforced
+                      ? t(
                           'otpFailedNotWhitelistedSubtitle',
                           'Patient may not be receiving the SMS. Submit a whitelist request to bypass OTP for future visits.',
                         )
+                      : t('otpFailedRetrySubtitle', 'OTP failed multiple times. Please try again or use biometrics.')
                   }
                 />
                 <Button
@@ -940,8 +945,10 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
                     <InlineLoading description={t('checkingExistingRequest', 'Checking existing requests…')} />
                   ) : whitelistedForOTP ? (
                     t('switchToBiometric', 'Switch to biometric')
-                  ) : (
+                  ) : facilityBiometricsEnforced ? (
                     t('btnRequestOtpWhitelisting', 'Request OTP Whitelisting')
+                  ) : (
+                    t('switchToBiometric', 'Switch to biometric')
                   )}
                 </Button>
               </div>
@@ -988,7 +995,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
               kind="error"
               title={t('secureAuthBiometricFailedTitle', 'Biometric Verification Failed')}
               subtitle={
-                whitelistedForOTP
+                canUseOtp
                   ? t(
                       'secureAuthBiometricFailedBodyWhitelisted',
                       'Please try again or use OTP verification to continue.',
@@ -1002,7 +1009,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
 
             <p className={styles.chooseLabel}>{t('secureAuthChooseReason', 'Choose an option')}</p>
 
-            {whitelistedForOTP ? (
+            {canUseOtp ? (
               <button className={styles.methodCard} onClick={handleSwitchToOtpFromAuthLanding}>
                 <div className={`${styles.methodIconWrap} ${styles.methodIconWarning}`}>
                   <ChatBot size={22} />

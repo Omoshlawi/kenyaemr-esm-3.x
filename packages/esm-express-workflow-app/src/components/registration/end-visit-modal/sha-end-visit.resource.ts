@@ -54,6 +54,7 @@ export interface EligibilityResponse {
   requestIdNumber: string;
   memberCrNumber: string;
   whitelistedForOTP: boolean;
+  facilityBiometricsEnforced: boolean;
   fullName: string;
   statusCode: string;
   statusDesc: string;
@@ -86,6 +87,7 @@ export const useSHAEligibility = (patientUuid: string) => {
   return {
     data: data?.data,
     isPatientWhiteListed: data?.data?.whitelistedForOTP ?? false,
+    facilityBiometricsEnforced: data?.data?.facilityBiometricsEnforced ?? false,
     isLoading,
     error,
     mutate,
