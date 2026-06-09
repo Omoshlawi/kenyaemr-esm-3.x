@@ -1,0 +1,436 @@
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.container {
+  padding: 1rem;
+  background-color: colors.$white;
+  min-height: 100vh;
+}
+
+.pageHeader {
+  margin-bottom: 1rem;
+}
+
+.visitMeta {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: colors.$gray-60;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+}
+
+.patientName {
+  font-size: 2rem;
+  font-weight: 300;
+  color: colors.$gray-100;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.2;
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.patientDemographics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.demographicItem {
+  font-size: 0.875rem;
+  color: colors.$gray-70;
+
+  span:first-child {
+    font-weight: 600;
+    color: colors.$gray-100;
+    margin-right: 0.25rem;
+  }
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.alertBanner {
+  margin-bottom: 1.5rem;
+}
+
+.infoSection {
+  margin-bottom: 1.5rem;
+  background-color: colors.$white;
+  border: 1px solid colors.$gray-20;
+  padding-bottom: 1rem;
+}
+
+.infoSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+
+  svg {
+    color: colors.$blue-60;
+    flex-shrink: 0;
+  }
+
+  h2 {
+    @include type.type-style('productive-heading-03');
+    margin: 0;
+    color: colors.$gray-100;
+  }
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  margin: 0 1rem 0;
+  padding: 0.625rem 0.75rem;
+  background-color: colors.$gray-10;
+  border-left: 4px solid colors.$blue-60;
+
+  p {
+    @include type.type-style('body-compact-01');
+    font-weight: 600;
+    color: colors.$gray-100;
+    margin: 0;
+  }
+}
+
+.section {
+  margin-bottom: 1.5rem;
+  background-color: colors.$white;
+  border: 1px solid colors.$gray-20;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid colors.$gray-20;
+
+  h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    color: colors.$gray-100;
+  }
+}
+
+.vitalsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background-color: colors.$gray-20;
+
+  @media (max-width: 671px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 319px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.vitalCard {
+  padding: 1rem;
+  background-color: colors.$gray-10;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.vitalLabel {
+  font-size: 0.75rem;
+  color: colors.$gray-60;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vitalValue {
+  font-size: 1.75rem;
+  font-weight: 300;
+  line-height: 1;
+  color: colors.$gray-100;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  sup {
+    font-size: 0.875rem;
+    vertical-align: super;
+  }
+}
+
+.vitalValueHigh {
+  color: colors.$red-60;
+}
+
+.vitalValueLow {
+  color: colors.$yellow-30;
+}
+
+.vitalUnit {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: colors.$gray-70;
+  margin-left: 0.125rem;
+}
+
+.vitalInterpretation {
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.interpretationNormal {
+  color: colors.$green-50;
+}
+
+.interpretationHigh {
+  color: colors.$red-60;
+}
+
+.interpretationLow {
+  color: colors.$yellow-30;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+}
+
+.viewAllLink {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid colors.$gray-20;
+
+  a {
+    font-size: 0.875rem;
+    color: colors.$blue-60;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.allergyItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid colors.$gray-20;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.allergyName {
+  font-size: 0.875rem;
+  color: colors.$gray-100;
+}
+
+.medicationItem {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid colors.$gray-20;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.medicationDetails {
+  flex: 1;
+}
+
+.medicationName {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: colors.$gray-100;
+  margin-bottom: 0.125rem;
+}
+
+.medicationDosage {
+  font-size: 0.75rem;
+  color: colors.$gray-70;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: colors.$gray-60;
+
+  svg {
+    margin-bottom: 0.5rem;
+    opacity: 0.4;
+  }
+
+  p {
+    font-size: 0.875rem;
+    text-align: center;
+  }
+}
+
+.clinicalNoteText {
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: colors.$gray-100;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.diagnosisBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 1rem;
+  background-color: colors.$gray-20;
+  color: colors.$gray-70;
+  margin-right: 0.25rem;
+}
+
+.diagnosisConfirmed {
+  background-color: colors.$green-20;
+  color: colors.$green-70;
+}
+
+.diagnosisPreliminary {
+  background-color: colors.$yellow-10;
+  color: colors.$orange-60;
+}
+
+.procedureItem {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid colors.$gray-20;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.procedureName {
+  @include type.type-style('body-compact-01');
+  font-weight: 600;
+  color: colors.$gray-100;
+  margin-bottom: 0.25rem;
+}
+
+.procedureMeta {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.reportSection {
+  margin-top: 0.5rem;
+}
+
+.reportLabel {
+  @include type.type-style('label-01');
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: colors.$gray-60;
+  margin-bottom: 0.25rem;
+}
+
+.reportContent {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  padding: 0.5rem 0.75rem;
+  background-color: colors.$gray-10;
+
+  * {
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  ul,
+  ol {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+
+  li {
+    margin-bottom: 0.125rem;
+  }
+
+  p {
+    margin: 0.125rem 0;
+
+    &:first-child {
+      margin-top: 0;
+    }
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  strong {
+    font-weight: 600;
+  }
+  em {
+    font-style: italic;
+  }
+}
+
+.labInterpretationHigh {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: colors.$red-60;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.labInterpretationLow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: colors.$yellow-30;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.labInterpretationNormal {
+  font-size: 0.875rem;
+  color: colors.$gray-70;
+}
+
+.panelHeaderRow td {
+  background-color: colors.$gray-20 !important;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: colors.$gray-70;
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+
+.panelResultRow td:first-child {
+  padding-left: 2rem;
+}

@@ -285,6 +285,17 @@
       "meta": {
         "title": "Partner Notification Services"
       }
+    },
+    {
+      "name": "visit-summary",
+      "slot": "ewf-patient-chart-patient-summary-tabs-extension-slot",
+      "component": "visitSummary",
+      "meta": {
+        "title": "Visit Summary"
+      },
+      "order": 0,
+      "online": true,
+      "offline": false
     }
   ],
   "modals": [
@@ -303,6 +314,10 @@
     {
       "name": "form-entry-modal",
       "component": "formEntryModal"
+    },
+    {
+      "name": "visit-summary-print-preview-modal",
+      "component": "visitSummaryPrintPreviewModal"
     }
   ],
   "workspaces2": [
