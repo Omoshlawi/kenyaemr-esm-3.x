@@ -571,7 +571,6 @@
     },
     {
       "name": "asign-patient-to-next-queue-action",
-      "slot":"clinical-encounter-actions-slot",
       "component": "assignToNextQueueAction"
     }
   ],
