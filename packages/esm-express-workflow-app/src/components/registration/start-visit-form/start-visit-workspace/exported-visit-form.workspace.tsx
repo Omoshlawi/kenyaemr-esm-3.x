@@ -28,6 +28,7 @@ import {
   useConfig,
   useConnectivity,
   useEmrConfiguration,
+  useFeatureFlag,
   useLayoutType,
   useVisit,
   Workspace2,
@@ -121,6 +122,7 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
   const allVisitTypes = useConditionalVisitTypes();
   const { earliestAllowedStartDate, isLoading: isLoadingBirthdateCheck } =
     useEarliestAllowedVisitStartDate(patientUuid);
+  const hieFeatureFlags = useFeatureFlag('healthInformationExchange');
 
   const [errorFetchingResources, setErrorFetchingResources] = useState<{
     blockSavingForm: boolean;
@@ -314,18 +316,20 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
       const abortController = new AbortController();
 
       if (isOnline) {
-        setIsAwaitingOtp(true);
-        try {
-          for (const [, callbacks] of visitFormCallbacks) {
-            if (typeof callbacks.onBeforeVisitSave === 'function') {
-              const canProceed = await callbacks.onBeforeVisitSave();
-              if (!canProceed) {
-                return;
+        if (hieFeatureFlags) {
+          setIsAwaitingOtp(true);
+          try {
+            for (const [, callbacks] of visitFormCallbacks) {
+              if (typeof callbacks.onBeforeVisitSave === 'function') {
+                const canProceed = await callbacks.onBeforeVisitSave();
+                if (!canProceed) {
+                  return;
+                }
               }
             }
+          } finally {
+            setIsAwaitingOtp(false);
           }
-        } finally {
-          setIsAwaitingOtp(false);
         }
 
         const visitRequest = visitToEdit?.uuid
@@ -450,6 +454,7 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
       getErrorDescription,
       globalMutate,
       handleVisitAttributes,
+      hieFeatureFlags,
       isOnline,
       onVisitStarted,
       patientUuid,
@@ -686,7 +691,7 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                   description={
                     visitToEdit
                       ? t('updatingVisit', 'Updating visit') + '...'
-                      : isAwaitingOtp
+                      : hieFeatureFlags && isAwaitingOtp
                       ? t('sendingOtp', 'Sending OTP') + '...'
                       : t('startingVisit', 'Starting visit') + '...'
                   }
@@ -697,7 +702,7 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                     ? t('updateVisit', 'Update visit')
                     : isElectiveNotApproved
                     ? t('awaitingApproval', 'Awaiting approval')
-                    : isSHAVisit
+                    : hieFeatureFlags && isSHAVisit
                     ? t('verifyAndStartVisit', 'Verify & Start Visit')
                     : t('startVisit', 'Start visit')}
                 </span>

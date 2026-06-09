@@ -102,3 +102,10 @@
 .illo {
   margin-top: layout.$spacing-05;
 }
+
+.extensionSlot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: layout.$spacing-03;
+}
