@@ -2,7 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Layer, Search, Tile } from '@carbon/react';
 import { EmptyDataIllustration } from '@openmrs/esm-patient-common-lib';
-import { ExtensionSlot, UserHasAccess } from '@openmrs/esm-framework';
+import { Extension, ExtensionSlot, useExtensionSlotMeta, UserHasAccess } from '@openmrs/esm-framework';
 import NavBarLink from './navbar-link.component';
 import styles from './navbar-action-button.scss';
 
@@ -23,7 +23,26 @@ interface NavBarOverlayProps {
 
 const NavBarOverlay: React.FC<NavBarOverlayProps> = ({ setSearchTerm, modules, searchTerm, hideOverlay }) => {
   const { t } = useTranslation();
-
+  /*
+   Note: Extract meta from extensions and looks for search string array which helps resolve the seach on extension links
+   All the link extension should be decleared with meta with search array e.g
+    {
+      "name": "tnt-module-link",
+      "slot": "navbar-items-slot",
+      "component": "tntNavLink",
+      "meta": {
+        "search": ["tnt", "Track", "trace"]
+      }
+    }
+   */
+  const meta = useExtensionSlotMeta('navbar-items-slot');
+  const { hasCandidateMatchingSearchTerm } = useMemo(() => {
+    const slotMeta = Object.entries(meta);
+    const allSearchCandidates = slotMeta.flatMap(([slotMeta, meta]) => (meta?.search ?? []) as Array<string>);
+    const hasCandidateMatchingSearchTerm =
+      allSearchCandidates.findIndex((s) => t(s, s).toLowerCase().includes(searchTerm.toLowerCase())) !== -1;
+    return { hasCandidateMatchingSearchTerm, allSearchCandidates };
+  }, [meta, searchTerm, t]);
   const handleClearSearch = useCallback(
     (event: React.MouseEvent) => {
       event.stopPropagation();
@@ -86,10 +105,19 @@ const NavBarOverlay: React.FC<NavBarOverlayProps> = ({ setSearchTerm, modules, s
           onChange={handleSearchChange}
         />
 
-        {modules.length === 0 && renderEmptyState()}
+        {modules.length === 0 && !hasCandidateMatchingSearchTerm && renderEmptyState()}
         <div className={styles.navLinks}>
           {renderModuleLinks}
-          <ExtensionSlot className={styles.extensionSlot} name="navbar-items-slot" state={{ hideOverlay }} />
+          <ExtensionSlot className={styles.extensionSlot} name="navbar-items-slot">
+            {(ext) => {
+              const search = (ext.meta?.search ?? []) as Array<string>;
+              const show = search.findIndex((s) => t(s, s).toLowerCase().includes(searchTerm.toLowerCase())) !== -1;
+              if (show) {
+                return <Extension state={{ hideOverlay }} />;
+              }
+              return <React.Fragment />;
+            }}
+          </ExtensionSlot>
         </div>
       </div>
     </div>
