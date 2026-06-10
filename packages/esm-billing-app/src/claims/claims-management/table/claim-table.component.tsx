@@ -7,6 +7,11 @@ import {
   OverflowMenu,
   OverflowMenuItem,
   Pagination,
+  StructuredListBody,
+  StructuredListCell,
+  StructuredListHead,
+  StructuredListRow,
+  StructuredListWrapper,
   Table,
   TableBody,
   TableCell,
@@ -19,7 +24,7 @@ import {
   TableRow,
   Tag,
 } from '@carbon/react';
-import { Add, Document, DocumentAdd, Stethoscope, Upload } from '@carbon/react/icons';
+import { Add } from '@carbon/react/icons';
 import { formatDate, showModal, useLayoutType, usePagination, navigate } from '@openmrs/esm-framework';
 import { EmptyState, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import React, { useState, useEffect } from 'react';
@@ -130,11 +135,7 @@ const ShifExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
         )}
         {claim.interventionDetails?.[0] && (
           <span>
-            <strong>{t('tariff', 'Tariff')}:</strong>{' '}
-            {claim.interventionDetails[0].tariff
-              ? formatCurrency(Number(claim.interventionDetails[0].tariff))
-              : 'Per diem'}
-            {' · '}
+            <strong>{t('paymentMechanism', 'Payment Mechanism')}:</strong>{' '}
             {claim.interventionDetails[0].payment_mechanism}
           </span>
         )}
@@ -174,70 +175,42 @@ const ShifExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
       <div className={styles.interventionsSection}>
         <div className={styles.interventionsSectionHeader}>
           <p className={styles.interventionsSectionTitle}>{t('interventions', 'Interventions')}</p>
-          <div className={styles.interventionActions}>
-            <Button
-              kind="ghost"
-              size={controlSize}
-              renderIcon={Add}
-              onClick={() => open('claim-add-intervention-modal')}>
-              {t('addNewIntervention', 'Add new intervention')}
-            </Button>
-          </div>
         </div>
         {claim.interventionDetails && claim.interventionDetails.length > 0 ? (
-          <table className={styles.interventionsTable}>
-            <thead>
-              <tr>
-                <th>{t('code', 'Code')}</th>
-                <th>{t('name', 'Name')}</th>
-                <th>{t('tariff', 'Tariff')}</th>
-                <th>{t('paymentMechanism', 'Payment Mechanism')}</th>
-                <th>{t('workflowState', 'Status')}</th>
-                <th>{t('subBenefitCode', 'Sub-benefit Code')}</th>
-                <th>{t('preauth', 'Preauth')}</th>
-                <th>{t('actions', 'Actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <StructuredListWrapper>
+            <StructuredListHead>
+              <StructuredListRow head>
+                <StructuredListCell head>{t('code', 'Code')}</StructuredListCell>
+                <StructuredListCell head>{t('name', 'Name')}</StructuredListCell>
+                <StructuredListCell head>{t('paymentMechanism', 'Payment Mechanism')}</StructuredListCell>
+                <StructuredListCell head>{t('interventionFund', 'Intervention Fund')}</StructuredListCell>
+                <StructuredListCell head>{t('workflowState', 'Status')}</StructuredListCell>
+                <StructuredListCell head>{t('subBenefitCode', 'Sub-benefit Code')}</StructuredListCell>
+                <StructuredListCell head>{t('preauth', 'Preauth')}</StructuredListCell>
+              </StructuredListRow>
+            </StructuredListHead>
+            <StructuredListBody>
               {claim.interventionDetails.map((intervention, idx) => (
-                <tr key={intervention.intervention_code ?? idx}>
-                  <td>
-                    <code>{intervention.intervention_code}</code>
-                  </td>
-                  <td>{intervention.intervention_name ?? '—'}</td>
-                  <td>{intervention.tariff ? formatCurrency(Number(intervention.tariff)) : 'Per diem'}</td>
-                  <td>{intervention.payment_mechanism ?? '—'}</td>
-                  <td>
+                <StructuredListRow key={intervention.intervention_code ?? idx}>
+                  <StructuredListCell>
+                    <code>{intervention.intervention_code ?? '—'}</code>
+                  </StructuredListCell>
+                  <StructuredListCell>{intervention.intervention_name ?? '—'}</StructuredListCell>
+                  <StructuredListCell>{intervention.payment_mechanism ?? '—'}</StructuredListCell>
+                  <StructuredListCell>{intervention.intervention_fund ?? '—'}</StructuredListCell>
+                  <StructuredListCell>
                     <Tag type="gray">{intervention.workflow_state ?? '—'}</Tag>
-                  </td>
-                  <td>{intervention.sub_benefit_code ?? '—'}</td>
-                  <td>
+                  </StructuredListCell>
+                  <StructuredListCell>{intervention.sub_benefit_code ?? '—'}</StructuredListCell>
+                  <StructuredListCell>
                     <Tag type={intervention.preauth_exist ? 'green' : 'gray'}>
                       {intervention.preauth_exist ? t('yes', 'Yes') : t('no', 'No')}
                     </Tag>
-                  </td>
-                  <td>
-                    <div className={styles.rowActions}>
-                      <OverflowMenu size={controlSize} flipped>
-                        <OverflowMenuItem
-                          onClick={() => open('claim-edit-intervention-modal', { intervention })}
-                          itemText={t('edit', 'Edit')}
-                        />
-                        <OverflowMenuItem
-                          onClick={() => open('claim-restore-intervention-modal', { intervention })}
-                          itemText={t('restore', 'Restore')}
-                        />
-                        <OverflowMenuItem
-                          onClick={() => open('claim-retire-intervention-modal', { intervention })}
-                          itemText={t('retire', 'Retire')}
-                        />
-                      </OverflowMenu>
-                    </div>
-                  </td>
-                </tr>
+                  </StructuredListCell>
+                </StructuredListRow>
               ))}
-            </tbody>
-          </table>
+            </StructuredListBody>
+          </StructuredListWrapper>
         ) : claim.interventions && claim.interventions.length > 0 ? (
           <div className={styles.fallbackMessage}>
             <p>
@@ -358,34 +331,36 @@ const ShifExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
             </Button>
           </div>
         ) : (
-          <table className={styles.billingLinesTable}>
-            <thead>
-              <tr>
-                <th>{t('item', 'Item')}</th>
-                <th>{t('code', 'Code')}</th>
-                <th>{t('qty', 'Qty')}</th>
-                <th>{t('unit', 'Unit')}</th>
-                <th>{t('unitPrice', 'Unit price')}</th>
-                <th>{t('total', 'Total')}</th>
-                <th>{t('net', 'Net')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lines.map((line) => (
-                <tr key={line.id ?? line.item_code}>
-                  <td>{line.item_name ?? '—'}</td>
-                  <td>
-                    <code>{line.intervention_code}</code>
-                  </td>
-                  <td>{line.quantity}</td>
-                  <td>{line.unit ?? '—'}</td>
-                  <td>{formatCurrency(Number(line.unit_price ?? 0))}</td>
-                  <td>{formatCurrency(Number(line.line_total_amount ?? 0))}</td>
-                  <td className={styles.netAmount}>{formatCurrency(Number(line.line_net_amount ?? 0))}</td>
-                </tr>
+          <StructuredListWrapper>
+            <StructuredListHead>
+              <StructuredListRow head>
+                <StructuredListCell head>{t('item', 'Item')}</StructuredListCell>
+                <StructuredListCell head>{t('code', 'Code')}</StructuredListCell>
+                <StructuredListCell head>{t('qty', 'Qty')}</StructuredListCell>
+                <StructuredListCell head>{t('unit', 'Unit')}</StructuredListCell>
+                <StructuredListCell head>{t('unitPrice', 'Unit price')}</StructuredListCell>
+                <StructuredListCell head>{t('total', 'Total')}</StructuredListCell>
+                <StructuredListCell head>{t('net', 'Net')}</StructuredListCell>
+              </StructuredListRow>
+            </StructuredListHead>
+            <StructuredListBody>
+              {lines.map((line, idx) => (
+                <StructuredListRow key={line.id ?? line.item_code ?? idx}>
+                  <StructuredListCell>{line.item_name ?? '—'}</StructuredListCell>
+                  <StructuredListCell>
+                    <code>{line.intervention_code ?? '—'}</code>
+                  </StructuredListCell>
+                  <StructuredListCell>{line.quantity}</StructuredListCell>
+                  <StructuredListCell>{line.unit ?? '—'}</StructuredListCell>
+                  <StructuredListCell>{formatCurrency(Number(line.unit_price ?? 0))}</StructuredListCell>
+                  <StructuredListCell>{formatCurrency(Number(line.line_total_amount ?? 0))}</StructuredListCell>
+                  <StructuredListCell className={styles.netAmount}>
+                    {formatCurrency(Number(line.line_net_amount ?? 0))}
+                  </StructuredListCell>
+                </StructuredListRow>
               ))}
-            </tbody>
-          </table>
+            </StructuredListBody>
+          </StructuredListWrapper>
         )}
       </div>
     </div>
@@ -442,13 +417,6 @@ const ClaimsTable: React.FC<TableProps> = ({
     intervention: claim.interventions?.length
       ? claim.interventions.join(', ')
       : claim.interventionDetails?.map((i) => i.intervention_code).join(', ') || '—',
-    tariff: (() => {
-      const details = claim.interventionDetails ?? [];
-      if (!details.length) {
-        return '—';
-      }
-      return details.map((i) => (i.tariff != null ? formatCurrency(Number(i.tariff)) : 'Per diem')).join(', ') || '—';
-    })(),
     claimedTotal:
       claim.claimedTotal != null && Number(claim.claimedTotal) > 0 ? formatCurrency(Number(claim.claimedTotal)) : '—',
     status: claim.claimAuthStatus?.trim() || claim.workflowState?.trim() || claim.status || '',
