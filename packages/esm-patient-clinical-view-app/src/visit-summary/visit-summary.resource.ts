@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, Visit } from '@openmrs/esm-framework';
 
 export interface VitalItem {
   value: number | string | null;
@@ -89,4 +89,13 @@ export function useVisitSummary(visitUuid: string) {
   const url = visitUuid ? `/ws/rest/v1/kenyaemr/visitSummary?visitUuid=${visitUuid}` : null;
   const { data, error, isLoading } = useSWR<{ data: VisitSummary }>(url, openmrsFetch);
   return { summary: data?.data, error, isLoading };
+}
+
+export function usePatientVisits(patientUuid: string) {
+  const url = patientUuid ? `${restBaseUrl}/visit?patient=${patientUuid}&v=default&includeInactive=true` : null;
+  const { data, error, isLoading } = useSWR<{ data: { results: Array<Visit> } }>(url, openmrsFetch);
+  const visits = (data?.data?.results ?? []).sort(
+    (a, b) => new Date(b.startDatetime).getTime() - new Date(a.startDatetime).getTime(),
+  );
+  return { visits, error, isLoading };
 }

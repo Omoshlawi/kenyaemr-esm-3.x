@@ -287,11 +287,11 @@
       }
     },
     {
-      "name": "visit-summary",
+      "name": "patient-visit-summary",
       "slot": "ewf-patient-chart-patient-summary-tabs-extension-slot",
       "component": "visitSummary",
       "meta": {
-        "title": "Visit Summary"
+        "title": "Patient Visit Summary"
       },
       "order": 0,
       "online": true,

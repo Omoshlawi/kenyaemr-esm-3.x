@@ -1,17 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Tag } from '@carbon/react';
-import { Image } from '@carbon/react/icons';
 import { formatDate, parseDate } from '@openmrs/esm-framework';
 import type { VisitSummary } from './visit-summary.resource';
 import styles from './visit-summary.scss';
 
-type ProceduresProps = {
-  procedures: VisitSummary['procedures'];
-  imaging: VisitSummary['imaging'];
-};
-
-// The backend sends HTML-encoded strings (e.g. &lt;ul&gt;). Decode before rendering.
 function decodeHtml(encoded: string): string {
   const txt = document.createElement('textarea');
   txt.innerHTML = encoded;
@@ -32,55 +25,88 @@ const HtmlReport: React.FC<{ label: string; html: string }> = ({ label, html }) 
   );
 };
 
-const VisitSummaryProcedures: React.FC<ProceduresProps> = ({ procedures, imaging }) => {
+type OrderItem = {
+  procedure: string;
+  orderNumber: string;
+  orderer: string;
+  orderedDate: string;
+  status: string;
+  procedureReport?: string;
+  impression?: string;
+};
+
+const OrderEntry: React.FC<{ item: OrderItem; showImpression?: boolean }> = ({ item, showImpression }) => {
   const { t } = useTranslation();
-  const hasItems = (procedures?.length ?? 0) + (imaging?.length ?? 0) > 0;
+  return (
+    <div className={styles.procedureItem}>
+      <p className={styles.procedureName}>{item.procedure}</p>
+      <p className={styles.procedureMeta}>
+        {item.orderer} &bull; {t('ordered', 'Ordered')}:{' '}
+        {item.orderedDate ? formatDate(parseDate(item.orderedDate)) : '—'}
+        &nbsp;&bull;&nbsp;
+        <em>
+          <Tag type={item.status === 'COMPLETED' ? 'green' : 'blue'} size="sm">
+            {item.status}
+          </Tag>
+        </em>
+      </p>
+      {item.procedureReport && <HtmlReport label={t('report', 'Report')} html={item.procedureReport} />}
+      {showImpression && item.impression && <HtmlReport label={t('impression', 'Impression')} html={item.impression} />}
+    </div>
+  );
+};
+
+type ImagingProps = { imaging: VisitSummary['imaging'] };
+type ProceduresOnlyProps = { procedures: VisitSummary['procedures'] };
+
+export const VisitSummaryImaging: React.FC<ImagingProps> = ({ imaging }) => {
+  const { t } = useTranslation();
+
+  if (!imaging?.length) {
+    return null;
+  }
 
   return (
     <div className={styles.section}>
       <div className={styles.sectionHeader}>
-        <h2>{t('proceduresAndImaging', 'Procedures & Imaging')}</h2>
+        <h2>{t('radiologyAndImaging', 'RADIOLOGY & IMAGING')}</h2>
       </div>
-
-      {hasItems ? (
-        <>
-          {procedures?.map((proc) => (
-            <div key={proc.orderNumber} className={styles.procedureItem}>
-              <p className={styles.procedureName}>{proc.procedure}</p>
-              <p className={styles.procedureMeta}>
-                {proc.orderer} • {proc.orderedDate ? formatDate(parseDate(proc.orderedDate)) : '—'} •{' '}
-                <Tag type={proc.status === 'COMPLETED' ? 'green' : 'blue'} size="sm">
-                  {proc.status}
-                </Tag>
-              </p>
-              {proc.procedureReport && (
-                <HtmlReport label={t('procedureReport', 'Procedure Report')} html={proc.procedureReport} />
-              )}
-            </div>
-          ))}
-
-          {imaging?.map((img) => (
-            <div key={img.orderNumber} className={styles.procedureItem}>
-              <p className={styles.procedureName}>{img.procedure}</p>
-              <p className={styles.procedureMeta}>
-                {img.orderer} • {img.orderedDate ? formatDate(parseDate(img.orderedDate)) : '—'} •{' '}
-                <Tag type={img.status === 'COMPLETED' ? 'green' : 'blue'} size="sm">
-                  {img.status}
-                </Tag>
-              </p>
-              {img.procedureReport && <HtmlReport label={t('report', 'Report')} html={img.procedureReport} />}
-              {img.impression && <HtmlReport label={t('impression', 'Impression')} html={img.impression} />}
-            </div>
-          ))}
-        </>
-      ) : (
-        <div className={styles.emptyState}>
-          <Image size={32} />
-          <p>{t('noProcedures', 'No recent procedures or imaging results available.')}</p>
-        </div>
-      )}
+      {imaging.map((img) => (
+        <OrderEntry key={img.orderNumber} item={img} showImpression />
+      ))}
     </div>
   );
 };
+
+export const VisitSummaryProceduresOnly: React.FC<ProceduresOnlyProps> = ({ procedures }) => {
+  const { t } = useTranslation();
+
+  if (!procedures?.length) {
+    return null;
+  }
+
+  return (
+    <div className={styles.section}>
+      <div className={styles.sectionHeader}>
+        <h2>{t('procedures', 'PROCEDURES')}</h2>
+      </div>
+      {procedures.map((proc) => (
+        <OrderEntry key={proc.orderNumber} item={proc} />
+      ))}
+    </div>
+  );
+};
+
+type ProceduresProps = {
+  procedures: VisitSummary['procedures'];
+  imaging: VisitSummary['imaging'];
+};
+
+const VisitSummaryProcedures: React.FC<ProceduresProps> = ({ procedures, imaging }) => (
+  <>
+    <VisitSummaryImaging imaging={imaging} />
+    <VisitSummaryProceduresOnly procedures={procedures} />
+  </>
+);
 
 export default VisitSummaryProcedures;

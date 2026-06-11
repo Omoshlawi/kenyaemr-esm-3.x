@@ -17,13 +17,16 @@ const VisitSummaryClinicalNotes: React.FC<ClinicalNotesProps> = ({ clinicalNotes
   return (
     <div className={styles.section}>
       <div className={styles.sectionHeader}>
-        <h2>{t('clinicalNotesAndPlan', 'Clinical Notes & Plan')}</h2>
+        <h2>{t('clinicalNotes', 'Clinical Notes')}</h2>
       </div>
-      {clinicalNotes.map((note, i) => (
-        <p key={i} className={styles.clinicalNoteText}>
-          {note.note}
-        </p>
-      ))}
+      <ul className={styles.clinicalNoteList}>
+        {clinicalNotes.map((note, i) => (
+          <li key={note.note + i} className={styles.clinicalNoteItem}>
+            <span className={styles.clinicalNoteText}>{note.note}</span>
+            {note.encounterType && <em className={styles.clinicalNoteSource}> — {note.encounterType}</em>}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };

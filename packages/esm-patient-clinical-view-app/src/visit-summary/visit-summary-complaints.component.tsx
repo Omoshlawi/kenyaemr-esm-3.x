@@ -24,7 +24,9 @@ const VisitSummaryComplaints: React.FC<ComplaintsProps> = ({ complaints }) => {
       {complaints.map((c, i) => (
         <div key={`${c.complaint}-${i}`} className={styles.infoItem}>
           <p>
-            {c.complaint} ({c.duration})
+            {c.complaint}
+            {c.duration && ` (${c.duration})`}
+            {c.onsetStatus && <em className={styles.complaintSource}> — at {c.onsetStatus}</em>}
           </p>
         </div>
       ))}

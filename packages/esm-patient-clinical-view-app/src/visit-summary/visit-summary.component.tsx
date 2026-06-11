@@ -1,18 +1,18 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTableSkeleton, InlineNotification } from '@carbon/react';
-import { ErrorState, useVisit } from '@openmrs/esm-framework';
-import { useVisitSummary } from './visit-summary.resource';
+import { ErrorState, useVisit, type Visit } from '@openmrs/esm-framework';
+import { usePatientVisits, useVisitSummary } from './visit-summary.resource';
 import VisitSummaryHeader from './visit-summary-header.component';
-import VisitSummaryDiagnoses from './visit-summary-diagnoses.component';
-import VisitSummaryComplaints from './visit-summary-complaints.component';
 import VisitSummaryVitals from './visit-summary-vitals.component';
+import VisitSummaryComplaints from './visit-summary-complaints.component';
 import VisitSummaryConditions from './visit-summary-conditions.component';
-import VisitSummaryLabResults from './visit-summary-lab-results.component';
 import VisitSummaryAllergies from './visit-summary-allergies.component';
-import VisitSummaryMedications from './visit-summary-medications.component';
-import VisitSummaryProcedures from './visit-summary-procedures.component';
 import VisitSummaryClinicalNotes from './visit-summary-clinical-notes.component';
+import VisitSummaryLabResults from './visit-summary-lab-results.component';
+import { VisitSummaryImaging, VisitSummaryProceduresOnly } from './visit-summary-procedures.component';
+import VisitSummaryDiagnoses from './visit-summary-diagnoses.component';
+import VisitSummaryMedications from './visit-summary-medications.component';
 import styles from './visit-summary.scss';
 
 type PatientVisitSummaryProps = {
@@ -22,28 +22,52 @@ type PatientVisitSummaryProps = {
 const PatientVisitSummary: React.FC<PatientVisitSummaryProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const { activeVisit, isLoading } = useVisit(patientUuid);
+  const { visits, isLoading: isVisitsLoading } = usePatientVisits(patientUuid);
+  const [selectedVisitUuid, setSelectedVisitUuid] = useState<string | null>(null);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (selectedVisitUuid) {
+      return;
+    }
+    if (activeVisit) {
+      setSelectedVisitUuid(activeVisit.uuid);
+    } else if (visits.length > 0) {
+      setSelectedVisitUuid(visits[0].uuid);
+    }
+  }, [activeVisit, visits, selectedVisitUuid]);
+
+  if (isLoading || isVisitsLoading) {
     return <DataTableSkeleton />;
   }
 
-  if (!activeVisit) {
+  const currentVisitUuid = selectedVisitUuid ?? activeVisit?.uuid ?? visits[0]?.uuid;
+
+  if (!currentVisitUuid) {
     return (
       <div className={styles.emptyState}>
-        <p>{t('noActiveVisit', 'No active visit found for this patient.')}</p>
+        <p>{t('noVisitsFound', 'No visits found for this patient.')}</p>
       </div>
     );
   }
 
-  return <VisitSummary patientUuid={patientUuid} visitUuid={activeVisit.uuid} />;
+  return (
+    <VisitSummary
+      patientUuid={patientUuid}
+      visitUuid={currentVisitUuid}
+      visits={visits}
+      onVisitChange={setSelectedVisitUuid}
+    />
+  );
 };
 
 type VisitSummaryProps = {
   patientUuid: string;
   visitUuid: string;
+  visits: Visit[];
+  onVisitChange: (uuid: string) => void;
 };
 
-export const VisitSummary: React.FC<VisitSummaryProps> = ({ patientUuid, visitUuid }) => {
+export const VisitSummary: React.FC<VisitSummaryProps> = ({ patientUuid, visitUuid, visits, onVisitChange }) => {
   const { t } = useTranslation();
   const { summary, isLoading, error } = useVisitSummary(visitUuid);
 
@@ -52,7 +76,7 @@ export const VisitSummary: React.FC<VisitSummaryProps> = ({ patientUuid, visitUu
   }
 
   if (error) {
-    return <ErrorState error={error} headerTitle={t('visitSummary', 'Visit Summary')} />;
+    return <ErrorState error={error} headerTitle={t('patientVisitSummary', 'Patient Visit Summary')} />;
   }
 
   if (!summary) {
@@ -64,13 +88,20 @@ export const VisitSummary: React.FC<VisitSummaryProps> = ({ patientUuid, visitUu
 
   const criticalAlerts = buildCriticalAlerts(vitals);
 
+  const hasHistoryData =
+    (complaints?.length ?? 0) + (conditions?.length ?? 0) + (allergies?.length ?? 0) + (clinicalNotes?.length ?? 0) > 0;
+
   return (
     <div className={styles.container}>
+      {/* Page Header */}
       <VisitSummaryHeader
         patientUuid={patientUuid}
         visitUuid={visitUuid}
         visitDate={summary.visitDate}
+        visitType={summary.visitType}
         weight={vitals?.weight}
+        visits={visits}
+        onVisitChange={onVisitChange}
       />
 
       {criticalAlerts.map((alert) => (
@@ -84,17 +115,23 @@ export const VisitSummary: React.FC<VisitSummaryProps> = ({ patientUuid, visitUu
           />
         </div>
       ))}
-
-      <VisitSummaryDiagnoses diagnoses={diagnoses} />
-      <VisitSummaryComplaints complaints={complaints} />
-
       <VisitSummaryVitals vitals={vitals} />
-      <VisitSummaryConditions conditions={conditions} />
+      {hasHistoryData && (
+        <div className={styles.groupSection}>
+          <div className={styles.groupSectionHeader}>
+            <h2>{t('historyAndExamination', 'HISTORY & EXAMINATION')}</h2>
+          </div>
+          <VisitSummaryComplaints complaints={complaints} />
+          <VisitSummaryConditions conditions={conditions} />
+          <VisitSummaryAllergies allergies={allergies} />
+          <VisitSummaryClinicalNotes clinicalNotes={clinicalNotes} />
+        </div>
+      )}
       <VisitSummaryLabResults labResults={summary.labResults} />
-      <VisitSummaryAllergies allergies={allergies} />
+      <VisitSummaryImaging imaging={imaging} />
+      <VisitSummaryProceduresOnly procedures={procedures} />
+      <VisitSummaryDiagnoses diagnoses={diagnoses} />
       <VisitSummaryMedications medications={medications} />
-      <VisitSummaryProcedures procedures={procedures} imaging={imaging} />
-      <VisitSummaryClinicalNotes clinicalNotes={clinicalNotes} />
     </div>
   );
 };
@@ -104,6 +141,7 @@ function buildCriticalAlerts(vitals: { bloodPressure?: { value?: number | string
   if (!bpValue) {
     return [];
   }
+  // TODO: Once we update kenyaemr to use platform 2.7.0 we can rely on concept-reference range that is patient aware
   const [sys, dia] = String(bpValue).split('/').map(Number);
   if (sys >= 140 || dia >= 90) {
     return [`Critical Alert: Elevated Blood Pressure — BP recorded at ${bpValue} mmHg.`];

@@ -1,5 +1,6 @@
 @use '@carbon/type';
 @use '@carbon/colors';
+@use '@carbon/layout';
 
 .container {
   padding: 1rem;
@@ -9,6 +10,126 @@
 
 .pageHeader {
   margin-bottom: 1rem;
+}
+
+.visitSelectorWrapper {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.visitSelectorTrigger {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid colors.$gray-30;
+  background-color: colors.$white;
+  cursor: pointer;
+  text-align: left;
+  min-width: 14rem;
+  width: 100%;
+
+  &:hover {
+    background-color: colors.$gray-10;
+    border-color: colors.$gray-50;
+  }
+}
+
+.visitSelectorContent {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.visitSelectorLabel {
+  @include type.type-style('label-01');
+  font-weight: 600;
+  color: colors.$gray-60;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.visitSelectorValue {
+  @include type.type-style('productive-heading-02');
+  color: colors.$gray-100;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.visitSelectorChevron {
+  flex-shrink: 0;
+  color: colors.$gray-60;
+  transition: transform 0.15s ease;
+}
+
+.visitSelectorChevronOpen {
+  transform: rotate(180deg);
+}
+
+.visitDropdownPanel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 9000;
+  min-width: 16rem;
+  background-color: colors.$white;
+  border: 1px solid colors.$gray-20;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  width: 100%;
+}
+
+.visitDropdownSearch {
+  margin: layout.$spacing-01;
+}
+
+.visitDropdownList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.visitDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
+
+  &:hover {
+    background-color: colors.$gray-10;
+    color: colors.$gray-100;
+  }
+}
+
+.visitDropdownItemSelected {
+  background-color: colors.$blue-10;
+  color: colors.$gray-100;
+  font-weight: 600;
+
+  &:hover {
+    background-color: colors.$blue-20;
+  }
+}
+
+.visitDropdownIcon {
+  flex-shrink: 0;
+  color: colors.$gray-50;
+}
+
+.visitDropdownIconSelected {
+  color: colors.$blue-60;
 }
 
 .visitMeta {
@@ -64,6 +185,36 @@
   margin-bottom: 1.5rem;
 }
 
+.groupSection {
+  margin-bottom: 1.5rem;
+  border: 1px solid colors.$gray-20;
+}
+
+.groupSectionHeader {
+  padding: 0.625rem 1rem;
+  border-bottom: 1px solid colors.$gray-20;
+
+  h2 {
+    @include type.type-style('productive-heading-02');
+    font-weight: 700;
+    margin: 0;
+    color: colors.$gray-100;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+}
+
+.groupSection > div.infoSection,
+.groupSection > div.section {
+  margin-bottom: 0;
+  border: none;
+  border-bottom: 1px solid colors.$gray-20;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
 .infoSection {
   margin-bottom: 1.5rem;
   background-color: colors.$white;
@@ -105,10 +256,18 @@
   }
 }
 
+.complaintSource {
+  font-size: 0.75rem;
+  font-weight: 400;
+  font-style: italic;
+  color: colors.$gray-60;
+}
+
 .section {
   margin-bottom: 1.5rem;
   background-color: colors.$white;
   border: 1px solid colors.$gray-20;
+  margin-top: layout.$spacing-01;
 }
 
 .sectionHeader {
@@ -293,12 +452,76 @@
   }
 }
 
-.clinicalNoteText {
-  padding: 1rem;
+.clinicalNoteList {
+  margin: 0;
+  padding: 0.75rem 1rem 0.75rem 2.25rem;
+  list-style: disc;
+}
+
+.clinicalNoteItem {
   font-size: 0.875rem;
   color: colors.$gray-100;
   line-height: 1.6;
+  margin-bottom: 0.375rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.clinicalNoteText {
   white-space: pre-wrap;
+}
+
+.clinicalNoteSource {
+  font-size: 0.75rem;
+  color: colors.$gray-60;
+  font-style: italic;
+}
+
+.diagnosisBody {
+  padding: 0.5rem 1rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  flex-direction: column;
+}
+
+.diagnosisSubsection {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.diagnosisSubheading {
+  @include type.type-style('label-01');
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: colors.$gray-70;
+  margin: 0 0 0.5rem 0;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid colors.$gray-20;
+}
+
+.diagnosisList {
+  margin: 0;
+  padding: 0 0 0 1.25rem;
+  list-style: disc;
+}
+
+.diagnosisListItem {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-100;
+  margin-bottom: 0.375rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.diagnosisCertainty {
+  font-size: 0.75rem;
+  color: colors.$gray-60;
 }
 
 .diagnosisBadge {
