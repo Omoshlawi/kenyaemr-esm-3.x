@@ -216,7 +216,12 @@ const DependentsComponent: React.FC<DependentProps> = ({
             showPatientHeader: false,
           },
           {},
-          null,
+          {
+            patient: localPatient,
+            patientUuid: localPatient.uuid,
+            visitContext: null as unknown as Visit,
+            mutateVisitContext: () => {},
+          },
         );
       } else {
         setSubmittingStates((prev) => ({ ...prev, [dependent.id]: true }));
