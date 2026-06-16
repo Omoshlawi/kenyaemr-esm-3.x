@@ -239,11 +239,18 @@ export const configSchema = {
             tags: ['enrollment'],
           }, // mch child enrollment
           {
-            formName: 'CWC Followup',
-            formTranslationKey: 'cwcFollowup',
+            formName: 'Initial CWC',
+            formTranslationKey: 'cwcInitial',
             formUuId: '755b59e6-acbb-4853-abaf-be302039f902',
             dependancies: ['8553d869-bdc8-4287-8505-910c7c998aff'],
             tags: [],
+          }, // CWC Initial
+          {
+            formName: 'CWC Followup',
+            formTranslationKey: 'cwcFollowup',
+            formUuId: 'b585607e-2d6c-4e62-bf43-307cdc34a6d9',
+            dependancies: ['755b59e6-acbb-4853-abaf-be302039f902'],
+            tags: ['bound-to-current-visit'],
           }, // CWC followup
           {
             formName: 'CWC Discontinuation',
