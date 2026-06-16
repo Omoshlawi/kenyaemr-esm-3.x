@@ -11,8 +11,8 @@ export type {
   StockItemInventoryResponse,
 } from './malaria-results.schema';
 
-export const useInventory = (stockItemUuid: string) => {
-  const url = `${restBaseUrl}/stockmanagement/stockiteminventory?v=default&limit=10&totalCount=true&stockItemUuid=${stockItemUuid}&includeBatchNo=true`;
+export const useInventory = (conceptUuid: string) => {
+  const url = `${restBaseUrl}/stockmanagement/stockiteminventory?v=default&limit=10&totalCount=true&conceptUuid=${conceptUuid}&includeBatchNo=true`;
   const { data, error, isLoading } = useSWR<FetchResponse<StockItemInventoryResponse>>(url, openmrsFetch);
   return {
     inventory: data?.data?.results ?? [],
