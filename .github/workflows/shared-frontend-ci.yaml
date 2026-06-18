@@ -28,6 +28,4 @@ jobs:
       dispatch_workflow: "dev-server-ci.yml"
       dispatch_repo: "Palladium-hub/openmrs-config-kenyaemr"
       dispatch_ref: "main"
-    secrets:
-      npm_auth_token: ${{ secrets.NPM_AUTH_TOKEN }}
-      personal_token: ${{ secrets.WORKFLOW_DISPATCH_TOKEN }}
+    secrets: inherit
