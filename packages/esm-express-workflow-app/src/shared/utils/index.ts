@@ -277,3 +277,24 @@ export function extractFetchError(err: unknown, fallback = 'An unexpected error 
 
   return fallback;
 }
+
+export function getPatientPrintFields(patient?: fhir.Patient) {
+  const name =
+    patient?.name?.[0]?.text ??
+    [patient?.name?.[0]?.given?.join(' '), patient?.name?.[0]?.family].filter(Boolean).join(' ');
+  const id = patient?.identifier?.[0]?.value;
+  const age = patient?.birthDate
+    ? Math.floor((Date.now() - new Date(patient.birthDate).getTime()) / 3.15576e10)
+    : undefined;
+  return {
+    patientName: name || undefined,
+    patientId: id,
+    patientAge: age,
+  };
+}
+
+export const documentId = () => {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substr(2, 9);
+  return `PM-${timestamp}-${random}`.toUpperCase();
+};

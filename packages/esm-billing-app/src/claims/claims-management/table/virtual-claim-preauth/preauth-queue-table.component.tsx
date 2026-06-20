@@ -88,10 +88,6 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
             <span className={styles.kvValue}>{item.intervention_name ?? '—'}</span>
           </div>
           <div className={styles.kvRow}>
-            <span className={styles.kvLabel}>{t('tariff', 'Tariff (KES)')}</span>
-            <span className={styles.kvValue}>{formatCurrency(Number(item.tariff)) ?? '—'}</span>
-          </div>
-          <div className={styles.kvRow}>
             <span className={styles.kvLabel}>{t('preauthType', 'Preauth type')}</span>
             <span className={styles.kvValue}>
               <Tag type={PREAUTH_TYPE_COLORS[item.preauth_type] ?? 'gray'} size="sm">
@@ -151,7 +147,6 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
           )}
         </div>
 
-        {/* ── Right card: docs + visit info ──────────────────────────── */}
         <div className={styles.expandedCard}>
           {tab === 'PENDING' && (
             <>
@@ -284,10 +279,6 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
           <div className={styles.kvRow}>
             <span className={styles.kvLabel}>{t('interventionName', 'Intervention name')}</span>
             <span className={styles.kvValue}>{item.intervention_name ?? '—'}</span>
-          </div>
-          <div className={styles.kvRow}>
-            <span className={styles.kvLabel}>{t('tariff', 'Tariff (KES)')}</span>
-            <span className={styles.kvValue}>{formatCurrency(Number(item.tariff)) ?? '—'}</span>
           </div>
           <div className={styles.kvRow}>
             <span className={styles.kvLabel}>{t('serviceType', 'Service type')}</span>
@@ -455,7 +446,7 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
               <InlineNotification
                 kind="success"
                 lowContrast
-                title={t('preauthApprovedCheckin', 'Approved — patient can check in')}
+                title={t('preauthApprovedCheckin', 'Approved patient can check in')}
                 subtitle={t(
                   'checkInGuidance',
                   'SHA has approved this preauth. The registration desk can now check in the patient to start the elective visit.',
@@ -487,7 +478,7 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
             onClick={handleSubmitPreauth}
             disabled={preauthAlreadySubmitted}>
             {preauthAlreadySubmitted
-              ? t('preauthAlreadySubmitted', 'Preauth submitted ✓')
+              ? t('preauthAlreadySubmitted', 'Preauth submitted')
               : t('submitElectivePreauth', 'Submit elective preauth')}
           </Button>
         )}
@@ -499,7 +490,7 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
             onClick={handleSubmitPreauth}
             disabled={preauthAlreadySubmitted}>
             {preauthAlreadySubmitted
-              ? t('preauthAlreadySubmitted', 'Preauth submitted ✓')
+              ? t('preauthAlreadySubmitted', 'Preauth submitted')
               : t('resubmitElectivePreauth', 'Resubmit preauth')}
           </Button>
         )}
@@ -529,7 +520,6 @@ const ScheduledTable: React.FC<ScheduledTableProps> = ({ search, fromDate, toDat
     { key: 'patient', header: t('patient', 'Patient') },
     { key: 'authorization_code', header: t('authCode', 'Auth Code') },
     { key: 'intervention', header: t('intervention', 'Intervention') },
-    { key: 'tariff', header: t('tariff', 'Tariff (KES)') },
     { key: 'workflow_state', header: t('status', 'Status') },
     { key: 'date_created', header: t('dateCreated', 'Date Created') },
   ];
@@ -693,7 +683,8 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
         item.authorization_code?.toLowerCase().includes(q) ||
         item.intervention_code?.toLowerCase().includes(q) ||
         item.intervention_name?.toLowerCase().includes(q);
-      const dateField = tab === 'PENDING' ? item.date_created : item.responded_on;
+      const dateField =
+        tab === 'PENDING' ? item.date_created : item.responded_on ?? item.requested_on ?? item.date_created;
       return matchesSearch && isWithinDateRange(dateField, fromDate, toDate);
     });
   }, [queue, search, fromDate, toDate, tab]);
@@ -702,7 +693,6 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
     { key: 'patient', header: t('patient', 'Patient') },
     { key: 'authorization_code', header: t('authCode', 'Auth Code') },
     { key: 'intervention', header: t('intervention', 'Intervention') },
-    { key: 'tariff', header: t('tariff', 'Tariff (KES)') },
   ];
 
   const tabHeaders = {
@@ -756,14 +746,13 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
     patient: item.patient?.display ?? '—',
     authorization_code: item.authorization_code,
     intervention: `${item.intervention_code ?? ''} — ${item.intervention_name ?? ''}`,
-    tariff: formatCurrency(Number(item.tariff)) ?? '—',
+    tariff: item.tariff ?? '—',
     preauth_type: item.preauth_type,
     service_type: item.service_type ?? '—',
     date_created: item.date_created,
     approved_amount: formatCurrency(Number(item.approved_amount)) ?? '—',
     responded_on: item.responded_on,
   }));
-
   return (
     <DataTable rows={rows} headers={headers} isSortable useZebraStyles>
       {({
@@ -806,7 +795,7 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
                         if (cell.info.header === 'approved_amount') {
                           return (
                             <TableCell key={cell.id}>
-                              {cell.value ? <Tag type="green">KES {formatCurrency(Number(cell.value))}</Tag> : '—'}
+                              {cell.value ? <Tag type="green">{cell.value}</Tag> : '—'}
                             </TableCell>
                           );
                         }
@@ -864,7 +853,9 @@ const PreauthQueueTable: React.FC = () => {
         item.authorization_code?.toLowerCase().includes(sq) ||
         item.intervention_code?.toLowerCase().includes(sq) ||
         item.intervention_name?.toLowerCase().includes(sq);
-      return matchesSearch && isWithinDateRange(item[dateField], fromDate, toDate);
+      const v =
+        dateField === 'responded_on' ? item.responded_on ?? item.requested_on ?? item.date_created : item[dateField];
+      return matchesSearch && isWithinDateRange(v, fromDate, toDate);
     });
   };
 

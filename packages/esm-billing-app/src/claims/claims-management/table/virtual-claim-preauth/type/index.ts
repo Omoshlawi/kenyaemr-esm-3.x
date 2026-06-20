@@ -128,3 +128,108 @@ export interface SavannahErrorResponse {
   upstream_error?: UpstreamErrorBody;
   message?: string;
 }
+
+export type BatchAttachmentResult = {
+  index: number;
+  intervention_code?: string;
+  document_type?: string;
+  success: boolean;
+  already_sent?: boolean;
+  attachment_uuid?: string;
+  retrieval_id?: string;
+  url?: string;
+  mirror_failed?: boolean;
+  mirror_error?: string;
+  reason?: string;
+  error?: string;
+  upstream_error?: unknown;
+};
+
+export type BatchAttachmentsResponse = {
+  success: boolean;
+  consent_token: string;
+  total: number;
+  succeeded: number;
+  failed: number;
+  skipped: number;
+  results: Array<BatchAttachmentResult>;
+};
+
+export type ClaimAttachmentItem = {
+  uuid: string;
+  document_type: string;
+  document_title?: string | null;
+  filename?: string | null;
+  mime_type?: string | null;
+  file_size?: number | null;
+  url?: string | null;
+  retrieval_id?: string | null;
+  status?: string;
+  date_created?: number | null;
+};
+
+export type ClaimAttachmentsByIntervention = {
+  intervention_code: string;
+  intervention_name?: string;
+  status?: string;
+  applicable_document_types: Array<string>;
+  attachments: Array<ClaimAttachmentItem>;
+};
+
+export type ClaimAttachmentsResponse = {
+  success: boolean;
+  consent_token: string;
+  total: number;
+  interventions: Array<ClaimAttachmentsByIntervention>;
+};
+
+export type UploadAttachmentItem = {
+  interventionCode: string;
+  documentType: string;
+  documentTitle?: string;
+  file: File;
+};
+
+export type AddDoctorPayload = {
+  identificationNumber: string;
+  identificationType: string;
+  regulationBody: string;
+};
+
+export type AddDoctorResponse = {
+  success: boolean;
+  doctor?: {
+    claim?: string;
+    doctor_name?: string;
+    doctor_request_status?: string;
+  };
+  mirrored?: boolean;
+  mirror_uuid?: string;
+  mirror_error?: string;
+  mirror_note?: string;
+  upstream_error?: unknown;
+  error?: string;
+};
+
+export type IdentificationTypeOption = {
+  code: string;
+  label: string;
+};
+
+export type IdentificationTypesResponse = {
+  count: number;
+  identification_types: Array<IdentificationTypeOption>;
+};
+
+export type ClaimDoctorItem = {
+  uuid: string;
+  doctor_name: string;
+  date_created?: number | null;
+};
+
+export type ClaimDoctorsResponse = {
+  success: boolean;
+  consent_token: string;
+  total: number;
+  doctors: Array<ClaimDoctorItem>;
+};

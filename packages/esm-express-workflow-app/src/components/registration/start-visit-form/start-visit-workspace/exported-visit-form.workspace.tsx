@@ -171,6 +171,10 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
     () => [...visitFormCallbacks.values()].some((cb) => cb.isElectiveNotApproved === true),
     [visitFormCallbacks],
   );
+  const isCoverageExhausted = useMemo(
+    () => [...visitFormCallbacks.values()].some((cb) => cb.isCoverageExhausted === true),
+    [visitFormCallbacks],
+  );
 
   useEffect(() => {
     reset(defaultValues, {
@@ -268,6 +272,19 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
   );
   const onSubmit = useCallback(
     async (data: VisitFormData) => {
+      if (isCoverageExhausted) {
+        showSnackbar({
+          title: t('coverageExhausted', 'Coverage exhausted'),
+          subtitle: t(
+            'cannotStartVisitCoverageExhausted',
+            'One or more selected interventions have exhausted their coverage limit. Remove them to proceed.',
+          ),
+          kind: 'error',
+          isLowContrast: false,
+        });
+        return;
+      }
+
       const {
         visitStatus,
         visitStartTimeFormat,
@@ -646,23 +663,24 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                   )}
                   <ExtensionSlot state={{ patientUuid, setExtraVisitInfo }} name="extra-visit-attribute-slot" />
                   <section>
-                    <h1 className={styles.sectionTitle}>{isTablet && t('visitAttributes', 'Visit attributes')}</h1>
                     <div className={styles.sectionField}>
                       <VisitAttributeTypeFields setErrorFetchingResources={setErrorFetchingResourcesAdapter} />
                     </div>
                   </section>
-                  <section>
-                    <div className={styles.sectionField}>
-                      <VisitFormExtensionSlot
-                        name="visit-form-bottom-slot"
-                        visitStatus={visitStatus}
-                        patientUuid={patientUuid}
-                        visitFormOpenedFrom={openedFrom}
-                        setVisitFormCallbacks={setVisitFormCallbacks}
-                        visitTypeUuid={visitType}
-                      />
-                    </div>
-                  </section>
+                  {!visitToEdit && (
+                    <section>
+                      <div className={styles.sectionField}>
+                        <VisitFormExtensionSlot
+                          name="visit-form-bottom-slot"
+                          visitStatus={visitStatus}
+                          patientUuid={patientUuid}
+                          visitFormOpenedFrom={openedFrom}
+                          setVisitFormCallbacks={setVisitFormCallbacks}
+                          visitTypeUuid={visitType}
+                        />
+                      </div>
+                    </section>
+                  )}
                 </>
               )}
             </Stack>
@@ -681,7 +699,8 @@ const ExportedVisitForm: React.FC<Workspace2DefinitionProps<ExportedVisitFormPro
                 isLoadingOverlapSetting ||
                 errorFetchingResources?.blockSavingForm ||
                 hasActiveVisitConflict ||
-                isElectiveNotApproved
+                isElectiveNotApproved ||
+                isCoverageExhausted
               }
               kind="primary"
               type="submit">

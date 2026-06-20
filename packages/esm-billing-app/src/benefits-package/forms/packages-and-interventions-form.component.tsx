@@ -1,14 +1,15 @@
 import {
   Column,
+  ComboBox,
   DatePicker,
   DatePickerInput,
   InlineLoading,
   InlineNotification,
-  MultiSelect,
   NumberInput,
+  Tag,
 } from '@carbon/react';
 import { useConfig, usePatient } from '@openmrs/esm-framework';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { BillingConfig } from '../../config-schema';
@@ -21,8 +22,14 @@ type Props = {
   patientUuid: string;
   visitTypeUuid?: string;
   showApplicableDocuments?: boolean;
-  /** Called whenever the intervention cache updates — parent uses this to detect CAPITATION */
   onInterventionsCached?: (cache: Record<string, SHAIntervention>) => void;
+  onUtilizationStatusChange?: (isExhausted: boolean) => void;
+};
+
+type PackageItem = {
+  code: string;
+  name: string;
+  label: string;
 };
 
 const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
@@ -30,20 +37,20 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
   visitTypeUuid,
   showApplicableDocuments,
   onInterventionsCached,
+  onUtilizationStatusChange,
 }) => {
   const { t } = useTranslation();
   const { crIdentificationNumberUUID, inPatientVisitTypeUuid } = useConfig<BillingConfig>();
   const { error: patientError, isLoading: isLoadingPatient, patient } = usePatient(patientUuid);
   const form = useFormContext<{
-    packages: Array<string>;
-    interventions: Array<string>;
+    packages: string | null;
+    interventions: string | null;
     policyNumber: string;
     admissionDate: Date | null;
     estimatedDaysOfAdmission: number;
   }>();
   const { setValue } = form;
 
-  const [selectedSubBenefitCode, setSelectedSubBenefitCode] = useState<string | null>(null);
   const isInpatient = visitTypeUuid === inPatientVisitTypeUuid;
 
   const patientCRId = useMemo(() => {
@@ -78,19 +85,31 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
     isLoading: isLoadingSubBenefits,
     error: subBenefitsError,
   } = useSHASubBenefits(patientCRId ?? '');
-  const selectedPackages = form.watch('packages');
 
-  useEffect(() => {
-    if (selectedPackages?.length > 0 && selectedSubBenefitCode === null) {
-      setSelectedSubBenefitCode(selectedPackages[0]);
-    }
-  }, [selectedPackages]);
+  const selectedPackage = form.watch('packages');
+
+  const packageItems: Array<PackageItem> = useMemo(
+    () =>
+      subBenefits.map((b) => ({
+        code: b.code,
+        name: b.name,
+        label: `${b.code} — ${b.name}`,
+      })),
+    [subBenefits],
+  );
 
   const handleInterventionsCached = useCallback(
     (cache: Record<string, SHAIntervention>) => {
       onInterventionsCached?.(cache);
     },
     [onInterventionsCached],
+  );
+
+  const handleUtilizationStatusChange = useCallback(
+    (isExhausted: boolean) => {
+      onUtilizationStatusChange?.(isExhausted);
+    },
+    [onUtilizationStatusChange],
   );
 
   if (isLoadingPatient) {
@@ -158,37 +177,44 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
         <Controller
           control={form.control}
           name="packages"
-          render={({ field }) => (
-            <MultiSelect
-              ref={field.ref}
-              id="sha-packages"
-              titleText={t('package', 'Package')}
-              label={t('choosePackage', 'Choose package')}
-              items={subBenefits.map((b) => b.code)}
-              itemToString={(code) => {
-                const benefit = subBenefits.find((b) => b.code === code);
-                return benefit ? `${benefit.code} — ${benefit.name}` : code ?? '';
-              }}
-              selectedItems={field.value ?? []}
-              onChange={(e) => {
-                field.onChange(e.selectedItems);
-                setSelectedSubBenefitCode(e.selectedItems?.[0] ?? null);
-              }}
-              invalid={!!form.formState.errors[field.name]?.message}
-              invalidText={form.formState.errors[field.name]?.message}
-            />
-          )}
+          render={({ field }) => {
+            const selectedItem = packageItems.find((p) => p.code === field.value) ?? null;
+            return (
+              <ComboBox
+                ref={field.ref}
+                id="sha-packages"
+                titleText={t('package', 'Package')}
+                placeholder={t('choosePackage', 'Choose package')}
+                items={packageItems}
+                itemToString={(item: PackageItem | null) => (item ? item.label : '')}
+                selectedItem={selectedItem}
+                onChange={({ selectedItem }) => {
+                  field.onChange(selectedItem ? selectedItem.code : null);
+                  form.setValue('interventions', null);
+                }}
+                shouldFilterItem={({ item, inputValue }: { item: PackageItem | null; inputValue: string | null }) => {
+                  if (!inputValue || !item) {
+                    return true;
+                  }
+                  return item.label.toLowerCase().includes(inputValue.toLowerCase());
+                }}
+                invalid={!!form.formState.errors[field.name]?.message}
+                invalidText={form.formState.errors[field.name]?.message}
+              />
+            );
+          }}
         />
       </Column>
 
       <Column className={styles.column}>
         <PackageInterventions
           patientCRId={patientCRId}
-          subBenefitCode={selectedSubBenefitCode ?? ''}
+          subBenefitCode={selectedPackage ?? ''}
           patientUuid={patientUuid}
-          selectedPackages={selectedPackages ?? []}
+          selectedPackages={selectedPackage ?? null}
           showApplicableDocuments={showApplicableDocuments}
           onInterventionsCached={handleInterventionsCached}
+          onUtilizationStatusChange={handleUtilizationStatusChange}
         />
       </Column>
 

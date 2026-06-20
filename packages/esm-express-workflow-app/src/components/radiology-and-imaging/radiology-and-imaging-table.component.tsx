@@ -7,11 +7,13 @@ import OrderTable from '../../shared/orders/OrderTable';
 import { type ExpressWorkflowConfig } from '../../config-schema';
 import { usePatientOrders } from '../../hooks/useOrders';
 import styles from './radiology-and-imaging.scss';
+import { getPatientPrintFields } from '../../shared/utils';
 
 type RadiologyAndImagingTableProps = {
   patientUuid: string;
-  patient: FHIRResource;
+  patient: fhir.Patient;
 };
+
 const RadiologyAndImagingTable: React.FC<RadiologyAndImagingTableProps> = ({ patientUuid, patient }) => {
   const { t } = useTranslation();
   const { imagingOrderTypeUuid, imagingOrderableConceptSets, imagingConceptClassUuid } =
@@ -22,10 +24,12 @@ const RadiologyAndImagingTable: React.FC<RadiologyAndImagingTableProps> = ({ pat
     error,
     mutate: mutateOrders,
   } = usePatientOrders(patientUuid, 'any', imagingOrderTypeUuid, undefined, undefined);
+
   const filteredOrders = useMemo(
     () => orders?.filter((order) => order.concept?.conceptClass?.uuid === imagingConceptClassUuid),
     [imagingConceptClassUuid, orders],
   );
+
   const { mutateVisitContext, visitContext } = usePatientChartStore(patientUuid);
 
   const windowProps = useMemo(() => ({ encounterUuid: filteredOrders?.[0]?.encounter?.uuid }), [filteredOrders]);
@@ -41,7 +45,10 @@ const RadiologyAndImagingTable: React.FC<RadiologyAndImagingTableProps> = ({ pat
     }),
     [patient, patientUuid, visitContext, mutateOrders, mutateVisitContext],
   );
+
   const launchAddLabOrder = useLaunchWorkspaceRequiringVisit(patientUuid, 'order-basket');
+
+  const { patientName, patientId, patientAge } = getPatientPrintFields(patient);
 
   if (isLoading) {
     return <DataTableSkeleton />;
@@ -91,6 +98,10 @@ const RadiologyAndImagingTable: React.FC<RadiologyAndImagingTableProps> = ({ pat
       priorityPillClassName={styles.priorityPill}
       statusPillClassName={styles.statusPill}
       module="@kenyaemr/esm-imaging-orders-app"
+      orderType="radiology"
+      patientName={patientName}
+      patientId={patientId}
+      patientAge={patientAge}
     />
   );
 };

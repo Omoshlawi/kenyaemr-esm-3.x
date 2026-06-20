@@ -209,6 +209,20 @@ export const claimsOverview = getAsyncLifecycle(
   () => import('./claims/claims-management/main/claims-overview-main.component'),
   options,
 );
+export const claimAttachmentsWorkspace = getAsyncLifecycle(
+  () => import('./claims/claims-wrap/claim-workspaces/attachements/claim-attachements-workspace'),
+  options,
+);
+
+export const claimDoctorsWorkspace = getAsyncLifecycle(
+  () => import('./claims/claims-wrap/claim-workspaces/doctors/claim-doctor-workspace'),
+  options,
+);
+
+export const claimSubmissionWorkspace = getAsyncLifecycle(
+  () => import('./claims/claims-wrap/claim-workspaces/claim-submission/ClaimSubmitWorkspace'),
+  options,
+);
 export const manageClaimRequestModal = getAsyncLifecycle(
   () =>
     import('./claims/claims-management/table/manage-claim-request.modal').then((m) => ({

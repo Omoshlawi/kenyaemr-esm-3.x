@@ -1,0 +1,7 @@
+@use '@carbon/layout';
+
+.buttonGroup {
+  display: flex;
+  justify-content: flex-end;
+  gap: layout.$spacing-05;
+}

@@ -1,0 +1,144 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.form {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  justify-content: space-between;
+}
+
+.formContainer {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: layout.$spacing-05;
+}
+
+.button {
+  height: layout.$spacing-10;
+  display: flex;
+  align-content: flex-start;
+  align-items: baseline;
+  width: 50%;
+  min-width: 50%;
+
+  :global(.cds--inline-loading) {
+    min-height: layout.$spacing-05;
+  }
+
+  :global(.cds--inline-loading__text) {
+    font-size: unset;
+  }
+}
+
+.tablet {
+  display: flex;
+  flex-direction: column;
+}
+
+.desktop {
+  display: flex;
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+  background-color: var(--omrs-color-bg-high-contrast);
+}
+
+.claimBanner {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background-color: var(--omrs-color-bg-low-contrast);
+}
+
+.bannerItem {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.bannerLabel {
+  @include type.type-style('label-01');
+  font-weight: 600;
+  color: var(--omrs-color-ink-medium-contrast);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bannerValue {
+  @include type.type-style('body-short-01');
+  font-weight: 500;
+  color: var(--omrs-color-ink-high-contrast);
+}
+
+.twoCol {
+  padding: layout.$spacing-02 layout.$spacing-05;
+}
+
+.fieldError {
+  @include type.type-style('label-01');
+  color: colors.$red-60;
+  margin-top: layout.$spacing-02;
+}
+
+.helperText {
+  @include type.type-style('label-01');
+  color: var(--omrs-color-ink-medium-contrast);
+  margin-top: layout.$spacing-02;
+}
+
+.addBtn {
+  margin-top: layout.$spacing-03;
+  padding: layout.$spacing-02 layout.$spacing-03;
+}
+
+.addBtnContainer {
+  display: flex;
+  gap: layout.$spacing-03;
+}
+
+.removeBtn {
+  margin-top: layout.$spacing-03;
+  padding: layout.$spacing-02 layout.$spacing-03;
+}
+
+.uploaderLabel {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-70;
+  margin: 0 0 layout.$spacing-03 0;
+}
+
+.required {
+  color: colors.$red-60;
+  margin-left: layout.$spacing-02;
+  font-weight: 600;
+}
+
+.itemCard {
+  background-color: var(--omrs-color-bg-low-contrast);
+  border: 1px solid var(--omrs-color-bg-medium-contrast);
+  border-radius: layout.$spacing-02;
+  padding: layout.$spacing-05;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  margin-bottom: layout.$spacing-03;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardTitle {
+  @include type.type-style('body-short-01');
+  font-weight: 500;
+  color: var(--omrs-color-ink-high-contrast);
+}
+
+.inlineNotification {
+  padding: 0 layout.$spacing-05;
+}

@@ -1,5 +1,5 @@
 import { DataTableSkeleton, Layer } from '@carbon/react';
-import { ErrorState, FHIRResource, useConfig } from '@openmrs/esm-framework';
+import { ErrorState, useConfig } from '@openmrs/esm-framework';
 import {
   EmptyState,
   invalidateVisitAndEncounterData,
@@ -14,13 +14,15 @@ import OrderTable from '../../shared/orders/OrderTable';
 
 import { useSWRConfig } from 'swr';
 import { type ExpressWorkflowConfig } from '../../config-schema';
+import { getPatientPrintFields } from '../../shared/utils';
 import { usePatientOrders } from '../../hooks/useOrders';
 import styles from './procedures.scss';
 
 type ProceduresTableProps = {
   patientUuid: string;
-  patient?: FHIRResource;
+  patient?: fhir.Patient;
 };
+
 const ProceduresTable: React.FC<ProceduresTableProps> = ({ patientUuid, patient }) => {
   const { t } = useTranslation();
   const { imagingOrderTypeUuid, imagingOrderableConceptSets, proceduresConceptClassUuid } =
@@ -53,6 +55,8 @@ const ProceduresTable: React.FC<ProceduresTableProps> = ({ patientUuid, patient 
     [patient, patientUuid, visitContext, mutateOrders, globalMutate],
   );
   const launchOrderBasket = useLaunchWorkspaceRequiringVisit(patientUuid ?? '', 'order-basket');
+
+  const { patientName, patientId, patientAge } = getPatientPrintFields(patient);
 
   if (isLoading) {
     return <DataTableSkeleton />;
@@ -100,6 +104,10 @@ const ProceduresTable: React.FC<ProceduresTableProps> = ({ patientUuid, patient 
       priorityPillClassName={styles.priorityPill}
       statusPillClassName={styles.statusPill}
       module="@kenyaemr/esm-procedure-orders-app"
+      orderType="procedure"
+      patientName={patientName}
+      patientId={patientId}
+      patientAge={patientAge}
     />
   );
 };

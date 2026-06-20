@@ -136,6 +136,7 @@ export type ElectiveCheckinRecord = {
   elective_scheduled_date: string | null;
   service_type: string | null;
   date_created: string | null;
+  payment_mechanism: string | null;
 };
 
 export type BiometricAuthorizeResponse = {
@@ -243,4 +244,47 @@ export type BiometricAuthorizationStatus = {
   is_open: boolean;
   needs_preauth: boolean;
   overall_preauth_finalised: boolean;
+};
+
+export type NonPomsfUtilizationFund = {
+  fund_type: string;
+  utilised_amount: string;
+  max_amount: string;
+  available_amount: string;
+};
+
+export type NonPomsfUtilizationResponse = {
+  success: boolean;
+  patient_id: string;
+  intervention_code: string;
+  eligibility: boolean;
+  limit_scope: string;
+  non_pomsf_utilization: Array<NonPomsfUtilizationFund>;
+  message?: string;
+};
+
+export type BatchLineResult = {
+  index: number;
+  success: boolean;
+  already_sent?: boolean;
+  auto_generated?: boolean;
+  mirror_failed?: boolean;
+  mirror_error?: string;
+  line_guid?: string;
+  mirror_uuid?: string;
+  intervention_code?: string;
+  openmrs_line_item_uuid?: string;
+  error?: string;
+  reason?: string;
+  upstream_error?: unknown;
+};
+
+export type BatchLinesResponse = {
+  success: boolean;
+  consent_token: string;
+  total: number;
+  succeeded: number;
+  failed: number;
+  skipped: number;
+  results: Array<BatchLineResult>;
 };

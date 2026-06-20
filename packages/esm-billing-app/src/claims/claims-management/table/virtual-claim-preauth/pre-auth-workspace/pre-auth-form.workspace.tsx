@@ -95,6 +95,14 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
 
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const idempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `k-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    [],
+  );
+
   const availableDocumentTypes = useMemo(() => {
     const fromClaim = item?.applicable_document_types;
     const list = fromClaim && fromClaim.length > 0 ? fromClaim : (DOCUMENT_TYPES as readonly string[]);
@@ -111,7 +119,12 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
       : undefined;
   const methods = useForm<PreauthFormData>({
     resolver: zodResolver(schema),
-    defaultValues: getDefaultValues(preauthType, isElective, existingItemForDefaults) as PreauthFormData,
+    defaultValues: getDefaultValues(
+      preauthType,
+      isElective,
+      existingItemForDefaults,
+      item?.tariff != null ? String(item.tariff) : undefined,
+    ) as PreauthFormData,
   });
 
   const {
@@ -153,11 +166,22 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
       return;
     }
     setSubmitError(null);
+    const tariffNumeric = item?.tariff != null ? Number(item.tariff) : null;
+    const unitPriceFromForm = (data as { unit_price?: string }).unit_price;
+    if (tariffNumeric != null && tariffNumeric > 0 && unitPriceFromForm && Number(unitPriceFromForm) > tariffNumeric) {
+      setSubmitError(
+        t('unitPriceExceedsTariffSubmit', 'Unit price cannot exceed the published tariff of KES {{tariff}}.', {
+          tariff: formatCurrency(tariffNumeric),
+        }),
+      );
+      return;
+    }
     try {
       const formData = buildPreauthFormData(data, item, isElective);
       const response = await openmrsFetch<SubmitErrorResponse>(`${restBaseUrl}/virtualclaims/preauth/files`, {
         method: 'POST',
         body: formData,
+        headers: { 'Idempotency-Key': idempotencyKey },
       });
 
       if (response?.data?.success === false) {
@@ -291,6 +315,44 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
             />
           </div>
         )}
+        <div className={styles.twoCol}>
+          <Controller
+            name="unit_price"
+            control={control}
+            render={({ field }) => {
+              const tariffNumeric = item?.tariff != null ? Number(item.tariff) : null;
+              const hasTariffCap = tariffNumeric != null && tariffNumeric > 0;
+              const exceedsTariff = hasTariffCap && field.value !== '' && Number(field.value) > tariffNumeric;
+              const showError = !!errors.unit_price || exceedsTariff;
+              const errorText =
+                errors.unit_price?.message ??
+                (exceedsTariff ? t('unitPriceExceedsTariff', 'Cannot exceed tariff') : undefined);
+
+              return (
+                <TextInput
+                  {...field}
+                  id="unit-price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max={hasTariffCap ? String(tariffNumeric) : undefined}
+                  labelText={
+                    <RequiredLabel>
+                      {hasTariffCap ? t('unitPriceWithTariff', 'Unit price (KES)') : t('unitPrice', 'Unit price (KES)')}
+                    </RequiredLabel>
+                  }
+                  helperText={t(
+                    'unitPriceHelp',
+                    'Amount requested from SHA for this intervention. Pre-filled with the published tariff.',
+                  )}
+                  placeholder="0.00"
+                  invalid={showError}
+                  invalidText={errorText}
+                />
+              );
+            }}
+          />
+        </div>
 
         <div className={styles.twoCol}>
           <Controller
@@ -365,7 +427,7 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
         </div>
 
         <div className={styles.twoCol}>
-          <FormGroup legendText={<RequiredLabel>{t('diagnoses', 'Diagnoses')}</RequiredLabel>}>
+          <FormGroup legendText={<RequiredLabel>{t('diagnosesLabel', 'Diagnoses')}</RequiredLabel>}>
             {diagnosisFields.map((field, idx) => (
               <React.Fragment key={field.id}>
                 <div className={styles.diagRow}>
@@ -810,7 +872,11 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
                           filenameStatus="edit"
                           accept={['.pdf', '.png', '.jpg', '.jpeg']}
                           multiple={false}
-                          onChange={(e) => field.onChange(e.target.files?.[0] ?? null)}
+                          onChange={(e: { target: HTMLInputElement; addedFiles?: File[] }) => {
+                            const file = e.addedFiles?.[0] ?? e.target?.files?.[0] ?? null;
+                            field.onChange(file);
+                          }}
+                          onDelete={() => field.onChange(null)}
                         />
                         {errors.attachments?.[idx]?.file && (
                           <p className={styles.fieldError}>{errors.attachments[idx].file?.message}</p>

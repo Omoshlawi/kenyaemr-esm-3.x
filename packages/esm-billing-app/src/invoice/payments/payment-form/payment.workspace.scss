@@ -104,3 +104,76 @@
   color: colors.$red-60;
   margin-left: layout.$spacing-01;
 }
+
+.interventionSummary {
+  margin-top: layout.$spacing-03;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background-color: $ui-02;
+}
+
+.interventionSummaryRow {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  flex-wrap: wrap;
+}
+
+.interventionSummaryDetails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-05;
+  margin-top: layout.$spacing-03;
+  @include type.type-style('label-02');
+  color: $text-02;
+}
+
+.interventionSummaryDetail {
+  display: flex;
+  align-items: baseline;
+  gap: layout.$spacing-02;
+}
+
+.interventionSummaryDetailLabel {
+  @include type.type-style('label-01');
+  color: $text-02;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.interventionSummaryDetailValue {
+  @include type.type-style('body-compact-02');
+  // color: $text-01;
+  font-weight: 600;
+}
+
+.interventionPreauth {
+  @include type.type-style('label-02');
+  font-weight: 600;
+  color: colors.$orange-70;
+}
+
+.interventionPreauthOk {
+  @include type.type-style('label-02');
+  font-weight: 600;
+  color: colors.$green-60;
+}
+
+.interventionAuth {
+  margin-top: layout.$spacing-04;
+  padding-top: layout.$spacing-03;
+  border-top: 1px solid $ui-03;
+  @include type.type-style('label-02');
+  color: $text-02;
+}
+
+.interventionCode {
+  @include type.type-style('code-01');
+  background-color: $ui-01;
+  padding: 0 layout.$spacing-02;
+  border: 1px solid $ui-03;
+}
+
+.interventionName {
+  @include type.type-style('body-compact-02');
+  // color: $text-01;
+}

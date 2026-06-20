@@ -11,6 +11,7 @@ import {
   showSnackbar,
   showToast,
   updateVisit,
+  useConfig,
 } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +23,9 @@ import { useCheckShareGnum } from './invoice.resource';
 import styles from './invoice.scss';
 import startCase from 'lodash-es/startCase';
 import { useCurrencyFormatting } from '../helpers/currency';
+import { useVisitAttribute } from '../bill-administration/patient-billing/workspaces/create-bill/create-bill.resource';
+import { BillingConfig } from '../config-schema';
+import { useVisit } from '../claims/dashboard/form/claims-form.resource';
 
 interface InvoiceActionsProps {
   readonly bill: MappedBill;
@@ -39,12 +43,13 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
   const { patientUuid: visitStorePatientUuid, manuallySetVisitUuid } = useVisitContextStore();
   const isProcessClaimsFormEnabled = useFeatureFlag('healthInformationExchange');
 
-  const isInsurancePayment = (payments) => {
-    return payments?.some((payment) => payment.instanceType.name === 'Insurance');
-  };
+  const {
+    visitAttributeTypes: { insuranceScheme },
+  } = useConfig<BillingConfig>();
 
-  const isShaFacilityStatusValid =
-    checkSHARegNum?.registrationNumber && checkSHARegNum.registrationNumber.trim() !== '';
+  const visitUuid = activeVisit?.uuid;
+
+  const { isSHA: isSHAVisit } = useVisitAttribute(visitUuid ?? '', insuranceScheme);
 
   const launchBillCloseOrReopenModal = (action: 'close' | 'reopen') => {
     const dispose = showModal('bill-action-modal', {
@@ -81,53 +86,8 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
     await mutate((key) => typeof key === 'string' && (key.startsWith(activeVisitUrl) || key.startsWith(retroVisitUrl)));
   };
 
-  const handleEndVisit = async () => {
-    if (activeVisit) {
-      const endVisitPayload = {
-        stopDatetime: new Date(),
-      };
-
-      const abortController = new AbortController();
-      try {
-        await updateVisit(activeVisit.uuid, endVisitPayload, abortController);
-        await mutateClaimForm();
-        showSnackbar({
-          isLowContrast: true,
-          kind: 'success',
-          subtitle: t('visitEndSuccessssfully', 'visit ended successfully'),
-          title: t('visitEnded', 'Visit ended'),
-        });
-      } catch (error) {
-        showSnackbar({
-          title: t('errorEndingVisit', 'Error ending visit'),
-          kind: 'error',
-          isLowContrast: false,
-          subtitle: error?.message,
-        });
-      }
-    }
-  };
-
   const handleViewClaims = async () => {
-    if (!isShaFacilityStatusValid) {
-      showToast({
-        critical: true,
-        kind: 'warning',
-        title: t('shaFacilityLicenseNumberRequired', 'Facility license number Required'),
-        description: t(
-          'shaFacilityLicenseNumbernRequiredDescription',
-          'Facility license number is required to process claims. Please update facility license number details.',
-        ),
-      });
-      return;
-    }
-
-    if (activeVisit) {
-      await handleEndVisit();
-      navigate({ to: `${spaBasePath}/accounting/patient/${patientUuid}/${billUuid}/claims` });
-    } else {
-      navigate({ to: `${spaBasePath}/accounting/patient/${patientUuid}/${billUuid}/claims` });
-    }
+    navigate({ to: `${spaBasePath}/accounting/patient/${patientUuid}/${billUuid}/claims` });
   };
 
   return (
@@ -224,16 +184,15 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
         </Button>
       )}
 
-      {isProcessClaimsFormEnabled && isInsurancePayment(bill?.payments) && (
+      {bill?.closed && isSHAVisit && (
         <Button
           onClick={handleViewClaims}
-          disabled={bill?.status !== 'PAID'}
-          kind="danger"
+          kind="secondary"
           size="sm"
           renderIcon={BaggageClaim}
-          iconDescription="Add"
+          iconDescription={t('submitClaim', 'Submit claim')}
           tooltipPosition="bottom">
-          {activeVisit ? t('endVisitAndClaim', 'End visit and Process claims') : t('claim', 'Process claims')}
+          {t('submitClaim', 'Submit claim')}
         </Button>
       )}
     </div>

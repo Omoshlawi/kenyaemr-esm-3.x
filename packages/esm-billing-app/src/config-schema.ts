@@ -9,6 +9,7 @@ export interface BillingConfig {
     exemptionCategory: string;
     billPaymentStatus: string;
     shaBenefitPackagesAndInterventions: string;
+    claimScheme: string;
   };
   insurancePaymentMethod: string;
   inPatientVisitTypeUuid: string;
@@ -45,6 +46,7 @@ export interface BillingConfig {
     encounterTypeUuid: string;
     formUuid: string;
   };
+  detailedViewPageSize: number;
   enableSHAVerification: boolean;
 }
 
@@ -130,6 +132,11 @@ export const configSchema: ConfigSchema = {
       _type: Type.String,
       _description: 'JSON String of SHA Benefit Packages and Interventions for this visit',
       _default: '338725fa-3790-4679-98b9-be623214ee29',
+    },
+    claimScheme: {
+      _type: Type.String,
+      _description: 'The claim scheme visit attribute uuid',
+      _default: 'a3f8c2d1-5b7e-4f93-8a6c-2e9d4b1c8f50',
     },
   },
   insurancePaymentMethod: {
@@ -256,7 +263,7 @@ export const configSchema: ConfigSchema = {
   licenseNumberUuid: {
     _type: Type.String,
     _description: 'The provider attribute type uuid for license number',
-    _default: 'bcaaa67b-cc72-4662-90c2-e1e992ceda66',
+    _default: 'bbdf67e8-c020-40ff-8ad6-74ba34893882',
   },
   licenseBodyUuid: {
     _type: Type.String,

@@ -5,10 +5,33 @@ import { PreauthFormData } from '../pre-auth-workspace/pre-auth-schema';
 import { ConceptResult, PreauthFormDataExtended, ProviderAttribute, SavannahErrorResponse } from '../type';
 import { mutate } from 'swr';
 
-export function formatShaDate(value: string | null | undefined): string {
-  if (!value?.trim()) {
+export function formatShaDate(value: unknown): string {
+  if (value == null) {
     return '—';
   }
+
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? '—' : formatDatetime(value);
+  }
+
+  if (typeof value === 'number') {
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? '—' : formatDatetime(d);
+  }
+
+  if (typeof value === 'object') {
+    const v = value as Record<string, unknown>;
+    const inner = v.valueDateTime ?? v.value ?? v.dateTime ?? v.display;
+    if (typeof inner === 'string' || inner instanceof Date || typeof inner === 'number') {
+      return formatShaDate(inner);
+    }
+    return '—';
+  }
+
+  if (typeof value !== 'string' || !value.trim()) {
+    return '—';
+  }
+
   const iso = value.replace(/(\.\d{3})\d+/, '$1');
   let date = new Date(iso);
   if (isNaN(date.getTime())) {
@@ -20,14 +43,29 @@ export function formatShaDate(value: string | null | undefined): string {
   return formatDatetime(date);
 }
 
-export function isWithinDateRange(dateStr: string | null | undefined, from: Date | null, to: Date | null): boolean {
+export function isWithinDateRange(
+  dateStr: string | number | Date | null | undefined,
+  from: Date | null,
+  to: Date | null,
+): boolean {
   if (!from && !to) {
     return true;
   }
-  if (!dateStr) {
+  if (dateStr == null) {
     return false;
   }
-  const iso = dateStr.replace(/(\.\d{3})\d+/, '$1').replace(/\bEAT\b/, '+0300');
+  let raw: string;
+  if (dateStr instanceof Date) {
+    raw = dateStr.toString();
+  } else if (typeof dateStr === 'number') {
+    raw = new Date(dateStr).toString();
+  } else if (typeof dateStr === 'string') {
+    raw = dateStr;
+  } else {
+    return false;
+  }
+
+  const iso = raw.replace(/(\.\d{3})\d+/, '$1').replace(/\bEAT\b/, '+0300');
   const date = new Date(iso);
   if (isNaN(date.getTime())) {
     return true;
@@ -41,7 +79,6 @@ export function isWithinDateRange(dateStr: string | null | undefined, from: Date
   }
   return true;
 }
-
 export function addDays(date: Date, days: number): Date {
   const d = new Date(date);
   d.setDate(d.getDate() + days);
@@ -183,9 +220,14 @@ export function buildPreauthFormData(data: PreauthFormData, item: PreauthQueueIt
   if (d.new_or_replacement) {
     fd.append('new_or_replacement', d.new_or_replacement);
   }
-
-  const tariffAmount = item?.tariff ? String(item.tariff) : '0';
-  fd.append('items', JSON.stringify([{ unit_price: tariffAmount }]));
+  const unitPriceFromForm = d.unit_price;
+  const unitPrice =
+    unitPriceFromForm && String(unitPriceFromForm).trim().length > 0
+      ? String(unitPriceFromForm)
+      : item?.tariff != null
+      ? String(item.tariff)
+      : '0';
+  fd.append('items', JSON.stringify([{ unit_price: unitPrice }]));
 
   const doctors = (data.doctors ?? []).map((doc) => ({
     identification_number: doc.identification_number,
@@ -209,23 +251,17 @@ export function buildPreauthFormData(data: PreauthFormData, item: PreauthQueueIt
     fd.append('diagnoses', JSON.stringify(diagnoses));
   }
 
-  const attachmentsMeta: Array<{ document_title: string; document_type: string; file_field_name: string }> = [];
-  (data.attachments ?? []).forEach((att, idx) => {
-    if (!att.file) {
-      return;
-    }
-    const fieldName = `attachments_${idx}_file_blob`;
+  const attachmentsMeta: Array<{ document_title: string; document_type: string }> = [];
+  (data.attachments ?? []).forEach((att) => {
     attachmentsMeta.push({
       document_title: att.document_title || att.file.name,
-      document_type: att.document_type || 'LAB_TESTS',
-      file_field_name: fieldName,
+      document_type: att.document_type,
     });
-    fd.append(fieldName, att.file, att.file.name);
+    fd.append('attachments_files', att.file, att.file.name);
   });
   if (attachmentsMeta.length > 0) {
     fd.append('attachments', JSON.stringify(attachmentsMeta));
   }
-
   return fd;
 }
 
@@ -272,6 +308,59 @@ export const getProviderAttr = (attrs: Array<ProviderAttribute>, typeUuid: strin
   return typeof attr.value === 'object' ? attr.value?.display ?? null : attr.value;
 };
 
+function stripActionPrefix(message: string): string {
+  return message.replace(/^\s*failed to [^:]+:\s*/i, '').trim() || message.trim();
+}
+
+function extractEdiError(raw: string): string | null {
+  if (!raw) {
+    return null;
+  }
+  const jsonStart = raw.indexOf('{');
+  if (jsonStart === -1) {
+    return null;
+  }
+
+  const jsonStr = raw.slice(jsonStart);
+
+  let parsed: any;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch {
+    return null;
+  }
+
+  const ediKey = Object.keys(parsed ?? {}).find((k) => /edi[\s_-]*error/i.test(k));
+  if (!ediKey) {
+    return null;
+  }
+
+  const ediBody = parsed[ediKey];
+  if (!ediBody || typeof ediBody !== 'object') {
+    return null;
+  }
+  const messages: string[] = [];
+  for (const [fieldKey, value] of Object.entries(ediBody)) {
+    if (Array.isArray(value)) {
+      for (const msg of value) {
+        if (typeof msg === 'string' && msg.trim()) {
+          const cleanKey = fieldKey.replace(/^_+|_+$/g, '').trim();
+          const isGeneric =
+            cleanKey === '' || /^all$/i.test(cleanKey) || /non[_\s-]?field[_\s-]?errors?/i.test(cleanKey);
+          messages.push(isGeneric ? msg.trim() : `${cleanKey}: ${msg.trim()}`);
+        }
+      }
+    } else if (typeof value === 'string' && value.trim()) {
+      messages.push(value.trim());
+    }
+  }
+
+  if (messages.length === 0) {
+    return null;
+  }
+  return messages.join('. ');
+}
+
 export function extractUpstreamError(
   response: SavannahErrorResponse | string | unknown,
   fallback = 'An unexpected error occurred. Please try again.',
@@ -281,33 +370,36 @@ export function extractUpstreamError(
   }
 
   if (typeof response === 'string') {
-    return response || fallback;
+    const edi = extractEdiError(response);
+    if (edi) {
+      return edi;
+    }
+
+    const jsonStart = response.indexOf('{');
+    if (jsonStart !== -1) {
+      try {
+        const parsed = JSON.parse(response.slice(jsonStart));
+        return extractUpstreamError(parsed, stripActionPrefix(response));
+      } catch {}
+    }
+
+    return stripActionPrefix(response) || fallback;
   }
 
   const res = response as SavannahErrorResponse;
 
-  const upstreamMsg = res.upstream_error?.message?.trim();
-  if (upstreamMsg) {
-    return upstreamMsg;
-  }
+  const candidates = [res.upstream_error?.message, res.upstream_error?.error, res.message, res.error];
 
-  const upstreamErr = res.upstream_error?.error?.trim();
-  if (upstreamErr && upstreamErr.toLowerCase() !== 'bad request') {
-    return upstreamErr;
-  }
-
-  const topError = res.error?.trim();
-  if (topError && !res.upstream_error) {
-    return topError;
-  }
-
-  const topMsg = res.message?.trim();
-  if (topMsg) {
-    return topMsg;
-  }
-
-  if (topError) {
-    return topError;
+  for (const candidate of candidates) {
+    const value = candidate?.trim();
+    if (!value) {
+      continue;
+    }
+    const edi = extractEdiError(value);
+    if (edi) {
+      return edi;
+    }
+    return stripActionPrefix(value);
   }
 
   return fallback;
@@ -332,15 +424,24 @@ export function extractFetchError(err: unknown, fallback = 'An unexpected error 
 
   if (err instanceof Error) {
     const msg = err.message;
-    if (msg) {
-      try {
-        const parsed = JSON.parse(msg);
-        return extractUpstreamError(parsed, msg);
-      } catch {
-        return msg;
-      }
+    if (!msg) {
+      return fallback;
     }
-    return fallback;
+
+    const edi = extractEdiError(msg);
+    if (edi) {
+      return edi;
+    }
+
+    const jsonStart = msg.indexOf('{');
+    if (jsonStart !== -1) {
+      try {
+        const parsed = JSON.parse(msg.slice(jsonStart));
+        return extractUpstreamError(parsed, stripActionPrefix(msg));
+      } catch {}
+    }
+
+    return stripActionPrefix(msg);
   }
 
   if (typeof err === 'object' && err !== null) {
@@ -369,4 +470,17 @@ export const toDate = (value: unknown): Date | null => {
 
 export const handleQueueMutate = async (urlFragment: string) => {
   await mutate((key) => typeof key === 'string' && key.includes(urlFragment), undefined, { revalidate: true });
+};
+
+export const toLocalIsoWithOffset = (d: Date): string => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const offsetMin = -d.getTimezoneOffset();
+  const sign = offsetMin >= 0 ? '+' : '-';
+  const oh = pad(Math.floor(Math.abs(offsetMin) / 60));
+  const om = pad(Math.abs(offsetMin) % 60);
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}` +
+    `${sign}${oh}:${om}`
+  );
 };
