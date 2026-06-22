@@ -217,52 +217,6 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
           onUtilizationStatusChange={handleUtilizationStatusChange}
         />
       </Column>
-
-      {isInpatient && (
-        <>
-          <Column className={styles.column}>
-            <p className={styles.sectionTitle}>{t('inpatientDetails', 'Inpatient Details')}</p>
-            <Controller
-              control={form.control}
-              name="admissionDate"
-              render={({ field }) => (
-                <DatePicker
-                  datePickerType="single"
-                  value={field.value ? new Date(field.value) : null}
-                  onChange={(event) => {
-                    if (event.length) {
-                      field.onChange(event[0]);
-                    }
-                  }}>
-                  <DatePickerInput
-                    id="admission-date"
-                    placeholder="mm/dd/yyyy"
-                    labelText={t('admissionDate', 'Admission date')}
-                    className={styles.dateInput}
-                  />
-                </DatePicker>
-              )}
-            />
-          </Column>
-          <Column className={styles.column}>
-            <Controller
-              control={form.control}
-              name="estimatedDaysOfAdmission"
-              render={({ field }) => (
-                <NumberInput
-                  id="estimated-days"
-                  label={t('estimatedDaysOfAdmission', 'Estimated days of admission')}
-                  min={1}
-                  max={365}
-                  value={field.value ?? 1}
-                  onChange={(_e, { value }) => field.onChange(Number(value))}
-                  className={styles.numberInput}
-                />
-              )}
-            />
-          </Column>
-        </>
-      )}
     </div>
   );
 };

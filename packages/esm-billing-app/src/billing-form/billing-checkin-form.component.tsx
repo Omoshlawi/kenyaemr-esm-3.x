@@ -384,12 +384,6 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
             interventionCodesRef.current,
             '',
             patientUuid,
-            isInpatient
-              ? {
-                  admission_date: admissionDateRef.current ? toSavannahISO(admissionDateRef.current) : undefined,
-                  estimated_days_of_admission: estimatedDaysRef.current ?? undefined,
-                }
-              : undefined,
             paymentMechanism,
             electiveAuthCodeForRequest,
           );

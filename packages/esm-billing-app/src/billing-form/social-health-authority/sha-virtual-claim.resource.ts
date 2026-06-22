@@ -120,10 +120,6 @@ export async function createSHAVirtualClaim(
   interventionCodes: string[],
   visitUuid: string,
   patientUuid: string,
-  inpatientFields?: {
-    admission_date?: string;
-    estimated_days_of_admission?: number;
-  },
   paymentMechanism?: string,
   electiveAuthorizationCode?: string,
 ): Promise<VirtualClaimResponse> {
@@ -145,15 +141,6 @@ export async function createSHAVirtualClaim(
 
   if (paymentMechanism) {
     body.payment_mechanism = paymentMechanism;
-  }
-
-  if (serviceType === 'INPATIENT' && inpatientFields) {
-    if (inpatientFields.admission_date) {
-      body.admission_date = inpatientFields.admission_date;
-    }
-    if (inpatientFields.estimated_days_of_admission != null) {
-      body.estimated_days_of_admission = inpatientFields.estimated_days_of_admission;
-    }
   }
 
   if (electiveAuthorizationCode) {
