@@ -70,6 +70,14 @@ export const printOrderPreviewModal = getAsyncLifecycle(
   },
 );
 
+export const printPrescriptionModal = getAsyncLifecycle(
+  () => import('./shared/orders/print-prescription/print-prescription.component'),
+  {
+    featureName: 'print-prescription',
+    moduleName,
+  },
+);
+
 export const visitFormWorkspace = getAsyncLifecycle(
   () => import('./components/registration/start-visit-form/visit-form-workspace/visit-form.workspace'),
   options,

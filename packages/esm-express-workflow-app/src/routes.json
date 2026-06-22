@@ -599,6 +599,10 @@
     {
       "name": "custom-end-visit-dialog",
       "component": "customEndVisitModal"
+    },
+    {
+      "name": "print-prescription-modal",
+      "component": "printPrescriptionModal"
     }
   ]
 }

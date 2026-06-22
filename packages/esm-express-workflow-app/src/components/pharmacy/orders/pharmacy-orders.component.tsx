@@ -16,8 +16,8 @@ import {
   DataTableSkeleton,
   Pagination,
 } from '@carbon/react';
-import { Add, Renew } from '@carbon/react/icons';
-import { ErrorState, formatDatetime, parseDate, useDebounce, useLayoutType } from '@openmrs/esm-framework';
+import { Add, Printer, Renew } from '@carbon/react/icons';
+import { ErrorState, formatDatetime, parseDate, showModal, useDebounce, useLayoutType } from '@openmrs/esm-framework';
 import {
   EmptyState,
   invalidateVisitAndEncounterData,
@@ -87,6 +87,14 @@ const PharmacyOrders: React.FC<PharmacyOrdersProps> = ({ patient }) => {
     };
   });
 
+  const handlePrintPrescription = () => {
+    const uuids = medicationRequests.map((entry) => entry.resource.id).filter(Boolean);
+    const dispose = showModal('print-prescription-modal', {
+      onClose: () => dispose(),
+      medicationRequestUuids: uuids,
+    });
+  };
+
   if (isLoading) {
     return (
       <div className={styles.pharmacyOrdersContainer}>
@@ -135,6 +143,9 @@ const PharmacyOrders: React.FC<PharmacyOrdersProps> = ({ patient }) => {
                 />
                 <Button kind="ghost" renderIcon={Renew} size={responseSize} onClick={() => mutate()}>
                   {t('refresh', 'Refresh')}
+                </Button>
+                <Button kind="ghost" renderIcon={Printer} size={responseSize} onClick={() => handlePrintPrescription()}>
+                  {t('printPrescription', 'Print Prescription')}
                 </Button>
                 <Button
                   size={responseSize}
