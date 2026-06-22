@@ -3,9 +3,20 @@ import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-fram
 import { type ClaimTabKey, type CloseReason, type PatientClaim, type PatientClaimsResponse } from './type';
 
 export function partitionByTab(claim: PatientClaim): ClaimTabKey {
-  const effectiveStage =
-    (claim.provider_workflow_state ?? '').toUpperCase() || (claim.display_stage ?? '').toUpperCase();
+  const displayStage = (claim.display_stage ?? '').toUpperCase();
 
+  switch (displayStage) {
+    case 'PAID':
+      return 'paid';
+    case 'REJECTED':
+      return 'closed';
+    case 'PAYER_SENT_BACK':
+      return 'resubmission';
+    case 'PAYER':
+      return 'sent';
+  }
+
+  const effectiveStage = (claim.provider_workflow_state ?? '').toUpperCase() || displayStage;
   switch (effectiveStage) {
     case 'DRAFT':
     case 'PREAUTH_PENDING':
@@ -14,33 +25,25 @@ export function partitionByTab(claim: PatientClaim): ClaimTabKey {
     case 'ELECTIVE_APPROVED':
     case 'ELECTIVE_DRAFT':
       return 'pending';
-
     case 'PAYER_PENDING':
     case 'SUBMITTED':
     case 'PROVIDER':
       return 'sent';
-
     case 'DRAFT_RESUBMIT':
     case 'PREAUTH_REJECTED':
     case 'ELECTIVE_REJECTED':
     case 'REJECTED':
     case 'FAILED_TO_SUBMIT':
       return 'resubmission';
-
     case 'CLOSED':
     case 'CANCELLED':
       return 'closed';
-
     case 'COMPLETED':
     case 'PAID':
       return 'paid';
-
     default:
       if (effectiveStage && typeof console !== 'undefined') {
-        // eslint-disable-next-line no-console
-        console.warn(
-          `[partitionByTab] Unmapped claim stage "${effectiveStage}" on claim ${claim.authorization_code} — defaulting to 'pending'. Add to switch if recurring.`,
-        );
+        console.warn(`[partitionByTab] Unmapped stage "${effectiveStage}" — defaulting to 'pending'.`);
       }
       return 'pending';
   }

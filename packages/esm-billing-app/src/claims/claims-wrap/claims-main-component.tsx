@@ -178,7 +178,11 @@ const ClaimMainComponent: React.FC<ClaimsMainProps> = ({ bill }) => {
 
 const renderPayerStatus = (claim: PatientClaim, tab: ClaimTabKey, t: TFunction): React.ReactNode => {
   if (claim.payer_workflow_state) {
-    return <PayerStatusTag state={claim.payer_workflow_state} />;
+    return (
+      <div className={styles.payerStatusCell}>
+        <PayerStatusTag state={claim.payer_workflow_state} />
+      </div>
+    );
   }
 
   const providerState = (claim.provider_workflow_state ?? '').toUpperCase();
@@ -230,8 +234,6 @@ const ClaimsTable: React.FC<{
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => defaultPageSize || 10);
 
-  // Carbon's Pagination loops (React #301) if the active pageSize isn't one of
-  // the offered pageSizes, so always include the current value in the list.
   const pageSizeOptions = useMemo(
     () => Array.from(new Set([pageSize, 10, 20, 30, 40, 50])).sort((a, b) => a - b),
     [pageSize],
@@ -293,7 +295,6 @@ const ClaimsTable: React.FC<{
     );
   };
 
-  // Stable row id -> claim lookup so sorting/pagination never misaligns the expanded row.
   const claimsById = useMemo(() => {
     const map = new Map<string, PatientClaim>();
     paginatedClaims.forEach((claim, index) => {
@@ -520,6 +521,72 @@ const ClaimDetailsPanel: React.FC<{
           subtitle={claim.sync_error_message.replace(/^HTTP \d+:\s*/, '').replace(/\n.*$/, '')}
           className={styles.syncErrorNotification}
         />
+      )}
+      {(claim.payer_workflow_state ||
+        (claim.payer_notes?.length ?? 0) > 0 ||
+        (claim.payer_transitions?.length ?? 0) > 0) && (
+        <section className={styles.payerActivitySection}>
+          {claim.payer_workflow_state === 'SENT_BACK' && (
+            <InlineNotification
+              kind="error"
+              lowContrast
+              hideCloseButton
+              title={t('shaBouncedClaim', 'SHA returned this claim for action')}
+              subtitle={claim.payer_workflow_display_name ?? ''}
+              className={styles.payerNotice}
+            />
+          )}
+
+          <div className={styles.payerActivityCard}>
+            <h6 className={styles.detailsCardTitle}>{t('payerActivity', 'Payer activity')}</h6>
+            {(claim.payer_notes?.length ?? 0) > 0 && (
+              <>
+                <h6 className={styles.detailsCardSubtitle}>
+                  {t('payerNotes', 'Notes from SHA')} ({claim.payer_notes?.length})
+                </h6>
+                <ul className={styles.payerNotesList}>
+                  {(claim.payer_notes ?? []).map((n) => (
+                    <li key={n.id ?? n.guid} className={styles.payerNoteRow}>
+                      <p className={styles.payerNoteText}>{n.note ?? '—'}</p>
+                      <div className={styles.payerNoteMeta}>
+                        {n.workflowState && <PayerStatusTag state={n.workflowState} />}
+                        {n.author && <span className={styles.payerNoteAuthor}>{n.author}</span>}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            {(claim.payer_transitions?.length ?? 0) > 0 && (
+              <>
+                <h6 className={styles.detailsCardSubtitle}>
+                  {t('payerTimeline', 'Timeline')} ({claim.payer_transitions?.length})
+                </h6>
+                <ul className={styles.payerTransitionsList}>
+                  {(claim.payer_transitions ?? []).map((tx) => (
+                    <li key={tx.id ?? tx.guid} className={styles.payerTransitionRow}>
+                      <span className={styles.payerTransitionWhen}>
+                        {tx.transitionDate
+                          ? formatDate(new Date(tx.transitionDate), { mode: 'standard', time: true })
+                          : '—'}
+                      </span>
+                      <div className={styles.payerTransitionStates}>
+                        {tx.workflowStateFrom && (
+                          <>
+                            <PayerStatusTag state={tx.workflowStateFrom} />
+                            <span className={styles.payerTransitionArrow}>→</span>
+                          </>
+                        )}
+                        <PayerStatusTag state={tx.workflowStateTo ?? ''} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        </section>
       )}
 
       {canUploadAttachments && (
@@ -812,7 +879,7 @@ const StatusTag: React.FC<{ stage: string }> = ({ stage }) => {
   let type: 'cool-gray' | 'warm-gray' | 'blue' | 'green' | 'red' | 'magenta' | 'cyan' = 'cool-gray';
   if (upper === 'DRAFT' || upper === 'ELECTIVE_DRAFT') {
     type = 'blue';
-  } else if (upper.includes('REJECTED') || upper === 'FAILED_TO_SUBMIT') {
+  } else if (upper.includes('REJECTED') || upper === 'FAILED_TO_SUBMIT' || upper === 'SENT_BACK') {
     type = 'red';
   } else if (upper === 'COMPLETED' || upper === 'PREAUTH_APPROVED' || upper === 'ELECTIVE_APPROVED') {
     type = 'green';
@@ -835,7 +902,7 @@ const PayerStatusTag: React.FC<{ state: string }> = ({ state }) => {
   let type: 'cool-gray' | 'green' | 'red' | 'magenta' | 'cyan' | 'warm-gray' = 'cool-gray';
   if (upper.includes('APPROVED') || upper === 'PAID') {
     type = 'green';
-  } else if (upper.includes('REJECTED') || upper === 'DENIED') {
+  } else if (upper.includes('REJECTED') || upper === 'DENIED' || upper === 'SENT_BACK') {
     type = 'red';
   } else if (upper.includes('REVIEWING') || upper.includes('PENDING')) {
     type = 'cyan';

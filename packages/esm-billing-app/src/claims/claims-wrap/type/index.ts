@@ -211,6 +211,33 @@ export interface PatientClaim {
   provider_workflow_state: string;
   provider_claim_auth_status: string | null;
   payer_workflow_state: string | null;
+  // Backend mirrors SHA's payer-side state via ClaimSyncService.syncPayer.
+  // display_name is the human-readable label from ClaimDisplayResolver
+  // (e.g. 'Sent back \u2014 needs clarification' for SENT_BACK).
+  payer_workflow_display_name: string | null;
+  // Append-only audit trail of payer state changes. The shape matches
+  // SHA's /claims/preview/payer response exactly (camelCase) — backend
+  // persists this as a raw JSON column without renaming. Already sorted
+  // newest-first by transitionDate desc when SHA returns it.
+  payer_transitions: Array<{
+    id?: number;
+    guid?: string;
+    workflowStateFrom?: string;
+    workflowStateTo?: string;
+    transitionDate?: string;
+  }> | null;
+  // Notes attached by SHA reviewers — the reason a claim was sent back,
+  // or remarks during manual/clinical review. Note that there is NO
+  // note-level timestamp; correlation with payer_transitions[i] by
+  // workflowState gives the timing.
+  payer_notes: Array<{
+    id?: number;
+    guid?: string;
+    note?: string;
+    author?: string;
+    source?: string;
+    workflowState?: string;
+  }> | null;
   payer_claim_status: string | null;
   is_resubmitted: boolean | null;
   is_negative: boolean | null;
