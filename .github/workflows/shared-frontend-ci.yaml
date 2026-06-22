@@ -15,7 +15,7 @@ jobs:
       actions: read
       contents: read
     with:
-      node_version: "18"
+      node_version: "24"
       turbo_concurrency_build: 5
       turbo_concurrency_prerelease: 2
       excluded_workspace: "@kenyaemr/esm-3.x"
