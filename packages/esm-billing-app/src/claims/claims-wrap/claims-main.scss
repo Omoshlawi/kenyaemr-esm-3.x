@@ -1,28 +1,486 @@
 @use '@carbon/layout';
+@use '@carbon/colors';
+@use '@carbon/type';
 
-.mainContainer {
-  display: flex;
-  margin: 0 auto;
-  padding: 0 1rem;
+.widgetCard {
+  padding: layout.$spacing-05;
+}
+.tabsContainer {
+  padding: layout.$spacing-05;
+  :global(.cds--table-expand) {
+    background-color: colors.$gray-20;
+  }
 }
 
-.content {
+.expandedContent {
+  padding: layout.$spacing-05;
+  background-color: colors.$gray-10;
+}
+
+.syncErrorNotification {
+  margin-bottom: layout.$spacing-05;
+  max-width: 100%;
+}
+
+.detailsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1.2fr;
+  gap: layout.$spacing-05;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detailsCard {
+  background-color: colors.$white;
+  border: 1px solid colors.$gray-20;
+  padding: layout.$spacing-05;
+  border-radius: 2px;
+}
+
+.detailsCardTitle {
+  @include type.type-style('heading-compact-01');
+  margin: 0 0 layout.$spacing-04 0;
+  color: colors.$gray-100;
+  padding-bottom: layout.$spacing-03;
+}
+
+.detailsCardTitleSpaced {
+  @extend .detailsCardTitle;
+  margin-top: layout.$spacing-05;
+}
+
+.kvRow {
   display: flex;
-  width: 100%;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-02 0;
+  border-bottom: 1px dashed colors.$gray-20;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.kvLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  flex-shrink: 0;
+}
+
+.kvValue {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-100;
+  text-align: right;
+  word-break: break-word;
+}
+
+.kvValueMono {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+}
+
+.kvValueHighlight {
+  font-weight: 600;
+}
+
+.muted {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-60;
+  margin: 0;
+}
+
+.interventionList,
+.billLineList,
+.diagnosisList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+}
+
+.interventionListItem {
+  padding: layout.$spacing-03;
+  background-color: colors.$gray-10;
+  border-radius: 2px;
+}
+
+.interventionHeader {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  flex-wrap: wrap;
+  margin-bottom: layout.$spacing-02;
+}
+
+.interventionCode {
+  @include type.type-style('code-01');
+  background-color: colors.$gray-20;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.interventionName {
+  @include type.type-style('body-compact-01');
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+}
+
+.interventionMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-04;
+  margin-top: layout.$spacing-02;
+}
+
+.metaItem {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.preauthAttached {
+  margin-top: layout.$spacing-03;
+  padding-top: layout.$spacing-03;
+  border-top: 1px dashed colors.$gray-20;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.preauthRow {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  @include type.type-style('label-01');
+}
+
+.preauthToken {
+  font-family: 'IBM Plex Mono', monospace;
+  color: colors.$gray-100;
+}
+
+.preauthType {
+  color: colors.$gray-60;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+}
+
+.switchNote {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+  margin: layout.$spacing-02 0 0 0;
+  font-style: italic;
+}
+
+.ivAttachmentsSection {
+  margin-top: layout.$spacing-03;
+  padding-top: layout.$spacing-03;
+  border-top: 1px dashed colors.$gray-20;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.ivAttachmentsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: layout.$spacing-03;
+  min-height: 1.5rem;
+
+  :global(.cds--btn--ghost) {
+    margin-right: calc(-1 * #{layout.$spacing-03});
+  }
+}
+
+.ivAttachmentsLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.docTagsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+}
+
+.ivAttachmentList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.ivAttachmentRow {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-02 0;
+  border-bottom: 1px dashed colors.$gray-20;
+  @include type.type-style('label-01');
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.ivAttachmentTitle {
+  @include type.type-style('body-compact-01');
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.billLineItem {
+  padding: layout.$spacing-03;
+  background-color: colors.$gray-10;
+  border-radius: 2px;
+}
+
+.billLineRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.billLineName {
+  @include type.type-style('body-compact-01');
+  font-weight: 500;
+}
+
+.billLineAmount {
+  @include type.type-style('body-compact-01');
+  font-weight: 600;
+}
+
+.billLineMeta {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  margin-top: layout.$spacing-03;
+  padding-top: layout.$spacing-03;
+  border-top: 1px dashed colors.$gray-20;
+  @include type.type-style('label-01');
+}
+
+.billLineCode {
+  @include type.type-style('code-01');
+  background-color: colors.$gray-20;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.diagnosisRow {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-02 0;
+  border-bottom: 1px dashed colors.$gray-20;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.diagnosisCode {
+  @include type.type-style('code-01');
+  background-color: colors.$gray-20;
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+
+.diagnosisDesc {
+  @include type.type-style('body-compact-01');
+  flex: 1;
+  min-width: 0;
+}
+
+.hiddenRow {
+  display: none;
+}
+
+.detailsToolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: layout.$spacing-04;
+  gap: layout.$spacing-03;
+}
+
+.docsSection {
+  margin-top: layout.$spacing-05;
+  padding: layout.$spacing-05;
+  background-color: colors.$white;
+  border: 1px solid colors.$gray-20;
+  border-radius: 2px;
+}
+
+.docTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+}
+
+.attachmentList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.attachmentRow {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-02 layout.$spacing-03;
+  background-color: colors.$gray-10;
+  border-radius: 2px;
+}
+
+.attachmentTitle {
+  @include type.type-style('body-compact-01');
+  flex: 1;
+  min-width: 0;
+}
+
+.viewLink {
+  @include type.type-style('helper-text-01');
+  color: colors.$blue-60;
+  text-decoration: none;
+  margin-left: layout.$spacing-03;
+  font-weight: 500;
+  :global(.cds--tag__label) {
+    white-space: normal;
+    word-break: break-word;
+  }
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.preauthLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.detailsToolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: layout.$spacing-03;
+  margin-bottom: layout.$spacing-04;
+  padding-bottom: layout.$spacing-03;
+  border-bottom: 1px solid colors.$gray-20;
+}
+.detailsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1.2fr 1fr;
   gap: layout.$spacing-05;
 }
-
-:global(.omrs-breakpoint-lt-desktop) {
-  .mainContainer {
-    flex-direction: column;
-  }
-
-  .content {
-    flex-direction: column;
-  }
+.payerStatusCell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
 }
 
-.claimContainer,
-.form {
-  flex: 1;
+.payerStatusHint {
+  font-size: 0.75rem;
+  color: var(--cds-text-secondary, #525252);
+  line-height: 1.2;
+}
+
+.payerActivitySection {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.payerNotice {
+  margin-bottom: 1rem;
+}
+
+.payerActivityCard {
+  padding: 1rem;
+  background: var(--cds-layer-01, #f4f4f4);
+  border-radius: 4px;
+}
+
+.payerCurrentRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.payerCurrentHint {
+  font-size: 0.875rem;
+  color: var(--cds-text-secondary, #525252);
+}
+
+.detailsCardSubtitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--cds-text-secondary, #525252);
+}
+
+.payerNotesList,
+.payerTransitionsList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.payerNoteRow {
+  padding: 0.5rem 0;
+  border-left: 3px solid var(--cds-support-warning, #f1c21b);
+  padding-left: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.payerNoteWhen {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--cds-text-secondary, #525252);
+  margin-bottom: 0.25rem;
+}
+
+.payerNoteText {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.payerTransitionRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.375rem 0;
+  font-size: 0.875rem;
+}
+
+.payerTransitionWhen {
+  font-size: 0.75rem;
+  color: var(--cds-text-secondary, #525252);
+  min-width: 9rem;
+}
+
+.payerNotesEmpty {
+  padding: 0.75rem;
+  color: var(--cds-text-secondary, #525252);
+  font-style: italic;
+  font-size: 0.875rem;
+  text-align: center;
+  background: var(--cds-layer-02, #ffffff);
+  border-radius: 4px;
 }

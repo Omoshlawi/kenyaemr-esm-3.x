@@ -451,6 +451,21 @@
       "window": "billing-workspace-window"
     },
     {
+      "name": "claim-attachments-workspace",
+      "component": "claimAttachmentsWorkspace",
+      "window": "billing-workspace-window"
+    },
+    {
+      "name": "claim-doctors-workspace",
+      "component": "claimDoctorsWorkspace",
+      "window": "billing-workspace-window"
+    },
+    {
+      "name": "claim-submission-workspace",
+      "component": "claimSubmissionWorkspace",
+      "window": "billing-workspace-window"
+    },
+    {
       "name": "edit-drug-order",
       "component": "@openmrs/esm-patient-medications-app#exportedAddDrugOrderWorkspace",
       "window": "billing-workspace-window"

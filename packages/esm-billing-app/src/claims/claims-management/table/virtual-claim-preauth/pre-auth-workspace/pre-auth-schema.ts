@@ -51,9 +51,13 @@ export const basePreauthSchema = z.object({
   service_end_time_format: z.enum(['AM', 'PM']).default('AM'),
   clinical_indications: z.string().optional(),
   provider_notification_email: z.string().min(1, 'Email is required').email('Invalid email'),
+  unit_price: z
+    .string()
+    .min(1, 'Unit price is required')
+    .refine((v) => !isNaN(Number(v)) && Number(v) > 0, 'Must be a positive number'),
   doctors: z.array(doctorSchema).min(1, 'At least one doctor is required'),
   diagnoses: z.array(diagnosisSchema).min(1, 'At least one diagnosis is required'),
-  attachments: z.array(attachmentSchema).min(1, 'At least one attachment is required'),
+  attachments: z.array(attachmentSchema).min(0),
 });
 
 export const normalPreauthSchema = basePreauthSchema;
@@ -151,6 +155,7 @@ export function getDefaultValues(
   preauthType: PreauthType,
   isElective: boolean = false,
   existingItem?: { requested_on?: string; responded_on?: string },
+  defaultUnitPrice?: string,
 ): Partial<PreauthFormData> {
   const today = new Date();
   const tomorrow = addDays(today, 1);
@@ -183,6 +188,7 @@ export function getDefaultValues(
     service_end_time_format: timeFormat as 'AM' | 'PM',
     clinical_indications: '',
     provider_notification_email: '',
+    unit_price: defaultUnitPrice ?? '',
     doctors: [
       {
         identification_number: '',
@@ -192,7 +198,7 @@ export function getDefaultValues(
       },
     ],
     diagnoses: [{ icd_code: '', display: '' }],
-    attachments: [{ document_title: '', document_type: '', file: null }],
+    attachments: [],
   };
 
   switch (preauthType) {
@@ -252,9 +258,9 @@ export function getDefaultValues(
 }
 
 export const electivePreAuthSchema = z.object({
-  patientUuid: z.string().min(1, 'Please select a patient'),
-  subBenefitCodes: z.array(z.string()).min(1, 'Please select at least one benefit package'),
-  interventionCodes: z.array(z.string()).min(1, 'Please select at least one elective intervention'),
+  patientUuid: z.string().min(1, 'Select a patient'),
+  subBenefitCode: z.string().min(1, 'Select a benefit package').nullable(),
+  interventionCode: z.string().min(1, 'Select an intervention').nullable(),
   serviceType: z.enum(['OUTPATIENT', 'INPATIENT']),
 });
 

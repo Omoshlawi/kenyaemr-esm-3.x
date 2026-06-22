@@ -1,0 +1,25 @@
+@use '@carbon/layout';
+
+.modalBody {
+  padding: 0;
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.pdfFrame {
+  width: 100%;
+  flex: 1;
+  min-height: 70vh;
+  border: none;
+}
+
+.stateContainer {
+  padding: layout.$spacing-06;
+  display: flex;
+  justify-content: center;
+}
+
+.btnSet {
+  width: 100%;
+}

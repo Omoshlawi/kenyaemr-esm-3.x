@@ -169,6 +169,7 @@ export interface VisitFormCallbacks {
    * elective preauth has not yet been approved by SHA.
    */
   isElectiveNotApproved?: boolean;
+  isCoverageExhausted?: boolean;
 }
 
 export function useVisitFormCallbacks() {

@@ -30,6 +30,7 @@ import SHANumberValidity from './social-health-authority/sha-number-validity.com
 import VisitAttributesForm from './visit-attributes/visit-attributes-form.component';
 import SHABenefitPackagesAndInterventions from '../benefits-package/forms/packages-and-interventions-form.component';
 import {
+  addVisitAttribute,
   checkBiometricAuthorizationStatus,
   createSHABiometricAuthorize,
   createSHAVirtualClaim,
@@ -57,6 +58,8 @@ export interface VisitFormCallbacks {
   onBeforeVisitSave?: () => Promise<boolean>;
   isSHAVisit?: boolean;
   isElectiveNotApproved?: boolean;
+  /** When true, the visit form's submit button should be disabled. */
+  isCoverageExhausted?: boolean;
 }
 
 type BillingCheckInFormProps = {
@@ -71,6 +74,27 @@ type BillingCheckInFormValue = VisitAttributesFormValue & {
   admissionDate: Date | null;
   estimatedDaysOfAdmission: number;
 };
+function extractAuthorizationCode(claimResponse: any): string | null {
+  if (!claimResponse) {
+    return null;
+  }
+  const candidates = [
+    claimResponse.authorization_code,
+    claimResponse.claim?.authorization_code,
+    claimResponse.consent_token,
+    claimResponse.claim?.consent_token,
+    claimResponse.data?.authorization_code,
+    claimResponse.data?.claim?.authorization_code,
+    claimResponse.authorizationCode,
+    claimResponse.claim?.authorizationCode,
+  ];
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim().length > 0) {
+      return c.trim();
+    }
+  }
+  return null;
+}
 
 const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   patientUuid,
@@ -81,7 +105,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   const { t } = useTranslation();
   const hieFeatureFlags = useFeatureFlag('healthInformationExchange');
   const {
-    visitAttributeTypes: { isPatientExempted },
+    visitAttributeTypes: { isPatientExempted, claimScheme },
     inPatientVisitTypeUuid,
     crIdentificationNumberUUID,
     enableSHAVerification,
@@ -114,6 +138,8 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   const [isElectiveVisit, setIsElectiveVisit] = useState<'yes' | 'no'>('no');
   const [electiveConsentToken, setElectiveConsentToken] = useState('');
 
+  const [isCoverageExhausted, setIsCoverageExhausted] = useState(false);
+
   const {
     electiveRecord,
     isLoading: isLoadingElective,
@@ -130,6 +156,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   const estimatedDaysRef = useRef<number | null>(null);
   const shaClaimResponseRef = useRef<VirtualClaimResponse | null>(null);
   const interventionCacheRef = useRef<Record<string, SHAIntervention>>({});
+  const paymentMechanismRef = useRef<string | undefined>(undefined);
 
   const formMethods = useForm<BillingCheckInFormValue>({
     mode: 'all',
@@ -139,8 +166,8 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
       insuranceScheme: '',
       policyNumber: '',
       exemptionCategory: '',
-      interventions: [],
-      packages: [],
+      interventions: null,
+      packages: null,
       admissionDate: null,
       estimatedDaysOfAdmission: 1,
     },
@@ -150,7 +177,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   const isPatientExemptedValue = formMethods.watch('isPatientExempted');
   const paymentMethod = formMethods.watch('paymentMethods');
   const isInsuranceSchemeSha = formMethods.watch('insuranceScheme') === SHA_INSURANCE_SCHEME;
-  const selectedInterventions = formMethods.watch('interventions') as string[];
+  const selectedIntervention = formMethods.watch('interventions') as string | null;
   const admissionDate = formMethods.watch('admissionDate');
   const estimatedDays = formMethods.watch('estimatedDaysOfAdmission');
 
@@ -164,6 +191,16 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   useEffect(() => {
     estimatedDaysRef.current = estimatedDays ?? null;
   }, [estimatedDays]);
+
+  useEffect(() => {
+    if (!isInsuranceSchemeSha || isElectiveVisit === 'yes') {
+      setIsCoverageExhausted(false);
+    }
+  }, [isInsuranceSchemeSha, isElectiveVisit]);
+
+  const handleUtilizationStatusChange = useCallback((isExhausted: boolean) => {
+    setIsCoverageExhausted(isExhausted);
+  }, []);
 
   const resolvePaymentMechanism = useCallback((codes: string[]): string | undefined => {
     if (codes.length === 0) {
@@ -334,12 +371,10 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         return;
       }
 
+      const electiveAuthCodeForRequest = isElectiveVisit === 'yes' ? electiveConsentToken : undefined;
+
       const buildModalConfig = (crIdToUse: string, codes: string[], paymentMechanism: string | undefined): void => {
         let settled = false;
-
-        // Shared virtual-claim creator. OTP and biometric paths only differ in
-        // auth param ({otp} vs {authGuid}). Stores response in shaClaimResponseRef
-        // so onVisitCreatedOrUpdated can link the claim to the visit after save.
         const runVirtualClaim = async (authParams: { otp: string } | { authGuid: string }) => {
           const isInpatient = serviceTypeRef.current === 'INPATIENT';
           const claimResponse = await createSHAVirtualClaim(
@@ -349,19 +384,24 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
             interventionCodesRef.current,
             '',
             patientUuid,
-            isInpatient
-              ? {
-                  admission_date: admissionDateRef.current ? toSavannahISO(admissionDateRef.current) : undefined,
-                  estimated_days_of_admission: estimatedDaysRef.current ?? undefined,
-                }
-              : undefined,
             paymentMechanism,
+            electiveAuthCodeForRequest,
           );
           if (!claimResponse.success) {
             throw new Error(
               extractUpstreamError(claimResponse as any, t('virtualClaimFailed', 'SHA virtual claim failed.')),
             );
           }
+          const authCheck = extractAuthorizationCode(claimResponse);
+          if (!authCheck) {
+            throw new Error(
+              t(
+                'virtualClaimNoAuthCode',
+                'SHA returned a claim with no authorization code. Cannot proceed — please retry.',
+              ),
+            );
+          }
+
           shaClaimResponseRef.current = claimResponse;
           return claimResponse;
         };
@@ -388,8 +428,6 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
               throw new Error(extractUpstreamError(res as any, t('otpRequestFailed', 'Failed to send OTP')));
             }
           },
-
-          // OTP path
           onVerify: async (enteredOtp: string) => {
             await runVirtualClaim({ otp: enteredOtp });
           },
@@ -424,7 +462,12 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
               try {
                 await rejectBiometricAuthorization(consentToken);
               } catch (err) {
-                console.warn('Failed to reject biometric auth:', err);
+                throw new Error(
+                  extractUpstreamError(
+                    err as any,
+                    t('biometricCancelFailed', 'Failed to cancel biometric authorization. Please contact support.'),
+                  ),
+                );
               }
             }
           },
@@ -470,15 +513,17 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         patientCRIdRef.current = electedCRId;
         interventionCodesRef.current = codes;
         serviceTypeRef.current = electiveRecord.service_type ?? 'OUTPATIENT';
+        paymentMechanismRef.current = undefined;
 
         buildModalConfig(electedCRId, codes, undefined);
         return;
       }
 
-      const codes = selectedInterventions.length > 0 ? selectedInterventions : [''];
+      const codes = selectedIntervention ? [selectedIntervention] : [''];
       patientCRIdRef.current = patientCRId;
       interventionCodesRef.current = codes;
       const paymentMechanism = resolvePaymentMechanism(codes);
+      paymentMechanismRef.current = paymentMechanism;
 
       buildModalConfig(patientCRId, codes, paymentMechanism);
     });
@@ -490,10 +535,11 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     facilityBiometricsEnforced,
     whitelistReasons,
     phoneNumber,
-    selectedInterventions,
+    selectedIntervention,
     isElectiveVisit,
     electiveRecord,
     isApproved,
+    electiveConsentToken,
     patientUuid,
     resolvePaymentMechanism,
     buildBiometricStarter,
@@ -507,6 +553,8 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
       if (visitStatus === 'past') {
         return visit;
       }
+      const claimResponse = shaClaimResponseRef.current;
+      const capturedPaymentMechanism = paymentMechanismRef.current;
 
       try {
         if (attributes.length > 0) {
@@ -534,11 +582,49 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
           const claimResponse = shaClaimResponseRef.current;
           const authCode = claimResponse.authorization_code ?? claimResponse.claim?.authorization_code;
 
-          if (authCode && visit?.uuid) {
+          if (!authCode) {
+            showSnackbar({
+              title: t('shaVirtualClaim', 'SHA Virtual Claim'),
+              subtitle: t(
+                'claimLinkNoAuthCode',
+                'Virtual claim created but could not be linked to the visit (missing authorization code). ' +
+                  'Diagnoses may not sync — contact support.',
+              ),
+              kind: 'warning',
+              timeoutInMs: 10000,
+            });
+          } else if (!visit?.uuid) {
+            showSnackbar({
+              title: t('shaVirtualClaim', 'SHA Virtual Claim'),
+              subtitle: t(
+                'claimLinkNoVisitUuid',
+                'Virtual claim created but the visit has no UUID to link against. Diagnoses may not sync.',
+              ),
+              kind: 'warning',
+              timeoutInMs: 10000,
+            });
+          } else {
             try {
-              await linkVisitToClaim(authCode, visit.uuid, patientUuid);
+              const linkResult = await linkVisitToClaim(authCode, visit.uuid, patientUuid);
+              if (!(linkResult as any)?.success) {
+                throw new Error((linkResult as any)?.error ?? 'link-visit returned success=false');
+              }
+              const effectivePaymentMechanism =
+                capturedPaymentMechanism ?? claimResponse.claim?.payment_mechanism ?? electiveRecord?.payment_mechanism;
+              const claimFundValue = effectivePaymentMechanism?.toUpperCase() === 'CAPITATION' ? 'PHC' : 'SHIF';
+
+              await addVisitAttribute(visit.uuid, claimScheme, claimFundValue);
             } catch (err) {
-              throw new Error(`Failed to link visit to claim: ${err instanceof Error ? err.message : String(err)}`);
+              showSnackbar({
+                title: t('shaVirtualClaim', 'SHA Virtual Claim'),
+                subtitle: t(
+                  'claimLinkFailed',
+                  'Virtual claim created but linking to the visit failed: {{error}}. Diagnoses may not sync.',
+                  { error: err instanceof Error ? err.message : String(err) },
+                ),
+                kind: 'error',
+                timeoutInMs: 10000,
+              });
             }
           }
 
@@ -560,12 +646,14 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
 
         return visit;
       } finally {
-        patientCRIdRef.current = null;
-        interventionCodesRef.current = [];
-        serviceTypeRef.current = 'OUTPATIENT';
-        admissionDateRef.current = null;
-        estimatedDaysRef.current = null;
-        shaClaimResponseRef.current = null;
+        if (claimResponse) {
+          patientCRIdRef.current = null;
+          interventionCodesRef.current = [];
+          serviceTypeRef.current = 'OUTPATIENT';
+          admissionDateRef.current = null;
+          estimatedDaysRef.current = null;
+          shaClaimResponseRef.current = null;
+        }
       }
     };
 
@@ -574,6 +662,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
       onBeforeVisitSave: launchSHAOtpFlow,
       isSHAVisit: !!(shaEnabled && isInsuranceSchemeSha),
       isElectiveNotApproved,
+      isCoverageExhausted: isCoverageExhausted && isInsuranceSchemeSha && isElectiveVisit === 'no',
     });
   }, [
     attributes,
@@ -588,7 +677,10 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     setVisitFormCallbacks,
     t,
     isElectiveNotApproved,
+    isCoverageExhausted,
     visitStatus,
+    claimScheme,
+    electiveRecord,
   ]);
 
   if (isLoadingLineItems || isLoadingCashPoints) {
@@ -693,14 +785,6 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
                         {electiveRecord.elective_intervention_code ?? electiveRecord.intervention_code ?? '—'}
                       </span>
                     </div>
-                    {electiveRecord.tariff && (
-                      <div className={styles.electiveInterventionRow}>
-                        <span className={styles.electiveInterventionLabel}>{t('tariff', 'Tariff')}</span>
-                        <span className={styles.electiveInterventionValue}>
-                          {formatCurrency(Number(electiveRecord.tariff))}
-                        </span>
-                      </div>
-                    )}
                     {electiveRecord.service_type && (
                       <div className={styles.electiveInterventionRow}>
                         <span className={styles.electiveInterventionLabel}>{t('serviceType', 'Service type')}</span>
@@ -767,6 +851,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
           onInterventionsCached={(cache) => {
             interventionCacheRef.current = { ...interventionCacheRef.current, ...cache };
           }}
+          onUtilizationStatusChange={handleUtilizationStatusChange}
         />
       )}
 

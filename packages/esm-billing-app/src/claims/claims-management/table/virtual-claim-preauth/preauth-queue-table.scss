@@ -231,3 +231,9 @@
 .inlineNotification {
   margin-top: layout.$spacing-05;
 }
+
+.container {
+  :global(.cds--table-expand) {
+    background-color: colors.$gray-20;
+  }
+}

@@ -1,11 +1,11 @@
 import {
   Button,
   ButtonSet,
+  ComboBox,
   Form,
   InlineLoading,
   InlineNotification,
   Layer,
-  MultiSelect,
   Select,
   SelectItem,
   Stack,
@@ -22,14 +22,14 @@ import {
 } from '@openmrs/esm-framework';
 import { zodResolver } from '@hookform/resolvers/zod';
 import classNames from 'classnames';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { z } from 'zod';
 import styles from './elective-auth.scss';
 import {
   createElectiveAuthorization,
   sendSHAOtp,
+  useNonPomsfUtilization,
   usePatientPhone,
   useSHAInterventions,
   useSHASubBenefits,
@@ -47,6 +47,21 @@ interface ElectivePreAuthFormProps {
   mutate?: () => void;
   workspaceTitle?: string;
 }
+
+type SubBenefitItem = {
+  code: string;
+  name: string;
+  label: string;
+};
+
+type InterventionItem = {
+  id: string;
+  code: string;
+  name: string;
+  text: string;
+  disabled: boolean;
+  isElective: boolean;
+};
 
 const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFormProps, object, object>> = ({
   closeWorkspace,
@@ -75,15 +90,15 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
     resolver: zodResolver(electivePreAuthSchema),
     defaultValues: {
       patientUuid: '',
-      subBenefitCodes: [],
-      interventionCodes: [],
+      subBenefitCode: null,
+      interventionCode: null,
       serviceType: 'OUTPATIENT',
     },
   });
 
   const patientUuid = watch('patientUuid');
-  const subBenefitCodes = watch('subBenefitCodes');
-  const interventionCodes = watch('interventionCodes');
+  const subBenefitCode = watch('subBenefitCode');
+  const interventionCode = watch('interventionCode');
 
   const { patient } = usePatient(patientUuid ?? '');
   const crId: string | null =
@@ -92,11 +107,61 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
   const patientPhone = usePatientPhone(patientUuid ?? '');
 
   const { subBenefits, isLoading: loadingSubBenefits } = useSHASubBenefits(crId ?? '');
+  const { interventions, isLoading: loadingInterventions } = useSHAInterventions(crId ?? '', subBenefitCode ?? '');
 
-  const { interventions, isLoading: loadingInterventions } = useSHAInterventions(crId ?? '', subBenefitCodes[0] ?? '');
+  const {
+    utilization,
+    isLoading: loadingUtilization,
+    error: utilizationError,
+  } = useNonPomsfUtilization(crId ?? '', interventionCode ?? '');
+  const isCoverageExhausted = Boolean(utilization && utilization.eligibility === false);
 
   const [isAuthorizing, setIsAuthorizing] = useState(false);
   const [authorizeError, setAuthorizeError] = useState('');
+
+  const subBenefitItems: Array<SubBenefitItem> = useMemo(
+    () =>
+      subBenefits.map((b) => ({
+        code: b.code,
+        name: b.name,
+        label: `${b.code} — ${b.name}`,
+      })),
+    [subBenefits],
+  );
+
+  const interventionItems: Array<InterventionItem> = useMemo(
+    () =>
+      interventions
+        .map((i) => {
+          const isElective = Boolean((i as any).needs_manual_preauth_approval);
+          const tariff = (i as any).tariff ? ` · ${formatCurrency(Number((i as any).tariff))}` : '';
+          const suffix = isElective
+            ? ` — ${t('electivePreauth', 'Elective preauth')}`
+            : i.needs_preauth
+            ? ` — ${t('preauthRequired', 'Preauth required — use normal visit')}`
+            : ` — ${t('noPreauthNeeded', 'No preauth — use normal visit')}`;
+          return {
+            id: `intervention-${i.code}`,
+            code: i.code,
+            name: i.name,
+            text: `${i.name}${tariff}${suffix}`,
+            disabled: !isElective,
+            isElective,
+          };
+        })
+        .sort((a, b) => Number(b.isElective) - Number(a.isElective)),
+    [interventions, t],
+  );
+
+  const electiveCount = useMemo(() => interventionItems.filter((i) => i.isElective).length, [interventionItems]);
+  const selectedIntervention = interventions.find((i) => i.code === interventionCode);
+  const selectedInterventionName = selectedIntervention?.name ?? interventionCode ?? '';
+
+  useEffect(() => {
+    if (!subBenefitCode) {
+      setValue('interventionCode', null);
+    }
+  }, [subBenefitCode, setValue]);
 
   const handleAuthorize = useCallback(
     (data: ElectivePreAuthFormData) => {
@@ -104,15 +169,32 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
         setAuthorizeError(t('selectPatientWithCR', 'Please select a patient with a SHA CR ID'));
         return;
       }
+      if (!data.interventionCode) {
+        setAuthorizeError(t('selectIntervention', 'Please select an intervention'));
+        return;
+      }
+      if (isCoverageExhausted) {
+        setAuthorizeError(
+          utilization?.message ??
+            t(
+              'coverageExhaustedSubtitle',
+              'The coverage limit for {{name}} ({{code}}) has been exhausted. Choose another intervention to proceed.',
+              { name: selectedInterventionName, code: data.interventionCode },
+            ),
+        );
+        return;
+      }
       setAuthorizeError('');
       setIsAuthorizing(true);
 
       let otpVerified = false;
 
-      const firstInterventionCode = data.interventionCodes[0];
-      const firstIntervention = interventions.find((i) => i.code === firstInterventionCode);
-      const firstInterventionName = firstIntervention?.name ?? '';
-      const firstInterventionTariff = (firstIntervention as any)?.tariff ?? '';
+      const interventionCodeToUse = data.interventionCode;
+      const intervention = interventions.find((i) => i.code === interventionCodeToUse);
+      const interventionName = intervention?.name ?? '';
+      const interventionTariff = (intervention as any)?.tariff ?? '';
+      const interventionDocTypes = (intervention as any)?.applicable_document_types ?? [];
+      const interventionPreauthType = (intervention as any)?.preauth_type ?? '';
 
       const dispose = showModal('otp-verification-modal', {
         onClose: () => {
@@ -127,7 +209,7 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
         centerBoxes: true,
 
         onRequestOtp: async (_phone: string) => {
-          const res = await sendSHAOtp(crId, data.interventionCodes);
+          const res = await sendSHAOtp(crId, [interventionCodeToUse]);
           if (!res.success) {
             throw new Error(extractUpstreamError(res, t('otpFailed', 'Failed to send OTP')));
           }
@@ -137,11 +219,13 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
           const res = await createElectiveAuthorization(
             crId,
             enteredOtp,
-            firstInterventionCode,
+            interventionCodeToUse,
             data.patientUuid,
             data.serviceType,
-            firstInterventionName,
-            firstInterventionTariff,
+            interventionName,
+            interventionTariff,
+            interventionDocTypes,
+            interventionPreauthType,
           );
           if (!res.success) {
             throw new Error(extractUpstreamError(res, t('authorizeFailed', 'Authorization failed')));
@@ -172,7 +256,17 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
         },
       });
     },
-    [crId, patientPhone, interventions, mutate, closeWorkspace, t],
+    [
+      crId,
+      patientPhone,
+      interventions,
+      isCoverageExhausted,
+      utilization,
+      selectedInterventionName,
+      mutate,
+      closeWorkspace,
+      t,
+    ],
   );
 
   return (
@@ -198,8 +292,8 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
                       state={{
                         selectPatientAction: (uuid: string) => {
                           field.onChange(uuid);
-                          setValue('subBenefitCodes', []);
-                          setValue('interventionCodes', []);
+                          setValue('subBenefitCode', null);
+                          setValue('interventionCode', null);
                         },
                         buttonProps: { kind: 'secondary' },
                       }}
@@ -217,8 +311,8 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
                         size="sm"
                         onClick={() => {
                           field.onChange('');
-                          setValue('subBenefitCodes', []);
-                          setValue('interventionCodes', []);
+                          setValue('subBenefitCode', null);
+                          setValue('interventionCode', null);
                         }}>
                         {t('changePatient', 'Change patient')}
                       </Button>
@@ -244,128 +338,48 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
                 ) : (
                   <Controller
                     control={control}
-                    name="subBenefitCodes"
-                    render={({ field }) => (
-                      <>
-                        <MultiSelect
-                          id="elective-sub-benefit-multiselect"
-                          titleText={t('benefitPackage', 'Benefit package')}
-                          label={t('selectBenefitPackages', 'Select benefit packages')}
-                          items={subBenefits}
-                          itemToString={(b) => (b ? `${b.code} — ${b.name}` : '')}
-                          selectedItems={subBenefits.filter((b) => field.value.includes(b.code))}
-                          onChange={({ selectedItems }) => {
-                            const codes = (selectedItems ?? []).map((b) => b.code);
-                            field.onChange(codes);
-                            setValue('interventionCodes', []);
-                          }}
-                          selectionFeedback="top-after-reopen"
-                          invalid={!!errors.subBenefitCodes}
-                          invalidText={errors.subBenefitCodes?.message}
-                        />
-                        {field.value.length > 0 && (
-                          <div className={styles.tagsContainer}>
-                            {field.value.map((code) => {
-                              const benefit = subBenefits.find((b) => b.code === code);
-                              return (
-                                <Tag key={code} type="blue" size="lg" className={styles.tag}>
-                                  {benefit?.name ?? code}
-                                </Tag>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  />
-                )}
-              </Layer>
-            )}
-
-            {subBenefitCodes.length > 0 && (
-              <Layer>
-                {loadingInterventions ? (
-                  <InlineLoading status="active" description={t('loadingInterventions', 'Loading interventions...')} />
-                ) : (
-                  <Controller
-                    control={control}
-                    name="interventionCodes"
+                    name="subBenefitCode"
                     render={({ field }) => {
-                      type InterventionItem = {
-                        id: string;
-                        code: string;
-                        text: string;
-                        disabled: boolean;
-                        isElective: boolean;
-                        name: string;
-                      };
-
-                      const items: InterventionItem[] = interventions
-                        .map((i) => {
-                          const isElective = Boolean((i as any).needs_manual_preauth_approval);
-                          const tariff = (i as any).tariff ? ` · ${formatCurrency(Number((i as any).tariff))}` : '';
-                          const suffix = isElective
-                            ? ` — ${t('electivePreauth', 'Elective preauth')}`
-                            : i.needs_preauth
-                            ? ` — ${t('preauthRequired', 'Preauth required — use normal visit')}`
-                            : ` — ${t('noPreauthNeeded', 'No preauth — use normal visit')}`;
-                          return {
-                            id: `intervention-${i.code}`,
-                            code: i.code,
-                            name: i.name,
-                            text: `${i.name}${tariff}${suffix}`,
-                            disabled: !isElective,
-                            isElective,
-                          };
-                        })
-                        .sort((a, b) => Number(b.isElective) - Number(a.isElective));
-
-                      const electiveCount = items.filter((i) => i.isElective).length;
-                      const selectedItemObjects = items.filter((i) => (field.value ?? []).includes(i.code));
-
+                      const selectedItem = subBenefitItems.find((b) => b.code === field.value) ?? null;
                       return (
                         <>
-                          <MultiSelect
+                          <ComboBox
                             ref={field.ref}
-                            id="elective-form-interventions"
-                            titleText={t('interventions', 'Interventions')}
-                            label={t('chooseInterventions', 'Choose interventions')}
-                            items={items}
-                            itemToString={(i) => (i ? i.text : '')}
-                            selectedItems={selectedItemObjects}
-                            helperText={
-                              electiveCount > 0
-                                ? t(
-                                    'nonElectiveDisabledHint',
-                                    'Only elective interventions can be selected here. Use a normal visit for others.',
-                                  )
-                                : undefined
-                            }
-                            onChange={({ selectedItems }) => {
-                              const codes = (selectedItems ?? [])
-                                .filter((i): i is InterventionItem => i !== null && !i.disabled)
-                                .map((i) => i.code);
-                              field.onChange(codes);
+                            id="elective-sub-benefit-combobox"
+                            titleText={t('benefitPackage', 'Benefit package')}
+                            placeholder={t('selectBenefitPackage', 'Select a benefit package')}
+                            items={subBenefitItems}
+                            itemToString={(item: SubBenefitItem | null) => (item ? item.label : '')}
+                            selectedItem={selectedItem}
+                            onChange={({ selectedItem }) => {
+                              field.onChange(selectedItem ? selectedItem.code : null);
+                              setValue('interventionCode', null);
                             }}
-                            selectionFeedback="top-after-reopen"
-                            invalid={!!errors.interventionCodes}
-                            invalidText={errors.interventionCodes?.message}
+                            shouldFilterItem={({
+                              item,
+                              inputValue,
+                            }: {
+                              item: SubBenefitItem | null;
+                              inputValue: string | null;
+                            }) => {
+                              if (!inputValue || !item) {
+                                return true;
+                              }
+                              return item.label.toLowerCase().includes(inputValue.toLowerCase());
+                            }}
+                            invalid={!!errors.subBenefitCode}
+                            invalidText={errors.subBenefitCode?.message}
                           />
-                          {(field.value ?? []).length > 0 && (
+                          {field.value && (
                             <div className={styles.tagsContainer}>
-                              {(field.value ?? []).map((code) => {
-                                const intervention = interventions.find((i) => i.code === code);
-                                const name = intervention?.name ?? code;
-                                const tariff = (intervention as any)?.tariff
-                                  ? ` - ${formatCurrency(Number((intervention as any).tariff))}`
-                                  : '';
+                              {(() => {
+                                const benefit = subBenefits.find((b) => b.code === field.value);
                                 return (
-                                  <Tag key={code} type="cyan" size="lg" className={styles.tag}>
-                                    {name}
-                                    {tariff}: {t('electivePreauthRequired', 'Elective preauth required')}
+                                  <Tag key={field.value} type="blue" size="lg" className={styles.tag}>
+                                    {benefit?.name ?? field.value}
                                   </Tag>
                                 );
-                              })}
+                              })()}
                             </div>
                           )}
                         </>
@@ -376,7 +390,101 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
               </Layer>
             )}
 
-            {interventionCodes.length > 0 && (
+            {subBenefitCode && (
+              <Layer>
+                {loadingInterventions ? (
+                  <InlineLoading status="active" description={t('loadingInterventions', 'Loading interventions...')} />
+                ) : (
+                  <Controller
+                    control={control}
+                    name="interventionCode"
+                    render={({ field }) => {
+                      const selectedItem = interventionItems.find((i) => i.code === field.value) ?? null;
+
+                      return (
+                        <>
+                          <ComboBox
+                            ref={field.ref}
+                            id="elective-form-intervention"
+                            titleText={t('intervention', 'Intervention')}
+                            placeholder={t('chooseIntervention', 'Choose an intervention')}
+                            items={interventionItems}
+                            itemToString={(i: InterventionItem | null) => (i ? i.text : '')}
+                            selectedItem={selectedItem}
+                            helperText={
+                              electiveCount > 0
+                                ? t(
+                                    'nonElectiveDisabledHint',
+                                    'Only elective interventions can be selected here. Use a normal visit for others.',
+                                  )
+                                : undefined
+                            }
+                            onChange={({ selectedItem }) => {
+                              if (selectedItem && !selectedItem.disabled) {
+                                field.onChange(selectedItem.code);
+                              } else if (!selectedItem) {
+                                field.onChange(null);
+                              }
+                            }}
+                            shouldFilterItem={({
+                              item,
+                              inputValue,
+                            }: {
+                              item: InterventionItem | null;
+                              inputValue: string | null;
+                            }) => {
+                              if (!inputValue || !item) {
+                                return true;
+                              }
+                              return item.text.toLowerCase().includes(inputValue.toLowerCase());
+                            }}
+                            invalid={!!errors.interventionCode}
+                            invalidText={errors.interventionCode?.message}
+                          />
+                          {field.value && (
+                            <div className={styles.tagsContainer}>
+                              {(() => {
+                                const intervention = interventions.find((i) => i.code === field.value);
+                                const name = intervention?.name ?? field.value;
+                                const tariff = (intervention as any)?.tariff
+                                  ? ` - ${formatCurrency(Number((intervention as any).tariff))}`
+                                  : '';
+                                return (
+                                  <Tag key={field.value} type="cyan" size="lg" className={styles.tag}>
+                                    {name}
+                                    {tariff}: {t('electivePreauthRequired', 'Elective preauth required')}
+                                  </Tag>
+                                );
+                              })()}
+                            </div>
+                          )}
+                        </>
+                      );
+                    }}
+                  />
+                )}
+              </Layer>
+            )}
+
+            {interventionCode && !loadingUtilization && !utilizationError && isCoverageExhausted && (
+              <InlineNotification
+                kind="error"
+                lowContrast
+                hideCloseButton
+                aria-label={t('coverageExhausted', 'Coverage exhausted')}
+                title={t('cannotProceed', 'Cannot create elective preauth')}
+                subtitle={
+                  utilization?.message ??
+                  t(
+                    'coverageExhaustedSubtitle',
+                    'The coverage limit for {{name}} ({{code}}) has been exhausted. Choose another intervention to proceed.',
+                    { name: selectedInterventionName, code: interventionCode },
+                  )
+                }
+              />
+            )}
+
+            {interventionCode && (
               <Layer>
                 <Controller
                   control={control}
@@ -407,9 +515,11 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
             className={styles.button}
             kind="primary"
             type="submit"
-            disabled={isAuthorizing || !crId || interventionCodes.length === 0}>
+            disabled={isAuthorizing || !crId || !interventionCode || isCoverageExhausted || loadingUtilization}>
             {isAuthorizing ? (
               <InlineLoading description={t('sendingOtp', 'Sending OTP...')} />
+            ) : isCoverageExhausted ? (
+              t('coverageExhausted', 'Coverage exhausted')
             ) : (
               t('sendOtpAndAuthorize', 'Send OTP & Authorize')
             )}

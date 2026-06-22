@@ -6,6 +6,7 @@ import styles from './laboratory-tabs.scss';
 import { EmptyState, useLaunchWorkspaceRequiringVisit, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
 import { ExpressWorkflowConfig } from '../../config-schema';
 import OrderTable from '../../shared/orders/OrderTable';
+import { getPatientPrintFields } from '../../shared/utils';
 import { usePatientOrders } from '../../hooks/useOrders';
 
 type LabTableProps = {
@@ -34,6 +35,7 @@ const LabTable: React.FC<LabTableProps> = ({ patientUuid }) => {
     [patient, orders, mutateOrders],
   );
   const launchAddLabOrder = useLaunchWorkspaceRequiringVisit(patientUuid, 'order-basket');
+  const { patientName, patientId, patientAge } = getPatientPrintFields(patient);
 
   if (isLoading) {
     return <DataTableSkeleton />;
@@ -67,6 +69,10 @@ const LabTable: React.FC<LabTableProps> = ({ patientUuid }) => {
       priorityPillClassName={styles.priorityPill}
       statusPillClassName={styles.statusPill}
       module="@openmrs/esm-laboratory-app"
+      orderType="lab"
+      patientName={patientName}
+      patientId={patientId}
+      patientAge={patientAge}
     />
   );
 };

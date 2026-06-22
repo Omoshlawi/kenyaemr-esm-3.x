@@ -436,11 +436,11 @@ export const configSchema = {
   stockItemInventoryConceptUuids: {
     _type: Type.Array,
     _elements: {
-      _type: Type.UUID,
-      _description: 'Stock item inventory concept UUID',
+      _type: Type.ConceptUuid,
+      _description: 'Stock item inventory concept UUID for malaria rapid test kits',
     },
     _description: 'List of stock item inventory concept UUIDs',
-    _default: ['eace7ad4-17da-498c-94e2-66d3e0105230'],
+    _default: ['161465AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'],
   },
   hivCareAndTreatment: {
     _type: Type.Object,

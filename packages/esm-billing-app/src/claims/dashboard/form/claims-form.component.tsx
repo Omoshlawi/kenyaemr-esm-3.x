@@ -674,7 +674,7 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
               </Layer>
             </Column>
           </Row>
-          <Row className={styles.formClaimRow}>
+          {/* <Row className={styles.formClaimRow}>
             <Column className={styles.formClaimColumn}>
               <Layer className={styles.input}>
                 <Controller
@@ -773,7 +773,7 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
             validationEnabled={validationEnabled}
             onInteraction={() => setValidationEnabled(true)}
           />
-          <ClaimsSupportingDocumentsInput patientUuid={patientUuid} />
+          <ClaimsSupportingDocumentsInput patientUuid={patientUuid} /> */}
           <ButtonSet className={styles.buttonSet}>
             {otpState === OTPState.NOT_STARTED && (
               <Button

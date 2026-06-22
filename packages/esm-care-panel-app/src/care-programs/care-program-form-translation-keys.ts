@@ -35,6 +35,7 @@ export function registerCareProgramFormTranslationKeys(t: (key: string, defaultV
 
   // MCH - Child Services (CWC)
   t('cwcEnrolment', 'CWC Enrolment');
+  t('cwcInitial', 'Initial CWC');
   t('cwcFollowup', 'CWC Followup');
   t('cwcDiscontinuation', 'CWC Discontinuation');
 

@@ -1,0 +1,31 @@
+name: OpenMRS Monorepo CI
+
+on:
+  push:
+    branches:
+      - main
+  release:
+    types:
+      - created
+
+jobs:
+  build-and-release:
+    uses: Palladium-hub/platform-ci/.github/workflows/kenyaemr-esm-monorepo-ci.yaml@main
+    permissions:
+      actions: read
+      contents: read
+    with:
+      node_version: "24"
+      turbo_concurrency_build: 5
+      turbo_concurrency_prerelease: 2
+      excluded_workspace: "@kenyaemr/esm-3.x"
+      prepublish_script: "ci:prepublish"
+      publish_script: "ci:publish"
+      artifact_name: "packages"
+      artifact_path: "packages/**/dist"
+      artifact_retention_days: 7
+      enable_server_dispatch: true
+      dispatch_workflow: "dev-server-ci.yml"
+      dispatch_repo: "Palladium-hub/openmrs-config-kenyaemr"
+      dispatch_ref: "main"
+    secrets: inherit

@@ -73,7 +73,7 @@ interface PreauthFormProps {
   item: PreauthQueueItem;
   isResubmit?: boolean;
   isElective?: boolean;
-  mutate?: () => void;
+  mutate: () => void;
   workspaceTitle?: string;
 }
 
@@ -95,11 +95,27 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
 
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const availableDocumentTypes = useMemo(() => {
-    const fromClaim = item?.applicable_document_types;
-    const list = fromClaim && fromClaim.length > 0 ? fromClaim : (DOCUMENT_TYPES as readonly string[]);
-    return Array.from(new Set(list));
-  }, [item?.applicable_document_types]);
+  const idempotencyKey = useMemo(
+    () =>
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `k-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    [],
+  );
+
+  const requiredPreauthDocs = useMemo(
+    () => Array.from(new Set(item?.required_preauth_document_types ?? [])),
+    [item?.required_preauth_document_types],
+  );
+  const optionalPreauthDocs = useMemo(
+    () => Array.from(new Set(item?.optional_preauth_document_types ?? [])),
+    [item?.optional_preauth_document_types],
+  );
+  const availableDocumentTypes = useMemo(
+    () => Array.from(new Set([...requiredPreauthDocs, ...optionalPreauthDocs])),
+    [requiredPreauthDocs, optionalPreauthDocs],
+  );
+  const hasAnyDocsAccepted = availableDocumentTypes.length > 0;
 
   const schema = getSchemaForType(preauthType);
   const existingItemForDefaults =
@@ -111,7 +127,12 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
       : undefined;
   const methods = useForm<PreauthFormData>({
     resolver: zodResolver(schema),
-    defaultValues: getDefaultValues(preauthType, isElective, existingItemForDefaults) as PreauthFormData,
+    defaultValues: getDefaultValues(
+      preauthType,
+      isElective,
+      existingItemForDefaults,
+      item?.tariff != null ? String(item.tariff) : undefined,
+    ) as PreauthFormData,
   });
 
   const {
@@ -139,25 +160,58 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
   } = useFieldArray({ control, name: 'attachments' });
 
   useEffect(() => {
-    if (availableDocumentTypes.length === 0) {
+    if (!hasAnyDocsAccepted) {
       return;
     }
-    const current = methods.getValues('attachments.0.document_type');
-    if (!current) {
-      setValue('attachments.0.document_type', availableDocumentTypes[0]);
+    const existing = methods.getValues('attachments') ?? [];
+    if (existing.length === 0) {
+      const firstType = requiredPreauthDocs[0] ?? optionalPreauthDocs[0] ?? '';
+      setValue('attachments', [
+        {
+          document_title: '',
+          document_type: firstType,
+          file: null as unknown as File,
+        },
+      ]);
     }
-  }, [availableDocumentTypes, methods, setValue]);
+  }, [hasAnyDocsAccepted, requiredPreauthDocs, optionalPreauthDocs, methods, setValue]);
 
   const onSubmit = async (data: PreauthFormData) => {
     if (!item) {
       return;
     }
     setSubmitError(null);
+    if (requiredPreauthDocs.length > 0) {
+      const uploadedTypes = new Set((data.attachments ?? []).filter((a) => a.file != null).map((a) => a.document_type));
+      const missing = requiredPreauthDocs.filter((dt) => !uploadedTypes.has(dt));
+      if (missing.length > 0) {
+        setSubmitError(
+          t(
+            'missingRequiredDocs',
+            'Missing required document(s): {{types}}. SHA needs each of these uploaded before this preauth can be submitted.',
+            { types: missing.map((m) => m.replace(/_/g, ' ')).join(', ') },
+          ),
+        );
+        return;
+      }
+    }
+
+    const tariffNumeric = item?.tariff != null ? Number(item.tariff) : null;
+    const unitPriceFromForm = (data as { unit_price?: string }).unit_price;
+    if (tariffNumeric != null && tariffNumeric > 0 && unitPriceFromForm && Number(unitPriceFromForm) > tariffNumeric) {
+      setSubmitError(
+        t('unitPriceExceedsTariffSubmit', 'Unit price cannot exceed the published tariff of KES {{tariff}}.', {
+          tariff: formatCurrency(tariffNumeric),
+        }),
+      );
+      return;
+    }
     try {
       const formData = buildPreauthFormData(data, item, isElective);
       const response = await openmrsFetch<SubmitErrorResponse>(`${restBaseUrl}/virtualclaims/preauth/files`, {
         method: 'POST',
         body: formData,
+        headers: { 'Idempotency-Key': idempotencyKey },
       });
 
       if (response?.data?.success === false) {
@@ -291,6 +345,44 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
             />
           </div>
         )}
+        <div className={styles.twoCol}>
+          <Controller
+            name="unit_price"
+            control={control}
+            render={({ field }) => {
+              const tariffNumeric = item?.tariff != null ? Number(item.tariff) : null;
+              const hasTariffCap = tariffNumeric != null && tariffNumeric > 0;
+              const exceedsTariff = hasTariffCap && field.value !== '' && Number(field.value) > tariffNumeric;
+              const showError = !!errors.unit_price || exceedsTariff;
+              const errorText =
+                errors.unit_price?.message ??
+                (exceedsTariff ? t('unitPriceExceedsTariff', 'Cannot exceed tariff') : undefined);
+
+              return (
+                <TextInput
+                  {...field}
+                  id="unit-price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max={hasTariffCap ? String(tariffNumeric) : undefined}
+                  labelText={
+                    <RequiredLabel>
+                      {hasTariffCap ? t('unitPriceWithTariff', 'Unit price (KES)') : t('unitPrice', 'Unit price (KES)')}
+                    </RequiredLabel>
+                  }
+                  helperText={t(
+                    'unitPriceHelp',
+                    'Amount requested from SHA for this intervention. Pre-filled with the published tariff.',
+                  )}
+                  placeholder="0.00"
+                  invalid={showError}
+                  invalidText={errorText}
+                />
+              );
+            }}
+          />
+        </div>
 
         <div className={styles.twoCol}>
           <Controller
@@ -365,7 +457,7 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
         </div>
 
         <div className={styles.twoCol}>
-          <FormGroup legendText={<RequiredLabel>{t('diagnoses', 'Diagnoses')}</RequiredLabel>}>
+          <FormGroup legendText={<RequiredLabel>{t('diagnosesLabel', 'Diagnoses')}</RequiredLabel>}>
             {diagnosisFields.map((field, idx) => (
               <React.Fragment key={field.id}>
                 <div className={styles.diagRow}>
@@ -765,92 +857,127 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
           </div>
         )}
         <div className={styles.twoCol}>
-          <FormGroup legendText={<RequiredLabel>{t('attachments', 'Attachments')}</RequiredLabel>}>
-            {attachmentFields.map((field, idx) => (
-              <Layer key={field.id}>
-                <div className={styles.itemCard}>
-                  <div className={styles.twoCol}>
+          {hasAnyDocsAccepted ? (
+            <FormGroup
+              legendText={
+                requiredPreauthDocs.length > 0 ? (
+                  <RequiredLabel>{t('attachments', 'Attachments')}</RequiredLabel>
+                ) : (
+                  t('attachmentsOptional', 'Supporting documents (optional)')
+                )
+              }>
+              {requiredPreauthDocs.length > 0 && (
+                <div className={styles.requiredDocsHint}>
+                  {requiredPreauthDocs.map((dt) => (
+                    <Tag key={dt} type="red" size="sm">
+                      {dt.replace(/_/g, ' ')}
+                    </Tag>
+                  ))}
+                </div>
+              )}
+              {attachmentFields.map((field, idx) => (
+                <Layer key={field.id}>
+                  <div className={styles.itemCard}>
+                    <div className={styles.twoCol}>
+                      <Controller
+                        name={`attachments.${idx}.document_type`}
+                        control={control}
+                        render={({ field }) => (
+                          <Select
+                            {...field}
+                            id={`att-type-${idx}`}
+                            labelText={<RequiredLabel>{t('documentType', 'Document type')}</RequiredLabel>}
+                            invalid={!!errors.attachments?.[idx]?.document_type}
+                            invalidText={errors.attachments?.[idx]?.document_type?.message}>
+                            <SelectItem value="" text={t('selectDocumentType', 'Select document type')} />
+                            {availableDocumentTypes.map((d) => (
+                              <SelectItem key={d} value={d} text={d.replace(/_/g, ' ')} />
+                            ))}
+                          </Select>
+                        )}
+                      />
+                      <TextInput
+                        id={`att-title-${idx}`}
+                        labelText={t('documentTitle', 'Document title')}
+                        {...register(`attachments.${idx}.document_title`)}
+                      />
+                    </div>
                     <Controller
-                      name={`attachments.${idx}.document_type`}
+                      name={`attachments.${idx}.file`}
                       control={control}
                       render={({ field }) => (
-                        <Select
-                          {...field}
-                          id={`att-type-${idx}`}
-                          labelText={<RequiredLabel>{t('documentType', 'Document type')}</RequiredLabel>}
-                          invalid={!!errors.attachments?.[idx]?.document_type}
-                          invalidText={errors.attachments?.[idx]?.document_type?.message}>
-                          <SelectItem value="" text={t('selectDocumentType', 'Select document type')} />
-                          {availableDocumentTypes.map((d) => (
-                            <SelectItem key={d} value={d} text={d.replace(/_/g, ' ')} />
-                          ))}
-                        </Select>
+                        <>
+                          <p className={styles.uploaderLabel}>
+                            <RequiredLabel>{t('uploadFile', 'Upload file')}</RequiredLabel>
+                          </p>
+                          <FileUploader
+                            labelTitle=""
+                            labelDescription={t('uploadFileDesc', 'PDF, PNG, JPG — max 10MB')}
+                            buttonLabel={t('addFile', 'Add file')}
+                            buttonKind="tertiary"
+                            size="md"
+                            filenameStatus="edit"
+                            accept={['.pdf', '.png', '.jpg', '.jpeg']}
+                            multiple={false}
+                            onChange={(e: { target: HTMLInputElement; addedFiles?: File[] }) => {
+                              const file = e.addedFiles?.[0] ?? e.target?.files?.[0] ?? null;
+                              field.onChange(file);
+                            }}
+                            onDelete={() => field.onChange(null)}
+                          />
+                          {errors.attachments?.[idx]?.file && (
+                            <p className={styles.fieldError}>{errors.attachments[idx].file?.message}</p>
+                          )}
+                        </>
                       )}
                     />
-                    <TextInput
-                      id={`att-title-${idx}`}
-                      labelText={t('documentTitle', 'Document title')}
-                      {...register(`attachments.${idx}.document_title`)}
-                    />
                   </div>
-                  <Controller
-                    name={`attachments.${idx}.file`}
-                    control={control}
-                    render={({ field }) => (
-                      <>
-                        <p className={styles.uploaderLabel}>
-                          <RequiredLabel>{t('uploadFile', 'Upload file')}</RequiredLabel>
-                        </p>
-                        <FileUploader
-                          labelTitle=""
-                          labelDescription={t('uploadFileDesc', 'PDF, PNG, JPG — max 10MB')}
-                          buttonLabel={t('addFile', 'Add file')}
-                          buttonKind="tertiary"
-                          size="md"
-                          filenameStatus="edit"
-                          accept={['.pdf', '.png', '.jpg', '.jpeg']}
-                          multiple={false}
-                          onChange={(e) => field.onChange(e.target.files?.[0] ?? null)}
-                        />
-                        {errors.attachments?.[idx]?.file && (
-                          <p className={styles.fieldError}>{errors.attachments[idx].file?.message}</p>
-                        )}
-                      </>
+                  <div className={styles.addBtnContainer}>
+                    {idx === attachmentFields.length - 1 && (
+                      <Button
+                        kind="tertiary"
+                        size="sm"
+                        className={styles.addBtn}
+                        onClick={() =>
+                          appendAttachment({
+                            document_title: '',
+                            document_type: availableDocumentTypes[0] ?? '',
+                            file: null as unknown as File,
+                          })
+                        }>
+                        {t('addAttachment', '+ Add attachment')}
+                      </Button>
                     )}
-                  />
-                </div>
-                <div className={styles.addBtnContainer}>
-                  {idx === attachmentFields.length - 1 && (
-                    <Button
-                      kind="tertiary"
-                      size="sm"
-                      className={styles.addBtn}
-                      onClick={() =>
-                        appendAttachment({
-                          document_title: '',
-                          document_type: availableDocumentTypes[0] ?? '',
-                          file: null as unknown as File,
-                        })
-                      }>
-                      {t('addAttachment', '+ Add attachment')}
-                    </Button>
-                  )}
-                  {idx > 0 && (
-                    <Button
-                      kind="danger"
-                      size="sm"
-                      className={styles.removeBtn}
-                      renderIcon={TrashCan}
-                      iconDescription={t('remove', 'Remove')}
-                      hasIconOnly
-                      onClick={() => removeAttachment(idx)}
-                    />
-                  )}
-                </div>
-              </Layer>
-            ))}
-            {errors.attachments?.root && <p className={styles.fieldError}>{errors.attachments.root.message}</p>}
-          </FormGroup>
+                    {idx > 0 && (
+                      <Button
+                        kind="danger"
+                        size="sm"
+                        className={styles.removeBtn}
+                        renderIcon={TrashCan}
+                        iconDescription={t('remove', 'Remove')}
+                        hasIconOnly
+                        onClick={() => removeAttachment(idx)}
+                      />
+                    )}
+                  </div>
+                </Layer>
+              ))}
+              {errors.attachments?.root && <p className={styles.fieldError}>{errors.attachments.root.message}</p>}
+            </FormGroup>
+          ) : (
+            <div className={classNames(styles.inlineNotification, styles.noDocsRequired)}>
+              <InlineNotification
+                kind="info"
+                lowContrast
+                hideCloseButton
+                title={t('noDocsRequired', 'No documents required')}
+                subtitle={t(
+                  'noDocsRequiredSubtitle',
+                  'SHA has not specified any supporting documents for this preauth type.',
+                )}
+              />
+            </div>
+          )}
         </div>
 
         <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>

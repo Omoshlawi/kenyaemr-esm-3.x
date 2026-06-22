@@ -14,6 +14,7 @@ import {
   User,
   VolumeFileStorage,
   WatsonHealthCrossReference,
+  WorkflowAutomation,
 } from '@carbon/react/icons';
 import { CalendarIcon, useConfig } from '@openmrs/esm-framework';
 import React from 'react';

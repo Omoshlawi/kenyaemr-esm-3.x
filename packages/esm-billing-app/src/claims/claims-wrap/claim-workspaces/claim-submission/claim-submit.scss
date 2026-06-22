@@ -1,0 +1,139 @@
+@use '@carbon/layout';
+@use '@carbon/colors';
+@use '@carbon/type';
+
+.form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.formContainer {
+  flex: 1;
+  padding: layout.$spacing-05;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-06;
+}
+
+.required {
+  color: colors.$red-60;
+  margin-left: layout.$spacing-02;
+}
+
+/* ── Claim summary card ── */
+
+.summaryCard {
+  background-color: colors.$gray-10;
+  border-radius: 2px;
+  padding: layout.$spacing-05;
+}
+
+.summaryTitle {
+  @include type.type-style('heading-compact-01');
+  margin: 0 0 layout.$spacing-04 0;
+  color: colors.$gray-100;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: layout.$spacing-03 layout.$spacing-05;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.summaryRow {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.summaryLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.summaryValue {
+  @include type.type-style('body-compact-01');
+  font-weight: 500;
+  color: colors.$gray-100;
+}
+
+code.summaryValue,
+.summaryValue code,
+code {
+  @include type.type-style('code-01');
+  background-color: colors.$white;
+  padding: 2px 6px;
+  border-radius: 2px;
+  border: 1px solid colors.$gray-20;
+  width: fit-content;
+}
+
+.formSection {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.sectionLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.sectionHint {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-70;
+  margin: 0;
+}
+
+.reasonHint {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-70;
+  margin: 0;
+  padding: layout.$spacing-03;
+  background-color: colors.$gray-10;
+  border-radius: 2px;
+}
+
+.dateTimeRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: layout.$spacing-04;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.errorBanner {
+  max-width: 100%;
+}
+
+.button {
+  flex: 1;
+  max-width: 50%;
+  height: layout.$spacing-10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tablet {
+  padding: 0 layout.$spacing-06;
+}
+
+.desktop {
+  padding: 0;
+}

@@ -118,35 +118,16 @@
   width: 100%;
   border-collapse: collapse;
 
-  th {
-    padding: layout.$spacing-02 layout.$spacing-04;
-    text-align: left;
-    @include type.type-style('label-01');
-    font-weight: 600;
-    color: var(--cds-text-secondary);
-    background: var(--cds-layer-02);
-    border-bottom: 1px solid var(--cds-border-subtle);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
-  }
-
-  td {
-    padding: layout.$spacing-03 layout.$spacing-04;
-    border-bottom: 1px solid var(--cds-border-subtle);
-    vertical-align: middle;
-
-    code {
-      @include type.type-style('label-01');
-    }
-  }
-
   tr:last-child td {
     border-bottom: none;
   }
 
   tr:hover td {
     background: var(--cds-layer-hover);
+  }
+
+  .centeredCol {
+    text-align: center;
   }
 }
 

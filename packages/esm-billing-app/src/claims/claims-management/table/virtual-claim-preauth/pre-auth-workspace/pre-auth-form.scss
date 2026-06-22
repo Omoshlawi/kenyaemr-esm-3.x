@@ -287,3 +287,20 @@
 .inlineNotification {
   padding: 0 layout.$spacing-05;
 }
+
+.requiredDocsHint {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.requiredDocsLabel {
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.noDocsRequired {
+  margin-bottom: 1rem;
+}

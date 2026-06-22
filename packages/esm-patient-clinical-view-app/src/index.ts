@@ -210,3 +210,10 @@ export const launchResultsButton = getAsyncLifecycle(
   () => import('./lab-results/launch-results-button.component'),
   options,
 );
+
+export const visitSummary = getAsyncLifecycle(() => import('./visit-summary/visit-summary.component'), options);
+
+export const visitSummaryPrintPreviewModal = getAsyncLifecycle(
+  () => import('./visit-summary/print-preview/visit-summary-print-preview.modal'),
+  options,
+);

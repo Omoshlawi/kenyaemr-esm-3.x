@@ -261,7 +261,6 @@ const PatientPreauthWidget: React.FC<Props> = ({ patientUuid, onSelectAuthCode }
       { key: 'interventionCode', header: t('interventionCode', 'Intervention code') },
       { key: 'serviceType', header: t('serviceType', 'Service type') },
       { key: 'status', header: t('status', 'Status') },
-      { key: 'tariff', header: t('tariff', 'Tariff (KES)') },
       { key: 'date', header: t('date', 'Date') },
     ],
     [t],

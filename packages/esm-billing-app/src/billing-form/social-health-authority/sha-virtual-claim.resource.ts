@@ -2,11 +2,13 @@ import { openmrsFetch, restBaseUrl, type FetchResponse, useOpenmrsPagination, us
 import useSWR from 'swr';
 import {
   AuthorizingDeviceOS,
+  BatchLinesResponse,
   BiometricAuthorizationStatus,
   BiometricAuthorizeRequest,
   BiometricAuthorizeResponse,
   BiometricConfigResponse,
   ElectiveCheckinRecord,
+  NonPomsfUtilizationResponse,
   OTPResponse,
   PreauthQueueItem,
   ProviderAttributesResponse,
@@ -19,6 +21,11 @@ import {
 } from './type';
 import { virtualClaimBaseUrl } from '../../claims/claims-management/table/virtual-claim-preauth/constants';
 import { BillingConfig } from '../../config-schema';
+import { TFunction } from 'i18next';
+import {
+  extractFetchError,
+  extractUpstreamError,
+} from '../../claims/claims-management/table/virtual-claim-preauth/utils';
 
 export const useSHASubBenefits = (patientCRId: string) => {
   const url = patientCRId ? `${virtualClaimBaseUrl}/sub-benefits?patient_id=${patientCRId}` : null;
@@ -105,6 +112,7 @@ export const sendSHAOtp = async (patientCRId: string, interventionCodes: string[
   });
   return response.data;
 };
+
 export async function createSHAVirtualClaim(
   patientCRId: string,
   authParams: { otp: string } | { authGuid: string },
@@ -112,11 +120,8 @@ export async function createSHAVirtualClaim(
   interventionCodes: string[],
   visitUuid: string,
   patientUuid: string,
-  inpatientFields?: {
-    admission_date?: string;
-    estimated_days_of_admission?: number;
-  },
   paymentMechanism?: string,
+  electiveAuthorizationCode?: string,
 ): Promise<VirtualClaimResponse> {
   const body: Record<string, any> = {
     patient_id: patientCRId,
@@ -138,13 +143,8 @@ export async function createSHAVirtualClaim(
     body.payment_mechanism = paymentMechanism;
   }
 
-  if (serviceType === 'INPATIENT' && inpatientFields) {
-    if (inpatientFields.admission_date) {
-      body.admission_date = inpatientFields.admission_date;
-    }
-    if (inpatientFields.estimated_days_of_admission != null) {
-      body.estimated_days_of_admission = inpatientFields.estimated_days_of_admission;
-    }
+  if (electiveAuthorizationCode) {
+    body.elective_authorization_code = electiveAuthorizationCode;
   }
 
   const response = await openmrsFetch(`${virtualClaimBaseUrl}/visit`, {
@@ -154,6 +154,7 @@ export async function createSHAVirtualClaim(
   });
   return response.data;
 }
+
 export const usePatientPhone = (patientUuid: string) => {
   const { data } = useSWR<{
     data: { person: { attributes: Array<{ attributeType: { display: string }; value: string }> } };
@@ -180,6 +181,8 @@ export const createElectiveAuthorization = async (
   serviceType: string = 'OUTPATIENT',
   interventionName: string = '',
   interventionTariff: string = '',
+  applicableDocumentTypes: Array<string> = [],
+  preauthType: string = '',
 ): Promise<{
   success: boolean;
   authorization_code?: string;
@@ -198,6 +201,8 @@ export const createElectiveAuthorization = async (
       intervention_name: interventionName,
       intervention_tariff: interventionTariff,
       patient_uuid: patientUuid,
+      applicable_document_types: applicableDocumentTypes,
+      preauth_type: preauthType,
     },
   });
   return response.data;
@@ -388,4 +393,189 @@ export const rejectBiometricAuthorization = async (
     body: { token, ...(reason ? { reason } : {}) },
   });
   return response.data;
+};
+
+export const addVisitAttribute = async (
+  visitUuid: string,
+  attributeTypeUuid: string,
+  value: string,
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    await openmrsFetch(`${restBaseUrl}/visit/${visitUuid}/attribute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        attributeType: attributeTypeUuid,
+        value,
+      }),
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to add visit attribute:', error);
+    return { success: false, error: 'Failed to add visit attribute' };
+  }
+};
+
+export const useNonPomsfUtilization = (patientCRId: string, interventionCode: string) => {
+  const shouldFetch = Boolean(patientCRId && interventionCode);
+  const url = shouldFetch
+    ? `${restBaseUrl}/virtualclaims/non-pomsf-utilization?patient_id=${encodeURIComponent(
+        patientCRId!,
+      )}&intervention_code=${encodeURIComponent(interventionCode!)}`
+    : null;
+
+  const { data, error, isLoading, isValidating, mutate } = useSWR<FetchResponse<NonPomsfUtilizationResponse>>(
+    url,
+    openmrsFetch,
+    {
+      revalidateOnFocus: true,
+      dedupingInterval: 2000,
+    },
+  );
+
+  return {
+    utilization: data?.data ?? null,
+    isLoading,
+    isValidating,
+    error,
+    mutate,
+  };
+};
+
+export const addInterventionToVisit = async (
+  consentToken: string,
+  interventionCode: string,
+  newInterventionPayload?: any,
+): Promise<{ success: boolean; error?: string; message?: string }> => {
+  const body: Record<string, any> = {
+    consent_token: consentToken,
+    intervention_code: interventionCode,
+  };
+  if (newInterventionPayload) {
+    body.new_intervention_payload = newInterventionPayload;
+  }
+  const response = await openmrsFetch(`${virtualClaimBaseUrl}/interventions/add`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  });
+  return response.data;
+};
+
+export const switchInterventionOnVisit = async (
+  authorizationCode: string,
+  fromInterventionCode: string,
+  toInterventionCode: string,
+  retainBillItems: boolean = true,
+  newInterventionPayload?: any,
+): Promise<any> => {
+  const url = `${virtualClaimBaseUrl}/interventions/switch`;
+
+  const body: Record<string, any> = {
+    consent_token: authorizationCode,
+    existing_intervention_code: fromInterventionCode,
+    new_intervention_code: toInterventionCode,
+    retain_bill_items: retainBillItems,
+  };
+  if (newInterventionPayload) {
+    body.new_intervention_payload = newInterventionPayload;
+  }
+
+  const response = await openmrsFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return response?.data ?? response;
+};
+
+export const restoreInterventionOnVisit = async (authorizationCode: string, interventionCode: string) => {
+  const payload = {
+    consent_token: authorizationCode,
+    intervention_code: interventionCode,
+  };
+  const url = `${restBaseUrl}/virtualclaims/interventions/restore`;
+  const response = await openmrsFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: payload,
+  });
+  return response?.data;
+};
+
+export const dispatchClaimLinesToSha = async (
+  authorizationCode: string,
+  intervention: { code: string; isPerDiem: boolean; paymentMechanism: string | null },
+  lineItems: Array<{ uuid: string; price: number; quantity?: number }>,
+  t: TFunction,
+): Promise<{ ok: boolean; error?: string; response?: BatchLinesResponse }> => {
+  if (!authorizationCode) {
+    return { ok: false, error: t('noAuthorizationCode', 'No SHA authorization code available for this visit') };
+  }
+
+  const lines = lineItems.map((item) => ({
+    intervention_code: intervention.code,
+    ...(intervention.isPerDiem && { payment_mechanism: intervention.paymentMechanism }),
+    unit_price: String(item.price),
+    quantity: String(item.quantity ?? 1),
+    openmrs_line_item_uuid: item.uuid,
+  }));
+
+  const body = { consent_token: authorizationCode, lines };
+
+  try {
+    const response = await openmrsFetch(`${restBaseUrl}/virtualclaims/billing/lines/batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: t('batchLinesHttpError', 'SHA batch call failed (HTTP {{status}})', { status: response.status }),
+      };
+    }
+
+    const data = response.data as BatchLinesResponse;
+    const settled = (data.succeeded ?? 0) + (data.skipped ?? 0);
+    if (settled === data.total) {
+      return { ok: true, response: data };
+    }
+
+    const failure = (data.results ?? []).find((r) => r.success === false);
+    if (failure) {
+      const payload = {
+        error: failure.error,
+        upstream_error: failure.upstream_error,
+        message: failure.reason,
+      };
+      const failureMsg = extractUpstreamError(
+        payload as any,
+        t('batchLinesPartialFailure', '{{failed}} of {{total}} lines failed', {
+          failed: data.failed,
+          total: data.total,
+        }),
+      );
+      return { ok: false, error: failureMsg, response: data };
+    }
+    return {
+      ok: false,
+      error: t('batchLinesPartialFailure', '{{failed}} of {{total}} lines failed', {
+        failed: data.failed,
+        total: data.total,
+      }),
+      response: data,
+    };
+  } catch (err) {
+    const networkFallback =
+      err instanceof Error ? err.message : typeof err === 'string' ? err : t('unknownError', 'Unknown error');
+    return {
+      ok: false,
+      error: extractFetchError(
+        err,
+        t('batchLinesNetworkError', 'Could not reach SHA: {{message}}', { message: networkFallback }),
+      ),
+    };
+  }
 };

@@ -62,6 +62,22 @@ export const customStopVisitOverflowMenuItem = getAsyncLifecycle(
   },
 );
 
+export const printOrderPreviewModal = getAsyncLifecycle(
+  () => import('./shared/orders/print-order/print-order.component'),
+  {
+    featureName: 'print-order-preview',
+    moduleName,
+  },
+);
+
+export const printPrescriptionModal = getAsyncLifecycle(
+  () => import('./shared/orders/print-prescription/print-prescription.component'),
+  {
+    featureName: 'print-prescription',
+    moduleName,
+  },
+);
+
 export const visitFormWorkspace = getAsyncLifecycle(
   () => import('./components/registration/start-visit-form/visit-form-workspace/visit-form.workspace'),
   options,

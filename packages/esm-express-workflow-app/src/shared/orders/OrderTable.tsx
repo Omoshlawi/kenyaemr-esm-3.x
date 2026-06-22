@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { DataTable, Table, TableHead, TableRow, TableHeader, TableBody, TableCell, Layer, Button } from '@carbon/react';
-import { Add } from '@carbon/react/icons';
+import { Add, Printer } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
-import { parseDate, formatDatetime, translateFrom, OpenmrsResource } from '@openmrs/esm-framework';
+import { parseDate, formatDatetime, translateFrom, showModal, useVisit, OpenmrsResource } from '@openmrs/esm-framework';
 import { PriorityPill, StatusPill } from './OrderPills';
 import { type Order } from '../../types/order/order';
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
+import styles from './OrderTable.scss';
+
+export type OrderDocumentType = 'lab' | 'radiology' | 'procedure';
 
 type OrderTableProps = {
   title: string;
@@ -16,6 +19,10 @@ type OrderTableProps = {
   priorityPillClassName: string;
   statusPillClassName: string;
   module: string;
+  orderType: OrderDocumentType;
+  patientName?: string;
+  patientId?: string;
+  patientAge?: string | number;
 };
 
 const defaultHeaders = (t: (k: string, d: string) => string) => [
@@ -26,6 +33,7 @@ const defaultHeaders = (t: (k: string, d: string) => string) => [
   { header: t('priority', 'Priority'), key: 'priority' },
   { header: t('orderBy', 'Order By'), key: 'orderBy' },
   { header: t('status', 'Status'), key: 'status' },
+  { header: t('actions', 'Actions'), key: 'actions' },
 ];
 
 export const OrderTable: React.FC<OrderTableProps> = ({
@@ -37,8 +45,32 @@ export const OrderTable: React.FC<OrderTableProps> = ({
   priorityPillClassName,
   statusPillClassName,
   module,
+  orderType,
+  patientName,
+  patientId,
+  patientAge,
 }) => {
   const { t } = useTranslation();
+
+  const ordersByUuid = useMemo(() => new Map(orders.map((o) => [o.uuid, o])), [orders]);
+
+  const handlePrintOrder = useCallback(
+    (uuid: string) => {
+      const order = ordersByUuid.get(uuid);
+      if (!order) {
+        return;
+      }
+      const dispose = showModal('print-order-preview-modal', {
+        onClose: () => dispose(),
+        orders: [order],
+        orderType,
+        patientName,
+        patientId,
+        patientAge,
+      });
+    },
+    [ordersByUuid, orderType, patientName, patientId, patientAge],
+  );
 
   const rows = orders.map((order) => ({
     id: order.uuid,
@@ -61,6 +93,16 @@ export const OrderTable: React.FC<OrderTableProps> = ({
         dataAttrName="status"
       />
     ),
+    actions: (
+      <Button
+        kind="ghost"
+        size="sm"
+        hasIconOnly
+        iconDescription={t('printOrder', 'Print Order')}
+        renderIcon={Printer}
+        onClick={() => handlePrintOrder(order.uuid)}
+      />
+    ),
   }));
 
   if (orders?.length === 0) {
@@ -70,9 +112,11 @@ export const OrderTable: React.FC<OrderTableProps> = ({
   return (
     <div className={containerClassName}>
       <CardHeader title={title}>
-        <Button onClick={onAdd} kind="ghost" renderIcon={Add}>
-          {t('addOrder', 'Add Order')}
-        </Button>
+        <div className={styles.buttonGroup}>
+          <Button onClick={onAdd} kind="ghost" renderIcon={Add}>
+            {t('addOrder', 'Add Order')}
+          </Button>
+        </div>
       </CardHeader>
       <DataTable size="sm" useZebraStyles headers={defaultHeaders(t)} isSortable rows={rows}>
         {({ getHeaderProps, getRowProps, getTableProps, headers, rows }) => (

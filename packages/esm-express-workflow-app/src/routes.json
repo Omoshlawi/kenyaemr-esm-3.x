@@ -594,7 +594,7 @@
   "workspaceWindows2": [
     {
       "name": "ewf-start-visit",
-      "group": "patient-chart",
+      "group": "ewf-patient-chart",
       "width": "wider"
     },
     {
@@ -619,8 +619,16 @@
       "name": "facility-dashboard-authorization-form-modal"
     },
     {
+      "name": "print-order-preview-modal",
+      "component": "printOrderPreviewModal"
+    },
+    {
       "name": "custom-end-visit-dialog",
       "component": "customEndVisitModal"
+    },
+    {
+      "name": "print-prescription-modal",
+      "component": "printPrescriptionModal"
     }
   ]
 }
