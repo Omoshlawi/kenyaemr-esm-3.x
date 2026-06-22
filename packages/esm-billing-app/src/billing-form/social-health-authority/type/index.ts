@@ -98,6 +98,8 @@ export interface PreauthQueueItem {
   preauth_exist: boolean;
   preauth_type: PreauthTypeName;
   applicable_document_types: Array<ApplicableDocumentType>;
+  required_preauth_document_types?: Array<ApplicableDocumentType>;
+  optional_preauth_document_types?: Array<ApplicableDocumentType>;
   preauth_status:
     | 'FINALISED'
     | 'REJECTED'

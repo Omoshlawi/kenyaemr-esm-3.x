@@ -47,9 +47,6 @@ interface ExpandedPanelProps {
 const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) => {
   const { t } = useTranslation();
   const [submitting] = useState(false);
-
-  // Disable submit when SHA already has this preauth
-  // preauth_already_submitted = true when status is ACTIVE / PENDING_DOCTOR_APPROVAL / FINALISED
   const preauthAlreadySubmitted = Boolean((item as any).preauth_already_submitted);
 
   const handleSubmitPreauth = () =>
@@ -151,9 +148,9 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
           {tab === 'PENDING' && (
             <>
               <p className={styles.expandedCardTitle}>{t('requiredDocuments', 'Required documents')}</p>
-              {item.applicable_document_types?.length > 0 ? (
+              {(item.required_preauth_document_types?.length ?? 0) > 0 ? (
                 <div className={styles.docTags}>
-                  {item.applicable_document_types.map((doc) => (
+                  {item.required_preauth_document_types?.map((doc) => (
                     <Tag key={doc} type="cool-gray" size="sm">
                       {doc}
                     </Tag>
@@ -347,9 +344,9 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
           {(isDraft || isRejected) && (
             <>
               <p className={styles.expandedCardTitle}>{t('requiredDocuments', 'Required documents')}</p>
-              {(item.applicable_document_types ?? []).length > 0 ? (
+              {(item.required_preauth_document_types ?? []).length > 0 ? (
                 <div className={styles.docTags}>
-                  {item.applicable_document_types.map((doc) => (
+                  {item.required_preauth_document_types.map((doc) => (
                     <Tag key={doc} type="cool-gray" size="sm">
                       {doc}
                     </Tag>

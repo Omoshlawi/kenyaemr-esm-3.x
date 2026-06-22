@@ -57,7 +57,7 @@ export const basePreauthSchema = z.object({
     .refine((v) => !isNaN(Number(v)) && Number(v) > 0, 'Must be a positive number'),
   doctors: z.array(doctorSchema).min(1, 'At least one doctor is required'),
   diagnoses: z.array(diagnosisSchema).min(1, 'At least one diagnosis is required'),
-  attachments: z.array(attachmentSchema).min(1, 'At least one attachment is required'),
+  attachments: z.array(attachmentSchema).min(0),
 });
 
 export const normalPreauthSchema = basePreauthSchema;
@@ -198,7 +198,7 @@ export function getDefaultValues(
       },
     ],
     diagnoses: [{ icd_code: '', display: '' }],
-    attachments: [{ document_title: '', document_type: '', file: null }],
+    attachments: [],
   };
 
   switch (preauthType) {
