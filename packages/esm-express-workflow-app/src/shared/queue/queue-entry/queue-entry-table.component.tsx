@@ -33,6 +33,7 @@ dayjs.extend(relativeTime);
 
 type QueueEntryTableProps = {
   navigatePath?: string;
+  patientChartUrlSegement?: string;
   queueEntries: Array<QueueEntry>;
   usePatientChart?: boolean;
   pagination?: QueueEntriesPagination;
@@ -49,6 +50,7 @@ const QueueEntryTable: React.FC<QueueEntryTableProps> = ({
   onPageSizeChange,
   isValidating,
   isLoading,
+  patientChartUrlSegement = 'Patient Summary',
 }) => {
   const { visitQueueNumberAttributeUuid } = useConfig<ExpressWorkflowConfig>();
   const [searchString, setSearchString] = useState('');
@@ -107,7 +109,7 @@ const QueueEntryTable: React.FC<QueueEntryTableProps> = ({
       );
 
       const patientChartUrl = usePatientChart
-        ? `${globalThis.spaBase}/patient/${queueEntry.patient.uuid}/chart/Patient Summary?path=${navigatePath}`
+        ? `${globalThis.spaBase}/patient/${queueEntry.patient.uuid}/chart/${patientChartUrlSegement}?path=${navigatePath}`
         : `${spaBasePath}/${navigatePath}/${queueEntry.patient.uuid}`;
 
       return {

@@ -72,6 +72,7 @@ export const configSchema = {
       triageService: '167411AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       consultationService: '167410AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       procedureService: '164164AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      hivTestingService: 'ce914b2d-44f6-4b6c-933f-c57a3938e35b',
     },
   },
   queueStatusConceptUuids: {
@@ -470,6 +471,7 @@ export type ExpressWorkflowConfig = {
     triageService: string;
     consultationService: string;
     procedureService: string;
+    hivTestingService: string;
   };
   queueStatusConceptUuids: {
     waitingStatus: string;

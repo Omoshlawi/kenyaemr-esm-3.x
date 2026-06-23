@@ -288,7 +288,10 @@
       "component": "pharmacyTabs",
       "slot": "ewf-patient-chart-pharmacy-dashboard-slot",
       "online": true,
-      "offline": false
+      "offline": false,
+      "meta": {
+        "title":"Prescription"
+      }
     },
     {
       "name": "ewf-admissions-dashboard-link",
@@ -572,7 +575,56 @@
     {
       "name": "asign-patient-to-next-queue-action",
       "component": "assignToNextQueueAction"
+    },
+    {
+      "name": "ewf-hts-dashboard-link",
+      "component": "htsLeftPanelLink",
+      "slot": "homepage-dashboard-slot",
+      "meta":{
+        "slot": "ewf-hts-dashboard-slot",
+        "title":"hts",
+        "name":"hts"
+      }
+    },
+    {
+      "name": "ewf-hts-dashboard",
+      "component": "htsDashboard",
+      "slot": "ewf-hts-dashboard-slot"
+    },
+    {
+      "name": "ewf-patient-chart-hts-dashboard-link",
+      "component": "patientChartHtsLeftPanelLink",
+      "slot": "patient-chart-dashboard-slot",
+      "meta":{
+        "slot": "ewf-patient-chart-hts-dashboard-slot",
+        "title":"hivTestingServices",
+        "path": "hts",
+        "name":"ewf-hiv-testing-sevice",
+        "hideDashboardTitle": true
+      }
+    },
+    {
+      "name": "ewf-patient-chart-hts-dashboard",
+      "component": "patientChartHtsDashboard",
+      "slot": "ewf-patient-chart-hts-dashboard-slot"
+    },
+    {
+      "name": "ewf-hts-screening-tab",
+      "component": "htsScreening",
+      "slot": "hiv-testing-services-tabs-slot",
+      "meta":{
+        "title":"htsScreening"
+      }
+    },
+    {
+      "name": "ewf-hts-testing-tab",
+      "component": "htsTesting",
+      "slot": "hiv-testing-services-tabs-slot",
+      "meta":{
+        "title":"htsTesting"
+      }
     }
+
   ],
   "workspaces2": [
     {

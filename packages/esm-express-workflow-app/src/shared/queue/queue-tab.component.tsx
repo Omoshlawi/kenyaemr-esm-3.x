@@ -18,6 +18,7 @@ type QueueTabProps = {
   usePatientChart?: boolean;
   filters?: Array<QueueFilter>;
   onFiltersChanged?: (filters: Array<QueueFilter>) => void;
+  patientChartUrlSegement?: string;
 };
 
 const startedOnOrAfter = dayjs().subtract(24, 'hour').format('YYYY-MM-DD HH:mm:ss');
@@ -35,6 +36,7 @@ const QueueTabWithContext: React.FC<
   onFiltersChanged: onFiltersChangedProp,
   validQueues,
   workflowContext,
+  patientChartUrlSegement,
 }) => {
   const filters = workflowContext.filters ?? filtersProp ?? [];
   const onFiltersChanged = workflowContext.setFilters ?? onFiltersChangedProp;
@@ -125,6 +127,7 @@ const QueueTabWithContext: React.FC<
                   onPageSizeChange={setPageSize}
                   isLoading={isLoadingQueueEntries}
                   isValidating={isValidatingQueueEntries}
+                  patientChartUrlSegement={patientChartUrlSegement}
                 />
               </TabPanel>
             ))}
