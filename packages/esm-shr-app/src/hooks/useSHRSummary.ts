@@ -1,11 +1,9 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { SHRSummary } from '../types/index';
-import { useState } from 'react';
-import { deepMerge } from '../utils/function';
 
 export const useSHRSummary = (patientUuid: string) => {
-  const shrSummaryUrl = `/ws/rest/v1/kenyaemril/shrPatientSummary?patientUuid=${patientUuid}`;
+  const shrSummaryUrl = `/ws/rest/v1/kenyaemril/hie-patient-history?patientUuid=${patientUuid}`;
   const { data, mutate, error, isLoading } = useSWR<{ data: SHRSummary }>(shrSummaryUrl, openmrsFetch);
 
   return {

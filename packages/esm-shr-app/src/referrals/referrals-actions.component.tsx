@@ -1,18 +1,26 @@
-import React, { useCallback } from 'react';
-import { Button } from '@carbon/react';
+import React, { useCallback, useRef, useState } from 'react';
+import { Button, InlineLoading } from '@carbon/react';
 
 import { useTranslation } from 'react-i18next';
 import { navigate, showModal, showSnackbar } from '@openmrs/esm-framework';
 import { ReferralReasonsProps } from '../types';
 import { processCommunityReferral } from './refferals.resource';
+import usePatient from '../hooks/usePatient';
+import { sendSHAOtp, verifyOtp } from '../shr-summary/shr-summary.resource';
 
 interface ReferralReasonData {
   referralData: ReferralReasonsProps;
   status: string;
+  patientUuid: string;
 }
 
-const CommunityReferralActions: React.FC<ReferralReasonData> = ({ status, referralData }) => {
+const CommunityReferralActions: React.FC<ReferralReasonData> = ({ status, referralData, patientUuid }) => {
   const { t } = useTranslation();
+  const idRef = useRef<string>();
+  const [accessGranted, setAccessGranted] = useState(true);
+  const [isAuthorizing, setIsAuthorizing] = useState(false);
+
+  const { error, isLoading, patientPhoneNumber, patientName, nationalId } = usePatient(patientUuid);
 
   const handleProcessReferral = useCallback(() => {
     processCommunityReferral(referralData.messageId)
@@ -39,22 +47,73 @@ const CommunityReferralActions: React.FC<ReferralReasonData> = ({ status, referr
       });
   }, [referralData, t]);
 
+  const handleInitiateAuthorization = useCallback(() => {
+    const dispose = showModal('otp-verification-modal', {
+      onClose: () => {
+        if (!accessGranted) {
+          setIsAuthorizing(false);
+        }
+        dispose();
+      },
+      phoneNumber: patientPhoneNumber || '',
+      otpLength: 5,
+      expiryMinutes: 5,
+      centerBoxes: true,
+      onRequestOtp: async (_phone: string) => {
+        const { status, id } = await sendSHAOtp(_phone, nationalId as string);
+        idRef.current = id;
+        if (status !== 'success') {
+          throw new Error(t('otpFailed', 'Failed to send OTP'));
+        }
+      },
+
+      onVerify: async (enteredOtp: string) => {
+        const { status, data, error } = await verifyOtp(enteredOtp, idRef.current as string);
+        if (status !== 'success') {
+          throw new Error(t('authorizeFailed', 'Authorization failed'));
+        }
+      },
+
+      onVerificationSuccess: () => {
+        dispose();
+        setIsAuthorizing(false);
+        setAccessGranted(true);
+        handleProcessReferral();
+        showSnackbar({
+          title: t('success', 'Success'),
+          subtitle: t('otpVerificationSuccessMessage', 'OTP Vefification succesfull'),
+          kind: 'success',
+        });
+      },
+
+      onCleanup: () => {
+        if (!accessGranted) {
+          setIsAuthorizing(false);
+        }
+      },
+    });
+  }, [accessGranted, handleProcessReferral, nationalId, patientPhoneNumber, t]);
+
   const refearralReasonsHandleClick = useCallback(() => {
     const dispose = showModal('referral-reasons-dialog', {
       closeModal: () => dispose(),
       referralReasons: referralData,
       status: status,
-      handleProcessReferral,
+      handleProcessReferral: handleInitiateAuthorization,
     });
-  }, [referralData, handleProcessReferral, status]);
+  }, [referralData, handleInitiateAuthorization, status]);
+
+  if (isLoading || isAuthorizing) {
+    return <InlineLoading description={t('loading', 'Loading...')} />;
+  }
 
   return (
     <>
-      <Button kind="primary" size="md" onClick={() => refearralReasonsHandleClick()}>
+      <Button kind="primary" size="md" onClick={refearralReasonsHandleClick}>
         {t('viewReasons', 'View reasons')}
       </Button>
       {status === 'completed' ? null : (
-        <Button kind="primary" size="md" onClick={() => handleProcessReferral()}>
+        <Button kind="primary" size="md" onClick={handleInitiateAuthorization}>
           {t('serveClient', 'Serve client')}
         </Button>
       )}

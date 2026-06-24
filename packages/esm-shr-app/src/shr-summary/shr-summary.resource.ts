@@ -1,91 +1,91 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import dayjs from 'dayjs';
-import { z } from 'zod';
-import { PHONE_NUMBER_REGEX } from '../constants';
 
-export const authorizationSchema = z
-  .object({
-    otp: z.string().min(1, 'Required'),
-    receiver: z.string().regex(PHONE_NUMBER_REGEX).optional(),
-    authMethod: z.string(),
-  })
-  .refine(
-    (data) => {
-      if (data.authMethod === 'otp') {
-        return data.receiver;
-      }
-      return true;
-    },
+interface SmsResponseData {
+  status: string;
+  message: string;
+  id: string;
+}
+interface TokenResponse {
+  token: string;
+  issued: number; // Unix timestamp in milliseconds
+  expires: number; // Unix timestamp in milliseconds
+  status: string; // e.g., "success"
+  expires_in: number; // Expiration duration in milliseconds (e.g., 1440000 ms = 24 minutes)
+}
+
+interface VerifyResponseData {
+  response: string;
+}
+
+export const sendSHAOtp = async (phoneNumber: string, nationalId: string): Promise<SmsResponseData> => {
+  const messageTemplate = 'Message template';
+  const response = await openmrsFetch(
+    `${restBaseUrl}/kenyaemr/send-kenyaemr-sms?phone=${phoneNumber}&nationalId=${nationalId}&message=${messageTemplate}`,
     {
-      message: 'Required',
-      path: ['receiver'],
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
     },
   );
 
-export function generateOTP(length = 5) {
-  let otpNumbers = '0123456789';
-  let OTP = '';
-  const len = otpNumbers.length;
-  for (let i = 0; i < length; i++) {
-    OTP += otpNumbers[Math.floor(Math.random() * len)];
+  const rawResponseText = response.data;
+
+  if (!rawResponseText) {
+    throw new Error('SMS Gateway returned an empty response.');
   }
-  return OTP;
-}
 
-export function persistOTP(otp: string, patientUuid: string) {
-  sessionStorage.setItem(
-    patientUuid,
-    JSON.stringify({
-      otp,
-      timestamp: new Date().toISOString(),
-    }),
-  );
-}
+  // Use the extraction logic
+  const extractedData = extractSmsData(rawResponseText);
 
-export async function sendOtp({ otp, receiver }: z.infer<typeof authorizationSchema>, patientName: string) {
-  const payload = parseMessage(
-    { otp, patient_name: patientName, expiry_time: 5 },
-    'Dear {{patient_name}}, your OTP for accessing your Shared Health Records (SHR) is {{otp}}. Please enter this code to proceed. The code is valid for {{expiry_time}} minutes.',
-  );
-
-  const url = `${restBaseUrl}/kenyaemr/send-kenyaemr-sms?message=${payload}&phone=${receiver}`;
-
-  const res = await openmrsFetch(url, {
-    method: 'POST',
-    redirect: 'follow',
-  });
-  if (res.ok) {
-    return await res.json();
+  // Throw an error if parsing failed or the payload was missing
+  if (!extractedData) {
+    throw new Error(`Failed to parse SMS gateway response. Raw response: ${rawResponseText}`);
   }
-  throw new Error('Error sending otp');
-}
 
-function parseMessage(object, template) {
-  const placeholderRegex = /{{(.*?)}}/g;
+  // Explicitly check for successful status from the gateway payload
+  if (extractedData.status !== 'success') {
+    throw new Error(`SMS delivery failed with status: ${extractedData.status}. Message: ${extractedData.message}`);
+  }
 
-  const parsedMessage = template.replace(placeholderRegex, (match, fieldName) => {
-    if (object.hasOwnProperty(fieldName)) {
-      return object[fieldName];
-    } else {
-      return match;
+  // Return the strongly-typed data to the caller
+  return extractedData;
+};
+
+/**
+ * Extracts and parses the JSON payload from a mixed-text SMS API response.
+ * @param responseString The raw string response from the provider
+ * @returns SmsResponseData object or null if parsing fails
+ */
+export function extractSmsData(responseString: string): SmsResponseData | null {
+  try {
+    // Regex to capture everything between the first '{' and the last '}'
+    const jsonMatch = responseString.match(/\{.*\}/);
+
+    if (!jsonMatch) {
+      console.error('No JSON payload found in the response string.');
+      return null;
     }
-  });
 
-  return parsedMessage;
+    // Parse the extracted JSON string
+    const parsedData: SmsResponseData = JSON.parse(jsonMatch[0]);
+    return parsedData;
+  } catch (error) {
+    console.error('Failed to parse SMS response data:', error);
+    return null;
+  }
 }
-export function verifyOtp(otp: string, patientUuid: string) {
-  const data = sessionStorage.getItem(patientUuid);
-  if (!data) {
-    throw new Error('Invalid OTP');
+
+export const verifyOtp = async (otp: string, uuid: string) => {
+  const url = `${restBaseUrl}/kenyaemr/validate-otp`;
+  const res = await openmrsFetch<VerifyResponseData>(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: { id: uuid, otp },
+  });
+  const data = res?.data?.response;
+  try {
+    const _data = JSON.parse(data) as TokenResponse;
+    return { status: 'success', data: _data };
+  } catch (error) {
+    return { status: 'error', error: data };
   }
-  const { otp: storedOtp, timestamp } = JSON.parse(data);
-  const isExpired = dayjs(timestamp).add(5, 'minutes').isBefore(dayjs());
-  if (storedOtp !== otp) {
-    throw new Error('Invalid OTP');
-  }
-  if (isExpired) {
-    throw new Error('OTP Expired');
-  }
-  sessionStorage.removeItem(patientUuid);
-  return 'Verification success';
-}
+};

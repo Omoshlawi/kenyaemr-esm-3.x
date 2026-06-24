@@ -3,7 +3,14 @@ import { mutate } from 'swr';
 import useSWRMutation from 'swr/mutation';
 import { useTranslation } from 'react-i18next';
 import { Tab, TabList, Tabs, Button, TabPanel, TabPanels, InlineLoading } from '@carbon/react';
-import { isDesktop, launchWorkspace, useLayoutType, showSnackbar, restBaseUrl } from '@openmrs/esm-framework';
+import {
+  isDesktop,
+  launchWorkspace,
+  useLayoutType,
+  showSnackbar,
+  restBaseUrl,
+  launchWorkspace2,
+} from '@openmrs/esm-framework';
 import { AirlineManageGates, UpdateNow } from '@carbon/react/icons';
 
 import ReferralTable from '../referrals.component';
@@ -46,7 +53,7 @@ const ReferralTabs: React.FC = () => {
   );
 
   const handleReferral = () => {
-    launchWorkspace('facility-referral-form', {
+    launchWorkspace2('facility-referral-form', {
       workspaceTitle: t('referralForm', 'Referral Form'),
     });
   };

@@ -20,10 +20,9 @@ export const useFacilities = (searchTerm: string) => {
 };
 
 export const useSendReferralToArtDirectory = () => {
-  const { artDirectoryUrl } = useConfig<ReferralConfigObject>();
-
   const sendReferral = async (apiPayload: ReferralPayload): Promise<ReferralResponse> => {
     try {
+      const artDirectoryUrl = `${restBaseUrl}/kenyaemril/outboundReferral`;
       const response = await openmrsFetch(artDirectoryUrl, {
         method: 'POST',
         headers: {

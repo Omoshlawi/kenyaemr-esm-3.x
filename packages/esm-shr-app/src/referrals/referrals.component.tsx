@@ -124,7 +124,7 @@ const ReferralTable: React.FC<ReferralProps> = ({ status }) => {
         dateReferred: record.dateReferred,
         referredFrom: record.referredFrom,
         referralService: record.referralReasons?.category,
-        actions: <CommunityReferralActions status={status} referralData={referralReasonsx} />,
+        actions: <CommunityReferralActions status={status} referralData={referralReasonsx} patientUuid={record.uuid} />,
       };
       rowData.push(s);
     });

@@ -139,11 +139,10 @@ export const getPatientAddress = (patient: Patient) => {
 
 export const getPatientIdentifiers = (patient: Patient) => {
   const identifiers = [];
-
-  if (patient?.identifiers?.length) {
+  if (patient?.identifiers?.length && patient.identifiers.length > 0) {
     patient.identifiers.forEach((id) => {
-      if (id.identifier && id.identifierType?.name) {
-        const idTypeName = id.identifierType.name.toUpperCase();
+      if (id.identifier && id.identifierType?.display) {
+        const idTypeName = id.identifierType.display.toUpperCase();
 
         if (
           idTypeName.includes('CCC') ||
@@ -167,6 +166,12 @@ export const getPatientIdentifiers = (patient: Patient) => {
             ID: id.identifier,
             IDENTIFIER_TYPE: 'FACILITY_ID',
             ASSIGNING_AUTHORITY: 'FACILITY',
+          });
+        } else if (idTypeName.includes('CR')) {
+          identifiers.push({
+            ID: id.identifier,
+            IDENTIFIER_TYPE: 'CR_NUMBER',
+            ASSIGNING_AUTHORITY: 'SHA',
           });
         }
       }

@@ -1,12 +1,17 @@
-import { DataTableSkeleton, Tabs, TabList, Tab, TabPanel, TabPanels } from '@carbon/react';
+import { DataTableSkeleton, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
-import React from 'react';
+import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 import usePatientIdentifiers from '../hooks/usePatientIdentifiers';
-import PatientSHRSummaryTable from './tables/shr-summary-table.component';
 import DependentsComponent from '../referrals/dependents/dependents.component';
+import PatientSHRSummaryTable from './tables/shr-summary-table.component';
 
-const SHRSummaryPanel = ({ patient, patientUuid }) => {
+type SHRSummaryPanelProps = {
+  patientUuid: string;
+  patient: fhir.Patient;
+};
+
+const SHRSummaryPanel: FC<SHRSummaryPanelProps> = ({ patient, patientUuid }) => {
   const { t } = useTranslation();
   const { error, isLoading } = usePatientIdentifiers(patientUuid);
 
@@ -30,7 +35,7 @@ const SHRSummaryPanel = ({ patient, patientUuid }) => {
             <DependentsComponent patientUuid={patientUuid} patient={patient} />
           </TabPanel>
           <TabPanel>
-            <PatientSHRSummaryTable />
+            <PatientSHRSummaryTable patient={patient} patientUuid={patientUuid} />
           </TabPanel>
         </TabPanels>
       </Tabs>

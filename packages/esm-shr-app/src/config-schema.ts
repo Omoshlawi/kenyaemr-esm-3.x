@@ -6,6 +6,11 @@ export const configSchema = {
     _description: 'The national patient unique identifier',
     _default: 'f85081e2-b4be-4e48-b3a4-7994b69bb101',
   },
+  nationalIdIdentifierType: {
+    _type: Type.UUID,
+    _description: 'The national patient unique identifier',
+    _default: '49af6cdc-7968-4abb-bf46-de10d7f4859f',
+  },
   phoneNumberAttributeType: {
     _type: Type.UUID,
     _description: 'The patient phone number attribute type uuid',
@@ -16,16 +21,11 @@ export const configSchema = {
     _description: 'Social Health Authority Unique Identification Number',
     _default: '24aedd37-b5be-4e08-8311-3721b8d5100d',
   },
-  artDirectoryUrl: {
-    _type: Type.String,
-    _description: 'URL for the ART Directory',
-    _default: 'https://art.kenyahmis.org/api/patients',
-  },
 };
 
 export type ReferralConfigObject = {
   nationalPatientUniqueIdentifier: string;
+  nationalIdIdentifierType: string;
   phoneNumberAttributeType: string;
   socialHealthAuthorityIdentifierType: string;
-  artDirectoryUrl: string;
 };

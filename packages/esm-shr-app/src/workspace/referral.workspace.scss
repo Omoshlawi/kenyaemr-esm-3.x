@@ -23,14 +23,16 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding-bottom: 20px;
 }
 
 .buttonSet {
   margin-top: auto;
   display: flex;
   justify-content: flex-end;
-  margin-right: layout.$spacing-04;
+
+  & >button {
+    min-width: 50%;
+  }
 }
 
 .grid {

@@ -82,8 +82,5 @@ export const facilityRefferalForm = getAsyncLifecycle(
 
 // SHR Summary
 export const patientSHRSummary = getAsyncLifecycle(() => import('./shr-summary/shr-summary.component'), options);
-export const shrAuthorizationForm = getAsyncLifecycle(
-  () => import('./shr-summary/shr-authorization-form.workspace'),
-  options,
-);
+
 export const referralWrap = getAsyncLifecycle(() => import('./referrals-wrap'), options);

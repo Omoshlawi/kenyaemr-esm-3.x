@@ -21,10 +21,10 @@ const ReferralReasonsDialogPopup: React.FC<ReferralReasonsDialogPopupProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  const handleServeClient = async () => {
+  const handleServeClient = () => {
     try {
-      await handleProcessReferral();
       closeModal();
+      handleProcessReferral();
     } catch (error) {
       showNotification({
         title: t('referralError', 'Error processing referral'),

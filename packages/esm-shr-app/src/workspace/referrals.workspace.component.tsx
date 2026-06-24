@@ -1,41 +1,41 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Column,
-  Form,
-  Stack,
-  Search,
-  ButtonSet,
-  ComboBox,
-  Button,
-  Tile,
-  TextArea,
-  InlineLoading,
-  Tag,
-} from '@carbon/react';
-import { ExtensionSlot, showSnackbar, useSession, useConfig, formatDate, formatDatetime } from '@openmrs/esm-framework';
 import { z } from 'zod';
+import {
+  Button,
+  ButtonSet,
+  Column,
+  ComboBox,
+  Form,
+  InlineLoading,
+  Search,
+  Stack,
+  Tag,
+  TextArea,
+  Tile,
+} from '@carbon/react';
+import { Close, Hospital } from '@carbon/react/icons';
+import { ExtensionSlot, formatDate, formatDatetime, showSnackbar, Workspace2 } from '@openmrs/esm-framework';
+import usePatient from '../hooks/usePatient';
+import { FacilityReferralFormData, facilityReferralSchema, ValidationErrors } from '../schema';
+import { type Concept, type Facility, type ReferralPayload } from '../types';
+import {
+  formatBirthDate,
+  getPatientAddress,
+  getPatientDeathInfo,
+  getPatientGender,
+  getPatientIdentifiers,
+  getPatientName,
+  getPhoneNumber,
+} from '../utils/function';
 import PatientInfo from './referral-patient-info.component';
-import styles from './referral.workspace.scss';
-import { Hospital, Close } from '@carbon/react/icons';
 import {
   useFacilities,
   useReasons,
   useSendReferralToArtDirectory,
   useSystemSetting,
 } from './referral-workspace.resource';
-import usePatient from '../hooks/usePatient';
-import { type Concept, type Facility, type ReferralPayload } from '../types';
-import { FacilityReferralFormData, facilityReferralSchema, ValidationErrors } from '../schema';
-import {
-  getPatientName,
-  getPatientGender,
-  getPatientIdentifiers,
-  formatBirthDate,
-  getPatientAddress,
-  getPatientDeathInfo,
-  getPhoneNumber,
-} from '../utils/function';
+import styles from './referral.workspace.scss';
 
 interface FacilityReferralProps {
   closeWorkspace: () => void;
@@ -301,171 +301,178 @@ const FacilityReferralForm: React.FC<FacilityReferralProps> = ({ closeWorkspace,
   ]);
 
   return (
-    <Form className={styles.form} onSubmit={onSubmit}>
-      <Stack gap={4} className={styles.grid}>
-        <h3 className={styles.formTitle}>{t('facilityReferral', 'Facility Referral')}</h3>
+    <Workspace2 title={t('referralForm', 'Referral Form')}>
+      <Form className={styles.form} onSubmit={onSubmit}>
+        <Stack gap={4} className={styles.grid}>
+          <h3 className={styles.formTitle}>{t('facilityReferral', 'Facility Referral')}</h3>
 
-        <Column>
-          <ComboBox
-            id="referral-type"
-            titleText={t('referralType', 'Referral Type')}
-            items={['Facility to Facility']}
-            onChange={({ selectedItem }) => {
-              setReferralType(selectedItem);
-            }}
-            placeholder={t('selectReferralType', 'Select referral type')}
-            selectedItem={referralType}
-            invalid={!!validationErrors.referralType}
-            invalidText={validationErrors.referralType}
-          />
-        </Column>
+          <Column>
+            <ComboBox
+              id="referral-type"
+              titleText={t('referralType', 'Referral Type')}
+              items={['Facility to Facility']}
+              onChange={({ selectedItem }) => {
+                setReferralType(selectedItem);
+              }}
+              placeholder={t('selectReferralType', 'Select referral type')}
+              selectedItem={referralType}
+              invalid={!!validationErrors.referralType}
+              invalidText={validationErrors.referralType}
+            />
+          </Column>
 
-        {referralType && (
-          <>
-            <Column>
-              <h4 className={styles.sectionHeader}>{t('destinationFacility', 'Destination Facility')}</h4>
-              {!selectedFacility ? (
-                <>
-                  <Search
-                    size="lg"
-                    placeholder={t('searchFacility', 'Search for facility')}
-                    labelText={t('search', 'Search')}
-                    value={facilitySearchTerm}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setFacilitySearchTerm(value);
-                    }}
-                  />
-                  {facilitySearchTerm && facilities?.length > 0 && (
-                    <div className={styles.searchResults}>
-                      {facilities.map((facility) => (
-                        <Tile
-                          key={facility.uuid}
-                          className={styles.resultTile}
-                          onClick={() => handleFacilitySelect(facility)}>
-                          <div className={styles.tileContent}>
-                            <Hospital size={20} className={styles.illustrationPictogram} />
-                            <div className={styles.facilityInfo}>
-                              <strong>{facility.name}</strong>
-                              <div>MFL: {facility.attributes?.[0]?.value || 'N/A'}</div>
-                            </div>
-                          </div>
-                        </Tile>
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <Tile className={styles.selectedItem}>
-                  <div className={styles.tileContent}>
-                    <Hospital size={20} className={styles.illustrationPictogram} />
-                    <div className={styles.facilityInfo}>
-                      <strong>{selectedFacility.name}</strong>
-                      <div>MFL: {selectedFacility.attributes?.[0]?.value || 'N/A'}</div>
-                    </div>
-                    <Button
-                      hasIconOnly
-                      renderIcon={Close}
-                      iconDescription={t('remove', 'Remove')}
-                      kind="ghost"
-                      onClick={() => {
-                        setSelectedFacility(null);
+          {referralType && (
+            <>
+              <Column>
+                <h4 className={styles.sectionHeader}>{t('destinationFacility', 'Destination Facility')}</h4>
+                {!selectedFacility ? (
+                  <>
+                    <Search
+                      size="lg"
+                      placeholder={t('searchFacility', 'Search for facility')}
+                      labelText={t('search', 'Search')}
+                      value={facilitySearchTerm}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setFacilitySearchTerm(value);
                       }}
                     />
-                  </div>
-                </Tile>
-              )}
-              {validationErrors.selectedFacility && (
-                <div className={styles.errorMessage}>{validationErrors.selectedFacility}</div>
-              )}
-            </Column>
+                    {facilitySearchTerm && facilities?.length > 0 && (
+                      <div className={styles.searchResults}>
+                        {facilities.map((facility) => (
+                          <Tile
+                            key={facility.uuid}
+                            className={styles.resultTile}
+                            onClick={() => handleFacilitySelect(facility)}>
+                            <div className={styles.tileContent}>
+                              <Hospital size={20} className={styles.illustrationPictogram} />
+                              <div className={styles.facilityInfo}>
+                                <strong>{facility.name}</strong>
+                                <div>MFL: {facility.attributes?.[0]?.value || 'N/A'}</div>
+                              </div>
+                            </div>
+                          </Tile>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Tile className={styles.selectedItem}>
+                    <div className={styles.tileContent}>
+                      <Hospital size={20} className={styles.illustrationPictogram} />
+                      <div className={styles.facilityInfo}>
+                        <strong>{selectedFacility.name}</strong>
+                        <div>MFL: {selectedFacility.attributes?.[0]?.value || 'N/A'}</div>
+                      </div>
+                      <Button
+                        hasIconOnly
+                        renderIcon={Close}
+                        iconDescription={t('remove', 'Remove')}
+                        kind="ghost"
+                        onClick={() => {
+                          setSelectedFacility(null);
+                        }}
+                      />
+                    </div>
+                  </Tile>
+                )}
+                {validationErrors.selectedFacility && (
+                  <div className={styles.errorMessage}>{validationErrors.selectedFacility}</div>
+                )}
+              </Column>
 
-            <Column>
-              <h4 className={styles.sectionHeader}>{t('patient', 'Patient')}</h4>
-              {patientSelected && patientUuid ? (
-                <PatientInfo patientUuid={patientUuid} />
-              ) : (
-                <ExtensionSlot
-                  name="patient-search-bar-slot"
-                  state={{
-                    selectPatientAction: selectPatient,
-                    buttonProps: { kind: 'primary' },
+              <Column>
+                <h4 className={styles.sectionHeader}>{t('patient', 'Patient')}</h4>
+                {patientSelected && patientUuid ? (
+                  <PatientInfo patientUuid={patientUuid} />
+                ) : (
+                  <ExtensionSlot
+                    name="patient-search-bar-slot"
+                    state={{
+                      selectPatientAction: selectPatient,
+                      buttonProps: { kind: 'primary' },
+                    }}
+                  />
+                )}
+                {validationErrors.patientUuid && (
+                  <div className={styles.errorMessage}>{validationErrors.patientUuid}</div>
+                )}
+              </Column>
+
+              <Column>
+                <h4 className={styles.sectionHeader}>{t('referralReasons', 'Referral Reasons')}</h4>
+                <Search
+                  size="lg"
+                  placeholder={t('searchReasons', 'Search for referral reasons')}
+                  labelText={t('search', 'Search')}
+                  value={reasonSearchTerm}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setReasonSearchTerm(value);
                   }}
                 />
-              )}
-              {validationErrors.patientUuid && (
-                <div className={styles.errorMessage}>{validationErrors.patientUuid}</div>
-              )}
-            </Column>
+                {reasonSearchTerm && reasons?.length > 0 && (
+                  <div className={styles.searchResults}>
+                    {reasons.map((reason) => (
+                      <Tile key={reason.uuid} className={styles.resultTile} onClick={() => handleReasonSelect(reason)}>
+                        {reason.name.name}
+                      </Tile>
+                    ))}
+                  </div>
+                )}
+                {selectedReasons.length > 0 && (
+                  <div className={styles.selectedItems}>
+                    {selectedReasons.map((reason) => (
+                      <Tag
+                        key={reason.uuid}
+                        size="lg"
+                        type="gray"
+                        filter
+                        onClose={() => handleRemoveReason(reason.uuid)}>
+                        {reason.name.name}
+                      </Tag>
+                    ))}
+                  </div>
+                )}
+                {validationErrors.selectedReasons && (
+                  <div className={styles.errorMessage}>{validationErrors.selectedReasons}</div>
+                )}
+              </Column>
+              <Column>
+                <h4 className={styles.sectionHeader}>{t('clinicalNotes', 'Clinical Notes')}</h4>
+                <TextArea
+                  labelText={t('clinicalNotes', 'Clinical Notes')}
+                  rows={4}
+                  value={clinicalNotes}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setClinicalNotes(value);
 
-            <Column>
-              <h4 className={styles.sectionHeader}>{t('referralReasons', 'Referral Reasons')}</h4>
-              <Search
-                size="lg"
-                placeholder={t('searchReasons', 'Search for referral reasons')}
-                labelText={t('search', 'Search')}
-                value={reasonSearchTerm}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setReasonSearchTerm(value);
-                }}
-              />
-              {reasonSearchTerm && reasons?.length > 0 && (
-                <div className={styles.searchResults}>
-                  {reasons.map((reason) => (
-                    <Tile key={reason.uuid} className={styles.resultTile} onClick={() => handleReasonSelect(reason)}>
-                      {reason.name.name}
-                    </Tile>
-                  ))}
-                </div>
-              )}
-              {selectedReasons.length > 0 && (
-                <div className={styles.selectedItems}>
-                  {selectedReasons.map((reason) => (
-                    <Tag key={reason.uuid} size="lg" type="gray" filter onClose={() => handleRemoveReason(reason.uuid)}>
-                      {reason.name.name}
-                    </Tag>
-                  ))}
-                </div>
-              )}
-              {validationErrors.selectedReasons && (
-                <div className={styles.errorMessage}>{validationErrors.selectedReasons}</div>
-              )}
-            </Column>
-            <Column>
-              <h4 className={styles.sectionHeader}>{t('clinicalNotes', 'Clinical Notes')}</h4>
-              <TextArea
-                labelText={t('clinicalNotes', 'Clinical Notes')}
-                rows={4}
-                value={clinicalNotes}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setClinicalNotes(value);
-
-                  if (validationErrors.clinicalNotes) {
-                    setValidationErrors((prev) => ({ ...prev, clinicalNotes: undefined }));
-                  }
-                }}
-                invalid={!!validationErrors.clinicalNotes}
-                invalidText={validationErrors.clinicalNotes}
-              />
-            </Column>
-          </>
-        )}
-      </Stack>
-      <ButtonSet className={styles.buttonSet}>
-        <Button kind="secondary" onClick={closeWorkspace} disabled={isSubmitting}>
-          {t('cancel', 'Cancel')}
-        </Button>
-        <Button kind="primary" type="submit" disabled={isSubmitting || !isFormValid || isLoadingPatient}>
-          {isSubmitting ? (
-            <InlineLoading description={t('submitting', 'Submitting...')} />
-          ) : (
-            t('submitReferral', 'Submit Referral')
+                    if (validationErrors.clinicalNotes) {
+                      setValidationErrors((prev) => ({ ...prev, clinicalNotes: undefined }));
+                    }
+                  }}
+                  invalid={!!validationErrors.clinicalNotes}
+                  invalidText={validationErrors.clinicalNotes}
+                />
+              </Column>
+            </>
           )}
-        </Button>
-      </ButtonSet>
-    </Form>
+        </Stack>
+        <ButtonSet className={styles.buttonSet}>
+          <Button kind="secondary" onClick={closeWorkspace} disabled={isSubmitting}>
+            {t('cancel', 'Cancel')}
+          </Button>
+          <Button kind="primary" type="submit" disabled={isSubmitting || !isFormValid || isLoadingPatient}>
+            {isSubmitting ? (
+              <InlineLoading description={t('submitting', 'Submitting...')} />
+            ) : (
+              t('submitReferral', 'Submit Referral')
+            )}
+          </Button>
+        </ButtonSet>
+      </Form>
+    </Workspace2>
   );
 };
 

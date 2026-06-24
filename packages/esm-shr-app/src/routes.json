@@ -1,80 +1,94 @@
 {
-    "$schema": "https://json.openmrs.org/routes.schema.json",
-    "backendDependencies": {
-        "kenyaemr": "^19.0.0"
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "kenyaemr": "^19.0.0"
+  },
+  "pages": [
+    {
+      "component": "shrHome",
+      "route": "referrals"
+    }
+  ],
+  "extensions": [
+    {
+      "name": "patient-chart-shr-summary-dashboard-link",
+      "component": "shrSummaryDashboardLink",
+      "meta": {
+        "columns": 1,
+        "columnSpan": 1,
+        "slot": "patient-chart-shr-summary-dashboard-slot",
+        "path": "SHR Portal"
+      },
+      "featureFlag": "healthInformationExchange"
     },
-    "pages": [
-        {
-            "component": "shrHome",
-            "route": "referrals"
-        }
-    ],
-    "extensions": [
-        {
-            "component": "shrAuthorizationForm",
-            "name": "shr-authorization-form"
-        },
-        {
-            "name": "patient-chart-shr-summary-dashboard-link",
-            "component": "shrSummaryDashboardLink",
-            "meta": {
-                "columns": 1,
-                "columnSpan": 1,
-                "slot": "patient-chart-shr-summary-dashboard-slot",
-                "path": "SHR Portal"
-            },
-            "featureFlag": "healthInformationExchange"
-        },
-        {
-            "name": "SHR Portal",
-            "slot": "patient-chart-shr-summary-dashboard-slot",
-            "component": "patientSHRSummary",
-            "meta": {
-                "columnSpan": 4
-            }
-        },
-        {
-            "name": "referrals",
-            "slot": "referrals-slot",
-            "component": "referralWrap"
-        },
-        {
-            "name": "referrals-link",
-            "slot": "homepage-dashboard-slot",
-            "component": "ReferralsDashboardLink",
-            "meta": {
-                "name": "referrals",
-                "title": "referrals",
-                "slot": "referrals-slot"
-            }
-        },
-        {
-            "name": "referral-reasons-dialog",
-            "component": "referralReasonsDialogPopup"
-        },
-        {
-            "name": "facility-referral-form",
-            "component": "facilityRefferalForm"
-        },
-        {
-            "name": "referral-view-link",
-            "component": "referralLink",
-            "order": 13,
-            "meta": {
-                "columns": 1,
-                "columnSpan": 1,
-                "slot": "patient-chart-referral-slot",
-                "path": "referral",
-                "layoutMode": "anchored"
-            }
-        },
-        {
-            "name": "referral-view",
-            "slot": "patient-chart-referral-slot",
-            "component": "referralWidget",
-            "order": 0,
-            "online": true,
-            "offline": false
-        }
-    ]
+    {
+      "name": "SHR Portal",
+      "slot": "patient-chart-shr-summary-dashboard-slot",
+      "component": "patientSHRSummary",
+      "meta": {
+        "columnSpan": 4
+      }
+    },
+    {
+      "name": "referrals",
+      "slot": "referrals-slot",
+      "component": "referralWrap"
+    },
+    {
+      "name": "referrals-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "ReferralsDashboardLink",
+      "meta": {
+        "name": "referrals",
+        "title": "referrals",
+        "slot": "referrals-slot"
+      }
+    },
+    {
+      "name": "referral-reasons-dialog",
+      "component": "referralReasonsDialogPopup"
+    },
+    {
+      "name": "referral-view-link",
+      "component": "referralLink",
+      "order": 13,
+      "meta": {
+        "columns": 1,
+        "columnSpan": 1,
+        "slot": "patient-chart-referral-slot",
+        "path": "referral",
+        "layoutMode": "anchored"
+      }
+    },
+    {
+      "name": "referral-view",
+      "slot": "patient-chart-referral-slot",
+      "component": "referralWidget",
+      "order": 0,
+      "online": true,
+      "offline": false
+    }
+  ],
+  "workspaces2": [
+    {
+      "name": "facility-referral-form",
+      "component": "facilityRefferalForm",
+      "window": "referral-workspace-window"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "referral-workspace-window",
+      "group": "referral-workspace-group",
+      "canMaximize": false,
+      "width": "wider"
+    }
+  ],
+  "workspaceGroups2": [
+    {
+      "name": "referral-workspace-group",
+      "persistence": "closeable",
+      "closeable": true
+    }
+  ]
 }

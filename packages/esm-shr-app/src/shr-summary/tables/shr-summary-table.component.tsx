@@ -1,27 +1,25 @@
 import { Button, DataTableSkeleton, Layer, Tile } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
-import { launchWorkspace } from '@openmrs/esm-framework';
+import { showModal, showSnackbar } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, ErrorState } from '@openmrs/esm-patient-common-lib';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import usePatient from '../../hooks/usePatient';
 import SharedHealthRecordsSummary from '../../shrpatient-summary/shrpatient-summary.component';
+import { sendSHAOtp, verifyOtp } from '../shr-summary.resource';
 import styles from './shr-tables.scss';
 
-interface PatientSHRSummaryTableProps {}
-
-export function getPatientUuidFromUrl(): string {
-  const match = /\/patient\/([a-zA-Z0-9\-]+)\/?/.exec(location.pathname);
-  const patientUuidFromUrl = match && match[1];
-  return patientUuidFromUrl;
+interface PatientSHRSummaryTableProps {
+  patientUuid: string;
+  patient: fhir.Patient;
 }
 
-const PatientSHRSummaryTable: React.FC<PatientSHRSummaryTableProps> = () => {
+const PatientSHRSummaryTable: React.FC<PatientSHRSummaryTableProps> = ({ patient, patientUuid }) => {
   const { t } = useTranslation();
-
-  const patientUuid = getPatientUuidFromUrl();
-  const [accessGranted, setAccessGranted] = useState(false);
-  const { error, isLoading, patientPhoneNumber, patientName } = usePatient(patientUuid);
+  const idRef = useRef<string>();
+  const [accessGranted, setAccessGranted] = useState(true);
+  const [isAuthorizing, setIsAuthorizing] = useState(false);
+  const { error, isLoading, patientPhoneNumber, patientName, nationalId } = usePatient(patientUuid);
 
   if (isLoading) {
     return <DataTableSkeleton />;
@@ -31,14 +29,48 @@ const PatientSHRSummaryTable: React.FC<PatientSHRSummaryTableProps> = () => {
   }
 
   const handleInitiateAuthorization = () => {
-    launchWorkspace('shr-authorization-form', {
-      workspaceTitle: 'SHR Pull Authorization Form',
-      patientUuid,
-      onVerified: () => {
-        setAccessGranted(true);
+    const dispose = showModal('otp-verification-modal', {
+      onClose: () => {
+        if (!accessGranted) {
+          setIsAuthorizing(false);
+        }
+        dispose();
       },
-      patientPhoneNumber,
-      patientName,
+      phoneNumber: patientPhoneNumber || '',
+      otpLength: 5,
+      expiryMinutes: 5,
+      centerBoxes: true,
+      onRequestOtp: async (_phone: string) => {
+        const { status, id } = await sendSHAOtp(_phone, nationalId as string);
+        idRef.current = id;
+        if (status !== 'success') {
+          throw new Error(t('otpFailed', 'Failed to send OTP'));
+        }
+      },
+
+      onVerify: async (enteredOtp: string) => {
+        const { status, data, error } = await verifyOtp(enteredOtp, idRef.current as string);
+        if (status !== 'success') {
+          throw new Error(t('authorizeFailed', 'Authorization failed'));
+        }
+      },
+
+      onVerificationSuccess: () => {
+        dispose();
+        setIsAuthorizing(false);
+        setAccessGranted(true);
+        showSnackbar({
+          title: t('success', 'Success'),
+          subtitle: t('otpVerificationSuccessMessage', 'OTP Vefification succesfull'),
+          kind: 'success',
+        });
+      },
+
+      onCleanup: () => {
+        if (!accessGranted) {
+          setIsAuthorizing(false);
+        }
+      },
     });
   };
 

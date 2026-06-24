@@ -13,6 +13,8 @@ import {
 } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import capitalize from 'lodash/capitalize';
+import { FHIRResource } from '@openmrs/esm-framework';
+import { EmptyState } from '@openmrs/esm-patient-common-lib/src';
 
 type DependentProps = {
   patientUuid: string;
@@ -76,7 +78,12 @@ const DependentsComponent: React.FC<DependentProps> = ({ patient, patientUuid })
   }
 
   if (dependents.length === 0) {
-    return <div>{t('noDependentsFoundFromHIE', 'No dependents found from HIE')}</div>;
+    return (
+      <EmptyState
+        headerTitle={t('hieDependants', 'HIE Dependants')}
+        displayText={t('hieDependants', 'HIE Dependants')}
+      />
+    );
   }
 
   return (
