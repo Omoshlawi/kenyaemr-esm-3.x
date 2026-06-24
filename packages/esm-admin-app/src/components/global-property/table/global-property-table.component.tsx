@@ -2,28 +2,25 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   Button,
   DataTable,
-  DataTableSkeleton,
+  OverflowMenu,
+  OverflowMenuItem,
   Pagination,
-  Search,
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableHeader,
   TableRow,
+  TableToolbar,
+  TableToolbarContent,
+  TableToolbarSearch,
+  Tag,
   type DataTableHeader,
 } from '@carbon/react';
-import { Add, Edit, TrashCan } from '@carbon/react/icons';
+import { Add, Upload } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
-import {
-  ErrorCard,
-  isDesktop,
-  launchWorkspace2,
-  showModal,
-  useDebounce,
-  useLayoutType,
-  usePaginationInfo,
-} from '@openmrs/esm-framework';
+import { ErrorCard, launchWorkspace2, showModal, useDebounce, usePaginationInfo } from '@openmrs/esm-framework';
 
 import { useGlobalProperties } from '../hooks/useGlobalProperty';
 import styles from './global-property-table.scss';
@@ -39,15 +36,12 @@ type GlobalPropertyRow = {
 
 const GlobalPropertyTable: React.FC = () => {
   const { t } = useTranslation();
-  const layoutType = useLayoutType();
-  const desktop = isDesktop(layoutType);
 
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   const {
-    isLoading,
     data: globalProperties = [],
     error,
     goTo,
@@ -66,7 +60,7 @@ const GlobalPropertyTable: React.FC = () => {
     [t],
   );
 
-  const rows: Array<GlobalPropertyRow> = useMemo(
+  const tableRows: Array<GlobalPropertyRow> = useMemo(
     () =>
       globalProperties.map((gp, idx) => ({
         id: gp?.uuid ?? `gp-${idx}`,
@@ -77,8 +71,9 @@ const GlobalPropertyTable: React.FC = () => {
   );
 
   const handleSearchChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setSearchTerm(event.target.value);
+    (event: React.ChangeEvent<HTMLInputElement> | '', value?: string) => {
+      const searchValue = typeof event === 'string' ? value ?? '' : event.target.value;
+      setSearchTerm(searchValue);
       if (currentPage !== 1) {
         goTo(1);
       }
@@ -106,6 +101,12 @@ const GlobalPropertyTable: React.FC = () => {
     [globalProperties, mutate],
   );
 
+  const openUploadImageWorkspace = useCallback(() => {
+    launchWorkspace2('upload-logo-workspace', {
+      mutateGlobalProperty: mutate,
+    });
+  }, [mutate]);
+
   const handleEdit = useCallback(
     (row: GlobalPropertyRow) => {
       const systemSetting = globalProperties.find((gp) => gp.uuid === row.id);
@@ -126,95 +127,6 @@ const GlobalPropertyTable: React.FC = () => {
     [mutate],
   );
 
-  const renderContent = () => {
-    if (isLoading) {
-      return (
-        <DataTableSkeleton
-          aria-label={t('globalProperties', 'Global properties')}
-          headers={headers}
-          showHeader
-          showToolbar
-        />
-      );
-    }
-
-    if (rows.length === 0) {
-      return (
-        <p className={styles.emptyState}>
-          {debouncedSearchTerm
-            ? t('noMatchingGlobalProperties', 'No global properties match your search')
-            : t('noGlobalProperties', 'No global properties to display')}
-        </p>
-      );
-    }
-
-    return (
-      <>
-        <DataTable useZebraStyles size={desktop ? 'sm' : 'md'} rows={rows} headers={headers}>
-          {({ rows: renderRows, headers: renderHeaders, getTableProps, getHeaderProps, getRowProps, getCellProps }) => (
-            <Table {...getTableProps()}>
-              <TableHead>
-                <TableRow>
-                  {renderHeaders.map((header) => (
-                    <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
-                  ))}
-                  <TableHeader>
-                    <span className={styles.visuallyHidden}>{t('actions', 'Actions')}</span>
-                  </TableHeader>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {renderRows.map((row) => {
-                  const sourceRow = rows.find((r) => r.id === row.id)!;
-                  return (
-                    <TableRow {...getRowProps({ row })}>
-                      {row.cells.map((cell) => (
-                        <TableCell {...getCellProps({ cell })}>{cell.value}</TableCell>
-                      ))}
-                      <TableCell className={styles.actionsCell}>
-                        <Button
-                          kind="ghost"
-                          size="sm"
-                          renderIcon={Edit}
-                          iconDescription={t('edit', 'Edit')}
-                          hasIconOnly
-                          onClick={() => handleEdit(sourceRow)}
-                        />
-                        <Button
-                          kind="danger--ghost"
-                          size="sm"
-                          renderIcon={TrashCan}
-                          iconDescription={t('delete', 'Delete')}
-                          hasIconOnly
-                          onClick={() => handleDelete(sourceRow)}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </DataTable>
-
-        <Pagination
-          itemsPerPageText={t('itemsPerPage', 'Items per page:')}
-          forwardText={t('nextPage', 'Next page')}
-          backwardText={t('previousPage', 'Previous page')}
-          itemRangeText={(min, max, total) =>
-            t('minMaxItems', '{{min}}-{{max}} of {{total}} items', { min, max, total })
-          }
-          pageRangeText={(_current, total) => t('pageRangeText', 'of {{count}} pages', { count: total })}
-          page={currentPage}
-          pageSize={pageSize}
-          pageSizes={pageSizes?.length > 0 ? pageSizes : PAGE_SIZE_OPTIONS}
-          totalItems={totalCount ?? 0}
-          onChange={handlePaginationChange}
-        />
-      </>
-    );
-  };
-
   if (error) {
     return (
       <div className={styles.dataTableContainer}>
@@ -224,24 +136,104 @@ const GlobalPropertyTable: React.FC = () => {
   }
 
   return (
-    <div className={styles.dataTableContainer}>
-      <div className={styles.tableHeaderSection}>
-        <Search
-          id="global-property-search"
-          labelText=""
-          placeholder={t('searchGlobalPropertiesByName', 'Search global property by name')}
-          closeButtonLabelText={t('clearSearchButton', 'Clear search button')}
-          size={desktop ? 'md' : 'lg'}
-          value={searchTerm}
-          onChange={handleSearchChange}
-          type="search"
-        />
-        <Button size={desktop ? 'md' : 'lg'} kind="ghost" renderIcon={Add} onClick={() => openWorkspace()}>
-          {t('addGlobalProperty', 'Add new global property')}
-        </Button>
-      </div>
+    <div className={styles.container}>
+      <DataTable size="sm" rows={tableRows} headers={headers} isSortable useZebraStyles>
+        {({
+          rows,
+          headers,
+          getHeaderProps,
+          getRowProps,
+          getBatchActionProps,
+          getToolbarProps,
+          getTableProps,
+          getTableContainerProps,
+        }) => {
+          const batchActionProps = getBatchActionProps();
 
-      {renderContent()}
+          return (
+            <TableContainer
+              title={t('globalProperty', 'Global Property')}
+              description={t(
+                'globalPropertyDescription',
+                'A list of all global properties for the system. Filter by search term to find specific properties.',
+              )}
+              {...getTableContainerProps()}>
+              <TableToolbar {...getToolbarProps()}>
+                <TableToolbarContent aria-hidden={batchActionProps.shouldShowBatchActions}>
+                  <TableToolbarSearch
+                    persistent
+                    onChange={handleSearchChange}
+                    placeholder={t('searchForGlobalProperties', 'Search for global properties')}
+                  />
+                  <Button renderIcon={Add} onClick={() => openWorkspace()} size="sm" kind="primary">
+                    {t('addGlobalProperty', 'Add global property')}
+                  </Button>
+                  <Button renderIcon={Upload} onClick={openUploadImageWorkspace} size="sm" kind="tertiary">
+                    {t('uploadImage', 'Upload image')}
+                  </Button>
+                </TableToolbarContent>
+              </TableToolbar>
+
+              <Table {...getTableProps()} aria-label="Global properties">
+                <TableHead>
+                  <TableRow>
+                    {headers.map((header) => (
+                      <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
+                    ))}
+                    <TableHeader aria-label={t('rowActions', 'Row actions')} />
+                  </TableRow>
+                </TableHead>
+
+                <TableBody>
+                  {rows.map((row, index) => {
+                    return (
+                      <React.Fragment key={row.id}>
+                        <TableRow {...getRowProps({ row })}>
+                          {row.cells.map((cell) => {
+                            if (cell.info.header === 'status') {
+                              return (
+                                <TableCell key={cell.id}>
+                                  <Tag size="sm">{cell.value}</Tag>
+                                </TableCell>
+                              );
+                            }
+                            return <TableCell key={cell.id}>{cell.value}</TableCell>;
+                          })}
+                          <TableCell className="cds--table-column-menu">
+                            <OverflowMenu flipped aria-label="overflow-menu">
+                              <OverflowMenuItem
+                                onClick={() => handleEdit(tableRows[index])}
+                                itemText={t('edit', 'Edit')}
+                              />
+                              <OverflowMenuItem
+                                isDelete
+                                onClick={() => handleDelete(tableRows[index])}
+                                itemText={t('delete', 'Delete')}
+                              />
+                            </OverflowMenu>
+                          </TableCell>
+                        </TableRow>
+                      </React.Fragment>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          );
+        }}
+      </DataTable>
+      <Pagination
+        itemsPerPageText={t('itemsPerPage', 'Items per page:')}
+        forwardText={t('nextPage', 'Next page')}
+        backwardText={t('previousPage', 'Previous page')}
+        itemRangeText={(min, max, total) => t('minMaxItems', '{{min}}-{{max}} of {{total}} items', { min, max, total })}
+        pageRangeText={(_current, total) => t('pageRangeText', 'of {{count}} pages', { count: total })}
+        page={currentPage}
+        pageSize={pageSize}
+        pageSizes={pageSizes?.length > 0 ? pageSizes : PAGE_SIZE_OPTIONS}
+        totalItems={totalCount ?? 0}
+        onChange={handlePaginationChange}
+      />
     </div>
   );
 };

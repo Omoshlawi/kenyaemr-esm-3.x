@@ -1,4 +1,5 @@
 @use '@carbon/layout';
+@use '@carbon/colors';
 
 .dataTableContainer {
   height: 100%;
@@ -31,4 +32,13 @@
   padding: 2rem;
   text-align: center;
   color: var(--cds-text-secondary);
+}
+
+.container {
+  margin: layout.$layout-01;
+  border: 1px solid colors.$gray-20;
+
+  :global(.cds--table-toolbar) {
+    position: relative !important;
+  }
 }

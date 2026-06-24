@@ -92,6 +92,11 @@
       "name": "global-property-workspace",
       "component": "globalPropertyWorkspace",
       "window": "esm-admin-workspace-window"
+    },
+    {
+      "name": "upload-logo-workspace",
+      "component": "uploadLogoWorkspace",
+      "window": "esm-admin-workspace-window"
     }
   ],
   "workspaceWindows2": [

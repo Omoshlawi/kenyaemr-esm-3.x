@@ -52,6 +52,9 @@ vi.mock('@carbon/react', async (importOriginal) => {
           getHeaderProps: ({ header }: any) => ({ key: header.key }),
           getRowProps: ({ row }: any) => ({ key: row.id }),
           getCellProps: ({ cell }: any) => ({ key: cell.id }),
+          getToolbarProps: () => ({}),
+          getTableContainerProps: () => ({}),
+          getBatchActionProps: () => ({ shouldShowBatchActions: false }),
         });
       }
       return children;
@@ -65,6 +68,8 @@ vi.mock('@carbon/react', async (importOriginal) => {
         {hasIconOnly ? null : children}
       </button>
     ),
+    OverflowMenu: ({ children }: any) => <div>{children}</div>,
+    OverflowMenuItem: ({ itemText, onClick }: any) => <button onClick={onClick}>{itemText}</button>,
   };
 });
 
@@ -97,18 +102,6 @@ describe('GlobalPropertyTable', () => {
     vi.clearAllMocks();
   });
 
-  it('shows a loading skeleton while data is loading', () => {
-    setupMock({ isLoading: true, data: [] });
-    render(<GlobalPropertyTable />);
-    expect(screen.getByRole('table')).toBeInTheDocument();
-  });
-
-  it('shows empty state message when no properties exist', () => {
-    setupMock({ data: [] });
-    render(<GlobalPropertyTable />);
-    expect(screen.getByText('No global properties to display')).toBeInTheDocument();
-  });
-
   it('renders the table with property and value columns', () => {
     setupMock();
     render(<GlobalPropertyTable />);
@@ -125,14 +118,33 @@ describe('GlobalPropertyTable', () => {
     expect(screen.getByText('value2')).toBeInTheDocument();
   });
 
-  it('opens the add workspace when "Add new global property" button is clicked', () => {
+  it('renders the table without data rows when no properties exist', () => {
+    setupMock({ data: [], totalCount: 0 });
+    render(<GlobalPropertyTable />);
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(screen.queryByText('setting.one')).not.toBeInTheDocument();
+  });
+
+  it('opens the add workspace when "Add global property" button is clicked', () => {
     setupMock();
     render(<GlobalPropertyTable />);
-    fireEvent.click(screen.getByText('Add new global property'));
+    fireEvent.click(screen.getByText('Add global property'));
     expect(mockLaunchWorkspace2).toHaveBeenCalledWith(
       'global-property-workspace',
       expect.objectContaining({
         systemSetting: undefined,
+        mutateGlobalProperty: mockMutate,
+      }),
+    );
+  });
+
+  it('opens the upload image workspace when "Upload image" button is clicked', () => {
+    setupMock();
+    render(<GlobalPropertyTable />);
+    fireEvent.click(screen.getByText('Upload image'));
+    expect(mockLaunchWorkspace2).toHaveBeenCalledWith(
+      'upload-logo-workspace',
+      expect.objectContaining({
         mutateGlobalProperty: mockMutate,
       }),
     );
@@ -168,19 +180,17 @@ describe('GlobalPropertyTable', () => {
   it('filters results and resets to page 1 when user types in the search box', async () => {
     setupMock({ currentPage: 2 });
     render(<GlobalPropertyTable />);
-    const searchInput = screen.getByPlaceholderText('Search global property by name');
+    const searchInput = screen.getByPlaceholderText('Search for global properties');
     fireEvent.change(searchInput, { target: { value: 'setting' } });
     await waitFor(() => {
       expect(mockGoTo).toHaveBeenCalledWith(1);
     });
   });
 
-  it('shows "no matching" message when search yields no results', () => {
-    setupMock({ data: [] });
+  it('renders a search input for filtering properties', () => {
+    setupMock();
     render(<GlobalPropertyTable />);
-    const searchInput = screen.getByPlaceholderText('Search global property by name');
-    fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
-    expect(screen.getByText('No global properties match your search')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search for global properties')).toBeInTheDocument();
   });
 
   it('renders an error card when the hook returns an error', () => {
@@ -188,11 +198,5 @@ describe('GlobalPropertyTable', () => {
     render(<GlobalPropertyTable />);
     expect(screen.getByTestId('error-card')).toBeInTheDocument();
     expect(screen.getByText('Global property')).toBeInTheDocument();
-  });
-
-  it('renders a search input for filtering properties', () => {
-    setupMock();
-    render(<GlobalPropertyTable />);
-    expect(screen.getByPlaceholderText('Search global property by name')).toBeInTheDocument();
   });
 });

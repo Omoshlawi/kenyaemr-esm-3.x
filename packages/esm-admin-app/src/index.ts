@@ -80,6 +80,10 @@ export const globalPropertyWorkspace = getAsyncLifecycle(
   () => import('./components/global-property/workspace/global-property.workspace'),
   options,
 );
+export const uploadLogoWorkspace = getAsyncLifecycle(
+  () => import('./components/global-property/workspace/upload-logo.workspace'),
+  options,
+);
 export const deleteGlobalPropertyModal = getAsyncLifecycle(
   () => import('./components/global-property/modal/delete-global-property-modal.component'),
   options,
