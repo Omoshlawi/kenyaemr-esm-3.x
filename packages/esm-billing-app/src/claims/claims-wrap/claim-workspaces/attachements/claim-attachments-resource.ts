@@ -104,3 +104,94 @@ export const useClaimAttachments = (consentToken: string | null) => {
     mutate,
   };
 };
+
+export const moveClaimToResubmit = async (params: {
+  consentToken: string;
+  t: TFunction;
+}): Promise<{ ok: boolean; error?: string; alreadyOpenForEdit?: boolean }> => {
+  const { consentToken, t } = params;
+  if (!consentToken) {
+    return { ok: false, error: t('noConsentToken', 'No consent token provided') };
+  }
+
+  try {
+    const response = await openmrsFetch(`${restBaseUrl}/virtualclaims/billing/resubmit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { consent_token: consentToken },
+    });
+    if (!response.ok) {
+      const upstream = extractUpstreamError(response.data);
+      return {
+        ok: false,
+        error:
+          upstream ??
+          t('moveToResubmitHttpError', 'Could not move claim to resubmit (HTTP {{status}})', {
+            status: response.status,
+          }),
+      };
+    }
+    const data = response.data as {
+      success?: boolean;
+      already_open_for_edit?: boolean;
+      error?: string;
+    };
+    if (data?.success === false) {
+      return { ok: false, error: data.error ?? t('moveToResubmitFailed', 'Could not move claim to resubmit') };
+    }
+    return { ok: true, alreadyOpenForEdit: data?.already_open_for_edit };
+  } catch (err) {
+    return {
+      ok: false,
+      error: extractFetchError(err, t('moveToResubmitFailed', 'Could not move claim to resubmit. Please try again.')),
+    };
+  }
+};
+
+export const retireClaimAttachment = async (params: {
+  consentToken: string;
+  attachmentUuid: string;
+  interventionCode: string;
+  t: TFunction;
+}): Promise<{ ok: boolean; error?: string; retrievalId?: string }> => {
+  const { consentToken, attachmentUuid, interventionCode, t } = params;
+  if (!consentToken) {
+    return { ok: false, error: t('noConsentToken', 'No consent token provided') };
+  }
+  if (!attachmentUuid) {
+    return { ok: false, error: t('noAttachmentUuid', 'No attachment selected') };
+  }
+  if (!interventionCode) {
+    return { ok: false, error: t('noInterventionCode', 'No intervention code provided') };
+  }
+
+  try {
+    const response = await openmrsFetch(`${restBaseUrl}/virtualclaims/billing/attachments`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        consent_token: consentToken,
+        attachment_uuid: attachmentUuid,
+        intervention_code: interventionCode,
+      },
+    });
+    if (!response.ok) {
+      const upstream = extractUpstreamError(response.data);
+      return {
+        ok: false,
+        error:
+          upstream ?? t('retireAttachmentHttpError', 'Retire failed (HTTP {{status}})', { status: response.status }),
+      };
+    }
+    const data = response.data as { success?: boolean; retrieval_id?: string; error?: string };
+    if (data?.success === false) {
+      return { ok: false, error: data.error ?? t('retireFailed', 'Retire failed') };
+    }
+    return { ok: true, retrievalId: data?.retrieval_id };
+  } catch (err) {
+    return {
+      ok: false,
+      error: extractFetchError(err, t('retireFailed', 'Failed to retire attachment. Please try again.')),
+    };
+  }
+};

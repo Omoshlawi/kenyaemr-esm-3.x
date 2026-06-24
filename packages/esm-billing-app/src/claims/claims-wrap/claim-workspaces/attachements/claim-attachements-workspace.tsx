@@ -33,6 +33,8 @@ type ClaimAttachmentsWorkspaceProps = {
   applicableDocumentTypes: ReadonlyArray<string>;
   alreadyUploadedTypes: ReadonlyArray<string>;
   mutate: () => void;
+  preselectedDocumentType?: string;
+  replacementNotice?: { documentType: string; filename?: string };
 };
 
 type RowStatus = 'pending' | 'uploading' | 'succeeded' | 'already_sent' | 'failed';
@@ -60,6 +62,7 @@ const ClaimAttachmentsWorkspace: React.FC<Workspace2DefinitionProps<ClaimAttachm
 }) => {
   const { consentToken, interventionCode, interventionName, applicableDocumentTypes, alreadyUploadedTypes, mutate } =
     workspaceProps ?? ({} as ClaimAttachmentsWorkspaceProps);
+  const { preselectedDocumentType, replacementNotice } = workspaceProps ?? ({} as ClaimAttachmentsWorkspaceProps);
 
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -109,6 +112,20 @@ const ClaimAttachmentsWorkspace: React.FC<Workspace2DefinitionProps<ClaimAttachm
     },
     [watchedAttachments, availableDocumentTypes],
   );
+
+  React.useEffect(() => {
+    if (!preselectedDocumentType) {
+      return;
+    }
+    const tid = setTimeout(() => {
+      const current = getValues('attachments.0.document_type');
+      if (!current) {
+        setValue('attachments.0.document_type', preselectedDocumentType);
+      }
+    }, 0);
+    return () => clearTimeout(tid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselectedDocumentType, getValues, setValue]);
 
   const pendingRowsCount = useMemo(() => {
     return attachmentFields.filter((f) => {

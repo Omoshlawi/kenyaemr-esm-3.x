@@ -39,11 +39,17 @@ import {
   launchWorkspace2,
   restBaseUrl,
   useVisit,
+  showModal,
+  showSnackbar,
 } from '@openmrs/esm-framework';
 import { BillingConfig } from '../../config-schema';
 import { useCurrencyFormatting } from '../../helpers/currency';
 import { TFunction } from 'i18next';
-import { useClaimAttachments } from './claim-workspaces/attachements/claim-attachments-resource';
+import {
+  useClaimAttachments,
+  retireClaimAttachment,
+  moveClaimToResubmit,
+} from './claim-workspaces/attachements/claim-attachments-resource';
 import { useClaimDoctors } from './claim-workspaces/doctors/claim-doctors-resource';
 
 interface ClaimsMainProps {
@@ -242,7 +248,6 @@ const ClaimsTable: React.FC<{
   const totalItems = claims.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
-  // Keep the page in range when the claim set shrinks (e.g. after a sync/mutate).
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
@@ -287,6 +292,7 @@ const ClaimsTable: React.FC<{
         interventions: (claim.interventions ?? []).map((i) => i.intervention_code),
         paymentMechanism: claim.interventions?.[0]?.payment_mechanism,
         isResubmission: isResubmit,
+        providerWorkflowState: claim.provider_workflow_state,
         totalAmount,
         mutate,
       },
@@ -452,6 +458,33 @@ const ClaimDetailsPanel: React.FC<{
     mutateAttachments();
     mutateDoctors();
   }, [mutate, mutateAttachments, mutateDoctors]);
+  const isEditable = claim.provider_workflow_state === 'DRAFT' || claim.provider_workflow_state === 'DRAFT_RESUBMIT';
+  const canMoveToResubmit = claim.provider_workflow_state === 'SUBMITTED' && claim.payer_workflow_state === 'SENT_BACK';
+  const handleMoveToResubmit = useCallback(async () => {
+    const result = await moveClaimToResubmit({
+      consentToken: claim.authorization_code,
+      t,
+    });
+    if (!result.ok) {
+      showSnackbar({
+        title: t('moveToResubmitFailed', 'Could not open claim for changes'),
+        subtitle: result.error,
+        kind: 'error',
+      });
+      return;
+    }
+    combinedMutate();
+    showSnackbar({
+      title: result.alreadyOpenForEdit
+        ? t('claimAlreadyOpen', 'Claim is already open for changes')
+        : t('claimOpenedForChanges', 'Claim opened for changes'),
+      subtitle: t(
+        'claimOpenedForChangesSubtitle',
+        'You can now replace or add attachments, edit lines, and submit back to SHA when ready.',
+      ),
+      kind: 'success',
+    });
+  }, [claim.authorization_code, combinedMutate, t]);
 
   const preauthsByIntervention = useMemo(() => {
     const map = new Map<string, Array<(typeof claim.preauths)[number]>>();
@@ -510,6 +543,85 @@ const ClaimDetailsPanel: React.FC<{
     [claim.authorization_code, attachmentsByCode, combinedMutate, t],
   );
 
+  const handleReplaceAttachment = useCallback(
+    (iv: PatientClaimIntervention, attachment: { uuid: string; document_type: string; filename?: string }) => {
+      const dispose = showModal('replace-claim-attachment-modal', {
+        documentType: attachment.document_type,
+        filename: attachment.filename,
+        onConfirm: async () => {
+          const retireResult = await retireClaimAttachment({
+            consentToken: claim.authorization_code,
+            attachmentUuid: attachment.uuid,
+            interventionCode: iv.intervention_code,
+            t,
+          });
+          if (!retireResult.ok) {
+            showSnackbar({
+              title: t('retireFailed', 'Could not retire attachment'),
+              subtitle: retireResult.error,
+              kind: 'error',
+            });
+            return;
+          }
+
+          combinedMutate();
+
+          showSnackbar({
+            title: t('attachmentRetired', 'Attachment retired'),
+            subtitle: t(
+              'attachmentRetiredSubtitle',
+              'SHA has cleared the previous {{type}}. Upload the replacement to complete.',
+              { type: attachment.document_type.replace(/_/g, ' ') },
+            ),
+            kind: 'info',
+          });
+
+          launchWorkspace2(
+            'claim-attachments-workspace',
+            {
+              workspaceTitle: t('uploadReplacementAttachment', 'Upload replacement attachment'),
+              consentToken: claim.authorization_code,
+              interventionCode: iv.intervention_code,
+              interventionName: iv.intervention_name,
+              applicableDocumentTypes: [attachment.document_type],
+              alreadyUploadedTypes: [],
+              preselectedDocumentType: attachment.document_type,
+              replacementNotice: {
+                documentType: attachment.document_type,
+                filename: attachment.filename,
+              },
+              mutate: combinedMutate,
+            },
+            {},
+            {},
+          );
+        },
+        closeModal: () => dispose(),
+      });
+    },
+    [claim.authorization_code, combinedMutate, t],
+  );
+
+  const handleAddDocumentForIntervention = useCallback(
+    (iv: PatientClaimIntervention, remainingDocTypes: ReadonlyArray<string>) => {
+      launchWorkspace2(
+        'claim-attachments-workspace',
+        {
+          workspaceTitle: t('addMissingDocument', 'Add missing document'),
+          consentToken: claim.authorization_code,
+          interventionCode: iv.intervention_code,
+          interventionName: iv.intervention_name,
+          applicableDocumentTypes: remainingDocTypes,
+          alreadyUploadedTypes: [],
+          mutate: combinedMutate,
+        },
+        {},
+        {},
+      );
+    },
+    [claim.authorization_code, combinedMutate, t],
+  );
+
   return (
     <div className={styles.expandedContent}>
       {claim.sync_status === 'ERROR' && claim.sync_error_message && (
@@ -522,19 +634,39 @@ const ClaimDetailsPanel: React.FC<{
           className={styles.syncErrorNotification}
         />
       )}
+      {claim.provider_workflow_state === 'DRAFT_RESUBMIT' && (
+        <InlineNotification
+          kind="info"
+          lowContrast
+          hideCloseButton
+          title={t('claimOpenForChanges', 'Claim is open for changes')}
+          subtitle={t('claimOpenForChangesSubtitle', 'You can do edits, and submit back to SHA when ready')}
+          className={styles.payerNotice}
+        />
+      )}
+
       {(claim.payer_workflow_state ||
         (claim.payer_notes?.length ?? 0) > 0 ||
         (claim.payer_transitions?.length ?? 0) > 0) && (
         <section className={styles.payerActivitySection}>
           {claim.payer_workflow_state === 'SENT_BACK' && (
-            <InlineNotification
-              kind="error"
-              lowContrast
-              hideCloseButton
-              title={t('shaBouncedClaim', 'SHA returned this claim for action')}
-              subtitle={claim.payer_workflow_display_name ?? ''}
-              className={styles.payerNotice}
-            />
+            <div className={styles.payerNoticeWrap}>
+              <InlineNotification
+                kind="error"
+                lowContrast
+                hideCloseButton
+                title={t('shaBouncedClaim', 'SHA returned this claim for action')}
+                subtitle={claim.payer_workflow_display_name ?? ''}
+                className={styles.payerNotice}
+              />
+              {canMoveToResubmit && (
+                <div className={styles.payerNoticeActions}>
+                  <Button size="sm" kind="danger--tertiary" renderIcon={Renew} onClick={handleMoveToResubmit}>
+                    {t('openForChanges', 'Open for changes')}
+                  </Button>
+                </div>
+              )}
+            </div>
           )}
 
           <div className={styles.payerActivityCard}>
@@ -744,6 +876,24 @@ const ClaimDetailsPanel: React.FC<{
                               {t('uploadAttachments', 'Upload attachments')}
                             </Button>
                           )}
+                          {tab === 'resubmission' &&
+                            isEditable &&
+                            (() => {
+                              const remaining = requiredDocs.filter((d) => !uploadedTypes.has(d));
+                              if (remaining.length === 0) {
+                                return null;
+                              }
+                              return (
+                                <Button
+                                  size="sm"
+                                  kind="tertiary"
+                                  renderIcon={DocumentAdd}
+                                  className={styles.addDocBtn}
+                                  onClick={() => handleAddDocumentForIntervention(iv, remaining)}>
+                                  {t('addDocumentN', '+ Add document ({{count}})', { count: remaining.length })}
+                                </Button>
+                              );
+                            })()}
                         </div>
 
                         {requiredDocs.length > 0 && (
@@ -766,18 +916,36 @@ const ClaimDetailsPanel: React.FC<{
                             </div>
                             {uploadedAttachments.map((a) => (
                               <li key={a.uuid} className={styles.ivAttachmentRow}>
-                                {a.document_type}
-                                {a.uuid ? (
-                                  <a
-                                    href={`/openmrs${restBaseUrl}/virtualclaims/billing/attachments/${a.uuid}/file`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={styles.viewLink}>
-                                    {t('view', 'View')} ↗
-                                  </a>
-                                ) : (
-                                  <span className={styles.muted}>—</span>
-                                )}
+                                <span>{a.document_type}</span>
+                                <div className={styles.attachmentActions}>
+                                  {a.uuid ? (
+                                    <a
+                                      href={`/openmrs${restBaseUrl}/virtualclaims/billing/attachments/${a.uuid}/file`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={styles.viewLink}>
+                                      {t('view', 'View')} ↗
+                                    </a>
+                                  ) : (
+                                    <span className={styles.muted}>—</span>
+                                  )}
+                                  {tab === 'resubmission' && isEditable && a.uuid && (
+                                    <Button
+                                      size="sm"
+                                      kind="ghost"
+                                      renderIcon={Renew}
+                                      className={styles.replaceBtn}
+                                      onClick={() =>
+                                        handleReplaceAttachment(iv, {
+                                          uuid: a.uuid,
+                                          document_type: a.document_type ?? '',
+                                          filename: (a as { filename?: string }).filename,
+                                        })
+                                      }>
+                                      {t('replace', 'Replace')}
+                                    </Button>
+                                  )}
+                                </div>
                               </li>
                             ))}
                           </ul>

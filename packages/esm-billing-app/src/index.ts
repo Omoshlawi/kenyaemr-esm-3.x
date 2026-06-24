@@ -259,6 +259,16 @@ export const claimDeleteLineModal = getAsyncLifecycle(
   options,
 );
 
+export const replaceAttachmentModal = getAsyncLifecycle(
+  () => import('./claims/claims-wrap/claim-workspaces/attachements/replace-attachment.modal'),
+  options,
+);
+
+export const resubmitConfirmModal = getAsyncLifecycle(
+  () => import('./claims/claims-wrap/claim-workspaces/claim-submission/resubmit-confirm.modal'),
+  options,
+);
+
 // Print Preview Components
 export const printPreviewModal = getAsyncLifecycle(() => import('./print-preview/print-preview.modal'), options);
 export const patientBannerShaStatus = getAsyncLifecycle(

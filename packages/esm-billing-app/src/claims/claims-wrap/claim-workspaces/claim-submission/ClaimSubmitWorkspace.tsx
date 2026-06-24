@@ -56,6 +56,7 @@ type ClaimSubmitWorkspaceProps = {
   isResubmission?: boolean;
   totalAmount?: number;
   mutate: () => void;
+  providerWorkflowState?: string;
 };
 
 const RequiredLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -80,6 +81,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     interventions,
     paymentMechanism,
     isResubmission = false,
+    providerWorkflowState,
     totalAmount,
     mutate,
   } = workspaceProps ?? ({} as ClaimSubmitWorkspaceProps);
@@ -149,12 +151,15 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
   }, []);
 
   const runSubmit = useCallback(
-    async (auth: { otp: string } | { dischargeAuthGuid: string }) => {
+    async (auth: { otp: string } | { dischargeAuthGuid: string } | Record<string, never>) => {
       const params = {
         consentToken,
         invoiceNumber,
         dischargeReason: dischargeReasonRef.current,
-        ...('otp' in auth ? { otp: auth.otp } : { dischargeAuthGuid: auth.dischargeAuthGuid }),
+        ...('otp' in auth ? { otp: (auth as { otp: string }).otp } : {}),
+        ...('dischargeAuthGuid' in auth
+          ? { dischargeAuthGuid: (auth as { dischargeAuthGuid: string }).dischargeAuthGuid }
+          : {}),
       };
 
       const result = isInpatient
@@ -383,14 +388,51 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     [dischargeReasonItems, dischargeReasonSelected],
   );
 
+  const launchResubmitConfirm = useCallback(() => {
+    setSubmitError(null);
+    const dispose = showModal('resubmit-confirm-modal', {
+      consentToken,
+      onConfirm: async () => {
+        setIsSubmitting(true);
+        try {
+          await runSubmit({});
+          setSubmitSucceeded(true);
+          showSnackbar({
+            title: t('claimResubmitted', 'Claim resubmitted'),
+            subtitle: t('claimSubmittedDesc', 'Claim {{code}} sent to payer for review', {
+              code: consentToken,
+            }),
+            kind: 'success',
+            isLowContrast: true,
+          });
+          mutate();
+          setTimeout(() => closeWorkspace(), 800);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          setSubmitError(msg);
+          throw err;
+        } finally {
+          setIsSubmitting(false);
+        }
+      },
+      closeModal: () => dispose(),
+    });
+  }, [consentToken, runSubmit, mutate, t]);
+
   if (!workspaceProps) {
     return null;
   }
 
+  const shouldSkipOtp = isResubmission && providerWorkflowState === 'DRAFT_RESUBMIT';
+
   const onContinue = (data: ClaimSubmitFormData) => {
     dischargeReasonRef.current = data.discharge_reason;
     dischargeDateIsoRef.current = isInpatient ? buildDischargeDateIso() : '';
-    launchAuthModal();
+    if (shouldSkipOtp) {
+      launchResubmitConfirm();
+    } else {
+      launchAuthModal();
+    }
   };
 
   const workspaceTitle = isResubmission
@@ -532,7 +574,9 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
               <InlineLoading className={styles.spinner} description={t('verifying', 'Verifying…')} />
             ) : (
               <span>
-                {isResubmission
+                {shouldSkipOtp
+                  ? t('resubmitToSha', 'Resubmit to SHA')
+                  : isResubmission
                   ? t('continueResubmit', 'Continue to resubmit')
                   : t('continueToSubmit', 'Continue to submit')}
               </span>

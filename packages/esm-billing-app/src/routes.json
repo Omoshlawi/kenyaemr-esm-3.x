@@ -392,6 +392,14 @@
     {
       "name": "require-billing-modal",
       "component": "requirePaymentModal"
+    },
+    {
+      "name": "replace-claim-attachment-modal",
+      "component": "replaceAttachmentModal"
+    },
+    {
+      "name": "resubmit-confirm-modal",
+      "component": "resubmitConfirmModal"
     }
   ],
   "workspaces2": [
