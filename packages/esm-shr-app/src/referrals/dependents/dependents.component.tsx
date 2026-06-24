@@ -14,7 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import capitalize from 'lodash/capitalize';
 import { FHIRResource } from '@openmrs/esm-framework';
-import { EmptyState } from '@openmrs/esm-patient-common-lib/src';
+import { EmptyState } from '@openmrs/esm-patient-common-lib';
 
 type DependentProps = {
   patientUuid: string;

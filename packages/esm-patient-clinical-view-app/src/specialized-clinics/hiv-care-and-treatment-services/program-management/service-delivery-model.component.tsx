@@ -12,11 +12,7 @@ import {
 } from '@carbon/react';
 import { Add, Edit } from '@carbon/react/icons';
 import { CardHeader, ErrorState, FHIRResource, formatDate, parseDate } from '@openmrs/esm-framework';
-import {
-  EmptyState,
-  useLaunchWorkspaceRequiringVisit,
-  usePatientChartStore,
-} from '@openmrs/esm-patient-common-lib/src';
+import { EmptyState, useLaunchWorkspaceRequiringVisit, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getObsDisplayByConcept } from '../hiv-care-and-treatment.resource';

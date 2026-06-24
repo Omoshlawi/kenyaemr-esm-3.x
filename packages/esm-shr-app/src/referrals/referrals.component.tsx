@@ -23,7 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { useCommunityReferrals } from './refferals.resource';
 import CommunityReferralActions from './referrals-actions.component';
 import { ReferralReasonsProps } from '../types';
-import { usePaginationInfo } from '@openmrs/esm-patient-common-lib/src';
+import { usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 
 type ReferralProps = {
   status: string;

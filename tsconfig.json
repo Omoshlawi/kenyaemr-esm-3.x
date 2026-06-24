@@ -5,25 +5,25 @@
     "jsx": "react",
     "lib": [
       "dom",
-      "es5",
-      "scripthost",
-      "es2015",
       "es2015.promise",
+      "es2015",
       "es2016.array.include",
       "es2018",
       "es2020",
-      "es2022"
+      "es2021",
+      "es2022",
+      "es5",
+      "scripthost",
     ],
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "noEmit": true,
     "paths": {
-      "@openmrs/*": ["./node_modules/@openmrs/*"]
+      "__mocks__": ["./__mocks__"],
+      "tools": ["./tools"],
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "target": "esnext",
-    "typeRoots": ["./types", "./node_modules/@types"]
-  },
-  "exclude": ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**"]
+  }
 }

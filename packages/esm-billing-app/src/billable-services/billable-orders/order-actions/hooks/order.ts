@@ -52,7 +52,7 @@ export function buildMedicationOrder(order: Order, action: OrderAction): DrugOrd
       order.dosingType !== 'org.openmrs.FreeTextDosingInstructions' ? order.dosingInstructions ?? null : null,
     asNeeded: order.asNeeded,
     asNeededCondition: order.asNeededCondition ?? null,
-    startDate: action === 'NEW' ? new Date() : order.dateActivated,
+    scheduledDate: action === 'NEW' ? new Date() : order.dateActivated ? new Date(order.dateActivated) : undefined,
     duration: order.duration,
     durationUnit: order.durationUnits
       ? {

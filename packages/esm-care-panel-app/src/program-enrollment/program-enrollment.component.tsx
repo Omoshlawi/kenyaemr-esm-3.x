@@ -21,7 +21,7 @@ import { formatDate, launchWorkspace2, restBaseUrl, useVisit } from '@openmrs/es
 import orderBy from 'lodash/orderBy';
 import { mutate } from 'swr';
 import { useHeiOutcome } from '../hooks/useHeiOutcome';
-import { usePatientChartStore } from '@openmrs/esm-patient-common-lib/src';
+import { usePatientChartStore } from '@openmrs/esm-patient-common-lib';
 import { TFunction } from 'i18next';
 
 export interface ProgramEnrollmentProps {

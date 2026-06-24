@@ -5,7 +5,7 @@ import { SurveillanceindicatorsFilter } from '../types';
 import styles from './surveillance.scss';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, today } from '../constants';
 import { formatDatetime } from '@openmrs/esm-framework';
-import { CardHeader } from '@openmrs/esm-patient-common-lib/src';
+import { CardHeader } from '@openmrs/esm-patient-common-lib';
 
 type Props = {
   filters: SurveillanceindicatorsFilter;

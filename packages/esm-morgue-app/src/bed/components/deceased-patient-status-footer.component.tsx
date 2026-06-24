@@ -3,7 +3,7 @@ import { Tag } from '@carbon/react';
 import styles from '../bed.scss';
 import { useTranslation } from 'react-i18next';
 import { type EnhancedPatient } from '../../types';
-import { type Visit } from '@openmrs/esm-framework/src';
+import { type Visit } from '@openmrs/esm-framework';
 interface PatientStatusFooterProps {
   patient: EnhancedPatient;
   isAdmitted: boolean;

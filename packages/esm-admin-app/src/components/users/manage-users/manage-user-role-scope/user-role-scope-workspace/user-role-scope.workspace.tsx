@@ -25,7 +25,7 @@ import {
   useUserRoleScopes,
 } from '../../../../../user-management.resources';
 import { formatNewDate, ROLE_CATEGORIES, today } from '../../../../../constants';
-import { CardHeader, EmptyState } from '@openmrs/esm-patient-common-lib/src';
+import { CardHeader, EmptyState } from '@openmrs/esm-patient-common-lib';
 import { Add, ChevronSortUp } from '@carbon/react/icons';
 import { useSystemUserRoleConfigSetting } from '../../../../hook/useSystemRoleSetting';
 import UserRoleScopeFormFields from './user-role-scope-fields.component';

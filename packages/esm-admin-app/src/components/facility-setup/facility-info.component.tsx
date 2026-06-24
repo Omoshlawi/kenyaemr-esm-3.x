@@ -9,7 +9,7 @@ import { SectionCard } from './shared/custom-section-card.component';
 import { StatusTag } from './shared/custom-status-tag.component';
 import { syncFacilityRegistry, useFacilityRegistry } from './useFacilityRegistry';
 import { FacilityRegistryRecord } from './type';
-import { CardHeader } from '@openmrs/esm-patient-common-lib/src';
+import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import EmptyState from '../empty-state/empty-state-log.components';
 
 const FacilityRegistryView: React.FC = () => {

@@ -7,7 +7,7 @@ import CarePrograms from '../care-programs/care-programs.component';
 
 import CarePanelMachineLearning from '../machine-learning/machine-learning.component';
 import styles from './care-panel-dashboard.scss';
-import { DefaultWorkspaceProps } from '@openmrs/esm-framework/src';
+import { DefaultWorkspaceProps } from '@openmrs/esm-framework';
 
 type CarePanelDashboardProps = {
   patientUuid: string;

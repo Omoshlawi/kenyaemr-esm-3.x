@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { launchWorkspace2, useVisit } from '@openmrs/esm-framework';
 import styles from './overflow-menu-item.scss';
 import { type VisitFormProps } from '../visit-form-workspace/visit-form.workspace';
-import { usePatientChartStore } from '@openmrs/esm-patient-common-lib/src';
+import { usePatientChartStore } from '@openmrs/esm-patient-common-lib';
 
 interface CustomStartVisitOverflowMenuItemProps {
   patientUuid?: string;
