@@ -217,3 +217,5 @@ export const visitSummaryPrintPreviewModal = getAsyncLifecycle(
   () => import('./visit-summary/print-preview/visit-summary-print-preview.modal'),
   options,
 );
+
+export const extendedPatientInfo = getAsyncLifecycle(() => import('./patient-info/patient-info.component'), options);

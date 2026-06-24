@@ -296,6 +296,12 @@
       "order": 0,
       "online": true,
       "offline": false
+    },
+    {
+      "name": "extended-patient-info",
+      "slot":"patient-info-slot",
+      "component": "extendedPatientInfo",
+      "order":0
     }
   ],
   "modals": [

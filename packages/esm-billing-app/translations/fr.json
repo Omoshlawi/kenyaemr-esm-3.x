@@ -561,6 +561,7 @@
   "loadingDiagnoses": "Loading diagnoses...",
   "loadingInterventions": "Chargement interventions",
   "loadingPatient": "Chargement patient...",
+  "loadingPatientSHA": "Checking SHA eligibility...",
   "loadingPayerPreview": "Loading payer preview...",
   "loadingReasons": "Loading reasons…",
   "loadingReceipt": "Chargement reçu",

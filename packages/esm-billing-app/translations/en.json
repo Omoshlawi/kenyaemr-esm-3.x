@@ -557,6 +557,7 @@
   "loadingDiagnoses": "Loading diagnoses...",
   "loadingInterventions": "Loading interventions",
   "loadingPatient": "Loading patient...",
+  "loadingPatientSHA": "Checking SHA eligibility...",
   "loadingPayerPreview": "Loading payer preview...",
   "loadingReasons": "Loading reasons…",
   "loadingReceipt": "Loading Receipt",

@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { InlineLoading, InlineNotification, Tag } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import classNames from 'classnames';
-import { useSHAEligibility } from '../hie.resource';
+import { useSHAEligibility, type Scheme } from '../hie.resource';
 import styles from './patient-banner-sha-status.scss';
 import { getSchemeEligibility } from './helper';
 import { EligibilityStatusCode, SchemeName } from './constant';
@@ -10,47 +10,45 @@ import SchemeTag from './scheme-tag.component';
 
 interface PatientBannerShaStatusProps {
   patientUuid: string;
-  renderedFrom: string;
 }
 
-const PatientBannerShaStatus: React.FC<PatientBannerShaStatusProps> = ({ patientUuid, renderedFrom }) => {
+interface EligibleScheme {
+  displayName: SchemeName;
+  scheme: Scheme;
+  memberType: string;
+  eligible: boolean;
+}
+
+const TRACKED_SCHEMES = [SchemeName.UHC, SchemeName.SHIF, SchemeName.TSC, SchemeName.POMSF];
+
+const InactiveStatusTag: React.FC<{ label: string }> = ({ label }) => {
   const { t } = useTranslation();
 
+  return (
+    <Tag className={classNames(styles.tag, styles.inactiveTag)}>
+      <span className={styles.schemeName}>{t('sha', 'SHA')}</span>
+      <span>{label}</span>
+    </Tag>
+  );
+};
+
+const PatientBannerShaStatus: React.FC<PatientBannerShaStatusProps> = ({ patientUuid }) => {
+  const { t } = useTranslation();
   const { data, isLoading: isLoadingHIEEligibility, error } = useSHAEligibility(patientUuid);
 
-  const schemesData = useMemo(() => {
-    if (!data?.schemes || data.schemes.length === 0) {
-      return {
-        uhc: null,
-        shif: null,
-        tsc: null,
-        pomsf: null,
-        hasCrNumber: false,
-      };
+  const eligibleSchemes = useMemo<Array<EligibleScheme>>(() => {
+    if (!data?.schemes?.length) {
+      return [];
     }
 
-    const uhc = getSchemeEligibility(data.schemes, SchemeName.UHC);
-    const shif = getSchemeEligibility(data.schemes, SchemeName.SHIF);
-    const tsc = getSchemeEligibility(data.schemes, SchemeName.TSC);
-    const pomsf = getSchemeEligibility(data.schemes, SchemeName.POMSF);
-
-    return {
-      uhc: uhc.scheme ? uhc : null,
-      shif: shif.scheme ? shif : null,
-      tsc: tsc.scheme ? tsc : null,
-      pomsf: pomsf.scheme ? pomsf : null,
-      hasCrNumber: !!data.memberCrNumber && data.memberCrNumber.length > 0,
-    };
+    return TRACKED_SCHEMES.map((displayName) => ({
+      displayName,
+      ...getSchemeEligibility(data.schemes, displayName),
+    })).filter((scheme): scheme is EligibleScheme => Boolean(scheme.scheme && scheme.memberType));
   }, [data]);
 
-  const isPatientChart = renderedFrom === 'patient-chart';
-
-  if (!isPatientChart) {
-    return null;
-  }
-
   if (isLoadingHIEEligibility) {
-    return <InlineLoading status="active" description={t('loading', 'Loading ...')} />;
+    return <InlineLoading status="active" description={t('loadingPatientSHA', 'Checking SHA eligibility...')} />;
   }
 
   if (error) {
@@ -66,59 +64,30 @@ const PatientBannerShaStatus: React.FC<PatientBannerShaStatusProps> = ({ patient
     );
   }
 
-  if (!data || data.statusCode !== EligibilityStatusCode.MEMBER_FOUND) {
+  if (data?.statusCode !== EligibilityStatusCode.MEMBER_FOUND) {
     return (
-      <div>
-        <span className={styles.separator}>&middot;</span>
-        <Tag className={classNames(styles.tag, styles.inactiveTag)}>
-          <span className={styles.schemeName}>{t('sha', 'SHA')}</span>
-          <span>{t('notRegistered', 'Not Registered')}</span>
-        </Tag>
+      <div className={styles.schemeTagsContainer}>
+        <InactiveStatusTag label={t('notRegistered', 'Not Registered')} />
       </div>
     );
   }
 
-  if (!schemesData.uhc && !schemesData.shif && !schemesData.tsc && !schemesData.pomsf) {
+  if (eligibleSchemes.length === 0) {
     return (
-      <div>
-        <span className={styles.separator}>&middot;</span>
-        <Tag className={classNames(styles.tag, styles.inactiveTag)}>
-          <span className={styles.schemeName}>{t('sha', 'SHA')}</span>
-          <span>{t('noSchemesFound', 'No Schemes Found')}</span>
-        </Tag>
+      <div className={styles.schemeTagsContainer}>
+        <InactiveStatusTag label={t('noSchemesFound', 'No Schemes Found')} />
       </div>
     );
   }
 
   return (
-    <div>
-      {schemesData.uhc && (
-        <>
-          <span className={styles.separator}>&middot;</span>
-          <SchemeTag schemeInfo={schemesData.uhc} displayName={SchemeName.UHC} />
-        </>
-      )}
-
-      {schemesData.shif && (
-        <>
-          <span className={styles.separator}>&middot;</span>
-          <SchemeTag schemeInfo={schemesData.shif} displayName={SchemeName.SHIF} />
-        </>
-      )}
-
-      {schemesData.tsc && (
-        <>
-          <span className={styles.separator}>&middot;</span>
-          <SchemeTag schemeInfo={schemesData.tsc} displayName={SchemeName.TSC} />
-        </>
-      )}
-
-      {schemesData.pomsf && (
-        <>
-          <span className={styles.separator}>&middot;</span>
-          <SchemeTag schemeInfo={schemesData.pomsf} displayName={SchemeName.POMSF} />
-        </>
-      )}
+    <div className={styles.schemeTagsContainer}>
+      {eligibleSchemes.map(({ displayName, ...schemeInfo }, index) => (
+        <React.Fragment key={displayName}>
+          {index > 0 && <span className={styles.separator}>&middot;</span>}
+          <SchemeTag schemeInfo={schemeInfo} displayName={displayName} />
+        </React.Fragment>
+      ))}
     </div>
   );
 };

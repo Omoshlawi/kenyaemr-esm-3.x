@@ -211,7 +211,8 @@
     {
       "name": "patient-info-sha-status",
       "component": "patientBannerShaStatus",
-      "slot": "patient-banner-tags-slot"
+      "slot": "extended-patient-info",
+      "order":1
     },
     {
       "name": "payments-points-dashboard-link",

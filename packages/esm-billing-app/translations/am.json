@@ -557,6 +557,7 @@
   "loadingDiagnoses": "Loading diagnoses...",
   "loadingInterventions": "ጣልቃ ገብነቶች እየተጫኑ",
   "loadingPatient": "Loading patient...",
+  "loadingPatientSHA": "Checking SHA eligibility...",
   "loadingPayerPreview": "Loading payer preview...",
   "loadingReasons": "Loading reasons…",
   "loadingReceipt": "Loading Receipt",
