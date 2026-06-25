@@ -458,7 +458,11 @@ const ClaimDetailsPanel: React.FC<{
     mutateAttachments();
     mutateDoctors();
   }, [mutate, mutateAttachments, mutateDoctors]);
-  const isEditable = claim.provider_workflow_state === 'DRAFT' || claim.provider_workflow_state === 'DRAFT_RESUBMIT';
+  const isEditable =
+    claim.provider_workflow_state === 'DRAFT' ||
+    claim.provider_workflow_state === 'DRAFT_RESUBMIT' ||
+    claim.provider_workflow_state === 'DRAFT_RESUBMIT_DOCUMENTS' ||
+    claim.provider_workflow_state === 'DRAFT_RESUBMISSION';
   const canMoveToResubmit = claim.provider_workflow_state === 'SUBMITTED' && claim.payer_workflow_state === 'SENT_BACK';
   const handleMoveToResubmit = useCallback(async () => {
     const result = await moveClaimToResubmit({

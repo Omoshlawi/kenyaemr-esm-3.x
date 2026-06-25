@@ -30,6 +30,8 @@ export function partitionByTab(claim: PatientClaim): ClaimTabKey {
     case 'PROVIDER':
       return 'sent';
     case 'DRAFT_RESUBMIT':
+    case 'DRAFT_RESUBMISSION':
+    case 'DRAFT_RESUBMIT_DOCUMENTS':
     case 'PREAUTH_REJECTED':
     case 'ELECTIVE_REJECTED':
     case 'REJECTED':

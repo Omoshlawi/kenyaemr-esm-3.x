@@ -152,10 +152,12 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
 
   const runSubmit = useCallback(
     async (auth: { otp: string } | { dischargeAuthGuid: string } | Record<string, never>) => {
+      const isAuthlessResubmit = !('otp' in auth) && !('dischargeAuthGuid' in auth);
       const params = {
         consentToken,
         invoiceNumber,
         dischargeReason: dischargeReasonRef.current,
+        skipAuthCheck: isAuthlessResubmit,
         ...('otp' in auth ? { otp: (auth as { otp: string }).otp } : {}),
         ...('dischargeAuthGuid' in auth
           ? { dischargeAuthGuid: (auth as { dischargeAuthGuid: string }).dischargeAuthGuid }
@@ -423,7 +425,8 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     return null;
   }
 
-  const shouldSkipOtp = isResubmission && providerWorkflowState === 'DRAFT_RESUBMIT';
+  const RESUBMIT_STATES = new Set(['DRAFT_RESUBMIT', 'DRAFT_RESUBMIT_DOCUMENTS', 'DRAFT_RESUBMISSION']);
+  const shouldSkipOtp = isResubmission && RESUBMIT_STATES.has((providerWorkflowState ?? '').toUpperCase());
 
   const onContinue = (data: ClaimSubmitFormData) => {
     dischargeReasonRef.current = data.discharge_reason;

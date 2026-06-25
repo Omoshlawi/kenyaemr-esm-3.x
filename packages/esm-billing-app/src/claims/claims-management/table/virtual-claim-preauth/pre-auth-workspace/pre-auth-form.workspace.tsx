@@ -111,9 +111,14 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
     () => Array.from(new Set(item?.optional_preauth_document_types ?? [])),
     [item?.optional_preauth_document_types],
   );
-  const availableDocumentTypes = useMemo(
+  const acceptedDocumentTypes = useMemo(
     () => Array.from(new Set([...requiredPreauthDocs, ...optionalPreauthDocs])),
     [requiredPreauthDocs, optionalPreauthDocs],
+  );
+  const isUsingFallbackDocs = acceptedDocumentTypes.length === 0;
+  const availableDocumentTypes = useMemo(
+    () => (isUsingFallbackDocs ? [...DOCUMENT_TYPES] : acceptedDocumentTypes),
+    [isUsingFallbackDocs, acceptedDocumentTypes],
   );
   const hasAnyDocsAccepted = availableDocumentTypes.length > 0;
 
@@ -165,7 +170,7 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
     }
     const existing = methods.getValues('attachments') ?? [];
     if (existing.length === 0) {
-      const firstType = requiredPreauthDocs[0] ?? optionalPreauthDocs[0] ?? '';
+      const firstType = isUsingFallbackDocs ? '' : requiredPreauthDocs[0] ?? optionalPreauthDocs[0] ?? '';
       setValue('attachments', [
         {
           document_title: '',
@@ -174,7 +179,7 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
         },
       ]);
     }
-  }, [hasAnyDocsAccepted, requiredPreauthDocs, optionalPreauthDocs, methods, setValue]);
+  }, [hasAnyDocsAccepted, isUsingFallbackDocs, requiredPreauthDocs, optionalPreauthDocs, methods, setValue]);
 
   const onSubmit = async (data: PreauthFormData) => {
     if (!item) {
@@ -875,6 +880,20 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
                   ))}
                 </div>
               )}
+              {isUsingFallbackDocs && (
+                <div className={classNames(styles.inlineNotification, styles.noDocsRequired)}>
+                  <InlineNotification
+                    kind="info"
+                    lowContrast
+                    hideCloseButton
+                    title={t('noSpecificDocsTitle', 'No document types specified')}
+                    subtitle={t(
+                      'noSpecificDocsSubtitle',
+                      'SHA has not specified document types for this preauth. You may attach any supporting documents from the list below.',
+                    )}
+                  />
+                </div>
+              )}
               {attachmentFields.map((field, idx) => (
                 <Layer key={field.id}>
                   <div className={styles.itemCard}>
@@ -941,7 +960,7 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
                         onClick={() =>
                           appendAttachment({
                             document_title: '',
-                            document_type: availableDocumentTypes[0] ?? '',
+                            document_type: isUsingFallbackDocs ? '' : availableDocumentTypes[0] ?? '',
                             file: null as unknown as File,
                           })
                         }>

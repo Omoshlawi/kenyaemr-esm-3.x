@@ -66,6 +66,7 @@ export type SubmitClaimParams = {
   otp?: string;
   dischargeAuthGuid?: string;
   dischargeReason: string;
+  skipAuthCheck?: boolean;
 };
 
 export const submitClaim = async (
@@ -81,7 +82,7 @@ export const submitClaim = async (
   if (!params.dischargeReason) {
     return { ok: false, error: t('dischargeReasonRequired', 'Discharge reason is required') };
   }
-  if (!params.otp && !params.dischargeAuthGuid) {
+  if (!params.skipAuthCheck && !params.otp && !params.dischargeAuthGuid) {
     return {
       ok: false,
       error: t('authRequired', 'Either OTP or biometric authorization is required'),
@@ -144,7 +145,7 @@ export const dischargeClaim = async (
   if (!params.consentToken || !params.invoiceNumber || !params.dischargeReason) {
     return { ok: false, error: t('missingRequiredFields', 'Missing required fields') };
   }
-  if (!params.otp && !params.dischargeAuthGuid) {
+  if (!params.skipAuthCheck && !params.otp && !params.dischargeAuthGuid) {
     return {
       ok: false,
       error: t('authRequired', 'Either OTP or biometric authorization is required'),
