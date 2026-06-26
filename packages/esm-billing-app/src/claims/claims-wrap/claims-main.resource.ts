@@ -4,6 +4,16 @@ import { type ClaimTabKey, type CloseReason, type PatientClaim, type PatientClai
 
 export function partitionByTab(claim: PatientClaim): ClaimTabKey {
   const displayStage = (claim.display_stage ?? '').toUpperCase();
+  const payerState = (claim.payer_workflow_state ?? '').toUpperCase();
+  if (payerState === 'APPROVED' || payerState === 'PAID') {
+    return 'paid';
+  }
+  if (payerState === 'REJECTED' || payerState === 'DENIED') {
+    return 'closed';
+  }
+  if (payerState === 'SENT_BACK') {
+    return 'resubmission';
+  }
 
   switch (displayStage) {
     case 'PAID':
@@ -42,6 +52,7 @@ export function partitionByTab(claim: PatientClaim): ClaimTabKey {
       return 'closed';
     case 'COMPLETED':
     case 'PAID':
+    case 'APPROVED':
       return 'paid';
     default:
       if (effectiveStage && typeof console !== 'undefined') {
