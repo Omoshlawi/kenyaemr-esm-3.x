@@ -8,7 +8,6 @@ import {
   DependentPayload,
   HIEPatient,
 } from '../type';
-import { birthCertificateUuid, nationalIdUuid, passportUuid, shaNumberUuid, shaIdNumberUuid } from '../constant';
 import { isWithinInterval, parseISO, format } from 'date-fns';
 
 /**
@@ -540,24 +539,6 @@ export function generateIdentifier(source: string) {
     body: {},
     signal: abortController.signal,
   });
-}
-
-/**
- * Returns the UUID for the given identifier type code.
- *
- * @param {string} code - Identifier type code to get the UUID for
- * @returns {string} UUID for the given identifier type, or an empty string if not found
- */
-export function getIdentifierTypeUUID(code: string): string {
-  const identifierTypeMap = {
-    'sha-number': shaNumberUuid,
-    'national-id': nationalIdUuid,
-    'passport-number': passportUuid,
-    'birth-certificate-number': birthCertificateUuid,
-    'sha-id-number': shaIdNumberUuid,
-  };
-
-  return identifierTypeMap[code] || '';
 }
 
 /**

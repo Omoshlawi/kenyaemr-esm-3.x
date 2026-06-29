@@ -1,4 +1,5 @@
 import {
+  getConfig,
   getSessionLocation,
   launchWorkspace2,
   launchWorkspaceGroup2,
@@ -8,8 +9,21 @@ import {
   type Visit,
 } from '@openmrs/esm-framework';
 import { DependentPayload, HIEPatient } from '../type';
-import { generateIdentifier, getIdentifierTypeUUID, sanitizeName } from '../helper';
+import { generateIdentifier, sanitizeName } from '../helper';
 import { openmrsId, openmrsIdSource } from '../constant';
+import { ExpressWorkflowConfig } from '../../../config-schema';
+
+async function getConfigUUIDs() {
+  const config = (await getConfig('@kenyaemr/esm-express-workflow-app')) as ExpressWorkflowConfig;
+  return {
+    shaIdNumberUUID: config.crIdentificationNumberUUID,
+    shaNumberUUID: config.shaNumberUUID,
+    nationalIdUUID: config.nationalIdUUID,
+    passportUUID: config.passportUUID,
+    birthCertificateUUID: config.birthCertificateUUID,
+    phoneAttributeTypeUUID: config.phoneAttributeTypeUUID,
+  };
+}
 import { useEffect, useState } from 'react';
 import { VisitFormProps } from '../start-visit-form/visit-form-workspace/visit-form.workspace';
 
@@ -19,6 +33,7 @@ export interface PatientRegistrationPayload {
   birthDate?: string;
   patientData: HIEPatient | any;
   type: 'hie-patient' | 'dependent';
+  parentPhoneNumber?: string;
 }
 
 interface AddressPayload {
@@ -34,6 +49,17 @@ interface AddressPayload {
 export async function createPatient(payload: PatientRegistrationPayload, t: any) {
   try {
     const { patientData, type, gender, birthDate } = payload;
+    const configUUIDs = await getConfigUUIDs();
+    const resolveIdentifierType = (code: string): string => {
+      const map: Record<string, string> = {
+        'sha-number': configUUIDs.shaNumberUUID,
+        'national-id': configUUIDs.nationalIdUUID,
+        'passport-number': configUUIDs.passportUUID,
+        'birth-certificate-number': configUUIDs.birthCertificateUUID,
+        'sha-id-number': configUUIDs.shaIdNumberUUID,
+      };
+      return map[code] ?? '';
+    };
     const sessionLocation = await getSessionLocation();
     const locationUuid = sessionLocation?.uuid ?? '';
 
@@ -57,7 +83,7 @@ export async function createPatient(payload: PatientRegistrationPayload, t: any)
         hiePatient.identifier
           ?.map((id) => ({
             identifier: id.value,
-            identifierType: getIdentifierTypeUUID(id.type.coding[0].code),
+            identifierType: resolveIdentifierType(id.type.coding[0].code),
             location: locationUuid,
             preferred: false,
           }))
@@ -65,7 +91,7 @@ export async function createPatient(payload: PatientRegistrationPayload, t: any)
 
       identifiers.push({
         identifier: hiePatient?.id,
-        identifierType: getIdentifierTypeUUID('sha-id-number'),
+        identifierType: resolveIdentifierType('sha-id-number'),
         location: locationUuid,
         preferred: false,
       });
@@ -105,18 +131,22 @@ export async function createPatient(payload: PatientRegistrationPayload, t: any)
           ?.filter((ext: any) => ext.url === 'identifiers' && ext.valueIdentifier)
           .map((ext: any) => ({
             identifier: ext.valueIdentifier.value,
-            identifierType: getIdentifierTypeUUID(ext.valueIdentifier.type.coding[0].code),
+            identifierType: resolveIdentifierType(ext.valueIdentifier.type.coding[0].code),
             location: locationUuid,
             preferred: false,
           }))
           .filter((identifier: any) => identifier.identifierType) || [];
 
-      identifiers.push({
-        identifier: dependentInfo?.id,
-        identifierType: getIdentifierTypeUUID('sha-id-number'),
-        location: locationUuid,
-        preferred: false,
-      });
+      // contact.id (dependentInfo.id) IS the dependent's own CR number when sha-id-number is not in extensions
+      const alreadyHasShaId = identifiers.some((id) => id.identifierType === resolveIdentifierType('sha-id-number'));
+      if (!alreadyHasShaId && dependentInfo?.id && String(dependentInfo.id).startsWith('CR')) {
+        identifiers.push({
+          identifier: dependentInfo.id,
+          identifierType: resolveIdentifierType('sha-id-number'),
+          location: locationUuid,
+          preferred: false,
+        });
+      }
 
       const birthdate = dependentInfo.extension?.find(
         (ext: any) => ext.url === 'https://ts.kenya-hie.health/fhir/StructureDefinition/date_of_birth',
@@ -154,13 +184,22 @@ export async function createPatient(payload: PatientRegistrationPayload, t: any)
       identifiers[0].preferred = true;
     }
 
+    const { phoneAttributeTypeUUID } = configUUIDs;
     const phoneAttributes: Array<{ attributeType: string; value: string }> = [];
     if (type === 'hie-patient') {
       const phoneContact = patientData.telecom?.find((t: any) => t.system === 'phone');
       if (phoneContact?.value) {
         phoneAttributes.push({
-          attributeType: 'b2c38640-2603-4629-aebd-3b54f33f1e3a',
+          attributeType: phoneAttributeTypeUUID,
           value: phoneContact.value,
+        });
+      }
+    } else if (type === 'dependent') {
+      const { parentPhoneNumber } = payload;
+      if (parentPhoneNumber) {
+        phoneAttributes.push({
+          attributeType: phoneAttributeTypeUUID,
+          value: parentPhoneNumber,
         });
       }
     }
@@ -244,8 +283,6 @@ export async function createPatient(payload: PatientRegistrationPayload, t: any)
 
     return response.data;
   } catch (error: any) {
-    console.error('Error creating patient:', error);
-
     const patientType = payload.type === 'hie-patient' ? 'Patient' : 'Dependent';
     let errorMessage = t(
       `${patientType.toLowerCase()}RegistrationFailedSubtitle`,
@@ -294,11 +331,122 @@ export async function createDependentPatient(dependent: DependentPayload, t: any
     gender: dependent.gender,
     patientData: dependent.dependentInfo,
     type: 'dependent',
+    parentPhoneNumber: dependent.parentPhoneNumber,
   };
 
   const result = await createPatient(payload, t);
   await launchCheckInWorkspace(result, result.uuid);
   return result;
+}
+
+/**
+ * Updates the phone attribute on a dependent's local patient record to the parent's phone number.
+ * Fetches the person's current attributes (with UUIDs) to update or create the attribute.
+ */
+async function updatePhoneAttribute(personUuid: string, parentPhoneNumber: string, phoneAttributeTypeUUID: string) {
+  const sanitized = parentPhoneNumber.trim();
+  if (!sanitized) {
+    return;
+  }
+
+  const response = await openmrsFetch(`${restBaseUrl}/person/${personUuid}/attribute?v=default`);
+  const attributes: any[] = response?.data?.results ?? [];
+  const existing = attributes.find((a: any) => a.attributeType?.uuid === phoneAttributeTypeUUID && !a.voided);
+
+  if (existing) {
+    if (existing.value === sanitized) {
+      return;
+    }
+    await openmrsFetch(`${restBaseUrl}/person/${personUuid}/attribute/${existing.uuid}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { value: sanitized },
+    });
+  } else {
+    await openmrsFetch(`${restBaseUrl}/person/${personUuid}/attribute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { attributeType: phoneAttributeTypeUUID, value: sanitized },
+    });
+  }
+}
+
+/**
+ * Patches a locally registered dependent patient's SHA/CR identifiers and phone attribute
+ * when they don't match the values coming from the HIE contact data.
+ */
+export async function updateDependentIdentifiers(
+  localPatient: any,
+  dependent: any,
+  options?: { parentPhoneNumber?: string; phoneAttributeTypeUUID?: string },
+) {
+  const configUUIDs = await getConfigUUIDs();
+  const expectedCrNumber = dependent.shaIdNumber ?? (String(dependent.id ?? '').startsWith('CR') ? dependent.id : null);
+  const expectedShaNumber = dependent.shaNumber ?? null;
+
+  const existingCrIdentifier = localPatient.identifiers?.find(
+    (id: any) => id.identifierType?.uuid === configUUIDs.shaIdNumberUUID,
+  );
+  const existingShaIdentifier = localPatient.identifiers?.find(
+    (id: any) => id.identifierType?.uuid === configUUIDs.shaNumberUUID,
+  );
+
+  const { parentPhoneNumber, phoneAttributeTypeUUID = configUUIDs.phoneAttributeTypeUUID } = options ?? {};
+
+  const sessionLocation = await getSessionLocation();
+  const locationUuid = sessionLocation?.uuid ?? '';
+
+  const updates: Promise<any>[] = [];
+
+  if (parentPhoneNumber) {
+    updates.push(updatePhoneAttribute(localPatient.uuid, parentPhoneNumber, phoneAttributeTypeUUID));
+  }
+
+  if (expectedCrNumber && existingCrIdentifier?.identifier !== expectedCrNumber) {
+    const patchCr = async () => {
+      if (existingCrIdentifier) {
+        await openmrsFetch(`${restBaseUrl}/patient/${localPatient.uuid}/identifier/${existingCrIdentifier.uuid}`, {
+          method: 'DELETE',
+        });
+      }
+      await openmrsFetch(`${restBaseUrl}/patient/${localPatient.uuid}/identifier`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: {
+          identifier: expectedCrNumber,
+          identifierType: configUUIDs.shaIdNumberUUID,
+          location: locationUuid,
+          preferred: false,
+        },
+      });
+    };
+    updates.push(patchCr());
+  }
+
+  if (expectedShaNumber && existingShaIdentifier?.identifier !== expectedShaNumber) {
+    const patchSha = async () => {
+      if (existingShaIdentifier) {
+        await openmrsFetch(`${restBaseUrl}/patient/${localPatient.uuid}/identifier/${existingShaIdentifier.uuid}`, {
+          method: 'DELETE',
+        });
+      }
+      await openmrsFetch(`${restBaseUrl}/patient/${localPatient.uuid}/identifier`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: {
+          identifier: expectedShaNumber,
+          identifierType: configUUIDs.shaNumberUUID,
+          location: locationUuid,
+          preferred: false,
+        },
+      });
+    };
+    updates.push(patchSha());
+  }
+
+  if (updates.length > 0) {
+    await Promise.all(updates);
+  }
 }
 
 export async function createHIEPatient(hiePatient: HIEPatient, t: any) {
@@ -402,7 +550,6 @@ export const useActiveVisit = (patientUuid: string | null) => {
         const visits = data?.results || [];
         setActiveVisit(visits.length > 0 ? visits[0] : null);
       } catch (err: any) {
-        console.warn(`Error fetching active visit for patient ${patientUuid}:`, err);
         setError(err);
         setActiveVisit(null);
       } finally {
@@ -435,7 +582,6 @@ export const useMultipleActiveVisits = (patientUuids: (string | null)[]) => {
           const visitResults = data?.results || [];
           return { activeVisit: visitResults.length > 0 ? visitResults[0] : null, isLoading: false };
         } catch (error) {
-          console.warn(`Error fetching active visit for patient ${uuid}:`, error);
           return { activeVisit: null, isLoading: false };
         }
       });

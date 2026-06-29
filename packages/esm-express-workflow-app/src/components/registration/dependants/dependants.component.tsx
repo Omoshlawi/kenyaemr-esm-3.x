@@ -2,12 +2,20 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { DataTable, Table, TableHead, TableBody, TableRow, TableCell, TableHeader, Button, Tag } from '@carbon/react';
 import { TwoFactorAuthentication } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
-import { launchWorkspace2, launchWorkspaceGroup2, showSnackbar, showModal, type Visit } from '@openmrs/esm-framework';
+import {
+  launchWorkspace2,
+  launchWorkspaceGroup2,
+  showSnackbar,
+  showModal,
+  useConfig,
+  type Visit,
+} from '@openmrs/esm-framework';
+import { type ExpressWorkflowConfig } from '../../../config-schema';
 import capitalize from 'lodash/capitalize';
 import styles from './dependants.scss';
 import { maskName } from '../helper';
 import { findExistingLocalPatient, registerOrLaunchDependent } from '../search-bar/search-bar.resource';
-import { getDependentsFromContacts, useMultipleActiveVisits } from './dependants.resource';
+import { getDependentsFromContacts, updateDependentIdentifiers, useMultipleActiveVisits } from './dependants.resource';
 import { DependentWithPhone, HIEPatient } from '../type';
 import { otpManager, useOtpSource, cleanupAllOTPs } from '../card/HIE-card/hie-card.resource';
 import { launchOtpVerificationModal } from '../../../shared/otp-verification';
@@ -26,6 +34,7 @@ const DependentsComponent: React.FC<DependentProps> = ({
   otpExpiryMinutes = 5,
 }) => {
   const { t } = useTranslation();
+  const { phoneAttributeTypeUUID } = useConfig<ExpressWorkflowConfig>();
   const [submittingStates, setSubmittingStates] = useState<Record<string, boolean>>({});
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
   const [localPatientCache, setLocalPatientCache] = useState<Map<string, any>>(new Map());
@@ -73,8 +82,14 @@ const DependentsComponent: React.FC<DependentProps> = ({
     });
   }, []);
 
+  const parentPhoneNumber = (patient.telecom as any)?.find((t: any) => t.system === 'phone')?.value as
+    | string
+    | undefined;
+
   const getDependentPhoneNumber = useCallback(
     (dependent: HIEPatient | DependentWithPhone): string => {
+      const dependentId = 'id' in dependent ? dependent.id : 'unknown';
+
       if ('contact' in dependent && dependent.contact && Array.isArray(dependent.contact)) {
         for (const contact of dependent.contact) {
           if (contact.telecom && Array.isArray(contact.telecom)) {
@@ -89,11 +104,11 @@ const DependentsComponent: React.FC<DependentProps> = ({
         }
       }
 
-      const localPatient = localPatientCache.get(dependent.id);
+      const localPatient = localPatientCache.get(dependentId);
       if (localPatient?.attributes && Array.isArray(localPatient.attributes)) {
         const phoneAttribute = localPatient.attributes.find(
           (attr: { value: string; attributeType: { uuid: string; display: string } }) =>
-            attr.attributeType?.uuid === 'b2c38640-2603-4629-aebd-3b54f33f1e3a' &&
+            attr.attributeType?.uuid === phoneAttributeTypeUUID &&
             attr.value &&
             attr.value.trim() !== '' &&
             attr.value.trim().length > 0,
@@ -122,9 +137,13 @@ const DependentsComponent: React.FC<DependentProps> = ({
         }
       }
 
+      if (parentPhoneNumber?.trim()) {
+        return sanitizePhoneNumber(parentPhoneNumber);
+      }
+
       return '254700000000';
     },
-    [localPatientCache],
+    [localPatientCache, parentPhoneNumber],
   );
 
   const handleSpouseOTPRequest = useCallback((dependentId: string) => {
@@ -188,6 +207,16 @@ const DependentsComponent: React.FC<DependentProps> = ({
   const handleDependentAction = useCallback(
     async (dependent: any) => {
       const localPatient = localPatientCache.get(dependent.id);
+
+      // Extract identifier values from the HIE contact extensions for comparison
+      const contactExtensions: any[] = dependent.contactData?.extension ?? [];
+      const identifierExtensions = contactExtensions.filter((e: any) => e.url === 'identifiers' && e.valueIdentifier);
+      const hieIdentifiers = identifierExtensions.map((e: any) => ({
+        code: e.valueIdentifier?.type?.coding?.[0]?.code,
+        display: e.valueIdentifier?.type?.coding?.[0]?.display,
+        value: e.valueIdentifier?.value,
+      }));
+
       const isSpouse = dependent.relationship.toLowerCase() === 'spouse';
       const isSpouseVerified = verifiedSpouses.has(dependent.id);
 
@@ -202,6 +231,8 @@ const DependentsComponent: React.FC<DependentProps> = ({
       }
 
       if (localPatient) {
+        await updateDependentIdentifiers(localPatient, dependent, { parentPhoneNumber, phoneAttributeTypeUUID });
+
         await launchWorkspaceGroup2('ewf-patient-chart', {
           patient: localPatient,
           patientUuid: localPatient.uuid,
@@ -226,7 +257,7 @@ const DependentsComponent: React.FC<DependentProps> = ({
       } else {
         setSubmittingStates((prev) => ({ ...prev, [dependent.id]: true }));
         try {
-          await registerOrLaunchDependent(dependent, t);
+          await registerOrLaunchDependent(dependent, t, parentPhoneNumber);
         } catch (error) {
           showSnackbar({
             title: t('dependentRegistrationError', 'Error registering dependent'),
@@ -427,7 +458,6 @@ const DependentsComponent: React.FC<DependentProps> = ({
           const existingPatient = await findExistingLocalPatient(dependent.contactData, true);
           setLocalPatientCache((prev) => new Map(prev.set(dependent.id, existingPatient)));
         } catch (error) {
-          console.warn(`Error searching for dependent ${dependent.id}:`, error);
           setLocalPatientCache((prev) => new Map(prev.set(dependent.id, null)));
         } finally {
           setLoadingStates((prev) => ({ ...prev, [dependent.id]: false }));

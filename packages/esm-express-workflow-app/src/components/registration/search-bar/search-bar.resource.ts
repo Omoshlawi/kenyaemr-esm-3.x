@@ -17,7 +17,11 @@ import {
   RESOURCE_NOT_FOUND,
   UNKNOWN,
 } from '../constant';
-import { createDependentPatient, createHIEPatient } from '../dependants/dependants.resource';
+import {
+  createDependentPatient,
+  createHIEPatient,
+  updateDependentIdentifiers,
+} from '../dependants/dependants.resource';
 import { transformToDependentPayload } from '../helper';
 import { VisitFormProps } from '../start-visit-form/visit-form-workspace/visit-form.workspace';
 
@@ -160,15 +164,17 @@ export const registerOrLaunchHIEPatient = async (hiePatient: any, t: any) => {
   }
 };
 
-export const registerOrLaunchDependent = async (dependent: any, t: any) => {
+export const registerOrLaunchDependent = async (dependent: any, t: any, parentPhoneNumber?: string) => {
   try {
     const existingLocalPatient = await findExistingLocalPatient(dependent.contactData, true);
 
     if (existingLocalPatient) {
+      await updateDependentIdentifiers(existingLocalPatient, dependent, { parentPhoneNumber });
       await launchCheckInWorkspace(existingLocalPatient, existingLocalPatient.uuid);
       return existingLocalPatient;
     } else {
       const dependentPayload = transformToDependentPayload(dependent);
+      dependentPayload.parentPhoneNumber = parentPhoneNumber;
       return await createDependentPatient(dependentPayload, t);
     }
   } catch (error) {

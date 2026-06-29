@@ -293,6 +293,26 @@ export const configSchema = {
     _description: 'The patient identifier type UUID for the national ID, used for SHA eligibility checks.',
     _default: '49af6cdc-7968-4abb-bf46-de10d7f4859f',
   },
+  phoneAttributeTypeUUID: {
+    _type: Type.String,
+    _description: 'The person attribute type UUID for the telephone contact number.',
+    _default: 'b2c38640-2603-4629-aebd-3b54f33f1e3a',
+  },
+  shaNumberUUID: {
+    _type: Type.String,
+    _description: 'The patient identifier type UUID for the SHA (Social Health Authority) membership number.',
+    _default: '52c3c0c3-05b8-4b26-930e-2a6a54e14c90',
+  },
+  passportUUID: {
+    _type: Type.String,
+    _description: 'The patient identifier type UUID for the passport number.',
+    _default: 'be9beef6-aacc-4e1f-ac4e-5babeaa1e303',
+  },
+  birthCertificateUUID: {
+    _type: Type.String,
+    _description: 'The patient identifier type UUID for the birth certificate number.',
+    _default: '68449e5a-8829-44dd-bfef-c9c8cf2cb9b2',
+  },
 
   anaesthetic: {
     _type: Type.Object,
@@ -513,6 +533,10 @@ export type ExpressWorkflowConfig = {
   isDHAWorkflow: boolean;
   crIdentificationNumberUUID: string;
   providerNationalIdUuid: string;
+  phoneAttributeTypeUUID: string;
+  shaNumberUUID: string;
+  passportUUID: string;
+  birthCertificateUUID: string;
 };
 export interface ConfigObject {
   requireMaritalStatusOnAgeGreaterThanOrEqualTo: number;

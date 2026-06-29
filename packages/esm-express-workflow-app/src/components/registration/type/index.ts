@@ -279,6 +279,7 @@ export interface DependentPayload {
   relationship: string;
   gender: string;
   dependentInfo: HIEContact;
+  parentPhoneNumber?: string;
 }
 
 export interface OtpPayload {
