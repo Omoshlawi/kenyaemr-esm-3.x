@@ -17,7 +17,7 @@ interface PatientSHRSummaryTableProps {
 const PatientSHRSummaryTable: React.FC<PatientSHRSummaryTableProps> = ({ patient, patientUuid }) => {
   const { t } = useTranslation();
   const idRef = useRef<string>();
-  const [accessGranted, setAccessGranted] = useState(true);
+  const [accessGranted, setAccessGranted] = useState(false);
   const [isAuthorizing, setIsAuthorizing] = useState(false);
   const { error, isLoading, patientPhoneNumber, patientName, nationalId } = usePatient(patientUuid);
 
