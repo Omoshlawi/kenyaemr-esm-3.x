@@ -2478,6 +2478,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@kenyaemr/esm-reports-app@workspace:packages/esm-reports-app":
+  version: 0.0.0-use.local
+  resolution: "@kenyaemr/esm-reports-app@workspace:packages/esm-reports-app"
+  dependencies:
+    lodash-es: "npm:^4.17.15"
+  peerDependencies:
+    "@carbon/react": 1.x
+    "@openmrs/esm-framework": 9.x
+    react: ^18.1.0
+    react-i18next: 11.x
+    react-router-dom: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
 "@kenyaemr/esm-shr-app@workspace:packages/esm-shr-app":
   version: 0.0.0-use.local
   resolution: "@kenyaemr/esm-shr-app@workspace:packages/esm-shr-app"

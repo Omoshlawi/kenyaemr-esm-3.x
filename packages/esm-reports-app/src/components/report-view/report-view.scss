@@ -1,0 +1,111 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  background-color: colors.$white;
+  padding: layout.$spacing-05;
+  margin: layout.$spacing-02;
+  border: 1px solid colors.$gray-10;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: colors.$blue-60;
+  @include type.type-style('body-compact-01');
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: layout.$spacing-05;
+  padding-bottom: layout.$spacing-03;
+  border-bottom: 1px solid colors.$gray-20;
+}
+
+.title {
+  @include type.type-style('heading-05');
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.subtitle {
+  @include type.type-style('body-01');
+  color: colors.$gray-70;
+  margin-top: layout.$spacing-02;
+}
+
+.parameters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03 layout.$spacing-06;
+  padding: layout.$spacing-04 0;
+  border-bottom: 1px solid colors.$gray-20;
+}
+
+.parameter {
+  display: flex;
+  flex-direction: column;
+}
+
+.parameterLabel {
+  @include type.type-style('label-01');
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: colors.$gray-70;
+}
+
+.parameterValue {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-100;
+}
+
+.dataSet {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  border:1px solid colors.$gray-10;
+}
+
+.dataSetTitle {
+  @include type.type-style('heading-03');
+  color: colors.$gray-100;
+  margin-top: layout.$spacing-05;
+  margin-left: layout.$spacing-05;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  border: 1px solid colors.$gray-20;
+}
+
+.indicatorTable {
+  width: 100%;
+}
+
+.errorState,
+.loadingState {
+  padding: layout.$spacing-07;
+}

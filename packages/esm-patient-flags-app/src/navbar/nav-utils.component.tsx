@@ -119,7 +119,7 @@ export const useModuleLinks = () => {
     },
     {
       label: t('reports', 'Reports'),
-      url: `/openmrs/kenyaemr/reports/reportsHome.page`,
+      url: `${openmrsSpaBase}reporting`,
       icon: <Report size={24} />,
       privilege: 'o3: View Reports',
     },

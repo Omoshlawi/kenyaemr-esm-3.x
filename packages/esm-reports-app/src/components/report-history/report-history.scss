@@ -1,0 +1,175 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-06;
+  background-color: colors.$white;
+  padding: layout.$spacing-05 layout.$spacing-07;
+  margin-top: layout.$spacing-02;
+  border: 1px solid colors.$gray-10;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: colors.$blue-60;
+  @include type.type-style('body-compact-01');
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: layout.$spacing-05;
+}
+
+.titleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.titleLine {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-04;
+}
+
+.title {
+  @include type.type-style('heading-05');
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.description {
+  @include type.type-style('body-01');
+  color: colors.$gray-70;
+  max-width: 42rem;
+  margin: 0;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: layout.$spacing-05;
+}
+
+.tile {
+  min-height: 6rem;
+}
+
+.tileLabel {
+  @include type.type-style('label-01');
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: colors.$gray-70;
+}
+
+.tileValueRow {
+  display: flex;
+  align-items: baseline;
+  gap: layout.$spacing-03;
+  margin-top: layout.$spacing-03;
+}
+
+.tileValue {
+  @include type.type-style('heading-05');
+  color: colors.$gray-100;
+}
+
+.trendUp {
+  @include type.type-style('label-01');
+  color: colors.$green-60;
+}
+
+.trendDown {
+  @include type.type-style('label-01');
+  color: colors.$red-60;
+}
+
+.lastRunBy {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  margin-top: layout.$spacing-03;
+}
+
+.tableSection {
+  border: 1px solid colors.$gray-20;
+
+  :global(.cds--table-toolbar) {
+    position: relative !important;
+  }
+}
+
+.actionsCell {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-05;
+  justify-content: flex-end;
+}
+
+.actionLink {
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+  color: colors.$blue-60;
+  text-decoration: none;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.mutedText {
+  color: colors.$gray-50;
+  font-style: italic;
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: layout.$spacing-05;
+}
+
+.chartTile {
+  padding: layout.$spacing-05;
+}
+
+.chartTitle {
+  @include type.type-style('label-01');
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-04;
+}
+
+.errorState,
+.loadingState {
+  padding: layout.$spacing-07;
+}

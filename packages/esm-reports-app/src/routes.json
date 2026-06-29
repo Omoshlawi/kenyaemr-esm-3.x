@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "kenyaemr": "^19.0.0"
+  },
+  "pages": [
+    {
+      "component": "reportsDashboard",
+      "route": "reporting"
+    }
+  ],
+  "workspaces2": [
+    {
+      "name":"report-request-workspace",
+      "component":"reportRequestWorkspaces",
+      "window":"reporting-window"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name" : "reporting-window",
+      "group" : "reporting-group",
+      "width": "wider",
+      "canMaximize":true
+    }
+  ],
+  "workspaceGroups2": [
+   {
+    "name":"reporting-group",
+    "closeable":true,
+    "scopePattern":"reporting"
+   }
+  ],
+  "extensions": [
+    
+  ],
+  "modals": [
+    
+  ]
+}

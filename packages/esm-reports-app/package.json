@@ -1,0 +1,48 @@
+{
+  "name": "@kenyaemr/esm-reports-app",
+  "version": "5.4.3",
+  "description": "Reports App for KenyaEMR",
+  "keywords": [
+    "openmrs"
+  ],
+  "homepage": "https://github.com/palladiumkenya/kenyaemr-esm-core#readme",
+  "bugs": {
+    "url": "https://github.com/palladiumkenya/kenyaemr-esm-core/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/palladiumkenya/kenyaemr-esm-core#readme"
+  },
+  "license": "MPL-2.0",
+  "main": "src/index.ts",
+  "source": true,
+  "browser": "dist/kenyaemr-esm-reports-app.js",
+  "scripts": {
+    "analyze": "rspack build --mode=production --analyze",
+    "build": "rspack --mode=production",
+    "coverage": "echo \"Jest has been removed; no unit test runner is configured\" && exit 0",
+    "debug": "npm run serve",
+    "extract-translations": "i18next 'src/**/*.component.tsx' 'src/index.ts' --config ../../tools/i18next-parser.config.js",
+    "lint": "eslint src --ext ts,tsx",
+    "serve": "rspack serve --mode=development",
+    "start": "openmrs develop",
+    "typescript": "tsc"
+  },
+  "browserslist": [
+    "extends browserslist-config-openmrs"
+  ],
+  "dependencies": {
+    "lodash-es": "^4.17.15"
+  },
+  "peerDependencies": {
+    "@carbon/react": "1.x",
+    "@openmrs/esm-framework": "9.x",
+    "react": "^18.1.0",
+    "react-i18next": "11.x",
+    "react-router-dom": "6.x",
+    "swr": "2.x"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
