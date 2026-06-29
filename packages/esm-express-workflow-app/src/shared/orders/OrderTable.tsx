@@ -1,12 +1,13 @@
-import React, { useCallback, useMemo } from 'react';
-import { DataTable, Table, TableHead, TableRow, TableHeader, TableBody, TableCell, Layer, Button } from '@carbon/react';
+import { Button, DataTable, Layer, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@carbon/react';
 import { Add, Printer } from '@carbon/react/icons';
-import { useTranslation } from 'react-i18next';
-import { parseDate, formatDatetime, translateFrom, showModal, useVisit, OpenmrsResource } from '@openmrs/esm-framework';
-import { PriorityPill, StatusPill } from './OrderPills';
-import { type Order } from '../../types/order/order';
+import { formatDatetime, OpenmrsResource, parseDate, showModal, translateFrom } from '@openmrs/esm-framework';
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
+import React, { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { type Order } from '../../types/order/order';
+import { PriorityPill, StatusPill } from './OrderPills';
 import styles from './OrderTable.scss';
+import HIVTestOrderResultAction from '../../components/hts/hiv-test-order-result-action.component';
 
 export type OrderDocumentType = 'lab' | 'radiology' | 'procedure';
 
@@ -94,14 +95,17 @@ export const OrderTable: React.FC<OrderTableProps> = ({
       />
     ),
     actions: (
-      <Button
-        kind="ghost"
-        size="sm"
-        hasIconOnly
-        iconDescription={t('printOrder', 'Print Order')}
-        renderIcon={Printer}
-        onClick={() => handlePrintOrder(order.uuid)}
-      />
+      <div>
+        <Button
+          kind="ghost"
+          size="sm"
+          hasIconOnly
+          iconDescription={t('printOrder', 'Print Order')}
+          renderIcon={Printer}
+          onClick={() => handlePrintOrder(order.uuid)}
+        />
+        <HIVTestOrderResultAction order={order} patientUuid={order?.patient?.uuid ?? patientId} />
+      </div>
     ),
   }));
 

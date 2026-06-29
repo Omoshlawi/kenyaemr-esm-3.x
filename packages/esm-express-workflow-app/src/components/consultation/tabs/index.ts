@@ -75,3 +75,10 @@ export const resultsTab = getAsyncLifecycle(
   () => import('../../../shared/tabs/create-tab-extension').then((mod) => ({ default: mod.createTabExtension() })),
   options,
 );
+
+// t("screeningTools", "Screening tools
+// ")
+export const screeningTools = getAsyncLifecycle(
+  () => import('../clinical-encounter/screening-tools.component'),
+  options,
+);

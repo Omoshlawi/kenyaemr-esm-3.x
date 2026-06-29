@@ -39,3 +39,8 @@ export const patientChartHtsDashboard = getAsyncLifecycle(() => import('./patien
 export const htsScreening = getAsyncLifecycle(() => import('./hts-screening.component'), options);
 // t("htsTesting", "Testing")
 export const htsTesting = getAsyncLifecycle(() => import('./hts-testing.component'), options);
+
+export const hivTestOrderResultsForm = getAsyncLifecycle(
+  () => import('./hive-test-order-result-form.workspace'),
+  options,
+);

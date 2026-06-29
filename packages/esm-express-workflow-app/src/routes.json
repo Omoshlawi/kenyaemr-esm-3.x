@@ -623,6 +623,13 @@
       "meta":{
         "title":"htsTesting"
       }
+    },
+    {
+      "name": "ewf-screening-tools-tab",
+      "component": "screeningTools",
+      "meta":{
+        "title":"screeningTools"
+      }
     }
 
   ],
@@ -641,6 +648,11 @@
       "name": "interoperative-drug-given-workspace-form",
       "component": "interoperativeDrugGivenFormWorkspace",
       "window": "ewf-anaesthetic-record"
+    },
+    {
+      "name": "efw-hiv-test-order-result-workspace-form",
+      "component": "hivTestOrderResultsForm",
+      "window": "ewf-hiv-test-order-result"
     }
   ],
   "workspaceWindows2": [
@@ -651,6 +663,11 @@
     },
     {
       "name": "ewf-anaesthetic-record",
+      "group": "ewf-patient-chart",
+      "width": "wider"
+    },
+    {
+      "name": "ewf-hiv-test-order-result",
       "group": "ewf-patient-chart",
       "width": "wider"
     }

@@ -447,6 +447,75 @@ export const configSchema = {
     _description: 'Diagnosis and management form Uuid',
     _default: '54a862b1-0964-4c97-b825-21c0f7201160',
   },
+  hivScreeningFormUuid: {
+    _type: Type.UUID,
+    _description: 'HTS Screening form Uuid',
+    _default: '04295648-7606-11e8-adc0-fa7ae01bbebc',
+  },
+  hivRapidTestConceptUuid: {
+    _type: Type.UUID,
+    _description: 'HIV Rapid test concept UUID',
+    _default: '163722AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  },
+  hivTestKitConceptUuid: {
+    _type: Type.UUID,
+    _description: 'HIV test kit concept UUID',
+    _default: 'd04b5070-a39c-4601-a9a2-7b443cc2ee95',
+  },
+  hivTestKitMembersConceptUuids: {
+    _type: Type.Object,
+    _description: 'HIV test kit members concept UUIDs',
+    _default: {
+      trinScreen: '9c4011c2-2579-49cf-ab53-93d009f03e7b',
+      determine: '166451AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      standardQ: 'd13e34a7-d35d-43bc-88d2-b8ae3c6ecba1',
+      firstResponse: '166452AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      oneStep: '3de9db8a-32a2-4518-8887-c8f25208dade',
+    },
+  },
+  hivTestResultsConceptUuids: {
+    _type: Type.Object,
+    _description: 'HIV Test results concept Uuids',
+    _default: {
+      invalid: '1138AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      positive: '703AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      negative: '664AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+  },
+  screeningTools: {
+    _type: Type.Array,
+    _description: 'Screening tools forms',
+    _default: [
+      {
+        title: 'Depression Screening PHQ-9',
+        formUuid: '5fe533ee-0c40-4a1f-a071-dc4d0fbb0c17',
+      },
+      {
+        title: 'TB Screening',
+        formUuid: '59ed8e62-7f1f-40ae-a2e3-eabe350277ce',
+      },
+      {
+        title: 'Enhanced Adherence Screening',
+        formUuid: 'c483f10f-d9ee-4b0d-9b8c-c24c1ec24701',
+      },
+      {
+        title: 'Alcohol Abuse Screening Tool(AUDIT)',
+        formUuid: '7ba743c8-d8e6-44ad-aeed-8d2ff9e985db',
+      },
+      {
+        title: 'Alcohol and Drug Abuse Screening(CAGE-AID/CRAFFT)',
+        formUuid: '7b1ec2d5-a4ad-4ffc-a0d3-ff1ea68e293c',
+      },
+      {
+        title: 'Cancer Screening and Early diagnosis',
+        formUuid: 'be5c5602-0a1d-11eb-9e20-37d2e56925ee',
+      },
+      {
+        title: 'Violence Screening',
+        formUuid: '03767614-1384-4ce3-aea9-27e2f4e67d01',
+      },
+    ],
+  },
 };
 
 export type ExpressWorkflowConfig = {
@@ -527,6 +596,23 @@ export type ExpressWorkflowConfig = {
   providerNationalIdUuid: string;
   historyAndExaminationFormUuid: string;
   diagnosisAndManagement: string;
+  hivScreeningFormUuid: string;
+  hivRapidTestConceptUuid: string;
+  hivTestConceptUuid: string;
+  hivTestKitConceptUuid: string;
+  hivTestKitMembersConceptUuids: {
+    trinScreen: string;
+    determine: string;
+    standardQ: string;
+    firstResponse: string;
+    oneStep: string;
+  };
+  hivTestResultsConceptUuids: {
+    invalid: string;
+    positive: string;
+    negative: string;
+  };
+  screeningTools: Array<{ title: string; formUuid: string }>;
 };
 export interface ConfigObject {
   requireMaritalStatusOnAgeGreaterThanOrEqualTo: number;
