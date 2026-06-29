@@ -18,6 +18,7 @@ import { useClaims } from './use-facility-claims';
 import styles from './claims-list-table.scss';
 import { ProgressBarRound } from '@carbon/react/icons';
 import { showModal } from '@openmrs/esm-framework';
+import MainTable from '../main-table/main-table.component';
 
 const ClaimsManagementTable: React.FC = () => {
   const { t } = useTranslation();
@@ -132,6 +133,12 @@ const ClaimsManagementTable: React.FC = () => {
                 {filteredPhcClaims.length}
               </Tag>
             </Tab>
+            <Tab>
+              {t('allClaims', 'All Claims')}&nbsp;
+              <Tag type="green" size="sm">
+                {filteredPhcClaims.length}
+              </Tag>
+            </Tab>
           </TabList>
           <div className={styles.tabsToolbar}>
             <Search
@@ -200,6 +207,9 @@ const ClaimsManagementTable: React.FC = () => {
               isLoading={isLoading}
               claims={filteredPhcClaims}
             />
+          </TabPanel>
+          <TabPanel>
+            <MainTable />
           </TabPanel>
         </TabPanels>
       </Tabs>

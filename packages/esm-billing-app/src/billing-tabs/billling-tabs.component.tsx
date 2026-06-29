@@ -7,13 +7,19 @@ import BillsTable from '../bills-table/bills-table.component';
 import PatientBillsScreen from '../past-patient-bills/patient-bills-dashboard/patient-bills-dashboard';
 import ClaimsManagementTable from '../claims/claims-management/table/claims-list-table.component';
 import PreauthQueueTable from '../claims/claims-management/table/virtual-claim-preauth/preauth-queue-table.component';
+import MainTable from '../claims/claims-management/main-table/main-table.component';
 
-const BillingTabs = () => {
+type BillingTabsProps = {
+  onTabChange?: (index: number) => void;
+};
+
+const BillingTabs = ({ onTabChange }: BillingTabsProps) => {
   const { t } = useTranslation();
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
 
   const handleTabChange = ({ selectedIndex }: { selectedIndex: number }) => {
     setActiveTabIndex(selectedIndex);
+    onTabChange?.(selectedIndex);
   };
 
   return (
@@ -30,7 +36,7 @@ const BillingTabs = () => {
         <TabPanels>
           <TabPanel>{<PatientBillsScreen />}</TabPanel>
           <TabPanel>{<BillsTable isOnActiveTab={activeTabIndex === 1} />}</TabPanel>
-          <TabPanel>{activeTabIndex === 2 && <ClaimsManagementTable />}</TabPanel>
+          <TabPanel>{activeTabIndex === 2 && <MainTable />}</TabPanel>
           <TabPanel>{activeTabIndex === 3 && <PreauthQueueTable />}</TabPanel>
         </TabPanels>
       </Tabs>

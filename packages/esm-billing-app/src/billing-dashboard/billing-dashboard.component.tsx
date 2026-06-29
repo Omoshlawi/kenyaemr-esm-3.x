@@ -1,18 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import BillingHeader from '../billing-header/billing-header.component';
 import BillingTabs from '../billing-tabs/billling-tabs.component';
 import MetricsCards from '../metrics-cards/metrics-cards.component';
+import ClaimsCards from '../metrics-cards/claims-cards.component';
 import RootComponent from '../root.component'; // Import your router
 import styles from './billing-dashboard.scss';
 import { ClockOutStrip } from './clock-out-strip.component';
 import { UserHasAccess } from '@openmrs/esm-framework';
 
+// Tab indices: 0=Patient Bills, 1=Bills Today, 2=Claims, 3=Pre-Authorization
+const CLAIMS_TAB_INDEX = 2;
+const PREAUTH_TAB_INDEX = 3;
+
 function BillingDashboard() {
   const { t } = useTranslation();
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
 
   const currentPath = window.location.pathname;
   const isMainDashboard = currentPath.endsWith('/accounting') || currentPath.endsWith('/accounting/');
+  const isClaimsOrPreAuth = activeTabIndex === CLAIMS_TAB_INDEX || activeTabIndex === PREAUTH_TAB_INDEX;
 
   if (isMainDashboard) {
     return (
@@ -20,9 +27,9 @@ function BillingDashboard() {
         <BillingHeader title={t('home', 'Home')} />
         <ClockOutStrip />
         <UserHasAccess privilege="o3: View Billing Metrics">
-          <MetricsCards />
+          {isClaimsOrPreAuth ? <ClaimsCards /> : <MetricsCards />}
         </UserHasAccess>
-        <BillingTabs />
+        <BillingTabs onTabChange={setActiveTabIndex} />
       </main>
     );
   }

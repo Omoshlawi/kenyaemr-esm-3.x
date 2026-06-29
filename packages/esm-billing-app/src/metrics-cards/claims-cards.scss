@@ -1,0 +1,91 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  margin: layout.$spacing-05;
+  gap: layout.$spacing-03;
+}
+
+.sectionHeader {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: layout.$spacing-02;
+  height: layout.$layout-03;
+}
+
+.sectionDate {
+  @include type.type-style('label-01');
+  color: $ui-02;
+}
+
+.cardsRow {
+  display: flex;
+  gap: layout.$spacing-05;
+  align-items: stretch;
+}
+
+.cardContainer {
+  flex: 1;
+
+  &:first-child {
+    flex: 0 0 16rem;
+  }
+}
+
+.tile {
+  border: 0.0625rem solid $ui-03;
+  padding: layout.$spacing-05;
+  height: 100%;
+}
+
+.cardTitle {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-05;
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: layout.$spacing-07;
+}
+
+.mainCount {
+  @include type.type-style('heading-05');
+  color: colors.$gray-70;
+  font-weight: 300;
+  white-space: nowrap;
+  min-width: layout.$spacing-09;
+}
+
+.subItemsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-05 layout.$spacing-07;
+  flex: 1;
+}
+
+.subItem {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.subLabel {
+  @include type.type-style('label-01');
+  color: $interactive-01;
+  white-space: nowrap;
+}
+
+.subValue {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-70;
+  font-weight: 600;
+}
