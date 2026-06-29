@@ -223,6 +223,11 @@ export const claimSubmissionWorkspace = getAsyncLifecycle(
   () => import('./claims/claims-wrap/claim-workspaces/claim-submission/ClaimSubmitWorkspace'),
   options,
 );
+
+export const claimDocumentGeneratorWorkspace = getAsyncLifecycle(
+  () => import('./claims/claims-wrap/claim-workspaces/claim-document-generator/claim-document-generator-workspace'),
+  options,
+);
 export const manageClaimRequestModal = getAsyncLifecycle(
   () =>
     import('./claims/claims-management/table/manage-claim-request.modal').then((m) => ({

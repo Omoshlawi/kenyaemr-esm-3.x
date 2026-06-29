@@ -1,0 +1,145 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+}
+
+.workspace {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+}
+
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-06;
+  padding: layout.$spacing-04;
+  background-color: var(--omrs-color-bg-low-contrast);
+  border: 1px solid var(--omrs-color-bg-medium-contrast);
+}
+
+.bannerItem {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.bannerLabel {
+  @include type.type-style('label-01');
+  color: var(--omrs-color-ink-medium-contrast);
+}
+
+.bannerValue {
+  @include type.type-style('heading-compact-01');
+  color: var(--omrs-color-ink-high-contrast);
+}
+
+.skeleton {
+  padding: layout.$spacing-05;
+}
+
+.card {
+  background-color: var(--omrs-color-bg-low-contrast);
+  border: 1px solid var(--omrs-color-bg-medium-contrast);
+  padding: layout.$spacing-05;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+}
+
+.cardUploaded {
+  border-color: colors.$green-40;
+  background-color: colors.$green-10;
+}
+
+.cardFailed {
+  border-color: colors.$red-40;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.docIcon {
+  color: var(--omrs-color-ink-medium-contrast);
+}
+
+.cardTitle {
+  @include type.type-style('heading-compact-01');
+  color: var(--omrs-color-ink-high-contrast);
+  text-transform: capitalize;
+}
+
+.rowNotification {
+  margin: 0;
+  max-inline-size: 100%;
+}
+
+.preview {
+  border: 1px solid var(--omrs-color-bg-medium-contrast);
+  border-radius: layout.$spacing-02;
+  overflow: hidden;
+  background-color: colors.$gray-10;
+}
+
+.previewFrame {
+  inline-size: 100%;
+  block-size: 22rem;
+  border: none;
+}
+
+.previewImage {
+  display: block;
+  max-inline-size: 100%;
+  max-block-size: 22rem;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.previewFallback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-04;
+}
+
+.fileName {
+  @include type.type-style('body-short-01');
+  color: var(--omrs-color-ink-high-contrast);
+}
+
+.viewLink {
+  @include type.type-style('label-01');
+  color: var(--omrs-color-interaction);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.progress {
+  inline-size: 100%;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-03;
+}

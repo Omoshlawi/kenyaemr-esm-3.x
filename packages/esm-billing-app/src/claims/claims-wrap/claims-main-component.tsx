@@ -30,7 +30,7 @@ import styles from './claims-main.scss';
 import { ClaimTabKey, PatientClaim, PatientClaimDiagnosis, PatientClaimIntervention } from './type';
 import { getPatientUuidFromUrl } from '../../prompt-payment/prompt-payment-modal.component';
 import { CardHeader, EmptyState } from '@openmrs/esm-patient-common-lib';
-import { DocumentAdd, Renew, Upload, UserMultiple } from '@carbon/react/icons';
+import { DocumentAdd, DocumentPdf, Renew, Upload, UserMultiple } from '@carbon/react/icons';
 import {
   useLayoutType,
   isDesktop as isDesktopLayout,
@@ -56,6 +56,24 @@ interface ClaimsMainProps {
   bill: MappedBill;
 }
 
+type ClaimsContextValue = {
+  patientUuid: string;
+  receiptNumber: string;
+  visitUuid: string;
+  mutate: () => void;
+  bill: MappedBill;
+};
+
+const ClaimsContext = React.createContext<ClaimsContextValue | null>(null);
+
+function useClaimsContext(): ClaimsContextValue {
+  const context = React.useContext(ClaimsContext);
+  if (!context) {
+    throw new Error('useClaimsContext must be used within a ClaimsContext.Provider');
+  }
+  return context;
+}
+
 const ClaimMainComponent: React.FC<ClaimsMainProps> = ({ bill }) => {
   const { t } = useTranslation();
   const layout = useLayoutType();
@@ -64,9 +82,9 @@ const ClaimMainComponent: React.FC<ClaimsMainProps> = ({ bill }) => {
   const { detailedViewPageSize } = useConfig<BillingConfig>();
   const { activeVisit } = useVisit(patientUuid);
   const visitUuid = activeVisit?.uuid;
-  const { isLoading: isLoadingBill, bill: internalBill } = useBill(bill.uuid);
+  const { bill: internalBill } = useBill(bill.uuid);
   const receiptNumber = internalBill?.receiptNumber;
-  const { claims, isLoading, error, mutate } = usePatientClaims(patientUuid);
+  const { claims, error, mutate } = usePatientClaims(patientUuid);
   const { pending, sent, resubmission, closed, paid } = useMemo(() => {
     const buckets: Record<ClaimTabKey, Array<PatientClaim>> = {
       pending: [],
@@ -81,104 +99,97 @@ const ClaimMainComponent: React.FC<ClaimsMainProps> = ({ bill }) => {
     return buckets;
   }, [claims]);
 
-  return (
-    <div className={styles.mainContainer}>
-      <div className={styles.tabsContainer}>
-        {error && (
-          <EmptyState
-            headerTitle={t('failedToLoadClaims', 'Failed to load claims')}
-            displayText={t('LoadClaims', 'loaded claims')}
-          />
-        )}
-        <Tabs>
-          <TabList scrollDebounceWait={200}>
-            <Tab>
-              {t('pending', 'Pending')} ({pending.length})
-            </Tab>
-            <Tab>
-              {t('sent', 'Sent')} ({sent.length})
-            </Tab>
-            <Tab>
-              {t('pendingResubmission', 'Pending resubmission')} ({resubmission.length})
-            </Tab>
-            <Tab>
-              {t('closed', 'Closed')} ({closed.length})
-            </Tab>
-            <Tab>
-              {t('paidClaims', 'Paid')} ({paid.length})
-            </Tab>
-          </TabList>
+  const contextValue = useMemo<ClaimsContextValue>(
+    () => ({
+      patientUuid: patientUuid ?? '',
+      receiptNumber: receiptNumber ?? '',
+      visitUuid: visitUuid ?? '',
+      mutate,
+      bill,
+    }),
+    [patientUuid, receiptNumber, visitUuid, mutate, bill],
+  );
 
-          <TabPanels>
-            <TabPanel>
-              <ClaimsTable
-                claims={pending}
-                tab="pending"
-                isDesktop={isDesktop}
-                defaultPageSize={detailedViewPageSize}
-                emptyMessage={t('noPendingClaims', 'No pending claims')}
-                mutate={mutate}
-                t={t}
-                patientUuid={patientUuid ?? ''}
-                receiptNumber={receiptNumber ?? ''}
-              />
-            </TabPanel>
-            <TabPanel>
-              <ClaimsTable
-                claims={sent}
-                tab="sent"
-                isDesktop={isDesktop}
-                defaultPageSize={detailedViewPageSize}
-                emptyMessage={t('noSentClaims', 'No sent claims')}
-                mutate={mutate}
-                t={t}
-                patientUuid={patientUuid ?? ''}
-                receiptNumber={receiptNumber ?? ''}
-              />
-            </TabPanel>
-            <TabPanel>
-              <ClaimsTable
-                claims={resubmission}
-                tab="resubmission"
-                isDesktop={isDesktop}
-                defaultPageSize={detailedViewPageSize}
-                emptyMessage={t('noResubmissionClaims', 'No claims pending resubmission')}
-                mutate={mutate}
-                t={t}
-                patientUuid={patientUuid ?? ''}
-                receiptNumber={receiptNumber ?? ''}
-              />
-            </TabPanel>
-            <TabPanel>
-              <ClaimsTable
-                claims={closed}
-                tab="closed"
-                isDesktop={isDesktop}
-                defaultPageSize={detailedViewPageSize}
-                emptyMessage={t('noClosedClaims', 'No closed claims')}
-                mutate={mutate}
-                t={t}
-                patientUuid={patientUuid ?? ''}
-                receiptNumber={receiptNumber ?? ''}
-              />
-            </TabPanel>
-            <TabPanel>
-              <ClaimsTable
-                claims={paid}
-                tab="paid"
-                isDesktop={isDesktop}
-                defaultPageSize={detailedViewPageSize}
-                emptyMessage={t('noPaidClaims', 'No paid claims')}
-                mutate={mutate}
-                t={t}
-                patientUuid={patientUuid ?? ''}
-                receiptNumber={receiptNumber ?? ''}
-              />
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
+  return (
+    <ClaimsContext.Provider value={contextValue}>
+      <div className={styles.mainContainer}>
+        <div className={styles.tabsContainer}>
+          {error && (
+            <EmptyState
+              headerTitle={t('failedToLoadClaims', 'Failed to load claims')}
+              displayText={t('LoadClaims', 'loaded claims')}
+            />
+          )}
+          <Tabs>
+            <TabList scrollDebounceWait={200}>
+              <Tab>
+                {t('pending', 'Pending')} ({pending.length})
+              </Tab>
+              <Tab>
+                {t('sent', 'Sent')} ({sent.length})
+              </Tab>
+              <Tab>
+                {t('pendingResubmission', 'Pending resubmission')} ({resubmission.length})
+              </Tab>
+              <Tab>
+                {t('closed', 'Closed')} ({closed.length})
+              </Tab>
+              <Tab>
+                {t('paidClaims', 'Paid')} ({paid.length})
+              </Tab>
+            </TabList>
+
+            <TabPanels>
+              <TabPanel>
+                <ClaimsTable
+                  claims={pending}
+                  tab="pending"
+                  isDesktop={isDesktop}
+                  defaultPageSize={detailedViewPageSize}
+                  emptyMessage={t('noPendingClaims', 'No pending claims')}
+                />
+              </TabPanel>
+              <TabPanel>
+                <ClaimsTable
+                  claims={sent}
+                  tab="sent"
+                  isDesktop={isDesktop}
+                  defaultPageSize={detailedViewPageSize}
+                  emptyMessage={t('noSentClaims', 'No sent claims')}
+                />
+              </TabPanel>
+              <TabPanel>
+                <ClaimsTable
+                  claims={resubmission}
+                  tab="resubmission"
+                  isDesktop={isDesktop}
+                  defaultPageSize={detailedViewPageSize}
+                  emptyMessage={t('noResubmissionClaims', 'No claims pending resubmission')}
+                />
+              </TabPanel>
+              <TabPanel>
+                <ClaimsTable
+                  claims={closed}
+                  tab="closed"
+                  isDesktop={isDesktop}
+                  defaultPageSize={detailedViewPageSize}
+                  emptyMessage={t('noClosedClaims', 'No closed claims')}
+                />
+              </TabPanel>
+              <TabPanel>
+                <ClaimsTable
+                  claims={paid}
+                  tab="paid"
+                  isDesktop={isDesktop}
+                  defaultPageSize={detailedViewPageSize}
+                  emptyMessage={t('noPaidClaims', 'No paid claims')}
+                />
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </div>
       </div>
-    </div>
+    </ClaimsContext.Provider>
   );
 };
 
@@ -230,11 +241,9 @@ const ClaimsTable: React.FC<{
   isDesktop: boolean;
   defaultPageSize: number;
   emptyMessage: string;
-  mutate: () => void;
-  t: TFunction;
-  patientUuid: string;
-  receiptNumber: string;
-}> = ({ claims, tab, isDesktop, defaultPageSize, emptyMessage, mutate, t, patientUuid, receiptNumber }) => {
+}> = ({ claims, tab, isDesktop, defaultPageSize, emptyMessage }) => {
+  const { t } = useTranslation();
+  const { patientUuid, receiptNumber, mutate } = useClaimsContext();
   const showActionColumn = tab === 'pending' || tab === 'resubmission';
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -389,7 +398,7 @@ const ClaimsTable: React.FC<{
                         </TableExpandRow>
                         {row.isExpanded && claim ? (
                           <TableExpandedRow {...getExpandedRowProps({ row })} colSpan={carbonHeaders.length + 1}>
-                            <ClaimDetailsPanel claim={claim} tab={tab} mutate={mutate} t={t} />
+                            <ClaimDetailsPanel claim={claim} tab={tab} />
                           </TableExpandedRow>
                         ) : (
                           <TableExpandedRow className={styles.hiddenRow} colSpan={carbonHeaders.length + 1} />
@@ -437,9 +446,9 @@ const ClaimsTable: React.FC<{
 const ClaimDetailsPanel: React.FC<{
   claim: PatientClaim;
   tab: ClaimTabKey;
-  mutate: () => void;
-  t: TFunction;
-}> = ({ claim, tab, mutate, t }) => {
+}> = ({ claim, tab }) => {
+  const { t } = useTranslation();
+  const { patientUuid, receiptNumber, bill, visitUuid, mutate } = useClaimsContext();
   const { format: formatCurrency } = useCurrencyFormatting();
   const { interventions: attachmentInterventions, mutate: mutateAttachments } = useClaimAttachments(
     claim.authorization_code,
@@ -522,6 +531,54 @@ const ClaimDetailsPanel: React.FC<{
 
   const totalBilled = (claim.bill_lines ?? []).reduce((acc, bl) => acc + (Number(bl.line_total_amount) || 0), 0);
   const canUploadAttachments = tab === 'pending' || tab === 'resubmission' || tab === 'sent';
+  const documentParams = useMemo<Record<string, string | undefined>>(
+    () => ({
+      patientUuid,
+      billUuid: bill.uuid,
+      billId: bill.id.toString(),
+      visitUuid,
+      consentToken: claim.authorization_code,
+      authorizationCode: claim.authorization_code,
+      invoiceNumber: claim.invoice_number ?? receiptNumber ?? undefined,
+      memberNumber: claim.member_number ?? undefined,
+      receiptNumber: receiptNumber,
+    }),
+    [
+      patientUuid,
+      bill.uuid,
+      visitUuid,
+      claim.authorization_code,
+      claim.invoice_number,
+      claim.member_number,
+      receiptNumber,
+    ],
+  );
+
+  const handleGenerateForIntervention = useCallback(
+    (iv: PatientClaimIntervention) => {
+      const ivAttachments = attachmentsByCode.get(iv.intervention_code);
+      const alreadyUploaded = (ivAttachments?.attachments ?? [])
+        .map((a) => a.document_type)
+        .filter((d): d is string => !!d);
+
+      launchWorkspace2(
+        'claim-document-generator-workspace',
+        {
+          workspaceTitle: t('generateDocuments', 'Generate documents'),
+          consentToken: claim.authorization_code,
+          interventionCode: iv.intervention_code,
+          interventionName: iv.intervention_name,
+          documentTypes: iv.applicable_document_types ?? [],
+          alreadyUploadedTypes: alreadyUploaded,
+          params: { ...documentParams, interventionCode: iv.intervention_code },
+          mutate: combinedMutate,
+        },
+        {},
+        {},
+      );
+    },
+    [claim.authorization_code, attachmentsByCode, documentParams, combinedMutate, t],
+  );
   const handleUploadForIntervention = useCallback(
     (iv: PatientClaimIntervention) => {
       const ivAttachments = attachmentsByCode.get(iv.intervention_code);
@@ -878,6 +935,19 @@ const ClaimDetailsPanel: React.FC<{
                               renderIcon={DocumentAdd}
                               onClick={() => handleUploadForIntervention(iv)}>
                               {t('uploadAttachments', 'Upload attachments')}
+                            </Button>
+                          )}
+                          {canUploadAttachments && (
+                            <Button
+                              size="sm"
+                              kind="ghost"
+                              // disabled={
+                              //   (uploadedTypes.size > 0 && requiredDocs.every((d) => uploadedTypes.has(d))) ||
+                              //   requiredDocs?.length === 0
+                              // }
+                              renderIcon={DocumentPdf}
+                              onClick={() => handleGenerateForIntervention(iv)}>
+                              {t('generateDocuments', 'Generate documents')}
                             </Button>
                           )}
                           {tab === 'resubmission' &&
