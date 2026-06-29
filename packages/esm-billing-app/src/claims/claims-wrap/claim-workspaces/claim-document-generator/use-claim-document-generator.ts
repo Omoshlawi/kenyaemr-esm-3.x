@@ -9,6 +9,7 @@ import {
   uploadGeneratedDocument,
   type GeneratedDocument,
 } from './claim-document-generator-resource';
+import { retireClaimAttachment } from '../attachements/claim-attachments-resource';
 import { BatchAttachmentResult } from '../../../claims-management/table/virtual-claim-preauth/type';
 
 export type RowStatus = 'idle' | 'generating' | 'ready' | 'uploading' | 'uploaded' | 'failed';
@@ -20,6 +21,9 @@ type RowState = {
   progress: number;
   error?: string;
   uploadedUrl?: string;
+  isReplacing?: boolean;
+  isManual?: boolean;
+  attachmentUuid?: string;
 };
 
 export type DocumentRow = RowState & {
@@ -29,6 +33,7 @@ export type DocumentRow = RowState & {
   isLocked: boolean;
   isBusy: boolean;
   canGenerate: boolean;
+  canManualUpload: boolean;
   missingParams: Array<string>;
 };
 
@@ -38,6 +43,8 @@ export type ClaimDocumentActions = {
   cancel: (documentType: string) => void;
   discard: (documentType: string) => void;
   preview: (documentType: string) => void;
+  replace: (documentType: string) => void;
+  manualSelect: (documentType: string, file: File) => void;
 };
 
 export type UseClaimDocumentGeneratorArgs = {
@@ -46,6 +53,8 @@ export type UseClaimDocumentGeneratorArgs = {
   documentTypes: ReadonlyArray<string>;
   params: Record<string, string | undefined>;
   alreadyUploadedTypes?: ReadonlyArray<string>;
+  /** Maps an already-uploaded document type to its attachment uuid so a replacement can retire it first. */
+  uploadedAttachmentUuids?: Record<string, string>;
   onUploaded?: (documentType: string, result: BatchAttachmentResult) => void;
   mutate?: () => void;
 };
@@ -60,6 +69,7 @@ export function useClaimDocumentGenerator({
   documentTypes,
   params,
   alreadyUploadedTypes,
+  uploadedAttachmentUuids,
   onUploaded,
   mutate,
 }: UseClaimDocumentGeneratorArgs): {
@@ -129,7 +139,8 @@ export function useClaimDocumentGenerator({
 
   const upload = useCallback(
     async (documentType: string) => {
-      const document = rowStatesRef.current[documentType]?.document;
+      const currentRow = rowStatesRef.current[documentType];
+      const document = currentRow?.document;
       if (!document) {
         return;
       }
@@ -137,6 +148,20 @@ export function useClaimDocumentGenerator({
       const controller = new AbortController();
       abortControllers.current[documentType] = controller;
       setRow(documentType, { status: 'uploading', progress: 0, error: undefined });
+      const existingUuid = currentRow?.attachmentUuid ?? uploadedAttachmentUuids?.[documentType];
+      if (currentRow?.isReplacing && existingUuid) {
+        const retire = await retireClaimAttachment({
+          consentToken,
+          attachmentUuid: existingUuid,
+          interventionCode,
+          t,
+        });
+        if (!retire.ok) {
+          delete abortControllers.current[documentType];
+          setRow(documentType, { status: 'failed', progress: 0, error: retire.error });
+          return;
+        }
+      }
 
       const result = await uploadGeneratedDocument({
         consentToken,
@@ -154,7 +179,13 @@ export function useClaimDocumentGenerator({
         return;
       }
 
-      setRow(documentType, { status: 'uploaded', progress: 100, uploadedUrl: result.result?.url });
+      setRow(documentType, {
+        status: 'uploaded',
+        progress: 100,
+        uploadedUrl: result.result?.url,
+        attachmentUuid: result.result?.attachment_uuid,
+        isReplacing: false,
+      });
       showSnackbar({
         title: t('documentUploaded', 'Document uploaded'),
         subtitle: t('documentUploadedDesc', '{{type}} was attached to the claim', {
@@ -168,7 +199,7 @@ export function useClaimDocumentGenerator({
       }
       mutate?.();
     },
-    [consentToken, interventionCode, onUploaded, mutate, setRow, t],
+    [consentToken, interventionCode, uploadedAttachmentUuids, onUploaded, mutate, setRow, t],
   );
 
   const cancel = useCallback((documentType: string) => {
@@ -193,27 +224,55 @@ export function useClaimDocumentGenerator({
     }
   }, []);
 
+  const replace = useCallback((documentType: string) => {
+    setRowStates((prev) => {
+      const row = prev[documentType];
+      if (row?.objectUrl) {
+        URL.revokeObjectURL(row.objectUrl);
+        objectUrls.current = objectUrls.current.filter((url) => url !== row.objectUrl);
+      }
+      return { ...prev, [documentType]: { ...initialRow, isReplacing: true, attachmentUuid: row?.attachmentUuid } };
+    });
+  }, []);
+
+  const manualSelect = useCallback(
+    (documentType: string, file: File) => {
+      const mimeType = file.type || 'application/octet-stream';
+      const document: GeneratedDocument = { blob: file, mimeType, filename: file.name };
+      const objectUrl = URL.createObjectURL(file);
+      objectUrls.current.push(objectUrl);
+      setRow(documentType, { status: 'ready', document, objectUrl, error: undefined, isManual: true });
+    },
+    [setRow],
+  );
+
   const rows = useMemo<Array<DocumentRow>>(() => {
-    return documentTypes.map((documentType) => {
+    return [...new Set(documentTypes)].map((documentType) => {
       const state = rowStates[documentType] ?? initialRow;
       const template = endpoints[documentType];
       const missingParams = template ? resolveEndpointTemplate(template, params).missing : [];
+      const isBusy = state.status === 'generating' || state.status === 'uploading';
+      const canGenerate = Boolean(template) && missingParams.length === 0;
       return {
         ...state,
         documentType,
         label: humanizeDocumentType(documentType),
         hasEndpoint: Boolean(template),
-        isLocked: lockedTypes.has(documentType) || state.status === 'uploaded',
-        isBusy: state.status === 'generating' || state.status === 'uploading',
-        canGenerate: Boolean(template) && missingParams.length === 0,
+        isLocked: (lockedTypes.has(documentType) || state.status === 'uploaded') && !state.isReplacing,
+        isBusy,
+        canGenerate,
+        canManualUpload:
+          !isBusy &&
+          state.status !== 'ready' &&
+          (!canGenerate || state.status === 'failed' || Boolean(state.isReplacing)),
         missingParams,
       };
     });
   }, [documentTypes, rowStates, endpoints, params, lockedTypes]);
 
   const actions = useMemo<ClaimDocumentActions>(
-    () => ({ generate, upload, cancel, discard, preview }),
-    [generate, upload, cancel, discard, preview],
+    () => ({ generate, upload, cancel, discard, preview, replace, manualSelect }),
+    [generate, upload, cancel, discard, preview, replace, manualSelect],
   );
 
   return { isLoading, error, rows, actions };

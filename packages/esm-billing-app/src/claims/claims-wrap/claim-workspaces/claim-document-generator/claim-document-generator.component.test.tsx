@@ -17,6 +17,8 @@ const actions: ClaimDocumentActions = {
   cancel: vi.fn(),
   discard: vi.fn(),
   preview: vi.fn(),
+  replace: vi.fn(),
+  manualSelect: vi.fn(),
 };
 
 const buildRow = (overrides: Partial<DocumentRow> = {}): DocumentRow => ({
@@ -28,6 +30,7 @@ const buildRow = (overrides: Partial<DocumentRow> = {}): DocumentRow => ({
   isLocked: false,
   isBusy: false,
   canGenerate: true,
+  canManualUpload: false,
   missingParams: [],
   ...overrides,
 });
@@ -183,7 +186,8 @@ describe('<ClaimDocumentGenerator />', () => {
   });
 
   describe('locked row', () => {
-    it('marks the document uploaded, links to the claim, and hides further actions', () => {
+    it('marks the document uploaded, links to the claim, and offers a replace action', async () => {
+      const user = userEvent.setup();
       renderWith({
         rows: [buildRow({ status: 'uploaded', isLocked: true, uploadedUrl: 'https://claim/doc' })],
       });
@@ -191,7 +195,11 @@ describe('<ClaimDocumentGenerator />', () => {
       expect(screen.getByText('Uploaded')).toBeInTheDocument();
       const link = screen.getByRole('link', { name: /View on claim/ });
       expect(link).toHaveAttribute('href', 'https://claim/doc');
-      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+
+      const buttons = screen.getAllByRole('button');
+      expect(buttons).toHaveLength(1);
+      await user.click(screen.getByRole('button', { name: 'Replace' }));
+      expect(actions.replace).toHaveBeenCalledWith('CLAIM_FORM');
     });
   });
 });

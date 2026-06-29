@@ -44,7 +44,11 @@ const DocumentPreview: React.FC<{ documentType: string; document: GeneratedDocum
   );
 };
 
-const DocumentCardActions: React.FC<{ row: DocumentRow; actions: ClaimDocumentActions }> = ({ row, actions }) => {
+const DocumentCardActions: React.FC<{ row: DocumentRow; actions: ClaimDocumentActions; onPickFile: () => void }> = ({
+  row,
+  actions,
+  onPickFile,
+}) => {
   const { t } = useTranslation();
   const { documentType } = row;
 
@@ -67,13 +71,18 @@ const DocumentCardActions: React.FC<{ row: DocumentRow; actions: ClaimDocumentAc
     return (
       <>
         <Button kind="primary" size="sm" renderIcon={Upload} onClick={() => actions.upload(documentType)}>
-          {t('upload', 'Upload')}
+          {row.isReplacing ? t('uploadReplacement', 'Upload replacement') : t('upload', 'Upload')}
         </Button>
         <Button kind="tertiary" size="sm" renderIcon={View} onClick={() => actions.preview(documentType)}>
           {t('preview', 'Preview')}
         </Button>
-        <Button kind="ghost" size="sm" renderIcon={Renew} onClick={() => actions.generate(documentType)}>
-          {t('regenerate', 'Regenerate')}
+        {row.canGenerate && (
+          <Button kind="ghost" size="sm" renderIcon={Renew} onClick={() => actions.generate(documentType)}>
+            {t('regenerate', 'Regenerate')}
+          </Button>
+        )}
+        <Button kind="ghost" size="sm" renderIcon={Upload} onClick={onPickFile}>
+          {row.isManual ? t('chooseDifferentFile', 'Choose a different file') : t('uploadManually', 'Upload manually')}
         </Button>
         <Button
           kind="danger--ghost"
@@ -88,19 +97,38 @@ const DocumentCardActions: React.FC<{ row: DocumentRow; actions: ClaimDocumentAc
   }
 
   return (
-    <Button
-      kind="tertiary"
-      size="sm"
-      renderIcon={DocumentPdf}
-      disabled={!row.canGenerate}
-      onClick={() => actions.generate(documentType)}>
-      {row.status === 'failed' ? t('retry', 'Retry') : t('generate', 'Generate')}
-    </Button>
+    <>
+      <Button
+        kind="tertiary"
+        size="sm"
+        renderIcon={DocumentPdf}
+        disabled={!row.canGenerate}
+        onClick={() => actions.generate(documentType)}>
+        {row.status === 'failed' ? t('retry', 'Retry') : t('generate', 'Generate')}
+      </Button>
+      {row.canManualUpload && (
+        <Button kind="ghost" size="sm" renderIcon={Upload} onClick={onPickFile}>
+          {t('uploadManually', 'Upload manually')}
+        </Button>
+      )}
+    </>
   );
 };
 
 const DocumentCard: React.FC<{ row: DocumentRow; actions: ClaimDocumentActions }> = ({ row, actions }) => {
   const { t } = useTranslation();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const pickFile = () => fileInputRef.current?.click();
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      actions.manualSelect(row.documentType, file);
+    }
+
+    event.target.value = '';
+  };
 
   return (
     <Layer>
@@ -179,11 +207,23 @@ const DocumentCard: React.FC<{ row: DocumentRow; actions: ClaimDocumentActions }
           </a>
         )}
 
-        {!row.isLocked && (
-          <div className={styles.actions}>
-            <DocumentCardActions row={row} actions={actions} />
-          </div>
-        )}
+        <div className={styles.actions}>
+          {row.isLocked ? (
+            <Button kind="tertiary" size="sm" renderIcon={Renew} onClick={() => actions.replace(row.documentType)}>
+              {t('replace', 'Replace')}
+            </Button>
+          ) : (
+            <DocumentCardActions row={row} actions={actions} onPickFile={pickFile} />
+          )}
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,image/*"
+          className={styles.hiddenInput}
+          onChange={handleFileChange}
+        />
       </div>
     </Layer>
   );

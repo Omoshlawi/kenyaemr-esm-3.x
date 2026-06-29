@@ -560,6 +560,11 @@ const ClaimDetailsPanel: React.FC<{
       const alreadyUploaded = (ivAttachments?.attachments ?? [])
         .map((a) => a.document_type)
         .filter((d): d is string => !!d);
+      const uploadedAttachmentUuids = Object.fromEntries(
+        (ivAttachments?.attachments ?? [])
+          .filter((a) => a.document_type && a.uuid)
+          .map((a) => [a.document_type, a.uuid]),
+      );
 
       launchWorkspace2(
         'claim-document-generator-workspace',
@@ -570,6 +575,7 @@ const ClaimDetailsPanel: React.FC<{
           interventionName: iv.intervention_name,
           documentTypes: iv.applicable_document_types ?? [],
           alreadyUploadedTypes: alreadyUploaded,
+          uploadedAttachmentUuids,
           params: { ...documentParams, interventionCode: iv.intervention_code },
           mutate: combinedMutate,
         },
