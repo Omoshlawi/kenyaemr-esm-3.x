@@ -61,6 +61,7 @@ const MainTable: React.FC = () => {
     { key: 'patientName', header: t('patientName', 'Patient Name') },
     { key: 'authCode', header: t('authCode', 'Auth Code') },
     { key: 'serviceType', header: t('serviceType', 'Service Type') },
+    { key: 'fund', header: t('fund', 'Fund') },
     { key: 'invoiceNumber', header: t('invoiceNumber', 'Invoice No.') },
     { key: 'stage', header: t('stage', 'Stage') },
   ];
@@ -82,6 +83,7 @@ const MainTable: React.FC = () => {
         </ConfigurableLink>
       ),
       authCode: claim.authorization_code ?? '—',
+      fund: claim.scheme_code ? claim.scheme_code : '—',
       serviceType: claim.service_type ? <Tag type={serviceTagType as any}>{toTitleCase(claim.service_type)}</Tag> : '—',
       invoiceNumber: claim.invoice_number ?? '—',
       stage: <Tag type={stageCfg.type as any}>{stageCfg.label}</Tag>,

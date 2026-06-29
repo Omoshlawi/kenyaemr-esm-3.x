@@ -139,6 +139,7 @@ export interface PatientClaimDiagnosis {
   is_resolved: boolean;
   source: string | null;
   upstream_guid: string | null;
+  sha_error_message: string | null;
 }
 
 export interface PatientClaimBillLine {

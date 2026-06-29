@@ -2,6 +2,12 @@
 @use '@carbon/colors';
 @use '@carbon/type';
 
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+}
+
 .widgetCard {
   padding: layout.$spacing-05;
 }
@@ -280,14 +286,31 @@
 
 .diagnosisRow {
   display: flex;
-  align-items: center;
-  gap: layout.$spacing-03;
+  flex-direction: column;
+  gap: layout.$spacing-02;
   padding: layout.$spacing-02 0;
   border-bottom: 1px dashed colors.$gray-20;
 
   &:last-child {
     border-bottom: none;
   }
+}
+
+.diagnosisMain {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  min-width: 0;
+}
+
+.diagnosisError {
+  @include type.type-style('label-01');
+  color: colors.$red-60;
+  margin: 0;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 .diagnosisCode {

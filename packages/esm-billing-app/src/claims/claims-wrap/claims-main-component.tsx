@@ -193,6 +193,31 @@ const ClaimMainComponent: React.FC<ClaimsMainProps> = ({ bill }) => {
   );
 };
 
+function parseDiagnosisError(raw: string): string {
+  const jsonStart = raw.indexOf('{');
+  if (jsonStart === -1) {
+    return raw;
+  }
+  const prefix = raw.slice(0, jsonStart).replace(/:\s*$/, '').trim();
+  try {
+    const parsed = JSON.parse(raw.slice(jsonStart));
+    const messages: string[] = [];
+    for (const val of Object.values(parsed)) {
+      if (Array.isArray(val)) {
+        val.forEach((v) => typeof v === 'string' && messages.push(v));
+      } else if (typeof val === 'string') {
+        messages.push(val);
+      }
+    }
+    if (messages.length) {
+      return prefix ? `${prefix}: ${messages.join('; ')}` : messages.join('; ');
+    }
+  } catch {
+    // fall through
+  }
+  return raw;
+}
+
 const renderPayerStatus = (claim: PatientClaim, tab: ClaimTabKey, t: TFunction): React.ReactNode => {
   if (claim.payer_workflow_state) {
     return (
@@ -244,7 +269,7 @@ const ClaimsTable: React.FC<{
 }> = ({ claims, tab, isDesktop, defaultPageSize, emptyMessage }) => {
   const { t } = useTranslation();
   const { patientUuid, receiptNumber, mutate } = useClaimsContext();
-  const showActionColumn = tab === 'pending' || tab === 'resubmission';
+  const showSubmitColumn = tab === 'pending' || tab === 'resubmission';
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => defaultPageSize || 10);
@@ -279,11 +304,9 @@ const ClaimsTable: React.FC<{
       { key: 'provider_workflow_state', header: t('claimStatus', 'Claim status') },
       { key: 'payer_workflow_state', header: t('payerStatus', 'Payer') },
     ];
-    if (showActionColumn) {
-      base.push({ key: 'action', header: t('actionButtons', 'Action') });
-    }
+    base.push({ key: 'action', header: '' });
     return base;
-  }, [t, showActionColumn]);
+  }, [t]);
 
   const handleSubmitClaim = (claim: PatientClaim) => {
     const isResubmit = tab === 'resubmission';
@@ -330,34 +353,42 @@ const ClaimsTable: React.FC<{
           provider_workflow_state: <StatusTag stage={claim.provider_workflow_state} />,
           payer_workflow_state: renderPayerStatus(claim, tab, t),
         };
-        if (showActionColumn) {
-          const isResubmit = tab === 'resubmission';
-          row.action = (
+        const hasDiagnosisErrors = claim.diagnoses?.some((dx) => !!dx.sha_error_message) ?? false;
+        const isResubmit = tab === 'resubmission';
+        row.action = (
+          <div className={styles.rowActions}>
+            {showSubmitColumn && (
+              <Button
+                size="sm"
+                kind={isResubmit ? 'danger--tertiary' : 'primary'}
+                onClick={() => handleSubmitClaim(claim)}
+                renderIcon={isResubmit ? Renew : Upload}
+                disabled={hasDiagnosisErrors}
+                title={
+                  hasDiagnosisErrors ? t('fixDiagnosisErrors', 'Fix diagnosis errors before submitting') : undefined
+                }>
+                {isResubmit ? t('resubmitClaim', 'Resubmit claim') : t('submitClaim', 'Submit claim')}
+              </Button>
+            )}
             <Button
               size="sm"
-              kind={isResubmit ? 'danger--tertiary' : 'primary'}
-              onClick={() => handleSubmitClaim(claim)}
-              renderIcon={isResubmit ? Renew : Upload}>
-              {isResubmit ? t('resubmitClaim', 'Resubmit claim') : t('submitClaim', 'Submit claim')}
-            </Button>
-          );
-        }
+              kind="ghost"
+              hasIconOnly
+              renderIcon={(props) => <Renew size={16} {...props} />}
+              iconDescription={t('sync', 'Sync')}
+              tooltipPosition="left"
+              onClick={() => mutate()}
+            />
+          </div>
+        );
         return row;
       }),
-    [paginatedClaims, t, showActionColumn, tab],
+    [paginatedClaims, t, showSubmitColumn, tab, mutate],
   );
 
   return (
     <>
-      <CardHeader title={t('claims', 'Claims')}>
-        <Button
-          kind="ghost"
-          renderIcon={(props) => <Renew size={16} {...props} />}
-          iconDescription={t('sync', 'Sync')}
-          onClick={() => mutate()}>
-          {t('sync', 'Sync')}
-        </Button>
-      </CardHeader>
+      <CardHeader title={t('claims', 'Claims')}>{null}</CardHeader>
       <DataTable
         headers={headers}
         rows={(tableRows ?? []) as any}
@@ -1074,13 +1105,18 @@ const ClaimDetailsPanel: React.FC<{
             <ul className={styles.diagnosisList}>
               {uniqueDiagnoses.map((dx) => (
                 <li key={dx.id} className={styles.diagnosisRow}>
-                  <code className={styles.diagnosisCode}>{dx.icd_code}</code>
-                  <span className={styles.diagnosisDesc}>{dx.icd_description}</span>
-                  <Tag
-                    size="sm"
-                    type={dx.status === 'ATTACHED' ? 'green' : dx.status === 'REJECTED' ? 'red' : 'warm-gray'}>
-                    {dx.status}
-                  </Tag>
+                  <div className={styles.diagnosisMain}>
+                    <code className={styles.diagnosisCode}>{dx.icd_code}</code>
+                    <span className={styles.diagnosisDesc}>{dx.icd_description}</span>
+                    <Tag
+                      size="sm"
+                      type={dx.status === 'ATTACHED' ? 'green' : dx.status === 'REJECTED' ? 'red' : 'warm-gray'}>
+                      {dx.status}
+                    </Tag>
+                  </div>
+                  {dx.sha_error_message && (
+                    <p className={styles.diagnosisError}>{parseDiagnosisError(dx.sha_error_message)}</p>
+                  )}
                 </li>
               ))}
             </ul>
