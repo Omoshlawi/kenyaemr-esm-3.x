@@ -363,7 +363,6 @@ const ClaimsTable: React.FC<{
                 kind={isResubmit ? 'danger--tertiary' : 'primary'}
                 onClick={() => handleSubmitClaim(claim)}
                 renderIcon={isResubmit ? Renew : Upload}
-                disabled={hasDiagnosisErrors}
                 title={
                   hasDiagnosisErrors ? t('fixDiagnosisErrors', 'Fix diagnosis errors before submitting') : undefined
                 }>
