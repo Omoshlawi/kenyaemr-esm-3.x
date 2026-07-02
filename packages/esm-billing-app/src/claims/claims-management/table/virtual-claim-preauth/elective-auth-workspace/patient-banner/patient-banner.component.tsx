@@ -59,7 +59,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patientUuid, hideActionsO
         <div className={styles.patientAvatar} role="img">
           <PatientPhoto patientUuid={patientUuid} patientName={patientName} />
         </div>
-        <PatientBannerPatientInfo patient={patient} renderedFrom="patient-chart" />
+        {patient && <PatientBannerPatientInfo patient={patient} renderedFrom="patient-chart" />}
         <div className={styles.buttonCol}>
           {!showDetailsButtonBelowHeader ? (
             <PatientBannerToggleContactDetailsButton
@@ -80,7 +80,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patientUuid, hideActionsO
       {showContactDetails && (
         <div
           className={classNames(styles.contactDetails, {
-            [styles.deceasedContactDetails]: patient.deceasedBoolean,
+            [styles.deceasedContactDetails]: patient?.deceasedBoolean,
             [styles.tabletContactDetails]: isTabletViewport,
           })}>
           <PatientBannerContactDetails deceased={isDeceased} patientId={patient?.id} />
