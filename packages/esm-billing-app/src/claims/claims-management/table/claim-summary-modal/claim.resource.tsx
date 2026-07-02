@@ -4,6 +4,7 @@ export interface closeClaimPayload {
   cancel_reason_type: string;
   cancel_reason_text: string;
   patient_uuid?: string;
+  consent_token?: string;
 }
 
 export interface EditClaimLineResult {
@@ -34,14 +35,16 @@ export async function closeInsuranceClaim(
   cancelReasonType: string,
   cancelReasonText: string,
   patientUuid?: string,
+  authorizationCode?: string,
 ): Promise<CloseClaimResult> {
   const body: closeClaimPayload = {
     cancel_reason_type: cancelReasonType,
     cancel_reason_text: cancelReasonText,
     patient_uuid: patientUuid,
+    consent_token: authorizationCode,
   };
 
-  const url = `${restBaseUrl}/insuranceclaims/bill/close`;
+  const url = `${restBaseUrl}/virtualclaims/billing/close`;
 
   const response = await fetch(`/openmrs${url}`, {
     method: 'POST',

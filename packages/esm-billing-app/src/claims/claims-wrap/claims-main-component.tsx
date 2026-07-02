@@ -363,10 +363,36 @@ const ClaimsTable: React.FC<{
                 kind={isResubmit ? 'danger--tertiary' : 'primary'}
                 onClick={() => handleSubmitClaim(claim)}
                 renderIcon={isResubmit ? Renew : Upload}
+                disabled={hasDiagnosisErrors}
                 title={
                   hasDiagnosisErrors ? t('fixDiagnosisErrors', 'Fix diagnosis errors before submitting') : undefined
                 }>
                 {isResubmit ? t('resubmitClaim', 'Resubmit claim') : t('submitClaim', 'Submit claim')}
+              </Button>
+            )}
+            {tab === 'pending' && (
+              <Button
+                size="sm"
+                kind="danger--ghost"
+                onClick={() =>
+                  launchWorkspace2(
+                    'claim-submission-workspace',
+                    {
+                      workspaceTitle: t('cancelClaim', 'Cancel claim'),
+                      isCancelMode: true,
+                      patientUuid,
+                      consentToken: claim.authorization_code,
+                      invoiceNumber: claim.invoice_number ?? '',
+                      serviceType: claim.service_type ?? '',
+                      patientCRId: claim.member_number ?? '',
+                      interventions: [],
+                      mutate,
+                    },
+                    {},
+                    {},
+                  )
+                }>
+                {t('cancel', 'Cancel')}
               </Button>
             )}
             <Button
@@ -552,8 +578,11 @@ const ClaimDetailsPanel: React.FC<{
       }
       const dxScore = (dx.upstream_guid ? 2 : 0) + (dx.status === 'ATTACHED' ? 1 : 0);
       const exScore = (existing.upstream_guid ? 2 : 0) + (existing.status === 'ATTACHED' ? 1 : 0);
+      const mergedError = dx.sha_error_message || existing.sha_error_message;
       if (dxScore > exScore) {
-        seen.set(key, dx);
+        seen.set(key, { ...dx, sha_error_message: mergedError });
+      } else {
+        seen.set(key, { ...existing, sha_error_message: mergedError });
       }
     }
     return Array.from(seen.values());

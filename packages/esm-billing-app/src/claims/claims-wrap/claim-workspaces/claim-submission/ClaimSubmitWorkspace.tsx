@@ -15,7 +15,10 @@ import {
   Dropdown,
   InlineLoading,
   InlineNotification,
+  Select,
+  SelectItem,
   Tag,
+  TextInput,
   TimePicker,
 } from '@carbon/react';
 import { CheckmarkFilled } from '@carbon/react/icons';
@@ -39,11 +42,22 @@ import {
 } from '../../../../billing-form/social-health-authority/sha-virtual-claim.resource';
 import { useSHAEligibility } from '../../../../billing-form/hie.resource';
 import { dischargeClaim, requestDischargeOtp, submitClaim, useDischargeReasons } from './claim-submit-resource';
+import { closeInsuranceClaim } from '../../../claims-management/table/claim-summary-modal/claim.resource';
 import { ClaimSubmitFormData, claimSubmitSchema } from './claim-submit-schema';
 import {
   extractUpstreamError,
   toLocalIsoWithOffset,
 } from '../../../claims-management/table/virtual-claim-preauth/utils';
+
+const CANCEL_REASON_OPTIONS = [
+  'WRONG_PATIENT',
+  'NO_SERVICE_GIVEN',
+  'WRONG_BENEFIT',
+  'EXPIRED_VISIT',
+  'EXHAUSTED_BENEFIT',
+  'TIME_BARRED',
+  'OTHER_REASONS',
+];
 
 type ClaimSubmitWorkspaceProps = {
   consentToken: string;
@@ -54,6 +68,7 @@ type ClaimSubmitWorkspaceProps = {
   interventions: Array<string>;
   paymentMechanism?: string;
   isResubmission?: boolean;
+  isCancelMode?: boolean;
   totalAmount?: number;
   mutate: () => void;
   providerWorkflowState?: string;
@@ -81,6 +96,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     interventions,
     paymentMechanism,
     isResubmission = false,
+    isCancelMode = false,
     providerWorkflowState,
     totalAmount,
     mutate,
@@ -122,6 +138,31 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSucceeded, setSubmitSucceeded] = useState(false);
+
+  const [cancelReasonText, setCancelReasonText] = useState('');
+  const [cancelReasonType, setCancelReasonType] = useState('OTHER_REASONS');
+
+  const handleCancelClaim = useCallback(async () => {
+    if (!cancelReasonText.trim()) {
+      return;
+    }
+    setIsSubmitting(true);
+    setSubmitError(null);
+    const result = await closeInsuranceClaim(cancelReasonType, cancelReasonText, patientUuid, consentToken);
+    setIsSubmitting(false);
+    if (result.success) {
+      showSnackbar({
+        kind: 'success',
+        title: t('cancelClaim', 'Cancel Claim'),
+        subtitle: t('claimCanceledSuccessfully', 'Claim canceled successfully'),
+        timeoutInMs: 3000,
+      });
+      mutate();
+      setTimeout(() => closeWorkspace(), 800);
+    } else {
+      setSubmitError(result.upstreamError ?? t('cancelClaimFailed', 'Failed to cancel claim'));
+    }
+  }, [cancelReasonType, cancelReasonText, patientUuid, mutate, closeWorkspace, t]);
 
   const dischargeReasonRef = useRef<string>('');
   const dischargeDateIsoRef = useRef<string>('');
@@ -419,7 +460,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
       },
       closeModal: () => dispose(),
     });
-  }, [consentToken, runSubmit, mutate, t]);
+  }, [consentToken, runSubmit, mutate, closeWorkspace, t]);
 
   if (!workspaceProps) {
     return null;
@@ -438,9 +479,70 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     }
   };
 
-  const workspaceTitle = isResubmission
+  const workspaceTitle = isCancelMode
+    ? t('cancelClaim', 'Cancel claim — {{code}}', { code: consentToken })
+    : isResubmission
     ? t('resubmitClaim', 'Resubmit claim — {{code}}', { code: consentToken })
     : t('submitClaim', 'Submit claim — {{code}}', { code: consentToken });
+
+  if (isCancelMode) {
+    return (
+      <Workspace2 hasUnsavedChanges={!!cancelReasonText && !submitSucceeded} title={workspaceTitle}>
+        <div className={styles.form}>
+          <div className={styles.formContainer}>
+            <section className={styles.formSection}>
+              <TextInput
+                id="cancel-reason-text"
+                labelText={t('cancelReason', 'Cancel reason')}
+                placeholder={t('enterCancelReason', 'Enter a detailed cancellation reason')}
+                value={cancelReasonText}
+                onChange={(e) => setCancelReasonText((e.target as HTMLInputElement).value)}
+                disabled={isSubmitting}
+              />
+            </section>
+            <section className={styles.formSection}>
+              <Select
+                id="cancel-reason-type"
+                labelText={t('cancelReasonType', 'Cancel reason type')}
+                value={cancelReasonType}
+                onChange={(e) => setCancelReasonType((e.target as HTMLSelectElement).value)}
+                disabled={isSubmitting}>
+                {CANCEL_REASON_OPTIONS.map((opt) => (
+                  <SelectItem key={opt} value={opt} text={t(opt, opt)} />
+                ))}
+              </Select>
+            </section>
+            {submitError && (
+              <InlineNotification
+                kind="error"
+                lowContrast
+                hideCloseButton
+                title={t('cancelClaimError', 'Cancel error')}
+                subtitle={submitError}
+                className={styles.errorBanner}
+              />
+            )}
+          </div>
+          <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
+            <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()} disabled={isSubmitting}>
+              {t('close', 'Close')}
+            </Button>
+            <Button
+              className={styles.button}
+              kind="danger"
+              disabled={isSubmitting || !cancelReasonText.trim()}
+              onClick={handleCancelClaim}>
+              {isSubmitting ? (
+                <InlineLoading className={styles.spinner} description={t('canceling', 'Canceling…')} />
+              ) : (
+                t('cancelClaim', 'Cancel claim')
+              )}
+            </Button>
+          </ButtonSet>
+        </div>
+      </Workspace2>
+    );
+  }
 
   return (
     <Workspace2 hasUnsavedChanges={isDirty && !submitSucceeded} title={workspaceTitle}>

@@ -6,6 +6,7 @@
   display: flex;
   align-items: center;
   gap: layout.$spacing-02;
+  white-space: nowrap;
 }
 
 .widgetCard {
@@ -15,6 +16,9 @@
   padding: layout.$spacing-05;
   :global(.cds--table-expand) {
     background-color: colors.$gray-20;
+  }
+  :global(.cds--data-table) {
+    table-layout: auto;
   }
 }
 
