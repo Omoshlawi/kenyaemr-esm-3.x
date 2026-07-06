@@ -139,6 +139,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   const [electiveConsentToken, setElectiveConsentToken] = useState('');
 
   const [isCoverageExhausted, setIsCoverageExhausted] = useState(false);
+  const [shafundType, setShafundType] = useState<'PHC' | 'SHIF'>('PHC');
 
   const {
     electiveRecord,
@@ -361,6 +362,11 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         return;
       }
 
+      if (shafundType === 'SHIF') {
+        resolve(true);
+        return;
+      }
+
       if (!patientCRId) {
         showSnackbar({
           title: t('shaVirtualClaim', 'SHA Virtual Claim'),
@@ -530,6 +536,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   }, [
     shaEnabled,
     isInsuranceSchemeSha,
+    shafundType,
     patientCRId,
     isPatientWhiteListed,
     facilityBiometricsEnforced,
@@ -715,6 +722,21 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
 
       {shaEnabled && isInsuranceSchemeSha && (
         <section className={styles.sectionContainer}>
+          <div className={styles.sectionTitle}>{t('shaFund', 'SHA Fund')}</div>
+          <RadioButtonGroup
+            name="sha-fund"
+            valueSelected={shafundType}
+            onChange={(val: string) => {
+              setShafundType(val as 'PHC' | 'SHIF');
+            }}>
+            <RadioButton labelText={t('phcFund', 'PHC')} value="PHC" id="sha-fund-phc" />
+            <RadioButton labelText={t('shifFund', 'SHIF')} value="SHIF" id="sha-fund-shif" />
+          </RadioButtonGroup>
+        </section>
+      )}
+
+      {shaEnabled && isInsuranceSchemeSha && (
+        <section className={styles.sectionContainer}>
           <div className={styles.sectionTitle}>{t('electiveVisitQuestion', 'Is this an elective visit?')}</div>
           <RadioButtonGroup
             name="is-elective-visit"
@@ -844,7 +866,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         </section>
       )}
 
-      {shaEnabled && isInsuranceSchemeSha && isElectiveVisit === 'no' && (
+      {shaEnabled && isInsuranceSchemeSha && isElectiveVisit === 'no' && shafundType === 'PHC' && (
         <SHABenefitPackagesAndInterventions
           patientUuid={patientUuid}
           visitTypeUuid={visitTypeUuid}
@@ -852,6 +874,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
             interventionCacheRef.current = { ...interventionCacheRef.current, ...cache };
           }}
           onUtilizationStatusChange={handleUtilizationStatusChange}
+          shaFundType={shafundType}
         />
       )}
 
