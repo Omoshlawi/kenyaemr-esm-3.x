@@ -4,6 +4,7 @@ import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import styles from './packages-and-interventions-form.scss';
 import {
+  useHasSupplementaryPompsCoverage,
   useNonPomsfUtilization,
   useSHAInterventions,
 } from '../../billing-form/social-health-authority/sha-virtual-claim.resource';
@@ -214,6 +215,7 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
 
           <UtilizationGate
             patientCRId={patientCRId}
+            patientUuid={patientUuid}
             interventionCode={selectedIntervention}
             interventionName={selectedInterventionDetail?.name ?? selectedIntervention}
             onStatusChange={onUtilizationStatusChange}
@@ -249,6 +251,7 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
 };
 type UtilizationGateProps = {
   patientCRId: string;
+  patientUuid: string;
   interventionCode: string;
   interventionName: string;
   onStatusChange?: (isExhausted: boolean) => void;
@@ -256,23 +259,32 @@ type UtilizationGateProps = {
 
 const UtilizationGate: React.FC<UtilizationGateProps> = ({
   patientCRId,
+  patientUuid,
   interventionCode,
   interventionName,
   onStatusChange,
 }) => {
   const { t } = useTranslation();
-  const { utilization, isLoading, error } = useNonPomsfUtilization(patientCRId, interventionCode);
+  const { hasSupplementaryCoverage, isLoading: isLoadingSupplementary } = useHasSupplementaryPompsCoverage(patientUuid);
 
-  const isExhausted = utilization ? utilization.eligibility === false : false;
+  const shouldSkipUtilizationCheck = hasSupplementaryCoverage || isLoadingSupplementary;
+  const effectivePatientId = shouldSkipUtilizationCheck ? '' : patientCRId;
+  const { utilization, isLoading, error } = useNonPomsfUtilization(effectivePatientId, interventionCode);
+
+  const isExhausted = !shouldSkipUtilizationCheck && utilization ? utilization.eligibility === false : false;
 
   useEffect(() => {
+    if (shouldSkipUtilizationCheck) {
+      onStatusChange?.(false);
+      return;
+    }
     if (!isLoading && !error && utilization) {
       onStatusChange?.(isExhausted);
     }
     return () => {
       onStatusChange?.(false);
     };
-  }, [isExhausted, isLoading, error, utilization?.intervention_code]);
+  }, [shouldSkipUtilizationCheck, isExhausted, isLoading, error, utilization?.intervention_code]);
 
   if (!isExhausted) {
     return null;

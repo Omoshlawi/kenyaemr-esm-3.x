@@ -92,6 +92,7 @@ export interface PreauthQueueItem {
     startDate: string;
   };
   intervention_code: string;
+  sub_benefit_code?: string | null;
   intervention_name: string;
   tariff: string;
   payment_mechanism: string;
@@ -290,3 +291,112 @@ export type BatchLinesResponse = {
   skipped: number;
   results: Array<BatchLineResult>;
 };
+
+export interface PatientIdentifierResponse {
+  results: Array<{
+    uuid: string;
+    identifier: string;
+    identifierType: {
+      uuid: string;
+      required: boolean;
+      name: string;
+      resourceVersion: string;
+    };
+    preferred: boolean;
+    resourceVersion: string;
+  }>;
+}
+
+export type SupplementaryScheme = {
+  schemeName?: string;
+  schemeCode?: string;
+  schemeId?: number;
+  memberType?: string;
+  policy?: {
+    number?: string;
+    startDate?: string;
+    endDate?: string;
+  };
+  coverage?: {
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+    message?: string;
+  };
+  principalContributor?: {
+    name?: string;
+    idNumber?: string;
+    idType?: string;
+    crNumber?: string;
+    relationship?: string;
+    employmentType?: string;
+    employerDetails?: {
+      name?: string;
+      jobGroup?: string;
+    };
+  };
+};
+
+export type SupplementaryEligibilityResponse = {
+  success: boolean;
+  count: number;
+  member_cr_number?: string;
+  full_name?: string;
+  schemes?: Array<SupplementaryScheme>;
+};
+
+export type PomsfBalanceMatch = {
+  scheme_code: string;
+  scheme_name: string;
+  policy_code: string;
+  policy_name: string;
+  policy_status: string;
+  policy_active: boolean;
+  policy_active_date: string;
+  policy_end_date: string;
+  benefit_code: string;
+  benefit_name: string;
+  benefit_type: string;
+  benefit_limit: number;
+  benefit_shared: string;
+  benefit_balance?: Array<{ member?: string; balance?: number }>;
+  sub_benefit_code: string;
+  sub_benefit_name: string;
+  sub_benefit_type: string;
+  sub_benefit_limit: number;
+  sub_benefit_shared: string;
+  balance?: Array<{ member?: string; balance?: number }>;
+};
+
+export type PomsfBalancesResponse = {
+  success: boolean;
+  member?: {
+    member_number?: string;
+    principal_member_number?: string;
+    national_id?: string;
+    full_name?: string;
+  };
+  policy_year?: number;
+  sub_benefit_code?: string;
+  match_count?: number;
+  matches?: Array<PomsfBalanceMatch>;
+};
+
+export interface LockCoverArgs {
+  consentToken: string;
+  principalCrId: string;
+  policyNumber: string;
+}
+
+export interface LockCoverResult {
+  ok: boolean;
+  error?: string;
+  upstream?: any;
+}
+
+export interface LockCoverBackendResponse {
+  success?: boolean;
+  upstream?: unknown;
+  upstream_error?: { message?: string; [key: string]: unknown };
+  error?: string;
+}

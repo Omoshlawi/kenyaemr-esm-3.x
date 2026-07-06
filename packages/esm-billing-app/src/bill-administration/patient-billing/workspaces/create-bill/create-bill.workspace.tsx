@@ -47,6 +47,7 @@ import {
   addInterventionToVisit,
   restoreInterventionOnVisit,
   switchInterventionOnVisit,
+  useHasSupplementaryPompsCoverage,
   useNonPomsfUtilization,
   useSHAInterventions,
   useSHASubBenefits,
@@ -71,8 +72,6 @@ const createBillFormSchema = z.object({
   text: z.string().min(1),
   unitPrice: z.string().min(1),
   quantity: z.number().min(1),
-  // When false, the SHA step is skipped entirely and the bill is saved against
-  // the interventions already on the claim. Defaults to true (Yes).
   needsShaAction: z.boolean().default(true),
   shaMode: z.enum(['ADD', 'SWITCH', 'RESTORE']).default('ADD'),
   packageCode: z.string().nullable().optional(),
@@ -185,6 +184,7 @@ const StandardBillForm: React.FC<Omit<BillFormProps, 'quantityToDispense'>> = (p
 
 type SHAStepProps = {
   patientCRId: string | null;
+  patientUuid: string;
   visitUuid: string;
   control: any;
   errors: any;
@@ -202,6 +202,7 @@ type SHAStepProps = {
 
 const SHAStep: React.FC<SHAStepProps> = ({
   patientCRId,
+  patientUuid,
   visitUuid,
   control,
   errors,
@@ -232,15 +233,27 @@ const SHAStep: React.FC<SHAStepProps> = ({
     error: interventionsError,
   } = useSHAInterventions(patientCRId ?? '', packageCode ?? '');
 
-  const { utilization, isLoading: loadingUtilization } = useNonPomsfUtilization(patientCRId ?? '', focusedCode ?? '');
-  const isCoverageExhausted = Boolean(utilization && utilization.eligibility === false);
+  const { hasSupplementaryCoverage, isLoading: loadingSupplementary } = useHasSupplementaryPompsCoverage(patientUuid);
+
+  const shouldSkipUtilizationCheck = hasSupplementaryCoverage || loadingSupplementary;
+  const effectivePatientCRId = shouldSkipUtilizationCheck ? '' : patientCRId ?? '';
+  const { utilization, isLoading: loadingUtilization } = useNonPomsfUtilization(
+    effectivePatientCRId,
+    focusedCode ?? '',
+  );
+
+  const isCoverageExhausted = !shouldSkipUtilizationCheck && Boolean(utilization && utilization.eligibility === false);
 
   useEffect(() => {
+    if (shouldSkipUtilizationCheck) {
+      onUtilizationStatusChange(false);
+      return;
+    }
     if (!loadingUtilization && utilization) {
       onUtilizationStatusChange(isCoverageExhausted);
     }
     return () => onUtilizationStatusChange(false);
-  }, [isCoverageExhausted, loadingUtilization, utilization, onUtilizationStatusChange]);
+  }, [shouldSkipUtilizationCheck, isCoverageExhausted, loadingUtilization, utilization, onUtilizationStatusChange]);
 
   const packageItems: Array<PackageItem> = useMemo(
     () =>
@@ -1220,6 +1233,7 @@ const CreateBillWorkspace: React.FC<Workspace2DefinitionProps<CreateBillWorkspac
             <ResponsiveWrapper>
               <SHAStep
                 patientCRId={patientCRId}
+                patientUuid={patientUuid}
                 visitUuid={visitUuid ?? ''}
                 control={control}
                 errors={errors}

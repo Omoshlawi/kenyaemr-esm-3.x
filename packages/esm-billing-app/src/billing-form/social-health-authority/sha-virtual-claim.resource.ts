@@ -1,4 +1,11 @@
-import { openmrsFetch, restBaseUrl, type FetchResponse, useOpenmrsPagination, useConfig } from '@openmrs/esm-framework';
+import {
+  openmrsFetch,
+  restBaseUrl,
+  type FetchResponse,
+  useOpenmrsPagination,
+  useConfig,
+  Person,
+} from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import {
   AuthorizingDeviceOS,
@@ -8,12 +15,18 @@ import {
   BiometricAuthorizeResponse,
   BiometricConfigResponse,
   ElectiveCheckinRecord,
+  LockCoverArgs,
+  LockCoverBackendResponse,
+  LockCoverResult,
   NonPomsfUtilizationResponse,
   OTPResponse,
+  PatientIdentifierResponse,
+  PomsfBalancesResponse,
   PreauthQueueItem,
   ProviderAttributesResponse,
   SHAIntervention,
   SHASubBenefit,
+  SupplementaryEligibilityResponse,
   VirtualClaimResponse,
   WhitelistReason,
   WhitelistStatusPoll,
@@ -416,6 +429,92 @@ export const addVisitAttribute = async (
   }
 };
 
+export const usePatientNationalID = (patientUuid: string) => {
+  const { nationalIdIdentifierTypeUUID } = useConfig<BillingConfig>();
+  const customRep = 'custom:(uuid,identifier,identifierType:(uuid,required,name),preferred)';
+  const url = patientUuid ? `${restBaseUrl}/patient/${patientUuid}/identifier?v=${customRep}` : null;
+
+  const { data, error, isLoading } = useSWR<FetchResponse<PatientIdentifierResponse>>(url, openmrsFetch);
+
+  const nationalIdentifier = data?.data?.results?.find((id) => id.identifierType.uuid === nationalIdIdentifierTypeUUID);
+
+  return {
+    nationalId: nationalIdentifier?.identifier ?? null,
+    nationalIdType: nationalIdentifier?.identifierType?.name ?? null,
+    isLoading,
+    error,
+  };
+};
+const isSupplementaryScheme = (schemeName: string | null | undefined, prefixes: ReadonlyArray<string>): boolean => {
+  const upper = (schemeName ?? '').toUpperCase().trim();
+  if (!upper) {
+    return false;
+  }
+  return prefixes.some((prefix) => upper.startsWith(prefix.toUpperCase().trim()));
+};
+
+export const useHasSupplementaryPompsCoverage = (patientUuid: string) => {
+  const { nationalId, nationalIdType, isLoading: isLoadingNationalId } = usePatientNationalID(patientUuid);
+
+  const canFetch = Boolean(patientUuid && nationalId && nationalIdType);
+  const url = canFetch
+    ? `${restBaseUrl}/virtualclaims/billing/eligibility/supplementary` +
+      `?identification_number=${encodeURIComponent(nationalId!)}` +
+      `&identification_type=${encodeURIComponent(nationalIdType!)}`
+    : null;
+
+  const {
+    data,
+    error,
+    isLoading: isLoadingEligibility,
+  } = useSWR<FetchResponse<SupplementaryEligibilityResponse>>(url, openmrsFetch, {
+    revalidateOnFocus: false,
+    dedupingInterval: 5 * 60_000,
+    shouldRetryOnError: false,
+  });
+  const { supplementarySchemePrefixes } = useConfig<BillingConfig>();
+
+  const allSchemes = data?.data?.schemes ?? [];
+  const schemes = allSchemes.filter((s) => isSupplementaryScheme(s.schemeName, supplementarySchemePrefixes ?? []));
+  const hasSupplementaryCoverage = schemes.length > 0;
+
+  return {
+    hasSupplementaryCoverage,
+    schemes,
+    memberCrNumber: data?.data?.member_cr_number ?? null,
+    fullName: data?.data?.full_name ?? null,
+    isLoading: isLoadingNationalId || isLoadingEligibility,
+    error,
+  };
+};
+
+export const usePomsfBalances = (patientCRId: string, principalMemberNumber: string, subBenefitCode: string) => {
+  const shouldFetch = Boolean(patientCRId && subBenefitCode);
+  const isDependant = Boolean(principalMemberNumber) && principalMemberNumber !== patientCRId;
+  const url = shouldFetch
+    ? `${restBaseUrl}/virtualclaims/billing/pomsf-balances` +
+      `?patient_id=${encodeURIComponent(patientCRId)}` +
+      (isDependant ? `&principal_member_number=${encodeURIComponent(principalMemberNumber)}` : '') +
+      `&sub_benefit_code=${encodeURIComponent(subBenefitCode)}`
+    : null;
+
+  const { data, error, isLoading, mutate } = useSWR<FetchResponse<PomsfBalancesResponse>>(url, openmrsFetch, {
+    revalidateOnFocus: false,
+    dedupingInterval: 5 * 60_000,
+    shouldRetryOnError: false,
+  });
+
+  return {
+    matches: data?.data?.matches ?? [],
+    matchCount: data?.data?.match_count ?? 0,
+    policyYear: data?.data?.policy_year ?? null,
+    member: data?.data?.member ?? null,
+    isLoading,
+    error,
+    mutate,
+  };
+};
+
 export const useNonPomsfUtilization = (patientCRId: string, interventionCode: string) => {
   const shouldFetch = Boolean(patientCRId && interventionCode);
   const url = shouldFetch
@@ -576,6 +675,85 @@ export const dispatchClaimLinesToSha = async (
         err,
         t('batchLinesNetworkError', 'Could not reach SHA: {{message}}', { message: networkFallback }),
       ),
+    };
+  }
+};
+
+export interface EffectiveCoverResponse {
+  locked: boolean;
+  cover: Record<string, any> | null;
+}
+
+export const useEffectiveCover = (consentToken: string, beneficiaryCode: string) => {
+  const shouldFetch = Boolean(consentToken && beneficiaryCode);
+  const url = shouldFetch
+    ? `${restBaseUrl}/virtualclaims/billing/authorizations/effective-cover` +
+      `?token=${encodeURIComponent(consentToken)}` +
+      `&beneficiary_code=${encodeURIComponent(beneficiaryCode)}`
+    : null;
+
+  const { data, error, isLoading, mutate } = useSWR<FetchResponse<EffectiveCoverResponse & { success: boolean }>>(
+    url,
+    openmrsFetch,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 5 * 60_000,
+      shouldRetryOnError: false,
+    },
+  );
+
+  return {
+    isLocked: data?.data?.locked ?? false,
+    cover: data?.data?.cover ?? null,
+    isLoading,
+    error,
+    mutate,
+  };
+};
+
+export const lockCover = async ({
+  consentToken,
+  principalCrId,
+  policyNumber,
+}: LockCoverArgs): Promise<LockCoverResult> => {
+  const url = `${restBaseUrl}/virtualclaims/billing/authorizations/lock-cover`;
+
+  try {
+    const response = await openmrsFetch<LockCoverBackendResponse>(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: {
+        consent_token: consentToken,
+        principal_cr_id: principalCrId,
+        policy_number: policyNumber,
+      },
+    });
+    const data = response.data ?? ({} as LockCoverBackendResponse);
+
+    if (data.success === false) {
+      return {
+        ok: false,
+        error: data.upstream_error?.message ?? data.error ?? 'Cover lock rejected by SHA',
+        upstream: data.upstream_error,
+      };
+    }
+
+    return { ok: true, upstream: data.upstream };
+  } catch (err: any) {
+    const upstreamBody: LockCoverBackendResponse = err?.responseBody ?? {};
+    const upstreamError = upstreamBody.upstream_error;
+    const status = err?.status ?? err?.response?.status;
+
+    return {
+      ok: false,
+      error:
+        upstreamError?.message ??
+        upstreamBody.error ??
+        err?.message ??
+        (status ? `Cover lock failed (HTTP ${status})` : 'Cover lock failed — network error'),
+      upstream: upstreamError,
     };
   }
 };

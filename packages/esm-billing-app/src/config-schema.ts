@@ -48,6 +48,7 @@ export interface BillingConfig {
   };
   detailedViewPageSize: number;
   enableSHAVerification: boolean;
+  supplementarySchemePrefixes: Array<string>;
 }
 
 export const configSchema: ConfigSchema = {
@@ -283,5 +284,18 @@ export const configSchema: ConfigSchema = {
     _description:
       'Whether to enable SHA verification (OTP/biometrics) during check-in. When disabled, SHA fields, OTP and biometric flows are hidden even if the HIE feature flag is on.',
     _default: false,
+  },
+  supplementarySchemePrefixes: {
+    _type: Type.Array,
+    _description:
+      'SHA scheme-name prefixes that mark a patient as having supplementary coverage. ' +
+      "When a patient's eligibility schemes match any of these prefixes (case-insensitive), " +
+      'the non-POMSF utilization check is skipped supplementary coverage has its own ' +
+      'benefit ceilings (via /pomsf-balances) and is not subject to the standard UHC/SHIF ' +
+      'utilization caps. Add new prefixes here when SHA rolls out additional supplementary schemes.',
+    _elements: {
+      _type: Type.String,
+    },
+    _default: ['POMSF', 'TSC', 'USALAMA'],
   },
 };

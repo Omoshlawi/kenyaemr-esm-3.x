@@ -26,6 +26,10 @@ export interface SubmitPreauthPayload {
   interventionCode: string;
   tariff: string | number;
   isResubmit?: boolean;
+  coverSelection?: {
+    principalCrId: string;
+    policyNumber: string;
+  } | null;
 }
 
 export interface PreauthSubmitResult {

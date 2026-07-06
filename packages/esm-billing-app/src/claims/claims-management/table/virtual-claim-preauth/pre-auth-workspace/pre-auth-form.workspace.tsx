@@ -31,7 +31,12 @@ import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { TrashCan } from '@carbon/react/icons';
 import styles from './pre-auth-form.scss';
-import { type PreauthQueueItem } from '../../../../../billing-form/social-health-authority/type';
+import {
+  type PreauthQueueItem,
+  type SupplementaryScheme,
+} from '../../../../../billing-form/social-health-authority/type';
+import PomsfSchemeBalancePicker from '../../../../../billing-form/social-health-authority/pomsf-scheme-balance-picker.component';
+import { lockCover } from '../../../../../billing-form/social-health-authority/sha-virtual-claim.resource';
 import ServiceDateTimeField from './service-datetime.component';
 import { getDefaultValues, getSchemaForType, type PreauthFormData, type PreauthType } from './pre-auth-schema';
 import DiagnosisSearch from './diagnosis-component/diagnosis-component';
@@ -94,6 +99,8 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
   const workspaceTitle = workspaceProps?.workspaceTitle ?? t('preauthForm', 'Pre-authorization Form');
 
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const [selectedScheme, setSelectedScheme] = useState<SupplementaryScheme | null>(null);
 
   const idempotencyKey = useMemo(
     () =>
@@ -212,6 +219,23 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
       return;
     }
     try {
+      const principalCr = selectedScheme?.principalContributor?.crNumber;
+      const policyNumber = selectedScheme?.policy?.number;
+      if (principalCr && policyNumber && item?.authorization_code) {
+        const lockResult = await lockCover({
+          consentToken: item.authorization_code,
+          principalCrId: principalCr,
+          policyNumber,
+        });
+        if (!lockResult.ok) {
+          throw new Error(
+            t('coverLockFailed', 'Cover lock failed: {{reason}}', {
+              reason: lockResult.error ?? 'Unknown SHA error',
+            }),
+          );
+        }
+      }
+
       const formData = buildPreauthFormData(data, item, isElective);
       const response = await openmrsFetch<SubmitErrorResponse>(`${restBaseUrl}/virtualclaims/preauth/files`, {
         method: 'POST',
@@ -281,6 +305,13 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
             </div>
           )}
         </div>
+
+        <PomsfSchemeBalancePicker
+          patientUuid={item?.patient?.uuid ?? ''}
+          patientCRId=""
+          subBenefitCode={item?.sub_benefit_code ?? ''}
+          onSchemeSelected={setSelectedScheme}
+        />
 
         {isResubmit && item?.response_note && (
           <div className={classNames(styles.inlineNotification, styles.resubmissionNote)}>
@@ -368,7 +399,6 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
                   {...field}
                   id="unit-price"
                   type="number"
-                  step="0.01"
                   min="0"
                   max={hasTariffCap ? String(tariffNumeric) : undefined}
                   labelText={

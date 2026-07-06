@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ResponsiveWrapper,
   restBaseUrl,
@@ -36,6 +36,7 @@ import { PaymentStatus, type LineItem, type MappedBill } from '../../../types';
 import { extractErrorMessagesFromResponse } from '../../../utils';
 import { makePayment } from '../payments.resource';
 import { dispatchClaimLinesToSha } from '../../../billing-form/social-health-authority/sha-virtual-claim.resource';
+import PomsfSchemeBalancePicker from '../../../billing-form/social-health-authority/pomsf-scheme-balance-picker.component';
 
 import styles from './payment.workspace.scss';
 import { getPatientUuidFromUrl } from '../../../prompt-payment/prompt-payment-modal.component';
@@ -73,6 +74,7 @@ type PaymentModeFormData = {
 type InterventionItem = {
   id: string;
   code: string;
+  subBenefitCode: string | null;
   name: string;
   text: string;
   paymentMechanism: string | null;
@@ -89,7 +91,7 @@ type InterventionItem = {
   alreadySent: boolean;
 };
 
-const paymentLineSchema = (t: TFunction, insurancePaymentModeUuid: string) =>
+const paymentLineSchema = (t: TFunction, insurancePaymentModeUuid: string, requireIntervention: boolean) =>
   z
     .object({
       paymentMode: z
@@ -138,8 +140,9 @@ const paymentLineSchema = (t: TFunction, insurancePaymentModeUuid: string) =>
           message: t('referenceCodeRequiredForThisPaymentMode', 'Reference code is required for this payment mode'),
         });
       }
+
       const isInsurance = line.paymentMode?.uuid === insurancePaymentModeUuid;
-      if (isInsurance && !line.interventionCode?.trim()) {
+      if (requireIntervention && isInsurance && !line.interventionCode?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['interventionCode'],
@@ -148,11 +151,16 @@ const paymentLineSchema = (t: TFunction, insurancePaymentModeUuid: string) =>
       }
     });
 
-const paymentFormSchema = (totalAmount: number, t: TFunction, insurancePaymentModeUuid: string) =>
+const paymentFormSchema = (
+  totalAmount: number,
+  t: TFunction,
+  insurancePaymentModeUuid: string,
+  requireIntervention: boolean,
+) =>
   z
     .object({
       payments: z
-        .array(paymentLineSchema(t, insurancePaymentModeUuid))
+        .array(paymentLineSchema(t, insurancePaymentModeUuid, requireIntervention))
         .min(1, t('atLeastOnePayment', 'Add at least one payment')),
     })
     .superRefine((data, ctx) => {
@@ -268,6 +276,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
         return {
           id: `intervention-${iv.intervention_code}`,
           code: iv.intervention_code,
+          subBenefitCode: iv.sub_benefit_code ?? null,
           name,
           text: `${iv.intervention_code} · ${name} · ${mechLabel} — ${displayAmount}${sentSuffix}`,
           paymentMechanism: mech || null,
@@ -287,9 +296,15 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
   }, [claimForVisit, sentInterventionCodes, formatCurrency, t]);
 
   const authorizationCode = claimForVisit.authorizationCode ?? null;
+  const requiresShaIntervention = isSHAVisit && interventionItems.length > 0;
+
+  const resolverSchema = useMemo(
+    () => paymentFormSchema(totalAmount, t, insurancePaymentMethod, requiresShaIntervention),
+    [totalAmount, t, insurancePaymentMethod, requiresShaIntervention],
+  );
 
   const formMethods = useForm<PaymentModeFormData>({
-    resolver: zodResolver(paymentFormSchema(totalAmount, t, insurancePaymentMethod)),
+    resolver: zodResolver(resolverSchema),
     mode: 'onTouched',
     defaultValues: {
       payments: [{ paymentMode: undefined, amount: undefined, referenceCode: undefined, interventionCode: undefined }],
@@ -298,14 +313,28 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
 
   const {
     control,
+    trigger,
     formState: { isSubmitting, errors, isValid, isDirty },
   } = formMethods;
+
+  const prevRequiresShaIntervention = useRef(requiresShaIntervention);
+  useEffect(() => {
+    if (prevRequiresShaIntervention.current === requiresShaIntervention) {
+      return;
+    }
+    prevRequiresShaIntervention.current = requiresShaIntervention;
+    if (isDirty) {
+      trigger().catch(() => {});
+    }
+  }, [requiresShaIntervention, isDirty, trigger]);
 
   const { fields, append, remove } = useFieldArray({ control, name: 'payments' });
 
   const watchedPayments = useWatch({ control, name: 'payments' });
   const totalTendered = (watchedPayments ?? []).reduce((acc, line) => acc + (Number(line?.amount) || 0), 0);
-  const remaining = totalAmount - totalTendered;
+  const remainingCents = Math.round(totalAmount * 100) - Math.round(totalTendered * 100);
+  const remaining = remainingCents / 100;
+  const isFullyAllocated = remainingCents === 0;
 
   const overAmountLineIndices = useMemo(() => {
     const result = new Set<number>();
@@ -342,7 +371,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
       }
     });
     return result;
-  }, [watchedPayments, interventionItems]);
+  }, [watchedPayments, interventionItems, insurancePaymentMethod]);
 
   const hasOverAmount = overAmountLineIndices.size > 0;
 
@@ -522,11 +551,11 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
           />
           <div className={styles.summary}>
             <InlineNotification
-              kind={remaining === 0 ? 'success' : 'warning'}
+              kind={isFullyAllocated ? 'success' : 'warning'}
               lowContrast
               hideCloseButton
               title={
-                remaining === 0
+                isFullyAllocated
                   ? t('fullyAllocated', 'Fully allocated')
                   : remaining > 0
                   ? t('amountRemaining', 'Amount remaining')
@@ -558,7 +587,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
             const availableModes = paymentModes.filter((mode) => !modesUsedInOtherLines.includes(mode.uuid));
 
             const showInterventionsPicker =
-              isSHAVisit && selectedPaymentMode?.uuid === insurancePaymentMethod && interventionItems.length > 0;
+              requiresShaIntervention && selectedPaymentMode?.uuid === insurancePaymentMethod;
 
             const selectedInterventionCode = watchedPayments?.[index]?.interventionCode;
             const selectedIntervention = interventionItems.find((iv) => iv.code === selectedInterventionCode) ?? null;
@@ -677,6 +706,11 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
 
                     {selectedIntervention && (
                       <div className={styles.interventionSummary}>
+                        <PomsfSchemeBalancePicker
+                          patientUuid={patientUuid ?? ''}
+                          patientCRId={(claimForVisit as any)?.beneficiary_cr_id ?? ''}
+                          subBenefitCode={selectedIntervention.subBenefitCode ?? selectedIntervention.code}
+                        />
                         <div className={styles.interventionSummaryRow}>
                           <code className={styles.interventionCode}>{selectedIntervention.code}</code>
                           <span className={styles.interventionName}>{selectedIntervention.name}</span>
@@ -824,7 +858,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
             kind="ghost"
             size="sm"
             renderIcon={Add}
-            disabled={fields.length >= paymentModes.length || remaining === 0}
+            disabled={fields.length >= paymentModes.length || isFullyAllocated}
             onClick={() =>
               append({
                 paymentMode: undefined,
@@ -843,7 +877,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
           </Button>
           <Button
             className={styles.button}
-            disabled={isSubmitting || !isValid || remaining !== 0 || hasOverAmount}
+            disabled={isSubmitting || !isValid || !isFullyAllocated || hasOverAmount}
             kind="primary"
             type="submit">
             {isSubmitting ? (

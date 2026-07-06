@@ -472,7 +472,7 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
                 lowContrast
                 hideCloseButton
                 aria-label={t('coverageExhausted', 'Coverage exhausted')}
-                title={t('cannotProceed', 'Cannot create elective preauth')}
+                title={t('cannotProceedElective', 'Cannot create elective preauth')}
                 subtitle={
                   utilization?.message ??
                   t(
