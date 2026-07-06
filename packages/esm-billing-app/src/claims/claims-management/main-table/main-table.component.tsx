@@ -18,31 +18,17 @@ import {
   Tag,
 } from '@carbon/react';
 import { ConfigurableLink, formatDate, useLayoutType } from '@openmrs/esm-framework';
-import { spaBasePath } from '../../../constants';
 import { useClaimsMetrics, type VirtualClaim } from '../../../hooks/useClaimsMetrics';
+import {
+  billingUrl,
+  CLAIMS_PAGE_SIZE,
+  STAGE_CONFIG,
+  SERVICE_TYPE_TAG,
+  SERVICE_TYPES,
+  toTitleCase,
+} from '../../../utils';
 import styles from './main-table.scss';
 import dayjs from 'dayjs';
-
-const STAGE_CONFIG: Record<string, { label: string; type: string }> = {
-  PAYER: { label: 'At Payer', type: 'blue' },
-  PROVIDER: { label: 'Provider', type: 'green' },
-  CLOSED: { label: 'Closed', type: 'gray' },
-  DRAFT: { label: 'Draft', type: 'gray' },
-};
-
-const SERVICE_TYPE_TAG: Record<string, string> = {
-  INPATIENT: 'blue',
-  OUTPATIENT: 'teal',
-  CAPITATION: 'purple',
-};
-
-const SERVICE_TYPES = ['Outpatient', 'Inpatient', 'Capitation'];
-
-const PAGE_SIZE = 10;
-
-const toTitleCase = (str: string): string => str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
-
-const billingUrl = `${spaBasePath}/accounting/patient/\${patientUuid}/\${uuid}/claims`;
 
 const MainTable: React.FC = () => {
   const { t } = useTranslation();
@@ -66,8 +52,8 @@ const MainTable: React.FC = () => {
     { key: 'stage', header: t('stage', 'Stage') },
   ];
 
-  const start = (currentPage - 1) * PAGE_SIZE;
-  const pageResults: VirtualClaim[] = claims.slice(start, start + PAGE_SIZE);
+  const start = (currentPage - 1) * CLAIMS_PAGE_SIZE;
+  const pageResults: VirtualClaim[] = claims.slice(start, start + CLAIMS_PAGE_SIZE);
 
   const tableRows = pageResults.map((claim) => {
     const stageCfg = STAGE_CONFIG[claim.display_stage] ?? { label: claim.display_status, type: 'gray' };
@@ -130,7 +116,7 @@ const MainTable: React.FC = () => {
       {isLoading ? (
         <DataTableSkeleton
           headers={headers}
-          rowCount={PAGE_SIZE}
+          rowCount={CLAIMS_PAGE_SIZE}
           columnCount={headers.length}
           zebra
           showToolbar={false}
@@ -186,7 +172,7 @@ const MainTable: React.FC = () => {
 
       <Pagination
         page={currentPage}
-        pageSize={PAGE_SIZE}
+        pageSize={CLAIMS_PAGE_SIZE}
         pageSizes={[10, 20, 30]}
         totalItems={claims.length}
         onChange={({ page }) => setCurrentPage(page)}

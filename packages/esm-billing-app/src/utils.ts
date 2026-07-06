@@ -1,4 +1,6 @@
 import { LineItem, MappedBill, Payment, PaymentMethod, PaymentStatus } from './types';
+import { spaBasePath } from './constants';
+import { type VirtualClaim } from './hooks/useClaimsMetrics';
 
 // Helper functions
 const formatAmount = (amount: number): number => {
@@ -265,3 +267,128 @@ export function parseExternalApiErrors(errString?: string): Array<ExternalApiErr
 
   return entries;
 }
+
+// ─── Claims utilities ────────────────────────────────────────────────────────
+
+export const CLAIMS_PAGE_SIZE = 10;
+export const billingUrl = `${spaBasePath}/accounting/patient/\${patientUuid}/\${uuid}/claims`;
+
+export function formatKes(amount: number): string {
+  return `KES ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+export function toTitleCase(str: string): string {
+  return str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// Main table
+export const STAGE_CONFIG: Record<string, { label: string; type: string }> = {
+  PAYER: { label: 'At Payer', type: 'blue' },
+  PROVIDER: { label: 'Provider', type: 'green' },
+  CLOSED: { label: 'Closed', type: 'gray' },
+  DRAFT: { label: 'Draft', type: 'gray' },
+};
+
+export const SERVICE_TYPE_TAG: Record<string, string> = {
+  INPATIENT: 'blue',
+  OUTPATIENT: 'teal',
+  CAPITATION: 'purple',
+};
+
+export const SERVICE_TYPES = ['Outpatient', 'Inpatient', 'Capitation'];
+
+export type StatusFilterKey = '' | 'DRAFT' | 'CLOSED' | 'AT_PAYER' | 'SENT_BACK' | 'APPROVED' | 'PAID';
+
+export const STATUS_FILTERS: Array<{ value: StatusFilterKey; label: string }> = [
+  { value: '', label: 'All' },
+  { value: 'DRAFT', label: 'Draft' },
+  { value: 'AT_PAYER', label: 'At Payer' },
+  { value: 'SENT_BACK', label: 'Sent back' },
+  { value: 'APPROVED', label: 'Approved' },
+  { value: 'PAID', label: 'Paid' },
+  { value: 'CLOSED', label: 'Closed' },
+];
+
+export function matchesStatus(claim: VirtualClaim, key: StatusFilterKey): boolean {
+  if (!key) {
+    return true;
+  }
+  const stage = (claim.display_stage ?? '').toUpperCase();
+  const payer = (claim.payer_workflow_state ?? '').toUpperCase();
+  switch (key) {
+    case 'DRAFT':
+      return stage === 'DRAFT';
+    case 'CLOSED':
+      return stage === 'CLOSED';
+    case 'AT_PAYER':
+      return stage === 'PAYER' && payer !== 'SENT_BACK';
+    case 'SENT_BACK':
+      return payer === 'SENT_BACK';
+    case 'APPROVED':
+      return payer.includes('APPROVED') || payer === 'ELECTIVE_APPROVED';
+    case 'PAID':
+      return payer === 'PAYMENT_COMPLETED' || payer === 'PARTIALLY_PAID';
+    default:
+      return true;
+  }
+}
+
+// Admin dashboard
+export type TabKey = 'all' | 'submitted' | 'rejected' | 'returned' | 'paid' | 'draft' | 'closed';
+
+export function filterByTab(claims: VirtualClaim[], tab: TabKey): VirtualClaim[] {
+  switch (tab) {
+    case 'submitted':
+      return claims.filter(
+        (c) =>
+          c.display_stage === 'PAYER' ||
+          c.provider_workflow_state === 'SUBMITTED' ||
+          c.provider_workflow_state === 'FAILED_TO_SUBMIT',
+      );
+    case 'rejected':
+      return claims.filter((c) => (c.payer_workflow_state ?? '').toUpperCase() === 'REJECTED');
+    case 'returned':
+      return claims.filter((c) => (c.payer_workflow_state ?? '').toUpperCase() === 'SENT_BACK');
+    case 'paid':
+      return claims.filter((c) => {
+        const ps = (c.payer_workflow_state ?? '').toUpperCase();
+        return ps === 'PAYMENT_COMPLETED' || ps === 'PARTIALLY_PAID';
+      });
+    case 'draft':
+      return claims.filter((c) => c.display_stage === 'DRAFT');
+    case 'closed':
+      return claims.filter((c) => c.display_stage === 'CLOSED');
+    default:
+      return claims;
+  }
+}
+
+export const STAGE_TAG: Record<string, { label: string; type: string }> = {
+  PAYER: { label: 'At Payer', type: 'blue' },
+  PROVIDER: { label: 'Provider', type: 'green' },
+  CLOSED: { label: 'Closed', type: 'gray' },
+  DRAFT: { label: 'Draft', type: 'gray' },
+};
+
+export const PAYER_TAG: Record<string, { label: string; type: string }> = {
+  APPROVED: { label: 'Approved', type: 'green' },
+  ELECTIVE_APPROVED: { label: 'Approved', type: 'green' },
+  REJECTED: { label: 'Rejected', type: 'red' },
+  SENT_BACK: { label: 'Returned', type: 'orange' },
+  PAYMENT_COMPLETED: { label: 'Paid', type: 'teal' },
+  PARTIALLY_PAID: { label: 'Partially Paid', type: 'teal' },
+  MANUAL_REVIEW: { label: 'Manual Review', type: 'purple' },
+  CLINICAL_REVIEW: { label: 'Clinical Review', type: 'purple' },
+  MEDICAL_REVIEW: { label: 'Medical Review', type: 'purple' },
+  SENT_FOR_PAYMENT_PROCESSING: { label: 'Processing', type: 'blue' },
+};
+
+export const adminTableHeaders = [
+  { key: 'patient', header: 'Patient Name' },
+  { key: 'date', header: 'Date' },
+  { key: 'authCode', header: 'Auth Code' },
+  { key: 'serviceType', header: 'Service Type' },
+  { key: 'invoiceNo', header: 'Invoice No.' },
+  { key: 'amount', header: 'Amount (KES)' },
+  { key: 'status', header: 'Status' },
+];

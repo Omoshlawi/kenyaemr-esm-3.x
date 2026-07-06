@@ -290,6 +290,21 @@
       "slot": "clinical-charges-dashboard-slot"
     },
     {
+      "name": "claims-admin-dashboard-link",
+      "component": "claimsAdminDashboardLink",
+      "slot": "billing-admin-dashboard-slot",
+      "meta": {
+        "name": "claims-admin",
+        "title": "Claims Admin",
+        "slot": "claims-admin-dashboard-slot"
+      }
+    },
+    {
+      "name": "claims-admin-dashboard",
+      "component": "claimsAdminDashboard",
+      "slot": "claims-admin-dashboard-slot"
+    },
+    {
       "name": "payment-history-dashboard-link",
       "component": "paymentHistoryLink",
       "slot": "billing-admin-dashboard-slot",

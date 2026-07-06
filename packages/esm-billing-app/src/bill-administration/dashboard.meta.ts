@@ -40,3 +40,9 @@ export const paymentPointsDashboardMeta = {
   title: 'paymentPoints',
   icon: 'omrs-icon-location',
 } as const;
+// t("claimsAdmin", "Claims Admin")
+export const claimsAdminDashboardMeta = {
+  path: 'claims-admin',
+  title: 'claimsAdmin',
+  icon: 'omrs-icon-report',
+} as const;

@@ -1,0 +1,129 @@
+@use '@carbon/layout';
+@use '@carbon/colors';
+@use '@carbon/type';
+
+.container {
+  padding: layout.$spacing-05;
+}
+
+.filterBar {
+  margin-bottom: layout.$spacing-07;
+}
+
+.section {
+  margin-bottom: layout.$spacing-07;
+}
+
+.sectionTitle {
+  @include type.type-style('heading-compact-02');
+  color: colors.$gray-70;
+  margin: 0 0 layout.$spacing-05 0;
+  padding-bottom: layout.$spacing-03;
+  border-bottom: 1px solid colors.$gray-20;
+}
+
+.analyticsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: layout.$spacing-05;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 672px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.totalsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: layout.$spacing-05;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 672px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metricCard {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  padding: layout.$spacing-05;
+  border-left: 4px solid colors.$gray-30;
+}
+
+.metricIcon {
+  color: colors.$gray-60;
+  margin-bottom: layout.$spacing-02;
+}
+
+.metricCount {
+  @include type.type-style('heading-05');
+  margin: 0;
+  color: colors.$gray-100;
+}
+
+.metricLabel {
+  @include type.type-style('label-01');
+  margin: 0;
+  color: colors.$gray-70;
+}
+
+.metricAmount {
+  @include type.type-style('helper-text-01');
+  margin: 0;
+  color: colors.$gray-60;
+  font-weight: 500;
+}
+
+.tabPanel {
+  padding: 0;
+}
+
+.emptyCell {
+  text-align: center;
+  color: colors.$gray-60;
+  @include type.type-style('body-compact-01');
+}
+
+// Color variants
+.cardGreen {
+  border-left-color: colors.$green-40;
+  .metricIcon {
+    color: colors.$green-60;
+  }
+}
+
+.cardBlue {
+  border-left-color: colors.$blue-40;
+  .metricIcon {
+    color: colors.$blue-60;
+  }
+}
+
+.cardRed {
+  border-left-color: colors.$red-40;
+  .metricIcon {
+    color: colors.$red-60;
+  }
+}
+
+.cardOrange {
+  border-left-color: colors.$orange-40;
+  .metricIcon {
+    color: colors.$orange-60;
+  }
+}
+
+.cardGray {
+  border-left-color: colors.$gray-30;
+  .metricIcon {
+    color: colors.$gray-60;
+  }
+}

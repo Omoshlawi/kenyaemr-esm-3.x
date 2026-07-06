@@ -4,6 +4,7 @@ import {
   billableExemptionsDashboardMeta,
   billDepositDashboardMeta,
   clinicalChargesDashboardMeta,
+  claimsAdminDashboardMeta,
   patientBillingDashboardMeta,
   paymentHistoryDashboardMeta,
   paymentModeDashboardMeta,
@@ -69,3 +70,9 @@ export const clinicalChargesLink = getSyncLifecycle(createDashboardLink(clinical
 export const paymentHistoryLink = getSyncLifecycle(createDashboardLink(paymentHistoryDashboardMeta), options);
 export const patientBillingLink = getSyncLifecycle(createDashboardLink(patientBillingDashboardMeta), options);
 export const paymentPointDashboardLink = getSyncLifecycle(createDashboardLink(paymentPointsDashboardMeta), options);
+
+export const claimsAdminDashboard = getAsyncLifecycle(
+  () => import('../claims/claims-admin/claims-admin-dashboard.component'),
+  options,
+);
+export const claimsAdminDashboardLink = getSyncLifecycle(createDashboardLink(claimsAdminDashboardMeta), options);
