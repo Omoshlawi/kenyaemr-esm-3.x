@@ -25,14 +25,14 @@ import {
   Tag,
 } from '@carbon/react';
 import { Add, Calendar } from '@carbon/react/icons';
-import { isDesktop, launchWorkspace2, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
+import { isDesktop, launchWorkspace2, useLayoutType } from '@openmrs/esm-framework';
 import { EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
 import { mutate } from 'swr';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styles from './preauth-queue-table.scss';
 import { usePreauthQueue } from '../../../../billing-form/social-health-authority/sha-virtual-claim.resource';
-import { PreauthQueueItem } from '../../../../billing-form/social-health-authority/type';
+import { CANCELLABLE_PREAUTH_STATUSES, PreauthQueueItem } from '../../../../billing-form/social-health-authority/type';
 import { PREAUTH_TYPE_COLORS, WORKFLOW_STATE_COLORS } from './constants';
 import { formatShaDate, isWithinDateRange } from './utils';
 import { formatCurrency } from '../../../../helpers/currency';
@@ -48,6 +48,7 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
   const { t } = useTranslation();
   const [submitting] = useState(false);
   const preauthAlreadySubmitted = Boolean((item as any).preauth_already_submitted);
+  const canCancelPreauth = CANCELLABLE_PREAUTH_STATUSES.includes(item.preauth_status ?? '');
 
   const handleSubmitPreauth = () =>
     launchWorkspace2('preauth-form-workspace', {
@@ -62,6 +63,14 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
       workspaceTitle: t('resubmitPreauth', 'Resubmit Pre-Authorization'),
       item,
       isResubmit: true,
+      mutate: onAction,
+    });
+
+  const handleCancelPreauth = () =>
+    launchWorkspace2('preauth-form-workspace', {
+      workspaceTitle: t('cancelPreauth', 'Cancel Pre-Authorization'),
+      item,
+      isCancel: true,
       mutate: onAction,
     });
 
@@ -225,6 +234,11 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
             )}
           </Button>
         )}
+        {canCancelPreauth && (
+          <Button size="sm" kind="danger--tertiary" onClick={handleCancelPreauth}>
+            {t('cancelPreauth', 'Cancel preauth')}
+          </Button>
+        )}
         {tab === 'REJECTED' && (
           <Button size="sm" kind="danger--tertiary" onClick={handleResubmit}>
             {t('resubmitPreauth', 'Resubmit preauth')}
@@ -256,6 +270,15 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
       item,
       isElective: true,
       isResubmit: isRejected,
+      mutate: onAction,
+    });
+
+  const handleCancelPreauth = () =>
+    launchWorkspace2('preauth-form-workspace', {
+      workspaceTitle: t('cancelPreauth', 'Cancel Pre-Authorization'),
+      item,
+      isElective: true,
+      isCancel: true,
       mutate: onAction,
     });
 
@@ -494,6 +517,11 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
         {isRejected && (
           <Button size="sm" kind="danger--tertiary" renderIcon={Calendar} onClick={handleSubmitPreauth}>
             {t('resubmitAfterRejection', 'Resubmit after rejection')}
+          </Button>
+        )}
+        {(isDraft || isPending) && (
+          <Button size="sm" kind="danger--tertiary" onClick={handleCancelPreauth}>
+            {t('cancelPreauth', 'Cancel preauth')}
           </Button>
         )}
       </div>

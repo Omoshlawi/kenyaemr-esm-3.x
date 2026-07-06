@@ -36,7 +36,10 @@ import {
   type SupplementaryScheme,
 } from '../../../../../billing-form/social-health-authority/type';
 import PomsfSchemeBalancePicker from '../../../../../billing-form/social-health-authority/pomsf-scheme-balance-picker.component';
-import { lockCover } from '../../../../../billing-form/social-health-authority/sha-virtual-claim.resource';
+import {
+  cancelPreauth,
+  lockCover,
+} from '../../../../../billing-form/social-health-authority/sha-virtual-claim.resource';
 import ServiceDateTimeField from './service-datetime.component';
 import { getDefaultValues, getSchemaForType, type PreauthFormData, type PreauthType } from './pre-auth-schema';
 import DiagnosisSearch from './diagnosis-component/diagnosis-component';
@@ -50,6 +53,7 @@ import {
   asStringField,
   extractUpstreamError,
   extractFetchError,
+  formatShaDate,
   handleQueueMutate,
 } from '../utils';
 import {
@@ -78,6 +82,7 @@ interface PreauthFormProps {
   item: PreauthQueueItem;
   isResubmit?: boolean;
   isElective?: boolean;
+  isCancel?: boolean;
   mutate: () => void;
   workspaceTitle?: string;
 }
@@ -94,11 +99,13 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
   const closeWorkspaceWithSavedChanges = () => closeWorkspace({ discardUnsavedChanges: true });
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { item, isResubmit = false, isElective = false, mutate } = workspaceProps ?? {};
+  const { item, isResubmit = false, isElective = false, isCancel = false, mutate } = workspaceProps ?? {};
   const preauthType = (item?.preauth_type ?? 'NORMAL') as PreauthType;
   const workspaceTitle = workspaceProps?.workspaceTitle ?? t('preauthForm', 'Pre-authorization Form');
 
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   const [selectedScheme, setSelectedScheme] = useState<SupplementaryScheme | null>(null);
 
@@ -266,6 +273,112 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
       setSubmitError(message);
     }
   };
+
+  const handleCancelPreauth = async () => {
+    if (!item) {
+      return;
+    }
+    setCancelError(null);
+    setIsCancelling(true);
+    try {
+      const result = await cancelPreauth(item.authorization_code, item.intervention_code);
+      if (!result.success) {
+        throw new Error(extractUpstreamError(result as any, t('cancelPreauthFailed', 'Failed to cancel preauth')));
+      }
+      showSnackbar({
+        title: t('cancelPreauth', 'Cancel preauth'),
+        subtitle: t('preauthCancelledSuccessfully', 'Pre-authorization cancelled successfully'),
+        kind: 'success',
+      });
+      handleQueueMutate(`${virtualClaimBaseUrl}/preauth-queue`);
+      mutate?.();
+      closeWorkspaceWithSavedChanges();
+    } catch (err: unknown) {
+      setCancelError(extractFetchError(err, t('cancelPreauthFailed', 'Failed to cancel preauth')));
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  if (isCancel) {
+    return (
+      <Workspace2 title={workspaceTitle}>
+        <Form className={styles.form}>
+          <div className={styles.claimBanner}>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('patient', 'Patient')}</span>
+              <span className={styles.bannerValue}>{item?.patient?.display ?? '—'}</span>
+            </div>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('authCode', 'Auth code')}</span>
+              <span className={styles.bannerValue}>{item?.authorization_code}</span>
+            </div>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('intervention', 'Intervention')}</span>
+              <span className={styles.bannerValue}>
+                {item?.intervention_code} — {item?.intervention_name}
+              </span>
+            </div>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('preauthType', 'Preauth type')}</span>
+              <span className={styles.bannerValue}>{item?.preauth_type ?? '—'}</span>
+            </div>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('serviceType', 'Service type')}</span>
+              <span className={styles.bannerValue}>{item?.service_type ?? '—'}</span>
+            </div>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('tariff', 'Tariff')}</span>
+              <span className={styles.bannerValue}>{formatCurrency(Number(item?.tariff))}</span>
+            </div>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('preauthStatus', 'Preauth status')}</span>
+              <span className={styles.bannerValue}>{item?.preauth_status ?? '—'}</span>
+            </div>
+            {item?.requested_on && (
+              <div className={styles.bannerItem}>
+                <span className={styles.bannerLabel}>{t('requestedOn', 'Requested on')}</span>
+                <span className={styles.bannerValue}>{formatShaDate(item.requested_on)}</span>
+              </div>
+            )}
+          </div>
+
+          <div className={classNames(styles.inlineNotification, styles.cancelNotification)}>
+            <InlineNotification
+              kind="warning"
+              lowContrast
+              hideCloseButton
+              title={t('cancelPreauthConfirmTitle', 'Cancel this pre-authorization?')}
+              subtitle={t(
+                'cancelPreauthConfirmBody',
+                'The pre-authorization for intervention {{code}} will be cancelled. This cannot be undone.',
+                { code: item?.intervention_code },
+              )}
+            />
+          </div>
+
+          {cancelError && (
+            <div className={classNames(styles.inlineNotification, styles.cancelNotification)}>
+              <InlineNotification kind="error" lowContrast title={cancelError} />
+            </div>
+          )}
+
+          <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
+            <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()} disabled={isCancelling}>
+              {t('keepPreauth', 'Keep preauth')}
+            </Button>
+            <Button className={styles.button} kind="danger" disabled={isCancelling} onClick={handleCancelPreauth}>
+              {isCancelling ? (
+                <InlineLoading description={t('canceling', 'Cancelling...')} role="progressbar" />
+              ) : (
+                t('cancelPreauth', 'Cancel preauth')
+              )}
+            </Button>
+          </ButtonSet>
+        </Form>
+      </Workspace2>
+    );
+  }
 
   return (
     <Workspace2 title={workspaceTitle} hasUnsavedChanges={isDirty}>

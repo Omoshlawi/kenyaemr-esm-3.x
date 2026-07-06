@@ -221,6 +221,33 @@ export const createElectiveAuthorization = async (
   return response.data;
 };
 
+export const cancelPreauth = async (
+  consentToken: string,
+  interventionCode: string,
+): Promise<{ success: boolean; preauth?: any; error?: string; upstream_error?: any }> => {
+  const response = await fetch(`/openmrs${virtualClaimBaseUrl}/preauth/cancel`, {
+    method: 'POST',
+    body: JSON.stringify({ consent_token: consentToken, intervention_code: interventionCode }),
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  });
+
+  const data = await response.json();
+
+  if (response.ok && data.success !== false) {
+    return { success: true, preauth: data.preauth ?? data };
+  }
+
+  return {
+    success: false,
+    error: data.error,
+    upstream_error: data.upstream_error,
+  };
+};
+
 export const linkVisitToClaim = async (
   authorizationCode: string,
   visitUuid: string,

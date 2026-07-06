@@ -125,6 +125,14 @@ export interface PreauthQueueItem {
   }> | null;
 }
 
+export const CANCELLABLE_PREAUTH_STATUSES: Array<string> = [
+  'CLARIFICATION_AFTER_AUTOMATIC_CHECKS',
+  'DRAFT',
+  'FINALISED',
+  'PENDING_DOCTOR_APPROVAL',
+  'PENDING_SUBMISSION',
+];
+
 export type ElectiveCheckinRecord = {
   authorization_code: string;
   workflow_state: string;
