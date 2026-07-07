@@ -28,7 +28,10 @@ export function useClaimDocumentEndpoints() {
     try {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        return parsed as ClaimDocumentEndpointMap;
+        return Object.keys(parsed).reduce((acc, key) => {
+          acc[key] = decodeAmp(parsed[key]);
+          return acc;
+        }, {} as ClaimDocumentEndpointMap);
       }
     } catch {
       // malformed global property — treated as no configured endpoints
@@ -38,3 +41,7 @@ export function useClaimDocumentEndpoints() {
 
   return { endpoints, isLoading, error };
 }
+
+export const decodeAmp = (value: string): string => {
+  return value.replaceAll('&amp;', '&');
+};

@@ -74,7 +74,7 @@ const DocumentCardActions: React.FC<{ row: DocumentRow; actions: ClaimDocumentAc
           {row.isReplacing ? t('uploadReplacement', 'Upload replacement') : t('upload', 'Upload')}
         </Button>
         <Button kind="tertiary" size="sm" renderIcon={View} onClick={() => actions.preview(documentType)}>
-          {t('preview', 'Preview')}
+          {t('previewUploadedFile', 'Preview uploaded file')}
         </Button>
         {row.canGenerate && (
           <Button kind="ghost" size="sm" renderIcon={Renew} onClick={() => actions.generate(documentType)}>
