@@ -353,7 +353,23 @@ const ClaimsTable: React.FC<{
           provider_workflow_state: <StatusTag stage={claim.provider_workflow_state} />,
           payer_workflow_state: renderPayerStatus(claim, tab, t),
         };
-        const hasDiagnosisErrors = claim.diagnoses?.some((dx) => !!dx.sha_error_message) ?? false;
+        const isDxEffectivelyResolved = (dx: NonNullable<typeof claim.diagnoses>[number]): boolean => {
+          if (dx.is_resolved) {
+            return true;
+          }
+          if (!dx.intervention_code) {
+            return false;
+          }
+          return (claim.diagnoses ?? []).some(
+            (sibling) =>
+              sibling.status === 'ATTACHED' &&
+              sibling.intervention_code === dx.intervention_code &&
+              sibling.id !== dx.id,
+          );
+        };
+        const hasDiagnosisErrors = (claim.diagnoses ?? []).some(
+          (dx) => !!dx.sha_error_message && dx.status !== 'ATTACHED' && !isDxEffectivelyResolved(dx),
+        );
         const isResubmit = tab === 'resubmission';
         row.action = (
           <div className={styles.rowActions}>

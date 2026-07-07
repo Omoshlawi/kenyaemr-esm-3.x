@@ -409,7 +409,6 @@ const ClaimsTable: React.FC<TableProps> = ({
   const { results, currentPage, goTo } = usePagination(claims, PAGE_SIZE);
   const { pageSizes } = usePaginationInfo(PAGE_SIZE, claims.length, currentPage, results.length);
 
-  // Plain serialisable values only — JSX rendered at cell render time
   const tableRows = results.map((claim) => ({
     id: claim.uuid,
     claimCode: claim.authorizationCode || claim.claimCode || '—',
