@@ -45,8 +45,13 @@
 .datePickersRow {
   display: flex;
   flex-wrap: nowrap;
-  gap: layout.$spacing-05; // Adjust gap between columns
-  align-items: center;
+  gap: layout.$spacing-05;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.sampleCollectionDateWarning {
+  margin-top: layout.$spacing-03;
   width: 100%;
 }
 

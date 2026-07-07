@@ -91,6 +91,7 @@ export const labManifestOrderToManifestFormSchema = z.object({
   sampleType: z.string(),
   sampleCollectionDate: z.date({ coerce: true }),
   sampleSeparationDate: z.date({ coerce: true }),
+  batchNumber: z.string().optional(),
 });
 
 export const requeueLabManifest = (labManifest: MappedLabManifest) => {
@@ -156,6 +157,7 @@ export const mutateManifestLinks = (
     `/ws/rest/v1/kemrorder/validorders?manifestUuid=${manifestUuid}`,
     `/ws/rest/v1/labmanifest/${manifestUuid}`,
     `/ws/rest/v1/kemrorder/manifestmetrics`,
+    `/ws/rest/v1/labmanifestorder?v=full&manifestuuid=${manifestUuid}`,
   ];
   mutate((key) => {
     return typeof key === 'string' && mutateLinks.some((link) => key.startsWith(link));
@@ -200,8 +202,8 @@ const printFile = async (url: string) => {
   });
   const fileData = await res.arrayBuffer();
   const blob = new Blob([fileData], { type: 'application/pdf' });
-  const _url = URL.createObjectURL(blob);
-  window.open(_url, '_blank');
+  const blobUrl = URL.createObjectURL(blob);
+  window.open(blobUrl, '_blank');
 };
 
 export const printManifest = async (manifestUid: string, log?: boolean) => {

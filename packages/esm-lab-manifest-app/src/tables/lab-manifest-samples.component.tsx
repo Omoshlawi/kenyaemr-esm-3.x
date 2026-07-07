@@ -28,8 +28,13 @@ import {
   removeSampleFromTheManifest,
   sampleRemovableManifestStatus,
 } from '../lab-manifest.resources';
+import {
+  getManifestSamplePatientIdentifier,
+  getPatientIdentifierColumnLabel,
+  inferIsEidManifest,
+} from '../utils/patient-identifier-display';
+import { getManifestSampleResult, getManifestSampleResultDate } from '../utils/sample-result-display';
 import styles from './lab-manifest-table.scss';
-import PatientCCCNumbercell from './patient-ccc-no-cell.component';
 import PatientNameCell from './patient-name-cell.component';
 
 interface LabManifestSamplesProps {
@@ -39,8 +44,8 @@ interface LabManifestSamplesProps {
 const LabManifestSamples: React.FC<LabManifestSamplesProps> = ({ manifestUuid }) => {
   const { error, isLoading, manifest } = useLabManifest(manifestUuid);
   const {
-    labmanifestOrders,
-    setSearchvalue,
+    labManifestOrders,
+    setSearchValue,
     searchValue,
     isLoading: isLoadingLabOrders,
     error: labOrderErrors,
@@ -48,8 +53,10 @@ const LabManifestSamples: React.FC<LabManifestSamplesProps> = ({ manifestUuid })
   const { t } = useTranslation();
   const [pageSize, setPageSize] = useState(10);
   const headerTitle = t('labManifestSamples', 'Lab Manifest Samples');
-  const { results, totalPages, currentPage, goTo } = usePagination(labmanifestOrders, pageSize);
+  const { results, totalPages, currentPage, goTo } = usePagination(labManifestOrders, pageSize);
   const { pageSizes } = usePaginationInfo(pageSize, totalPages, currentPage, results.length);
+  const isEid = inferIsEidManifest(manifest?.manifestType, labManifestOrders);
+  const identifierHeader = getPatientIdentifierColumnLabel(manifest?.manifestType, isEid ? 'HEI Number' : undefined, t);
 
   const headers = [
     {
@@ -57,7 +64,7 @@ const LabManifestSamples: React.FC<LabManifestSamplesProps> = ({ manifestUuid })
       key: 'patientName',
     },
     {
-      header: t('cccKDODNumber', 'CCC/KDOD Number'),
+      header: identifierHeader,
       key: 'cccKDODNumber',
     },
     {
@@ -92,13 +99,13 @@ const LabManifestSamples: React.FC<LabManifestSamplesProps> = ({ manifestUuid })
     },
   ];
 
-  const handleDeleteManifestSample = (sampleUUid: string) => {
+  const handleDeleteManifestSample = (sampleUuid: string) => {
     const dispose = showModal('sample-delete-confirm-dialog', {
       onClose: () => dispose(),
-      samples: labmanifestOrders.filter((s) => s.uuid === sampleUUid),
+      samples: labManifestOrders.filter((s) => s.uuid === sampleUuid),
       onDelete: async () => {
         try {
-          await removeSampleFromTheManifest(sampleUUid);
+          await removeSampleFromTheManifest(sampleUuid);
           mutateManifestLinks(manifest?.uuid, manifest?.manifestStatus);
           dispose();
           showSnackbar({
@@ -107,10 +114,10 @@ const LabManifestSamples: React.FC<LabManifestSamplesProps> = ({ manifestUuid })
             subtitle: t('sampleRemoveSuccess', 'Sample removed from manifest successfully!'),
           });
         } catch (e: any) {
-          const _sample = labmanifestOrders.find((sample) => sample.uuid === sampleUUid);
+          const matchedSample = labManifestOrders.find((sample) => sample.uuid === sampleUuid);
           showSnackbar({
             title: t('errorRemovingSample', 'Error removing sample {{sample}} from the manifest', {
-              sample: _sample.id ?? _sample?.uuid,
+              sample: matchedSample?.id ?? matchedSample?.uuid,
             }),
             kind: 'error',
             subtitle: `${e?.responseBody?.error?.message ?? e?.message} `,
@@ -133,12 +140,12 @@ const LabManifestSamples: React.FC<LabManifestSamplesProps> = ({ manifestUuid })
             mutateManifestLinks(manifest?.uuid, manifest?.manifestStatus);
             dispose();
             samplesDeletionAsyncTasks.forEach((task, index) => {
-              const _sample = selected[index];
+              const matchedSample = selected[index];
 
               if (task.status === 'rejected') {
                 showSnackbar({
                   title: t('errorRemovingSample', 'Error removing sample {{sample}} from the manifest', {
-                    sample: _sample.id ?? _sample.uuid,
+                    sample: matchedSample?.id ?? matchedSample?.uuid,
                   }),
                   kind: 'error',
                   subtitle: `${task.reason?.responseBody?.error?.message ?? task.reason?.message} `,
@@ -175,14 +182,10 @@ const LabManifestSamples: React.FC<LabManifestSamplesProps> = ({ manifestUuid })
         status: sample.status,
         batchNumber: sample.batchNumber ?? '--',
         patientName: <PatientNameCell patient={sample?.order?.patient} />,
-        cccKDODNumber: sample?.order?.patient ? (
-          <PatientCCCNumbercell patientUuid={sample?.order?.patient?.uuid} />
-        ) : (
-          '--'
-        ),
+        cccKDODNumber: getManifestSamplePatientIdentifier(sample, isEid) || '--',
         dateRequested: sample.dateSent ? formatDate(parseDate(sample.dateSent)) : '--',
-        resultDate: sample.resultDate ? formatDate(parseDate(sample.resultDate)) : '--',
-        result: sample.result ?? '--',
+        resultDate: getManifestSampleResultDate(sample),
+        result: getManifestSampleResult(sample),
         actions: (
           <ButtonSet className={styles.btnSet}>
             {sampleRemovableManifestStatus.includes(manifest?.manifestStatus) && (
@@ -215,7 +218,7 @@ const LabManifestSamples: React.FC<LabManifestSamplesProps> = ({ manifestUuid })
     return <ErrorState headerTitle={headerTitle} error={error} />;
   }
 
-  if (labmanifestOrders.length === 0) {
+  if (labManifestOrders.length === 0) {
     return (
       <EmptyState
         headerTitle={t('manifestSamples', 'Manifest Samples')}
@@ -245,7 +248,7 @@ const LabManifestSamples: React.FC<LabManifestSamplesProps> = ({ manifestUuid })
             <CardHeader title={headerTitle}>
               <Button
                 onClick={() => {
-                  const data = selectedRows.map(({ id }) => labmanifestOrders.find((s) => s.uuid === id));
+                  const data = selectedRows.map(({ id }) => labManifestOrders.find((s) => s.uuid === id));
                   handleDeleteSelectedSamples(data);
                 }}
                 renderIcon={ArrowRight}
@@ -253,7 +256,7 @@ const LabManifestSamples: React.FC<LabManifestSamplesProps> = ({ manifestUuid })
                 {t('deleteSelectedSamples', 'Remove Selected Samples')}
               </Button>
             </CardHeader>
-            <Search labelText={''} value={searchValue} onChange={({ target: { value } }) => setSearchvalue(value)} />
+            <Search labelText={''} value={searchValue} onChange={({ target: { value } }) => setSearchValue(value)} />
             <TableContainer {...getTableContainerProps()}>
               <Table {...getTableProps()}>
                 <TableHead>
@@ -286,7 +289,7 @@ const LabManifestSamples: React.FC<LabManifestSamplesProps> = ({ manifestUuid })
         page={currentPage}
         pageSize={pageSize}
         pageSizes={pageSizes}
-        totalItems={labmanifestOrders.length}
+        totalItems={labManifestOrders.length}
         onChange={({ page, pageSize }) => {
           goTo(page);
           setPageSize(pageSize);

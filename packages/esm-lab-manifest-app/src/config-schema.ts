@@ -17,6 +17,18 @@ export const configSchema = {
         id: 3,
         type: 'Influenza',
       },
+      {
+        id: 4,
+        type: 'CD4',
+      },
+      {
+        id: 5,
+        type: 'HPV',
+      },
+      {
+        id: 6,
+        type: 'DRT',
+      },
     ],
   },
   sampleTypes: {
@@ -24,8 +36,9 @@ export const configSchema = {
     _description: 'List of sample types and list of manifest type id it applies',
     _default: [
       { sampleType: 'Frozen plasma', labManifestType: ['2'] },
-      { sampleType: 'Whole Blood', labManifestType: ['2'] },
-      { sampleType: 'DBS', labManifestType: ['1'] },
+      { sampleType: 'Whole Blood', labManifestType: ['2', '4'] },
+      { sampleType: 'Cervical Swab', labManifestType: ['5'] },
+      { sampleType: 'DBS', labManifestType: ['1', '6'] },
       { sampleType: 'Nasal Swab', labManifestType: ['3'] },
       { sampleType: 'NP', labManifestType: ['3'] },
       { sampleType: 'OP', labManifestType: ['3'] },
@@ -37,6 +50,8 @@ export const configSchema = {
     _default: {
       cccNumberIdentifierType: '05ee9cf4-7242-4a17-b4d4-00f707265c8a',
       kdodIdentifierType: 'b51ffe55-3e76-44f8-89a2-14f5eaf11079',
+      heiNumberIdentifierType: '0691f522-dd67-4eeb-92c8-af5083baf338',
+      cwcNumberIdentifierType: '1dc8b419-35f2-4316-8d68-135f0689859b',
     },
   },
   leftNavMode: {
@@ -52,6 +67,8 @@ export interface LabManifestConfig {
   patientIdentifierTypes: {
     cccNumberIdentifierType: string;
     kdodIdentifierType: string;
+    heiNumberIdentifierType: string;
+    cwcNumberIdentifierType: string;
   };
   leftNavMode: 'normal' | 'collapsed' | 'hidden';
 }

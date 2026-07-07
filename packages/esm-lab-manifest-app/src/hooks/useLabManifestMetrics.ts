@@ -36,16 +36,16 @@ const extractStatusMetrics = (metric: ManifestMetrics) => {
 const useLabManifestMetrics = () => {
   const url = `${restBaseUrl}/kemrorder/manifestmetrics`;
   const { isLoading, data, error, isValidating } = useSWR<FetchResponse<ManifestMetrics>>(url, openmrsFetch);
-  const _data = data?.data ? extractStatusMetrics(data!.data!) : null;
+  const statusMetrics = data?.data ? extractStatusMetrics(data!.data!) : null;
 
   return {
     isLoading,
     error,
-    metrics: _data,
+    metrics: statusMetrics,
     statusAggregates: (status: Array<string>) => {
       let aggregates = 0;
       status.forEach((status) => {
-        aggregates += _data?.[status] ?? 0;
+        aggregates += statusMetrics?.[status] ?? 0;
       });
       return aggregates;
     },

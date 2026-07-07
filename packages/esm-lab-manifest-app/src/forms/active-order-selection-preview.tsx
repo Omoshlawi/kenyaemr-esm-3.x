@@ -13,14 +13,26 @@ import {
 import { useTranslation } from 'react-i18next';
 import styles from '../tables/lab-manifest-table.scss';
 import { ActiveRequestOrder } from '../types';
+import {
+  getActiveRequestPatientIdentifier,
+  getPatientIdentifierColumnLabel,
+  isEidManifest,
+} from '../utils/patient-identifier-display';
 import PatientCCCNumbercell from '../tables/patient-ccc-no-cell.component';
 
 interface ActiveOrdersSelectionPreviewProps {
   orders?: Array<ActiveRequestOrder>;
+  manifestType?: number | string;
+  identifierColumnLabel?: string;
 }
 
-const ActiveOrdersSelectionPreview: React.FC<ActiveOrdersSelectionPreviewProps> = ({ orders = [] }) => {
+const ActiveOrdersSelectionPreview: React.FC<ActiveOrdersSelectionPreviewProps> = ({
+  orders = [],
+  manifestType,
+  identifierColumnLabel,
+}) => {
   const { t } = useTranslation();
+  const isEid = isEidManifest(manifestType);
 
   const headers = [
     {
@@ -28,7 +40,7 @@ const ActiveOrdersSelectionPreview: React.FC<ActiveOrdersSelectionPreviewProps> 
       key: 'patientName',
     },
     {
-      header: t('cccKDODNumber', 'CCC/KDOD Number'),
+      header: getPatientIdentifierColumnLabel(manifestType, identifierColumnLabel, t),
       key: 'cccKdod',
     },
     {
@@ -42,10 +54,10 @@ const ActiveOrdersSelectionPreview: React.FC<ActiveOrdersSelectionPreviewProps> 
       return {
         id: `${activeRequest.orderUuid}`,
         patientName: activeRequest.patientName,
-        cccKdod: activeRequest.cccKdod?.trim()?.replaceAll(' ', '') ? (
-          activeRequest.cccKdod
+        cccKdod: getActiveRequestPatientIdentifier(activeRequest, isEid) ? (
+          getActiveRequestPatientIdentifier(activeRequest, isEid)
         ) : activeRequest?.patientUuid ? (
-          <PatientCCCNumbercell patientUuid={activeRequest?.patientUuid} />
+          <PatientCCCNumbercell patientUuid={activeRequest?.patientUuid} useHeiNumber={isEid} />
         ) : (
           '--'
         ),

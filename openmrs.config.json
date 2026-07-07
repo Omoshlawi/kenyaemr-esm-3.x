@@ -1,0 +1,104 @@
+{
+  "@openmrs/esm-patient-tests-app": {
+    "showReferenceNumberField": false,
+    "resultsViewerConcepts": [
+      {
+        "conceptUuid": "9a6f10d6-7fc5-4fb7-9428-24ef7b8d01f7",
+        "defaultOpen": false
+      }
+    ],
+    "labTestsWithOrderReasons": [
+      {
+        "labTestUuid": "856AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "required": true,
+        "orderReasons": [
+          "1259AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "163718AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "f87f344a-62de-45ac-9cc0-b5bed81c289e",
+          "bb9780b3-4f44-42fd-9e94-3958d36d106f",
+          "167391AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "e299c5c6-5dc7-4977-9b9a-516252d4d582"
+        ]
+      },
+      {
+        "labTestUuid": "1030AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "required": true,
+        "orderReasons": [
+          "715cd2-c29f-4dc0-b230-17be640f833a",
+          "1032dbc5-dfd5-475a-8eb3-5b97c60d16e7",
+          "3ff9a2a6-2601-42b9-a0ad-4e7a770ba990",
+          "ad939aff-df38-4ed1-8a53-36b753c134d4",
+          "8b5529c5-44eb-47a9-af39-58d6a677363b",
+          "e4a1958-68e3-4622-ba6e-b1df68af8304",
+          "2d7a9df-a128-453a-91da-f2ef9630abbb"
+        ]
+      },
+      {
+        "labTestUuid": "163722AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "required": true,
+        "orderReasons": [
+          "164460AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "164860AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        ]
+      },
+      {
+        "labTestUuid": "164860AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "required": true,
+        "orderReasons": [
+          "167390AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "167387AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "160740AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "167527AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        ]
+      },
+      {
+        "labTestUuid": "730AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "required": true,
+        "orderReasons": [
+          "167390AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "167387AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "160740AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "167527AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        ]
+      },
+      {
+        "labTestUuid": "5497AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "required": true,
+        "orderReasons": [
+          "167390AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "167387AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "160740AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "167527AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        ]
+      },
+      {
+        "labTestUuid": "657AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "required": true,
+        "orderReasons": [
+          "167390AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "167387AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "160740AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "167527AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        ]
+      },
+      {
+        "labTestUuid": "d0a3677f-3b3a-404c-9010-6ec766d7072e",
+        "required": true,
+        "orderReasons": [
+          "167390AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "167387AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "160740AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "167527AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        ]
+      }
+    ],
+    "orders": {
+      "labOrderableConcepts": ["9a6f10d6-7fc5-4fb7-9428-24ef7b8d01f7", "90cbf856-87c4-4de6-8950-a5cb93ecd03c"],
+      "careSettingUuid": "6f0c9a92-6f24-11e3-af88-005056821db0"
+    }
+  },
+  "@openmrs/esm-patient-orders-app": {
+    "showReferenceNumberField": false,
+    "orderEncounterType": "7df67b83-1b84-4fe2-b1b7-794b4e9bfcc3"
+  }
+}

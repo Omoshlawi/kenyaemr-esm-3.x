@@ -2,6 +2,7 @@ import { FetchResponse, openmrsFetch, restBaseUrl, useDebounce } from '@openmrs/
 import { useState } from 'react';
 import useSWR from 'swr';
 import { Order } from '@openmrs/esm-patient-common-lib';
+import { getPatientIdentifierFromPayload } from '../utils/patient-identifier-display';
 
 export interface LabManifestSample {
   uuid: string;
@@ -10,6 +11,7 @@ export interface LabManifestSample {
   order: Order & { patient: Patient };
   sampleType: string;
   payload: string;
+  patientIdentifier?: string;
   dateSent?: string;
   status: string;
   result?: string;
@@ -42,22 +44,36 @@ export interface LabManifestOrder {
 export interface Patient {
   uuid: string;
   display: string;
+  identifiers?: Array<{ identifier: string; identifierType: { uuid: string } }>;
 }
 
-const useLabManifestOrders = (manifetsUuid: string) => {
+const enrichManifestSample = (sample: LabManifestSample): LabManifestSample => {
+  const patientIdentifier =
+    sample.patientIdentifier?.trim() ||
+    getPatientIdentifierFromPayload(sample.payload, true) ||
+    getPatientIdentifierFromPayload(sample.payload, false);
+
+  return patientIdentifier ? { ...sample, patientIdentifier } : sample;
+};
+
+const useLabManifestOrders = (manifestUuid: string) => {
   const [search, setSearch] = useState<string>('');
   const val = useDebounce(search, 500);
-  const urls = `${restBaseUrl}/labmanifestorder?v=full&manifestuuid=${manifetsUuid}&q=${val}`;
+  const urls = `${restBaseUrl}/labmanifestorder?v=full&manifestuuid=${manifestUuid}&q=${val}`;
   const { data, isLoading, error, mutate } = useSWR<FetchResponse<{ results: Array<LabManifestSample> }>>(
     urls,
     openmrsFetch,
+    {
+      refreshInterval: 60000,
+    },
   );
   return {
-    labmanifestOrders: data?.data?.results ?? [],
+    labManifestOrders: (data?.data?.results ?? []).map(enrichManifestSample),
     searchValue: search,
-    setSearchvalue: setSearch,
+    setSearchValue: setSearch,
     isLoading,
     error,
+    mutate,
   };
 };
 

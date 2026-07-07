@@ -18,6 +18,7 @@ import { formatDate, parseDate } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { LabManifestSample } from '../hooks/useLabManifestOrders';
+import { getManifestSampleResult, getManifestSampleResultDate } from '../utils/sample-result-display';
 import styles from '../tables/lab-manifest-table.scss';
 import PatientCCCNumbercell from '../tables/patient-ccc-no-cell.component';
 
@@ -74,8 +75,8 @@ const SampleDeleteConfirmDialog: React.FC<SampleDeleteConfirmDialogProps> = ({ o
           '--'
         ),
         dateRequested: sample.dateSent ? formatDate(parseDate(sample.dateSent)) : '--',
-        resultDate: sample.resultDate ? formatDate(parseDate(sample.resultDate)) : '--',
-        result: sample.result ?? '--',
+        resultDate: getManifestSampleResultDate(sample),
+        result: getManifestSampleResult(sample),
       };
     }) ?? [];
 

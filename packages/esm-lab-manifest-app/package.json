@@ -25,7 +25,7 @@
     "extract-translations": "i18next 'src/**/*.{ts,tsx}' --config ../../tools/i18next-parser.config.js",
     "lint": "eslint src --ext ts,tsx",
     "serve": "rspack serve --mode=development",
-    "start": "openmrs develop",
+    "start": "openmrs develop --config-url http://localhost:8080/openmrs/spa/openmrs.config.json --config-file ../../openmrs.config.json --backend http://localhost:8080 --use-rspack",
     "typescript": "tsc"
   },
   "browserslist": [

@@ -62,6 +62,8 @@ export interface ActiveRequest {
   Orders: Array<ActiveRequestOrder>;
   cccNumberType: number;
   heiNumberType: number;
+  identifierColumnLabel?: string;
+  manifestType?: number;
 }
 
 export interface ActiveRequestOrder {
@@ -71,9 +73,11 @@ export interface ActiveRequestOrder {
   patientUuid: string;
   patientName: string;
   cccKdod: string;
+  heiNumber?: string;
   dateRequested: string;
   payload: string;
-  hasProblem;
+  hasProblem: boolean;
+  problemMessage?: string;
 }
 
 export interface Constiuency {
