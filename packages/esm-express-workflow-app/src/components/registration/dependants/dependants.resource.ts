@@ -55,7 +55,7 @@ export async function createPatient(payload: PatientRegistrationPayload, t: any)
         'sha-number': configUUIDs.shaNumberUUID,
         'national-id': configUUIDs.nationalIdUUID,
         'passport-number': configUUIDs.passportUUID,
-        'birth-certificate-number': configUUIDs.birthCertificateUUID,
+        'birth-certificate': configUUIDs.birthCertificateUUID,
         'sha-id-number': configUUIDs.shaIdNumberUUID,
       };
       return map[code] ?? '';

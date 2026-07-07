@@ -82,10 +82,13 @@ export const extractPatientIdentifiers = (patient: any, isDependent = false) => 
   if (isDependent) {
     const identifierExtensions = patient.extension?.filter((ext: any) => ext.url === 'identifiers') || [];
     identifierExtensions.forEach((ext: any) => {
-      if (ext.valueIdentifier?.value && ext.valueIdentifier?.type?.coding?.[0]?.code) {
+      const code = ext.valueIdentifier?.type?.coding?.[0]?.code;
+      // 'household-number' holds the household head's (parent's) own CR number, not an identifier
+      // unique to this dependent. Searching by it would match the parent's local patient record.
+      if (ext.valueIdentifier?.value && code && code !== 'household-number') {
         identifiers.push({
           value: ext.valueIdentifier.value,
-          type: ext.valueIdentifier.type.coding[0].code,
+          type: code,
         });
       }
     });
@@ -107,7 +110,6 @@ export const extractPatientIdentifiers = (patient: any, isDependent = false) => 
 
 export const findExistingLocalPatient = async (patient: any, isDependent = false) => {
   const identifiers = extractPatientIdentifiers(patient, isDependent);
-
   if (identifiers.length === 0) {
     return null;
   }

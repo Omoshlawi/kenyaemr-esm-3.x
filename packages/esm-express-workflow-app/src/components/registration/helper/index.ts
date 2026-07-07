@@ -8,7 +8,7 @@ import {
   DependentPayload,
   HIEPatient,
 } from '../type';
-import { isWithinInterval, parseISO, format } from 'date-fns';
+import { isWithinInterval, parseISO, format, differenceInYears } from 'date-fns';
 
 /**
  * Extracts eligibility data from the EligibilityResponse structure.
@@ -247,10 +247,35 @@ export const extractDependentsFromContacts = (patient: fhir.Patient) => {
   });
 };
 
+/**
+ * Determines whether a dependent is a minor (under 18 years old) based on their birth date.
+ * Dependents with an unknown or unparseable birth date are treated as minors so that we
+ * default to the safer path of not attaching an adult-only identifier like national ID.
+ *
+ * @param {string} [birthDate] - The dependent's birth date, in ISO format.
+ * @returns {boolean} true if the dependent is under 18, or their birth date is unknown/invalid.
+ */
+const isMinorDependent = (birthDate?: string): boolean => {
+  if (!birthDate || birthDate === 'Unknown') {
+    return true;
+  }
+
+  try {
+    return differenceInYears(new Date(), parseISO(birthDate)) < 18;
+  } catch (error) {
+    return true;
+  }
+};
+
 export const transformToDependentPayload = (dependent: InputDependent, parentId?: string): DependentPayload => {
   const extensions: HIEContact['extension'] = [];
 
-  if (dependent.nationalId) {
+  // Minors in the HIE registry are identified by their SHA number, not a national ID.
+  // A national ID present on the dependent record for a minor would belong to the
+  // household head (parent), so it must not be attached to the child's own record.
+  const isMinor = isMinorDependent(dependent.birthDate);
+
+  if (dependent.nationalId && !isMinor) {
     extensions.push({
       url: 'identifiers',
       valueIdentifier: {
