@@ -72,6 +72,7 @@ type ClaimSubmitWorkspaceProps = {
   totalAmount?: number;
   mutate: () => void;
   providerWorkflowState?: string;
+  skipAuthorization?: boolean;
 };
 
 const RequiredLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -98,6 +99,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     isResubmission = false,
     isCancelMode = false,
     providerWorkflowState,
+    skipAuthorization = false,
     totalAmount,
     mutate,
   } = workspaceProps ?? ({} as ClaimSubmitWorkspaceProps);
@@ -105,6 +107,8 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const isInpatient = serviceType === 'INPATIENT';
+  const isFailedToSubmit = (providerWorkflowState ?? '').toUpperCase() === 'FAILED_TO_SUBMIT';
+  const skipAuth = skipAuthorization || isFailedToSubmit;
 
   const phoneNumber = usePatientPhone(patientUuid);
   const { isPatientWhiteListed } = useSHAEligibility(patientUuid);
@@ -198,7 +202,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
         consentToken,
         invoiceNumber,
         dischargeReason: dischargeReasonRef.current,
-        skipAuthCheck: isAuthlessResubmit,
+        skipAuthCheck: isAuthlessResubmit || skipAuth,
         ...('otp' in auth ? { otp: (auth as { otp: string }).otp } : {}),
         ...('dischargeAuthGuid' in auth
           ? { dischargeAuthGuid: (auth as { dischargeAuthGuid: string }).dischargeAuthGuid }
@@ -467,8 +471,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
   }
 
   const RESUBMIT_STATES = new Set(['DRAFT_RESUBMIT', 'DRAFT_RESUBMIT_DOCUMENTS', 'DRAFT_RESUBMISSION']);
-  const shouldSkipOtp = isResubmission && RESUBMIT_STATES.has((providerWorkflowState ?? '').toUpperCase());
-
+  const shouldSkipOtp = skipAuth || isResubmission || providerWorkflowState === 'FAILED_TO_SUBMIT';
   const onContinue = (data: ClaimSubmitFormData) => {
     dischargeReasonRef.current = data.discharge_reason;
     dischargeDateIsoRef.current = isInpatient ? buildDischargeDateIso() : '';
