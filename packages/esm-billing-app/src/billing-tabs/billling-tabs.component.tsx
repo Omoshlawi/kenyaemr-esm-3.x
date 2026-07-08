@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
-import { List, Search, BaggageClaim, TwoFactorAuthentication } from '@carbon/react/icons';
+import { List, Search, BaggageClaim, TwoFactorAuthentication, User } from '@carbon/react/icons';
 
 import BillsTable from '../bills-table/bills-table.component';
 import PatientBillsScreen from '../past-patient-bills/patient-bills-dashboard/patient-bills-dashboard';
-import ClaimsManagementTable from '../claims/claims-management/table/claims-list-table.component';
 import PreauthQueueTable from '../claims/claims-management/table/virtual-claim-preauth/preauth-queue-table.component';
 import MainTable from '../claims/claims-management/main-table/main-table.component';
+import ActiveVisit from '../visits/visits.component';
 
 type BillingTabsProps = {
   onTabChange?: (index: number) => void;
@@ -27,6 +27,7 @@ const BillingTabs = ({ onTabChange }: BillingTabsProps) => {
       <Tabs selectedIndex={activeTabIndex} onChange={handleTabChange}>
         <div style={{ display: 'flex' }}>
           <TabList style={{ paddingLeft: '1rem' }} aria-label={t('billingTabs', 'Billing tabs')} contained>
+            <Tab renderIcon={User}>{t('activeVisit', 'Active Visit')}</Tab>
             <Tab renderIcon={Search}>{t('patientBills', 'Patient Bills')}</Tab>
             <Tab renderIcon={List}>{t('billsToday', 'Bills Today')}</Tab>
             <Tab renderIcon={BaggageClaim}>{t('claims', 'Claims')}</Tab>
@@ -34,10 +35,11 @@ const BillingTabs = ({ onTabChange }: BillingTabsProps) => {
           </TabList>
         </div>
         <TabPanels>
+          <TabPanel>{<ActiveVisit />}</TabPanel>
           <TabPanel>{<PatientBillsScreen />}</TabPanel>
-          <TabPanel>{<BillsTable isOnActiveTab={activeTabIndex === 1} />}</TabPanel>
-          <TabPanel>{activeTabIndex === 2 && <MainTable />}</TabPanel>
-          <TabPanel>{activeTabIndex === 3 && <PreauthQueueTable />}</TabPanel>
+          <TabPanel>{<BillsTable isOnActiveTab={activeTabIndex === 2} />}</TabPanel>
+          <TabPanel>{activeTabIndex === 3 && <MainTable />}</TabPanel>
+          <TabPanel>{activeTabIndex === 4 && <PreauthQueueTable />}</TabPanel>
         </TabPanels>
       </Tabs>
     </div>
