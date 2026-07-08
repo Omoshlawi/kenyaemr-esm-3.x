@@ -25,6 +25,8 @@ export interface BillingConfig {
   cashierUuid: string;
   patientBillsUrl: string;
   nationalIdUUID: string;
+  birthCertificateUUID: string;
+  eligibilityIdentifierFallbacks: Array<{ uuid: string; label: string }>;
   isPDSLFacility: boolean;
   mobileMoneyPaymentModeUUID: string;
   concepts: {
@@ -72,6 +74,22 @@ export const configSchema: ConfigSchema = {
     _type: Type.String,
     _description: 'National Identification Number',
     _default: '49af6cdc-7968-4abb-bf46-de10d7f4859f',
+  },
+  birthCertificateUUID: {
+    _type: Type.String,
+    _description:
+      'The patient identifier type UUID for the birth certificate number, used for SHA eligibility checks for patients under 18 without a national ID.',
+    _default: '68449e5a-8829-44dd-bfef-c9c8cf2cb9b2',
+  },
+  eligibilityIdentifierFallbacks: {
+    _type: Type.Array,
+    _elements: {
+      _type: Type.Object,
+      properties: { uuid: { _type: Type.String }, label: { _type: Type.String } },
+    },
+    _description:
+      'Additional patient identifier types (in priority order) used for SHA eligibility checks when the patient has neither a national ID nor, for minors, a birth certificate number. Leave uuid empty to disable a type.',
+    _default: [{ uuid: '1c7d0e5b-2068-4816-a643-8de83ab65fbf', label: 'Alien ID' }],
   },
   inPatientVisitTypeUuid: {
     _type: Type.String,

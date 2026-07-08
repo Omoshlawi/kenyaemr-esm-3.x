@@ -1,5 +1,6 @@
 import { openmrsFetch, useConfig, usePatient } from '@openmrs/esm-framework';
 import useSWR from 'swr';
+import { differenceInYears, parseISO } from 'date-fns';
 import { BillingConfig } from '../config-schema';
 import { virtualClaimBaseUrl } from '../claims/claims-management/table/virtual-claim-preauth/constants';
 
@@ -74,16 +75,45 @@ export const SCHEME_NAMES = {
 
 export const useSHAEligibility = (patientUuid: string) => {
   const { patient } = usePatient(patientUuid);
-  const { nationalIdUUID } = useConfig<BillingConfig>();
+  const { nationalIdUUID, birthCertificateUUID, eligibilityIdentifierFallbacks } = useConfig<BillingConfig>();
 
-  const nationalId = patient?.identifier?.find((id) =>
-    id?.type?.coding?.some((c) => c?.code === nationalIdUUID),
-  )?.value;
+  const findIdentifierValue = (identifierTypeUUID: string) =>
+    identifierTypeUUID
+      ? patient?.identifier?.find((id) => id?.type?.coding?.some((c) => c?.code === identifierTypeUUID))?.value
+      : undefined;
 
-  const url = nationalId
+  const isMinor = (() => {
+    if (!patient?.birthDate) {
+      return false;
+    }
+    try {
+      return differenceInYears(new Date(), parseISO(patient.birthDate)) < 18;
+    } catch (error) {
+      return false;
+    }
+  })();
+
+  const nationalId = findIdentifierValue(nationalIdUUID);
+  const birthCertificateId = !nationalId && isMinor ? findIdentifierValue(birthCertificateUUID) : undefined;
+
+  const fallbackIdentifier = !nationalId
+    ? eligibilityIdentifierFallbacks
+        .map((fallback) => ({ ...fallback, value: findIdentifierValue(fallback.uuid) }))
+        .find((fallback) => fallback.value)
+    : undefined;
+
+  const identification = nationalId
+    ? { value: nationalId, type: 'National ID' }
+    : birthCertificateId
+    ? { value: birthCertificateId, type: 'Birth Certificate' }
+    : fallbackIdentifier
+    ? { value: fallbackIdentifier.value, type: fallbackIdentifier.label }
+    : null;
+
+  const url = identification
     ? `${virtualClaimBaseUrl}/eligibility?identification_number=${encodeURIComponent(
-        nationalId,
-      )}&identification_type=${encodeURIComponent('National ID')}`
+        identification.value,
+      )}&identification_type=${encodeURIComponent(identification.type)}`
     : null;
 
   const { data, error, isLoading, mutate } = useSWR<{ data: EligibilityResponse }>(url, openmrsFetch, {
