@@ -75,7 +75,8 @@ export const SCHEME_NAMES = {
 
 export const useSHAEligibility = (patientUuid: string) => {
   const { patient } = usePatient(patientUuid);
-  const { nationalIdUUID, birthCertificateUUID, eligibilityIdentifierFallbacks } = useConfig<BillingConfig>();
+  const { nationalIdUUID, birthCertificateUUID, eligibilityIdentifierFallbacks, crIdentificationNumberUUID } =
+    useConfig<BillingConfig>();
 
   const findIdentifierValue = (identifierTypeUUID: string) =>
     identifierTypeUUID
@@ -93,6 +94,7 @@ export const useSHAEligibility = (patientUuid: string) => {
     }
   })();
 
+  const crId = findIdentifierValue(crIdentificationNumberUUID);
   const nationalId = findIdentifierValue(nationalIdUUID);
   const birthCertificateId = !nationalId && isMinor ? findIdentifierValue(birthCertificateUUID) : undefined;
 
@@ -102,7 +104,9 @@ export const useSHAEligibility = (patientUuid: string) => {
         .find((fallback) => fallback.value)
     : undefined;
 
-  const identification = nationalId
+  const identification = crId
+    ? { value: crId, type: 'ClientRegistry ID' }
+    : nationalId
     ? { value: nationalId, type: 'National ID' }
     : birthCertificateId
     ? { value: birthCertificateId, type: 'Birth Certificate' }

@@ -24,7 +24,6 @@ type Props = {
   showApplicableDocuments?: boolean;
   onInterventionsCached?: (cache: Record<string, SHAIntervention>) => void;
   onUtilizationStatusChange?: (isExhausted: boolean) => void;
-  shaFundType?: 'SHIF' | 'PHC';
 };
 
 type PackageItem = {
@@ -33,15 +32,12 @@ type PackageItem = {
   label: string;
 };
 
-const PHC_PACKAGE_CODE = 'SHA-12-SC-01';
-
 const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
   patientUuid,
   visitTypeUuid,
   showApplicableDocuments,
   onInterventionsCached,
   onUtilizationStatusChange,
-  shaFundType,
 }) => {
   const { t } = useTranslation();
   const { crIdentificationNumberUUID, inPatientVisitTypeUuid } = useConfig<BillingConfig>();
@@ -92,22 +88,14 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
 
   const selectedPackage = form.watch('packages');
 
-  useEffect(() => {
-    if (shaFundType === 'PHC' && selectedPackage !== PHC_PACKAGE_CODE) {
-      setValue('packages', PHC_PACKAGE_CODE);
-    }
-  }, [shaFundType, selectedPackage, setValue]);
-
   const packageItems: Array<PackageItem> = useMemo(
     () =>
-      subBenefits
-        .filter((b) => shaFundType !== 'PHC' || b.code === PHC_PACKAGE_CODE)
-        .map((b) => ({
-          code: b.code,
-          name: b.name,
-          label: `${b.code} — ${b.name}`,
-        })),
-    [subBenefits, shaFundType],
+      subBenefits.map((b) => ({
+        code: b.code,
+        name: b.name,
+        label: `${b.code} — ${b.name}`,
+      })),
+    [subBenefits],
   );
 
   const handleInterventionsCached = useCallback(
