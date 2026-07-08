@@ -232,6 +232,34 @@
   margin-top: layout.$spacing-05;
 }
 
+.actionNotification {
+  margin-top: layout.$spacing-03;
+  width: 100%;
+  max-width: 100%;
+
+  :global(.cds--actionable-notification) {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  :global(.cds--actionable-notification__text-wrapper),
+  :global(.cds--actionable-notification__content) {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  :global(.cds--actionable-notification__title),
+  :global(.cds--actionable-notification__subtitle) {
+    display: block;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
+  }
+}
+
 .container {
   :global(.cds--table-expand) {
     background-color: colors.$gray-20;

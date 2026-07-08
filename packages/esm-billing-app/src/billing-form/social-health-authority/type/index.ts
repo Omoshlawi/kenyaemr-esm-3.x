@@ -74,6 +74,51 @@ export interface OTPResponse {
   error?: string;
 }
 
+export type PreauthStatus =
+  | 'FINALISED'
+  | 'REJECTED'
+  | 'REJECTED_AFTER_APPROVAL'
+  | 'PENDING_SUBMISSION'
+  | 'PENDING_DOCTOR_APPROVAL'
+  | 'CANCELLED'
+  | 'ACTIVE'
+  | null;
+
+export interface PreauthDoctor {
+  uuid: string;
+  doctor_name: string;
+  identification_number: string;
+  identification_type: string;
+  regulation_body: string;
+  doctor_request_status?: string;
+}
+
+export interface PreauthDiagnosis {
+  icd_code: string;
+  display?: string | null;
+}
+
+export interface PreauthQueueIntervention {
+  intervention_code: string;
+  intervention_name: string;
+  sub_benefit_code: string | null;
+  tariff: string | number;
+  payment_mechanism: string | null;
+  needs_preauth: boolean;
+  needs_manual_preauth_approval: boolean;
+  preauth_type: PreauthTypeName;
+  preauth_exist: boolean;
+  applicable_document_types: Array<ApplicableDocumentType>;
+  required_preauth_document_types: Array<ApplicableDocumentType>;
+  optional_preauth_document_types: Array<ApplicableDocumentType>;
+  preauth_status: PreauthStatus;
+  preauth_already_submitted: boolean;
+  approved_amount: string | number | null;
+  response_note: string | null;
+  requested_on: string | null;
+  responded_on: string | number | null;
+}
+
 export interface PreauthQueueItem {
   claim_uuid: string;
   authorization_code: string;
@@ -101,15 +146,7 @@ export interface PreauthQueueItem {
   applicable_document_types: Array<ApplicableDocumentType>;
   required_preauth_document_types?: Array<ApplicableDocumentType>;
   optional_preauth_document_types?: Array<ApplicableDocumentType>;
-  preauth_status:
-    | 'FINALISED'
-    | 'REJECTED'
-    | 'REJECTED_AFTER_APPROVAL'
-    | 'PENDING_SUBMISSION'
-    | 'PENDING_DOCTOR_APPROVAL'
-    | 'CANCELLED'
-    | 'ACTIVE'
-    | null;
+  preauth_status: PreauthStatus;
   preauth_already_submitted: boolean;
   approved_amount: string | null;
   response_note: string | null;
@@ -123,6 +160,15 @@ export interface PreauthQueueItem {
     content_type: string | null;
     intervention_code: string | null;
   }> | null;
+  interventions?: Array<PreauthQueueIntervention>;
+  intervention_count?: number;
+  needs_preauth_count?: number;
+  pending_count?: number;
+  approved_count?: number;
+  rejected_count?: number;
+  not_submitted_count?: number;
+  doctors?: Array<PreauthDoctor>;
+  diagnoses?: Array<PreauthDiagnosis>;
 }
 
 export const CANCELLABLE_PREAUTH_STATUSES: Array<string> = [
@@ -407,4 +453,18 @@ export interface LockCoverBackendResponse {
   upstream?: unknown;
   upstream_error?: { message?: string; [key: string]: unknown };
   error?: string;
+}
+
+export interface DoctorConsentResult {
+  success: boolean;
+  doctor_consent?: unknown;
+  error?: string;
+  upstream_error?: unknown;
+}
+
+export interface PreauthRemovalResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+  upstream_error?: unknown;
 }

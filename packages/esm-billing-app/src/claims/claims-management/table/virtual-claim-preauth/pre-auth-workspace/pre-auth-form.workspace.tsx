@@ -1,6 +1,7 @@
 import {
   Button,
   ButtonSet,
+  ActionableNotification,
   FileUploader,
   Form,
   FormGroup,
@@ -33,12 +34,15 @@ import { TrashCan } from '@carbon/react/icons';
 import styles from './pre-auth-form.scss';
 import {
   type PreauthQueueItem,
+  type PreauthDoctor,
   type SupplementaryScheme,
 } from '../../../../../billing-form/social-health-authority/type';
 import PomsfSchemeBalancePicker from '../../../../../billing-form/social-health-authority/pomsf-scheme-balance-picker.component';
 import {
   cancelPreauth,
   lockCover,
+  sendDoctorPreauthRequest,
+  removePreauthDoctor,
 } from '../../../../../billing-form/social-health-authority/sha-virtual-claim.resource';
 import ServiceDateTimeField from './service-datetime.component';
 import { getDefaultValues, getSchemaForType, type PreauthFormData, type PreauthType } from './pre-auth-schema';
@@ -83,6 +87,9 @@ interface PreauthFormProps {
   isResubmit?: boolean;
   isElective?: boolean;
   isCancel?: boolean;
+  isRemoveDoctor?: boolean;
+  isRequestDoctorApproval?: boolean;
+  doctor?: PreauthDoctor;
   mutate: () => void;
   workspaceTitle?: string;
 }
@@ -96,16 +103,29 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
   closeWorkspace,
   workspaceProps,
 }) => {
-  const closeWorkspaceWithSavedChanges = () => closeWorkspace({ discardUnsavedChanges: true });
+  const closeWorkspaceWithoutPrompt = () => closeWorkspace({ discardUnsavedChanges: true });
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { item, isResubmit = false, isElective = false, isCancel = false, mutate } = workspaceProps ?? {};
+  const {
+    item,
+    isResubmit = false,
+    isElective = false,
+    isCancel = false,
+    isRemoveDoctor = false,
+    isRequestDoctorApproval = false,
+    doctor,
+    mutate,
+  } = workspaceProps ?? {};
   const preauthType = (item?.preauth_type ?? 'NORMAL') as PreauthType;
   const workspaceTitle = workspaceProps?.workspaceTitle ?? t('preauthForm', 'Pre-authorization Form');
 
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [isRemovingDoctor, setIsRemovingDoctor] = useState(false);
+  const [removeDoctorError, setRemoveDoctorError] = useState<string | null>(null);
+  const [isRequestingDoctor, setIsRequestingDoctor] = useState(false);
+  const [requestDoctorError, setRequestDoctorError] = useState<string | null>(null);
 
   const [selectedScheme, setSelectedScheme] = useState<SupplementaryScheme | null>(null);
 
@@ -267,7 +287,7 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
 
       handleQueueMutate(`${virtualClaimBaseUrl}/preauth-queue`);
       mutate?.();
-      closeWorkspaceWithSavedChanges();
+      closeWorkspaceWithoutPrompt();
     } catch (err: unknown) {
       const message = extractFetchError(err, t('submitFailed', 'Submission failed. Please try again.'));
       setSubmitError(message);
@@ -292,13 +312,236 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
       });
       handleQueueMutate(`${virtualClaimBaseUrl}/preauth-queue`);
       mutate?.();
-      closeWorkspaceWithSavedChanges();
+      closeWorkspaceWithoutPrompt();
     } catch (err: unknown) {
       setCancelError(extractFetchError(err, t('cancelPreauthFailed', 'Failed to cancel preauth')));
     } finally {
       setIsCancelling(false);
     }
   };
+
+  const handleRemoveDoctor = async () => {
+    if (!item || !doctor) {
+      return;
+    }
+
+    setRemoveDoctorError(null);
+    setIsRemovingDoctor(true);
+
+    try {
+      const result = await removePreauthDoctor(
+        item.authorization_code,
+        item.intervention_code,
+        doctor.identification_number,
+      );
+
+      if (!result.success) {
+        throw new Error(
+          extractUpstreamError(
+            result as any,
+            t('removeDoctorFailed', 'Failed to remove doctor from this preauthorization'),
+          ),
+        );
+      }
+
+      showSnackbar({
+        title: t('removeDoctor', 'Remove doctor'),
+        subtitle: t('doctorRemovedSuccessfully', 'Doctor removed successfully'),
+        kind: 'success',
+      });
+      handleQueueMutate(`${virtualClaimBaseUrl}/preauth-queue`);
+      mutate?.();
+      closeWorkspaceWithoutPrompt();
+    } catch (err: unknown) {
+      setRemoveDoctorError(extractFetchError(err, t('removeDoctorFailed', 'Failed to remove doctor')));
+    } finally {
+      setIsRemovingDoctor(false);
+    }
+  };
+
+  const handleRequestDoctorApproval = async () => {
+    if (!item || !doctor) {
+      return;
+    }
+
+    setRequestDoctorError(null);
+    setIsRequestingDoctor(true);
+
+    try {
+      const result = await sendDoctorPreauthRequest(
+        item.authorization_code,
+        item.intervention_code,
+        doctor.identification_number,
+        'REQUEST',
+      );
+
+      if ((result as any)?.success === false) {
+        throw new Error(
+          extractUpstreamError(result as any, t('requestDoctorApprovalFailed', 'Could not request doctor approval')),
+        );
+      }
+
+      showSnackbar({
+        title: t('requestDoctorApproval', 'Request doctor approval'),
+        subtitle: t('doctorApprovalRequestedSuccessfully', 'Doctor approval requested successfully'),
+        kind: 'success',
+      });
+      handleQueueMutate(`${virtualClaimBaseUrl}/preauth-queue`);
+      mutate?.();
+      closeWorkspaceWithoutPrompt();
+    } catch (err: unknown) {
+      setRequestDoctorError(
+        extractFetchError(err, t('requestDoctorApprovalFailed', 'Could not request doctor approval')),
+      );
+    } finally {
+      setIsRequestingDoctor(false);
+    }
+  };
+
+  if (isRemoveDoctor) {
+    return (
+      <Workspace2 title={workspaceTitle}>
+        <Form className={styles.form}>
+          <div className={styles.claimBanner}>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('patient', 'Patient')}</span>
+              <span className={styles.bannerValue}>{item?.patient?.display ?? '—'}</span>
+            </div>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('authCode', 'Auth code')}</span>
+              <span className={styles.bannerValue}>{item?.authorization_code}</span>
+            </div>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('intervention', 'Intervention')}</span>
+              <span className={styles.bannerValue}>
+                {item?.intervention_code} — {item?.intervention_name}
+              </span>
+            </div>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('doctor', 'Doctor')}</span>
+              <span className={styles.bannerValue}>{doctor?.doctor_name ?? '—'}</span>
+            </div>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('doctorId', 'Doctor ID')}</span>
+              <span className={styles.bannerValue}>{doctor?.identification_number ?? '—'}</span>
+            </div>
+          </div>
+
+          <div className={classNames(styles.inlineNotification, styles.cancelNotification)}>
+            <ActionableNotification
+              kind="warning"
+              lowContrast
+              hideCloseButton
+              inline
+              title={t('removeDoctorConfirmTitle', 'Remove this doctor?')}
+              subtitle={t(
+                'removeDoctorConfirmBody',
+                'The doctor {{doctor}} will be removed from this preauthorization. This cannot be undone.',
+                { doctor: doctor?.doctor_name },
+              )}
+            />
+          </div>
+
+          {removeDoctorError && (
+            <div className={classNames(styles.inlineNotification, styles.cancelNotification)}>
+              <ActionableNotification kind="error" lowContrast inline hideCloseButton title={removeDoctorError} />
+            </div>
+          )}
+
+          <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
+            <Button
+              className={styles.button}
+              kind="secondary"
+              onClick={closeWorkspaceWithoutPrompt}
+              disabled={isRemovingDoctor}>
+              {t('cancel', 'Cancel')}
+            </Button>
+            <Button className={styles.button} kind="danger" disabled={isRemovingDoctor} onClick={handleRemoveDoctor}>
+              {isRemovingDoctor ? (
+                <InlineLoading description={t('removing', 'Removing...')} role="progressbar" />
+              ) : (
+                t('removeDoctor', 'Remove doctor')
+              )}
+            </Button>
+          </ButtonSet>
+        </Form>
+      </Workspace2>
+    );
+  }
+
+  if (isRequestDoctorApproval) {
+    return (
+      <Workspace2 title={workspaceTitle}>
+        <Form className={styles.form}>
+          <div className={styles.claimBanner}>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('patient', 'Patient')}</span>
+              <span className={styles.bannerValue}>{item?.patient?.display ?? '—'}</span>
+            </div>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('authCode', 'Auth code')}</span>
+              <span className={styles.bannerValue}>{item?.authorization_code}</span>
+            </div>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('intervention', 'Intervention')}</span>
+              <span className={styles.bannerValue}>
+                {item?.intervention_code} — {item?.intervention_name}
+              </span>
+            </div>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('doctor', 'Doctor')}</span>
+              <span className={styles.bannerValue}>{doctor?.doctor_name ?? '—'}</span>
+            </div>
+            <div className={styles.bannerItem}>
+              <span className={styles.bannerLabel}>{t('doctorId', 'Doctor ID')}</span>
+              <span className={styles.bannerValue}>{doctor?.identification_number ?? '—'}</span>
+            </div>
+          </div>
+
+          <div className={classNames(styles.inlineNotification, styles.electiveGuidance)}>
+            <ActionableNotification
+              kind="info"
+              lowContrast
+              hideCloseButton
+              inline
+              title={t('requestDoctorApprovalTitle', 'Request doctor approval')}
+              subtitle={t(
+                'requestDoctorApprovalBody',
+                'This will send the doctor consent request to SHA for this preauthorization.',
+              )}
+            />
+          </div>
+
+          {requestDoctorError && (
+            <div className={classNames(styles.inlineNotification, styles.submitError)}>
+              <ActionableNotification kind="error" lowContrast inline hideCloseButton title={requestDoctorError} />
+            </div>
+          )}
+
+          <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
+            <Button
+              className={styles.button}
+              kind="secondary"
+              onClick={closeWorkspaceWithoutPrompt}
+              disabled={isRequestingDoctor}>
+              {t('cancel', 'Cancel')}
+            </Button>
+            <Button
+              className={styles.button}
+              kind="primary"
+              disabled={isRequestingDoctor}
+              onClick={handleRequestDoctorApproval}>
+              {isRequestingDoctor ? (
+                <InlineLoading description={t('requesting', 'Requesting...')} role="progressbar" />
+              ) : (
+                t('requestDoctorApproval', 'Request approval')
+              )}
+            </Button>
+          </ButtonSet>
+        </Form>
+      </Workspace2>
+    );
+  }
 
   if (isCancel) {
     return (
@@ -364,7 +607,11 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
           )}
 
           <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-            <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()} disabled={isCancelling}>
+            <Button
+              className={styles.button}
+              kind="secondary"
+              onClick={closeWorkspaceWithoutPrompt}
+              disabled={isCancelling}>
               {t('keepPreauth', 'Keep preauth')}
             </Button>
             <Button className={styles.button} kind="danger" disabled={isCancelling} onClick={handleCancelPreauth}>
@@ -381,7 +628,7 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
   }
 
   return (
-    <Workspace2 title={workspaceTitle} hasUnsavedChanges={isDirty}>
+    <Workspace2 title={workspaceTitle}>
       <Form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
         <div className={styles.claimBanner}>
           <div className={styles.bannerItem}>
@@ -1143,7 +1390,7 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
         </div>
 
         <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+          <Button className={styles.button} kind="secondary" onClick={closeWorkspaceWithoutPrompt}>
             {t('discard', 'Discard')}
           </Button>
           <Button className={styles.button} disabled={isSubmitting} kind="primary" type="submit">

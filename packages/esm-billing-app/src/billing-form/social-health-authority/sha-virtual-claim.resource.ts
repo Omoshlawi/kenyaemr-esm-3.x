@@ -14,6 +14,7 @@ import {
   BiometricAuthorizeRequest,
   BiometricAuthorizeResponse,
   BiometricConfigResponse,
+  DoctorConsentResult,
   ElectiveCheckinRecord,
   LockCoverArgs,
   LockCoverBackendResponse,
@@ -23,6 +24,7 @@ import {
   PatientIdentifierResponse,
   PomsfBalancesResponse,
   PreauthQueueItem,
+  PreauthRemovalResult,
   ProviderAttributesResponse,
   SHAIntervention,
   SHASubBenefit,
@@ -783,4 +785,87 @@ export const lockCover = async ({
       upstream: upstreamError,
     };
   }
+};
+
+export const sendDoctorPreauthRequest = async (
+  consentToken: string,
+  interventionCode: string,
+  practitionerRegistrationNumber: string,
+  requestType: string,
+): Promise<DoctorConsentResult> => {
+  const response = await openmrsFetch(`${virtualClaimBaseUrl}/preauth/doctor-consent`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: {
+      practitioner_registration_number: practitionerRegistrationNumber,
+      request_type: requestType,
+      consent_token: consentToken,
+      intervention_code: interventionCode,
+    },
+  });
+  return response.data;
+};
+
+export const removePreauthDoctor = async (
+  consentToken: string,
+  interventionCode: string,
+  practitionerRegistrationNumber: string,
+): Promise<PreauthRemovalResult> => {
+  const response = await fetch(`/openmrs${virtualClaimBaseUrl}/preauth/doctor`, {
+    method: 'DELETE',
+    body: JSON.stringify({
+      consent_token: consentToken,
+      intervention_code: interventionCode,
+      practitioner_registration_number: practitionerRegistrationNumber,
+    }),
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  });
+
+  const data = await response.json();
+
+  if (response.ok && data.success !== false) {
+    return { success: true, message: data.message };
+  }
+
+  return {
+    success: false,
+    error: data.error,
+    upstream_error: data.upstream_error,
+  };
+};
+
+export const removePreauthDiagnosis = async (
+  consentToken: string,
+  icdCode: string,
+  interventionCode: string,
+): Promise<PreauthRemovalResult> => {
+  const response = await fetch(`/openmrs${virtualClaimBaseUrl}/preauth/diagnosis`, {
+    method: 'DELETE',
+    body: JSON.stringify({
+      consent_token: consentToken,
+      icd_code: icdCode,
+      intervention_code: interventionCode,
+    }),
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  });
+
+  const data = await response.json();
+
+  if (response.ok && data.success !== false) {
+    return { success: true, message: data.message };
+  }
+
+  return {
+    success: false,
+    error: data.error,
+    upstream_error: data.upstream_error,
+  };
 };
