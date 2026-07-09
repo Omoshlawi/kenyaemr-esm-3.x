@@ -142,7 +142,7 @@
     {
       "name": "custom-visit-form-queue-fields",
       "component": "checkinFormExtraExtension",
-      "slot": "billing-visit-attributes-slot",
+      "slot": "visit-form-bottom-slot",
       "order": 0
     },
     {

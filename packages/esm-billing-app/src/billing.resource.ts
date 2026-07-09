@@ -12,7 +12,7 @@ import {
 import dayjs from 'dayjs';
 import isEmpty from 'lodash-es/isEmpty';
 import sortBy from 'lodash-es/sortBy';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import useSWR from 'swr';
 import { z } from 'zod';
 import { BillingConfig } from './config-schema';
@@ -322,10 +322,8 @@ export const useBillableItems = () => {
   const url = `${restBaseUrl}/cashier/billableService?v=custom:(uuid,name,shortName,serviceStatus,serviceType:(display),servicePrices:(uuid,name,price,paymentMode))`;
   const { data, isLoading, error } = useSWR<{ data: { results: Array<OpenmrsResource> } }>(url, openmrsFetch);
   const [searchTerm, setSearchTerm] = useState('');
-  const filteredItems = useMemo(
-    () => data?.data?.results?.filter((item) => item.name.toLowerCase().includes(searchTerm.toLowerCase())) ?? [],
-    [data, searchTerm],
-  );
+  const filteredItems =
+    data?.data?.results?.filter((item) => item.name.toLowerCase().includes(searchTerm.toLowerCase())) ?? [];
   return {
     lineItems: filteredItems,
     isLoading,
@@ -337,9 +335,8 @@ export const useBillableItems = () => {
 export const useCashPoint = () => {
   const url = `${restBaseUrl}/cashier/cashPoint`;
   const { data, isLoading, error } = useSWR<{ data: { results: Array<OpenmrsResource> } }>(url, openmrsFetch);
-  const cashPoints = useMemo(() => data?.data?.results ?? [], [data]);
 
-  return { isLoading, error, cashPoints };
+  return { isLoading, error, cashPoints: data?.data?.results ?? [] };
 };
 
 export const createPatientBill = (payload) => {

@@ -22,7 +22,6 @@ export const billingCheckInForm = getAsyncLifecycle(
   options,
 );
 export const billingForm = getAsyncLifecycle(() => import('./billing-form/billing-form.component'), options);
-export const visitAttributesWorkspace = getAsyncLifecycle(() => import('./visits/visit-attributes.workspace'), options);
 export const billingDashboard = getAsyncLifecycle(
   () => import('./billing-dashboard/billing-dashboard.component'),
   options,
