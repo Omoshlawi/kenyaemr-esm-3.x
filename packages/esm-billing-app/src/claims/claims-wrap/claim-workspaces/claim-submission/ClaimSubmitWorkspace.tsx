@@ -107,8 +107,9 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const isInpatient = serviceType === 'INPATIENT';
-  const isFailedToSubmit = (providerWorkflowState ?? '').toUpperCase() === 'FAILED_TO_SUBMIT';
-  const skipAuth = skipAuthorization || isFailedToSubmit;
+  const RESUBMIT_FAILED_STATES = new Set(['FAILED_TO_SUBMIT', 'SUBMIT_FAILED_RETRY']);
+  const isResubmitFailed = RESUBMIT_FAILED_STATES.has((providerWorkflowState ?? '').toUpperCase());
+  const skipAuth = skipAuthorization || isResubmitFailed;
 
   const phoneNumber = usePatientPhone(patientUuid);
   const { isPatientWhiteListed } = useSHAEligibility(patientUuid);
@@ -470,8 +471,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     return null;
   }
 
-  const RESUBMIT_STATES = new Set(['DRAFT_RESUBMIT', 'DRAFT_RESUBMIT_DOCUMENTS', 'DRAFT_RESUBMISSION']);
-  const shouldSkipOtp = skipAuth || isResubmission || providerWorkflowState === 'FAILED_TO_SUBMIT';
+  const shouldSkipOtp = skipAuth || isResubmission || isResubmitFailed;
   const onContinue = (data: ClaimSubmitFormData) => {
     dischargeReasonRef.current = data.discharge_reason;
     dischargeDateIsoRef.current = isInpatient ? buildDischargeDateIso() : '';
@@ -480,6 +480,14 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     } else {
       launchAuthModal();
     }
+  };
+
+  // A claim that failed to submit already carries its original discharge reason
+  // and authorization on file — retrying it needs neither re-entered.
+  const onContinueResubmitFailed = () => {
+    dischargeReasonRef.current = '';
+    dischargeDateIsoRef.current = isInpatient ? buildDischargeDateIso() : '';
+    launchResubmitConfirm();
   };
 
   const workspaceTitle = isCancelMode
@@ -549,7 +557,16 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
 
   return (
     <Workspace2 hasUnsavedChanges={isDirty && !submitSucceeded} title={workspaceTitle}>
-      <form onSubmit={handleSubmit(onContinue)} className={styles.form}>
+      <form
+        onSubmit={
+          isResubmitFailed
+            ? (e) => {
+                e.preventDefault();
+                onContinueResubmitFailed();
+              }
+            : handleSubmit(onContinue)
+        }
+        className={styles.form}>
         <div className={styles.formContainer}>
           <section className={styles.summaryCard}>
             <h6 className={styles.summaryTitle}>{t('claimSummary', 'Claim summary')}</h6>
@@ -577,72 +594,90 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
             </div>
           </section>
 
-          <section className={styles.formSection}>
-            <Controller
-              name="discharge_reason"
-              control={control}
-              render={({ field }) => (
-                <Dropdown
-                  id="discharge-reason"
-                  titleText={<RequiredLabel>{t('dischargeReason', 'Discharge reason')}</RequiredLabel>}
-                  label={
-                    isLoadingReasons
-                      ? t('loadingReasons', 'Loading reasons…')
-                      : t('selectDischargeReason', 'Select a reason')
-                  }
-                  items={dischargeReasonItems}
-                  itemToString={(item) => (item ? item.label : '')}
-                  selectedItem={selectedReasonItem}
-                  onChange={({ selectedItem }) => field.onChange(selectedItem?.id ?? '')}
-                  disabled={isLoadingReasons || isSubmitting}
-                  invalid={!!errors.discharge_reason}
-                  invalidText={errors.discharge_reason?.message}
-                />
+          {isResubmitFailed ? (
+            <InlineNotification
+              kind="info"
+              lowContrast
+              hideCloseButton
+              title={t('resubmitFailedNote', 'No changes needed')}
+              subtitle={t(
+                'resubmitFailedNoteDesc',
+                'This claim already has a discharge reason and authorization on file — resubmitting will retry sending it to SHA without asking again.',
               )}
+              className={styles.errorBanner}
             />
-            {selectedReasonItem?.description && <p className={styles.reasonHint}>{selectedReasonItem.description}</p>}
-          </section>
-
-          {isInpatient && (
-            <section className={styles.formSection}>
-              <p className={styles.sectionLabel}>
-                <RequiredLabel>{t('dischargeDateAndTime', 'Discharge date and time')}</RequiredLabel>
-              </p>
-              <p className={styles.sectionHint}>
-                {t(
-                  'dischargeDateHint',
-                  'Used by SHA for per-diem calculations. Pre-filled with now — adjust if the patient was discharged earlier.',
-                )}
-              </p>
-              <div className={styles.dateTimeRow}>
-                <DatePicker
-                  datePickerType="single"
-                  value={dischargeDate}
-                  maxDate={new Date()}
-                  onChange={(dates) => {
-                    if (dates[0]) {
-                      setDischargeDate(dates[0]);
-                    }
-                  }}>
-                  <DatePickerInput
-                    id="discharge-date"
-                    labelText={t('date', 'Date')}
-                    placeholder="dd/mm/yyyy"
-                    disabled={isSubmitting}
-                  />
-                </DatePicker>
-                <TimePicker
-                  id="discharge-time"
-                  labelText={t('time', 'Time')}
-                  value={dischargeTimeText}
-                  onChange={handleDischargeTimeChange}
-                  disabled={isSubmitting}
-                  pattern="(\d{2}):(\d{2})"
-                  placeholder="hh:mm"
-                  maxLength={5}
+          ) : (
+            <>
+              <section className={styles.formSection}>
+                <Controller
+                  name="discharge_reason"
+                  control={control}
+                  render={({ field }) => (
+                    <Dropdown
+                      id="discharge-reason"
+                      titleText={<RequiredLabel>{t('dischargeReason', 'Discharge reason')}</RequiredLabel>}
+                      label={
+                        isLoadingReasons
+                          ? t('loadingReasons', 'Loading reasons…')
+                          : t('selectDischargeReason', 'Select a reason')
+                      }
+                      items={dischargeReasonItems}
+                      itemToString={(item) => (item ? item.label : '')}
+                      selectedItem={selectedReasonItem}
+                      onChange={({ selectedItem }) => field.onChange(selectedItem?.id ?? '')}
+                      disabled={isLoadingReasons || isSubmitting}
+                      invalid={!!errors.discharge_reason}
+                      invalidText={errors.discharge_reason?.message}
+                    />
+                  )}
                 />
-              </div>
-            </section>
+                {selectedReasonItem?.description && (
+                  <p className={styles.reasonHint}>{selectedReasonItem.description}</p>
+                )}
+              </section>
+
+              {isInpatient && (
+                <section className={styles.formSection}>
+                  <p className={styles.sectionLabel}>
+                    <RequiredLabel>{t('dischargeDateAndTime', 'Discharge date and time')}</RequiredLabel>
+                  </p>
+                  <p className={styles.sectionHint}>
+                    {t(
+                      'dischargeDateHint',
+                      'Used by SHA for per-diem calculations. Pre-filled with now — adjust if the patient was discharged earlier.',
+                    )}
+                  </p>
+                  <div className={styles.dateTimeRow}>
+                    <DatePicker
+                      datePickerType="single"
+                      value={dischargeDate}
+                      maxDate={new Date()}
+                      onChange={(dates) => {
+                        if (dates[0]) {
+                          setDischargeDate(dates[0]);
+                        }
+                      }}>
+                      <DatePickerInput
+                        id="discharge-date"
+                        labelText={t('date', 'Date')}
+                        placeholder="dd/mm/yyyy"
+                        disabled={isSubmitting}
+                      />
+                    </DatePicker>
+                    <TimePicker
+                      id="discharge-time"
+                      labelText={t('time', 'Time')}
+                      value={dischargeTimeText}
+                      onChange={handleDischargeTimeChange}
+                      disabled={isSubmitting}
+                      pattern="(\d{2}):(\d{2})"
+                      placeholder="hh:mm"
+                      maxLength={5}
+                    />
+                  </div>
+                </section>
+              )}
+            </>
           )}
 
           {submitError && (
@@ -674,7 +709,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
           </Button>
           <Button
             className={styles.button}
-            disabled={isSubmitting || isLoadingReasons || submitSucceeded}
+            disabled={isSubmitting || (!isResubmitFailed && isLoadingReasons) || submitSucceeded}
             kind={isResubmission ? 'danger' : 'primary'}
             type="submit"
             renderIcon={submitSucceeded ? CheckmarkFilled : undefined}>
