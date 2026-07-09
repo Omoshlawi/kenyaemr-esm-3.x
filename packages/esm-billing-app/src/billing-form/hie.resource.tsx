@@ -130,6 +130,7 @@ export const useSHAEligibility = (patientUuid: string) => {
     data: data?.data,
     isPatientWhiteListed: data?.data?.whitelistedForOTP ?? false,
     facilityBiometricsEnforced: data?.data?.facilityBiometricsEnforced ?? false,
+    eligibilityData: data?.data ?? null,
     isLoading,
     error,
     mutate,

@@ -106,3 +106,41 @@ export const getPatientCRNumber = (patient: fhir.Patient, shaIdentifierTypeUUID:
   const shaId = patient.identifier.find((id: fhir.Identifier) => id?.type?.coding?.[0]?.code === shaIdentifierTypeUUID);
   return shaId?.value ?? null;
 };
+
+export const extractAuthorizationCode = (claimResponse: any): string | null => {
+  if (!claimResponse) {
+    return null;
+  }
+  const candidates = [
+    claimResponse.authorization_code,
+    claimResponse.claim?.authorization_code,
+    claimResponse.consent_token,
+    claimResponse.claim?.consent_token,
+    claimResponse.data?.authorization_code,
+    claimResponse.data?.claim?.authorization_code,
+    claimResponse.authorizationCode,
+    claimResponse.claim?.authorizationCode,
+  ];
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim().length > 0) {
+      return c.trim();
+    }
+  }
+  return null;
+};
+export const computeAgeInYears = (dob: string | undefined | null): number | null => {
+  if (!dob) {
+    return null;
+  }
+  const birth = new Date(dob);
+  if (Number.isNaN(birth.getTime())) {
+    return null;
+  }
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const monthDelta = now.getMonth() - birth.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return age;
+};
