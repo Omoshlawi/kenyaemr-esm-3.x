@@ -10,6 +10,7 @@ export interface ProviderSearchProps {
   selectedDisplay: string;
   selectedLicenseNumber: string;
   selectedRegulationBody: string;
+  identifierLabel?: string;
   onSelect: (provider: ProviderResult) => void;
   onLicenseNumberChange: (value: string) => void;
   onRegulationBodyChange: (value: string) => void;
@@ -22,6 +23,7 @@ const ProviderSearch: React.FC<ProviderSearchProps> = ({
   selectedDisplay,
   selectedLicenseNumber,
   selectedRegulationBody,
+  identifierLabel,
   onSelect,
   onLicenseNumberChange,
   onRegulationBodyChange,
@@ -113,7 +115,7 @@ const ProviderSearch: React.FC<ProviderSearchProps> = ({
           <div className={styles.twoCol} style={{ marginTop: '0.5rem' }}>
             <TextInput
               id={`license-number-${idx}`}
-              labelText={t('licenseNumber', 'License number *')}
+              labelText={identifierLabel ? `${identifierLabel} *` : t('licenseNumber', 'License number *')}
               value={selectedLicenseNumber}
               readOnly={!!selectedLicenseNumber}
               onChange={(e) => !selectedLicenseNumber && onLicenseNumberChange(e.target.value)}
