@@ -18,6 +18,7 @@ type PackageInterventionsProps = {
   patientUuid: string;
   selectedPackages: string | null;
   showApplicableDocuments?: boolean;
+  allowElectiveInterventions?: boolean;
   onInterventionsCached?: (cache: Record<string, SHAIntervention>) => void;
   onUtilizationStatusChange?: (isExhausted: boolean) => void;
 };
@@ -28,6 +29,7 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
   patientUuid,
   selectedPackages,
   showApplicableDocuments,
+  allowElectiveInterventions = false,
   onInterventionsCached,
   onUtilizationStatusChange,
 }) => {
@@ -74,7 +76,9 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
 
       let suffix: string;
       if (isElective) {
-        suffix = ` — ${t('scheduledOnly', 'Scheduled only')}`;
+        suffix = allowElectiveInterventions
+          ? ` — ${t('electivePreauth', 'Elective — SHA approval required')}`
+          : ` — ${t('scheduledOnly', 'Scheduled only')}`;
       } else if (isCapitation) {
         suffix = ` — ${t('capitation', 'Capitation (PHC)')}`;
       } else if (intervention.needs_preauth) {
@@ -87,15 +91,15 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
         id: `intervention-${intervention.code}`,
         code: intervention.code,
         text: `${intervention.name}${suffix}`,
-        disabled: isElective,
+        disabled: isElective && !allowElectiveInterventions,
         isElective,
       };
     });
 
     return built.sort((a, b) => Number(a.isElective) - Number(b.isElective));
-  }, [interventions, cachedInterventions, selectedIntervention, t]);
+  }, [interventions, cachedInterventions, selectedIntervention, allowElectiveInterventions, t]);
 
-  const electiveCount = useMemo(() => items.filter((i) => i.isElective).length, [items]);
+  const disabledElectiveCount = useMemo(() => items.filter((i) => i.isElective && i.disabled).length, [items]);
 
   const selectedInterventionDetail = useMemo(() => {
     if (!selectedIntervention) {
@@ -152,7 +156,7 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
               placeholder={t('chooseIntervention', 'Choose an intervention')}
               items={items}
               helperText={
-                electiveCount > 0
+                disabledElectiveCount > 0
                   ? t('electiveInterventionsHint', 'Items disabled require SHA pre-approval via the Preauth Queue.')
                   : undefined
               }
@@ -193,7 +197,15 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
               const name = intervention?.name ?? code;
               const needsPreauth = intervention?.needs_preauth ?? false;
               const isCapitation = intervention?.payment_mechanism?.toUpperCase() === 'CAPITATION';
+              const isElective = Boolean((intervention as any)?.needs_manual_preauth_approval);
 
+              if (isElective) {
+                return (
+                  <Tag key={code} type="purple" size="lg" className={styles.tag}>
+                    {name}: {t('electiveWillQueue', 'Elective — a preauth will be raised for SHA approval')}
+                  </Tag>
+                );
+              }
               if (isCapitation) {
                 return (
                   <Tag key={code} type="teal" size="lg" className={styles.tag}>

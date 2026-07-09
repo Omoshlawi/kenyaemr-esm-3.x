@@ -271,7 +271,7 @@ const SHAStep: React.FC<SHAStepProps> = ({
         .map((i) => {
           const isElective = Boolean((i as any).needs_manual_preauth_approval);
           const suffix = isElective
-            ? ` — ${t('scheduledOnly', 'Scheduled only')}`
+            ? ` — ${t('preauthRequired', 'Preauth required')}`
             : i?.payment_mechanism?.toUpperCase() === 'CAPITATION'
             ? ` — ${t('capitation', 'Capitation (PHC)')}`
             : i?.needs_preauth
@@ -282,7 +282,7 @@ const SHAStep: React.FC<SHAStepProps> = ({
             code: i.code,
             name: i.name,
             text: `${i.name}${suffix}`,
-            disabled: isElective,
+            disabled: false,
             isElective,
           };
         })
@@ -368,6 +368,8 @@ const SHAStep: React.FC<SHAStepProps> = ({
     () => currentInterventions.find((iv: any) => iv.intervention_code === restoreInterventionCode) ?? null,
     [currentInterventions, restoreInterventionCode],
   );
+
+  const isSelectedElective = Boolean((selectedIntervention as any)?.needs_manual_preauth_approval);
 
   const schemeTagType = useMemo(() => {
     const upper = schemeCode?.toUpperCase();
@@ -474,7 +476,7 @@ const SHAStep: React.FC<SHAStepProps> = ({
     if (isElective) {
       return (
         <Tag type="purple" size="lg" className={styles.tag}>
-          {name}: {t('scheduledOnly', 'Scheduled / elective preauth required')}
+          {name}: {t('PreauthillQueue', 'Preauth will be raised for SHA approval')}
         </Tag>
       );
     }
@@ -711,6 +713,22 @@ const SHAStep: React.FC<SHAStepProps> = ({
           (shaMode === 'RESTORE' && restoreInterventionCode && selectedRestoreIntervention)) && (
           <Column>
             <div className={styles.tagRow}>{renderInterventionPreview()}</div>
+          </Column>
+        )}
+
+        {shaMode !== 'RESTORE' && isSelectedElective && (
+          <Column>
+            <InlineNotification
+              kind="info"
+              lowContrast
+              hideCloseButton
+              aria-label={t('ivIntervention', 'Intervention')}
+              title={t('ivIntervention', 'Intervention')}
+              subtitle={t(
+                'electiveInterventionSubtitle',
+                'This intervention require SHA approval. Saving will raise a preauth — track it in the Preauth Queue before services are claimable.',
+              )}
+            />
           </Column>
         )}
 
@@ -1010,7 +1028,12 @@ const CreateBillWorkspace: React.FC<Workspace2DefinitionProps<CreateBillWorkspac
     if (doShaAction && authorizationCode) {
       try {
         if (formData.shaMode === 'ADD' && formData.interventionCode) {
-          const res = await addInterventionToVisit(authorizationCode, formData.interventionCode);
+          const newInterventionPayload = (formData as any).interventionPayload ?? undefined;
+          const res = await addInterventionToVisit(
+            authorizationCode,
+            formData.interventionCode,
+            newInterventionPayload,
+          );
           if (res?.success === false) {
             throw res;
           }
@@ -1079,6 +1102,7 @@ const CreateBillWorkspace: React.FC<Workspace2DefinitionProps<CreateBillWorkspac
 
     try {
       await processBillItems(createBillPayload);
+      const wasElective = Boolean((formData as any).interventionPayload?.needs_manual_preauth_approval);
       const successTitle = doShaAction
         ? formData.shaMode === 'SWITCH'
           ? t('switchedAndBilled', 'Switched & bill saved')
@@ -1088,9 +1112,14 @@ const CreateBillWorkspace: React.FC<Workspace2DefinitionProps<CreateBillWorkspac
         : t('billItems', 'Bill saved');
       showSnackbar({
         title: successTitle,
-        subtitle: t('billProcessingSuccess', 'Bill processing has been successful'),
+        subtitle: wasElective
+          ? t(
+              'billProcessingSuccessIntervention',
+              'Bill saved. The intervention is pending SHA approval — track it in the Preauth Queue.',
+            )
+          : t('billProcessingSuccess', 'Bill processing has been successful'),
         kind: 'success',
-        timeoutInMs: 3000,
+        timeoutInMs: wasElective ? 6000 : 3000,
       });
       mutate((key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/cashier/bill`), undefined, {
         revalidate: true,

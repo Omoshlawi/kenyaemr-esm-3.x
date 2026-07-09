@@ -22,6 +22,7 @@ type Props = {
   patientUuid: string;
   visitTypeUuid?: string;
   showApplicableDocuments?: boolean;
+  allowElectiveInterventions?: boolean;
   onInterventionsCached?: (cache: Record<string, SHAIntervention>) => void;
   onUtilizationStatusChange?: (isExhausted: boolean) => void;
 };
@@ -36,6 +37,7 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
   patientUuid,
   visitTypeUuid,
   showApplicableDocuments,
+  allowElectiveInterventions = false,
   onInterventionsCached,
   onUtilizationStatusChange,
 }) => {
@@ -213,6 +215,7 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
           patientUuid={patientUuid}
           selectedPackages={selectedPackage ?? null}
           showApplicableDocuments={showApplicableDocuments}
+          allowElectiveInterventions={allowElectiveInterventions}
           onInterventionsCached={handleInterventionsCached}
           onUtilizationStatusChange={handleUtilizationStatusChange}
         />
