@@ -223,7 +223,7 @@ const ClaimDoctorsWorkspace: React.FC<Workspace2DefinitionProps<ClaimDoctorsWork
 
   const onSubmit = async (data: ClaimDoctorsFormData) => {
     if (allDone) {
-      closeWorkspace();
+      closeWorkspace({ discardUnsavedChanges: true });
       return;
     }
 
@@ -235,7 +235,7 @@ const ClaimDoctorsWorkspace: React.FC<Workspace2DefinitionProps<ClaimDoctorsWork
       });
 
     if (rowsToSubmit.length === 0) {
-      closeWorkspace();
+      closeWorkspace({ discardUnsavedChanges: true });
       return;
     }
 
@@ -293,7 +293,7 @@ const ClaimDoctorsWorkspace: React.FC<Workspace2DefinitionProps<ClaimDoctorsWork
         isLowContrast: true,
       });
       mutate();
-      setTimeout(() => closeWorkspace(), 1500);
+      setTimeout(() => closeWorkspace({ discardUnsavedChanges: true }), 1500);
     } else {
       showSnackbar({
         title: t('doctorsPartial', 'Some doctors failed'),
@@ -474,7 +474,10 @@ const ClaimDoctorsWorkspace: React.FC<Workspace2DefinitionProps<ClaimDoctorsWork
         </div>
 
         <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+          <Button
+            className={styles.button}
+            kind="secondary"
+            onClick={() => closeWorkspace({ discardUnsavedChanges: true })}>
             {t('cancel', 'Cancel')}
           </Button>
           <Button

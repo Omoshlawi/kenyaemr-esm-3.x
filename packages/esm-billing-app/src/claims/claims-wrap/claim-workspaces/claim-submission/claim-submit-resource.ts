@@ -24,6 +24,27 @@ export const useDischargeReasons = () => {
   };
 };
 
+export type CloseReasonOption = {
+  code: string;
+  label: string;
+  description: string;
+};
+
+export type CloseReasonsResponse = {
+  count: number;
+  reasons: Array<CloseReasonOption>;
+};
+
+export const useCloseReasons = () => {
+  const url = `${restBaseUrl}/virtualclaims/billing/close-reasons`;
+  const { data, error, isLoading } = useSWR<FetchResponse<CloseReasonsResponse>>(url, openmrsFetch);
+  return {
+    reasons: data?.data?.reasons ?? [],
+    isLoading,
+    error,
+  };
+};
+
 export const requestDischargeOtp = async (
   consentToken: string,
   patientId: string,

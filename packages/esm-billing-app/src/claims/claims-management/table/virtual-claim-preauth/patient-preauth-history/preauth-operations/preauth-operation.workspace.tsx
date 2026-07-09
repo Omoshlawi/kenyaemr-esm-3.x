@@ -53,7 +53,7 @@ const PreauthOperationForm: React.FC<Workspace2DefinitionProps<PreauthOperationF
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const closeWorkspaceWithSavedChanges = () => {
     setHasUnsavedChanges(false);
-    closeWorkspace();
+    closeWorkspace({ discardUnsavedChanges: true });
   };
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -72,7 +72,7 @@ const PreauthOperationForm: React.FC<Workspace2DefinitionProps<PreauthOperationF
         </div>
 
         {/* <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace({ discardUnsavedChanges: true })}>
             {t('cancel', 'Cancel')}
           </Button>
           <Button

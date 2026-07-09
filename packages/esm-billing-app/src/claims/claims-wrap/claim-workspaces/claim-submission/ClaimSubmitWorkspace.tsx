@@ -41,23 +41,19 @@ import {
   useProviderNationalId,
 } from '../../../../billing-form/social-health-authority/sha-virtual-claim.resource';
 import { useSHAEligibility } from '../../../../billing-form/hie.resource';
-import { dischargeClaim, requestDischargeOtp, submitClaim, useDischargeReasons } from './claim-submit-resource';
+import {
+  dischargeClaim,
+  requestDischargeOtp,
+  submitClaim,
+  useCloseReasons,
+  useDischargeReasons,
+} from './claim-submit-resource';
 import { closeInsuranceClaim } from '../../../claims-management/table/claim-summary-modal/claim.resource';
 import { ClaimSubmitFormData, claimSubmitSchema } from './claim-submit-schema';
 import {
   extractUpstreamError,
   toLocalIsoWithOffset,
 } from '../../../claims-management/table/virtual-claim-preauth/utils';
-
-const CANCEL_REASON_OPTIONS = [
-  'WRONG_PATIENT',
-  'NO_SERVICE_GIVEN',
-  'WRONG_BENEFIT',
-  'EXPIRED_VISIT',
-  'EXHAUSTED_BENEFIT',
-  'TIME_BARRED',
-  'OTHER_REASONS',
-];
 
 type ClaimSubmitWorkspaceProps = {
   consentToken: string;
@@ -121,6 +117,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
   const deviceOs = detectAuthorizingDeviceOS();
 
   const { reasons: dischargeReasons, isLoading: isLoadingReasons } = useDischargeReasons();
+  const { reasons: closeReasons, isLoading: isLoadingCloseReasons } = useCloseReasons();
 
   const [dischargeDate, setDischargeDate] = useState<Date>(() => new Date());
   const [dischargeTimeText, setDischargeTimeText] = useState<string>(() => {
@@ -163,7 +160,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
         timeoutInMs: 3000,
       });
       mutate();
-      setTimeout(() => closeWorkspace(), 800);
+      setTimeout(() => closeWorkspace({ discardUnsavedChanges: true }), 800);
     } else {
       setSubmitError(result.upstreamError ?? t('cancelClaimFailed', 'Failed to cancel claim'));
     }
@@ -244,7 +241,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
       const res = await createSHABiometricAuthorize({
         agent_id: providerNationalid,
         patient_id: patientCRId,
-        interventions,
+        interventions: [interventions[0]],
         service_type: serviceType,
         workstation_id: workstationId,
         authorizing_device_os: deviceOs,
@@ -364,7 +361,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
             isLowContrast: true,
           });
           mutate();
-          setTimeout(() => closeWorkspace(), 800);
+          setTimeout(() => closeWorkspace({ discardUnsavedChanges: true }), 800);
         });
       },
 
@@ -388,7 +385,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
             isLowContrast: true,
           });
           mutate();
-          setTimeout(() => closeWorkspace(), 800);
+          setTimeout(() => closeWorkspace({ discardUnsavedChanges: true }), 800);
         });
       },
       onBiometricCancel: async (token: string | null) => {
@@ -454,7 +451,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
             isLowContrast: true,
           });
           mutate();
-          setTimeout(() => closeWorkspace(), 800);
+          setTimeout(() => closeWorkspace({ discardUnsavedChanges: true }), 800);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           setSubmitError(msg);
@@ -502,6 +499,22 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
         <div className={styles.form}>
           <div className={styles.formContainer}>
             <section className={styles.formSection}>
+              <section className={styles.formSection}>
+                <Select
+                  id="cancel-reason-type"
+                  labelText={t('cancelReasonType', 'Cancel reason type')}
+                  value={cancelReasonType}
+                  onChange={(e) => setCancelReasonType((e.target as HTMLSelectElement).value)}
+                  disabled={isSubmitting || isLoadingCloseReasons}>
+                  {isLoadingCloseReasons ? (
+                    <SelectItem value="" text={t('loadingReasons', 'Loading reasons…')} />
+                  ) : (
+                    closeReasons.map((reason) => (
+                      <SelectItem key={reason.code} value={reason.code} text={reason.label} />
+                    ))
+                  )}
+                </Select>
+              </section>
               <TextInput
                 id="cancel-reason-text"
                 labelText={t('cancelReason', 'Cancel reason')}
@@ -510,18 +523,6 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
                 onChange={(e) => setCancelReasonText((e.target as HTMLInputElement).value)}
                 disabled={isSubmitting}
               />
-            </section>
-            <section className={styles.formSection}>
-              <Select
-                id="cancel-reason-type"
-                labelText={t('cancelReasonType', 'Cancel reason type')}
-                value={cancelReasonType}
-                onChange={(e) => setCancelReasonType((e.target as HTMLSelectElement).value)}
-                disabled={isSubmitting}>
-                {CANCEL_REASON_OPTIONS.map((opt) => (
-                  <SelectItem key={opt} value={opt} text={t(opt, opt)} />
-                ))}
-              </Select>
             </section>
             {submitError && (
               <InlineNotification
@@ -535,7 +536,11 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
             )}
           </div>
           <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-            <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()} disabled={isSubmitting}>
+            <Button
+              className={styles.button}
+              kind="secondary"
+              onClick={() => closeWorkspace({ discardUnsavedChanges: true })}
+              disabled={isSubmitting}>
               {t('close', 'Close')}
             </Button>
             <Button
@@ -704,7 +709,11 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
         </div>
 
         <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()} disabled={isSubmitting}>
+          <Button
+            className={styles.button}
+            kind="secondary"
+            onClick={() => closeWorkspace({ discardUnsavedChanges: true })}
+            disabled={isSubmitting}>
             {t('cancel', 'Cancel')}
           </Button>
           <Button
