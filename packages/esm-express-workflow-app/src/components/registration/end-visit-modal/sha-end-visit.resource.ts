@@ -7,6 +7,7 @@ import {
   BiometricAuthorizeRequest,
   BiometricAuthorizeResponse,
   BiometricConfigResponse,
+  ClaimDoctorsResponse,
   OTPResponse,
   ProviderAttributesResponse,
   WhitelistReason,
@@ -156,6 +157,26 @@ export const useOtpWhitelistReasons = () => {
     },
   );
   return { reasons: data?.data?.reasons ?? [], isLoading, error };
+};
+
+/**
+ * Doctors are fetched on-demand per claim (keyed by the claim's authorization_code
+ * as consent_token) rather than embedded in the preauth queue response, to avoid
+ * an N+1 query on every queue page load.
+ */
+export const useClaimDoctors = (consentToken: string | null) => {
+  const url = consentToken ? `${virtualClaimBaseUrl}/doctors?consent_token=${encodeURIComponent(consentToken)}` : null;
+  const { data, error, isLoading, mutate } = useSWR<FetchResponse<ClaimDoctorsResponse>>(url, openmrsFetch, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60_000,
+  });
+  return {
+    doctors: data?.data?.doctors ?? [],
+    total: data?.data?.total ?? 0,
+    isLoading,
+    error,
+    mutate,
+  };
 };
 
 export const detectAuthorizingDeviceOS = (): AuthorizingDeviceOS => {

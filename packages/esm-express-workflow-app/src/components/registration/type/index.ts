@@ -442,6 +442,21 @@ export type WhitelistSubmitResponse = {
   error?: string;
 };
 
+export type ClaimDoctor = {
+  uuid: string;
+  doctor_name: string;
+  identification_number: string;
+  identification_type: string;
+  regulation_body: string;
+};
+
+export type ClaimDoctorsResponse = {
+  success: boolean;
+  consent_token: string;
+  total: number;
+  doctors: Array<ClaimDoctor>;
+};
+
 export type WhitelistStatusPoll = {
   beneficiary_cr_id: string;
   is_whitelisted: boolean;

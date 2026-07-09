@@ -228,6 +228,9 @@ export type IdentificationTypesResponse = {
 export type ClaimDoctorItem = {
   uuid: string;
   doctor_name: string;
+  identification_number: string;
+  identification_type: string;
+  regulation_body: string;
   date_created?: number | null;
 };
 

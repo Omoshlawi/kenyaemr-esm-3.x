@@ -6,6 +6,7 @@ import {
   DatePickerInput,
   ActionableNotification,
   InlineLoading,
+  InlineNotification,
   Search,
   Tab,
   Table,
@@ -45,6 +46,7 @@ import { formatShaDate, isWithinDateRange } from './utils';
 import { formatCurrency } from '../../../../helpers/currency';
 import { extractSavannahErrorMessage } from '../../../../helpers/functions';
 import InterventionCrudLauncher from './intervention-crud-launcher.component';
+import { useClaimDoctors } from '../../../claims-wrap/claim-workspaces/doctors/claim-doctors-resource';
 
 interface ExpandedPanelProps {
   item: PreauthQueueItem;
@@ -59,8 +61,18 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
   const [actionError, setActionError] = useState<string | null>(null);
   const preauthAlreadySubmitted = Boolean((item as any).preauth_already_submitted);
   const canCancelPreauth = CANCELLABLE_PREAUTH_STATUSES.includes(item.preauth_status ?? '');
-  const doctors = item.doctors ?? [];
+  const {
+    doctors,
+    isLoading: isLoadingDoctors,
+    error: doctorsError,
+    mutate: mutateDoctors,
+  } = useClaimDoctors(item.authorization_code);
   const diagnoses = item.diagnoses ?? [];
+
+  const mutateDoctorAction = () => {
+    onAction();
+    mutateDoctors();
+  };
 
   const handleRequestDoctorApproval = (doctor: { uuid: string; doctor_name: string; identification_number: string }) =>
     launchWorkspace2('preauth-form-workspace', {
@@ -68,7 +80,7 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
       item,
       doctor,
       isRequestDoctorApproval: true,
-      mutate: onAction,
+      mutate: mutateDoctorAction,
     });
 
   const handleRemoveDiagnosis = async (diagnosis: PreauthDiagnosis) => {
@@ -210,43 +222,59 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
         </div>
 
         <div className={styles.expandedCard}>
-          {(doctors.length > 0 || diagnoses.length > 0) && (
+          {(doctors.length > 0 || diagnoses.length > 0 || isLoadingDoctors || doctorsError) && (
             <>
               <p className={styles.expandedCardTitle}>{t('clinicalDetails', 'Clinical details')}</p>
 
-              {doctors.length > 0 && (
-                <>
-                  <div className={styles.kvRow}>
-                    <span className={styles.kvLabel}>{t('doctors', 'Doctors')}</span>
-                    <span className={styles.kvValue}>{doctors.length}</span>
-                  </div>
-                  <div className={styles.attachmentList}>
-                    {doctors.map((doctor) => (
-                      <div key={doctor.uuid} className={styles.attachmentRow}>
-                        <Tag type="cyan" size="sm">
-                          {doctor.identification_number}
-                        </Tag>
-                        <span className={styles.attachmentTitle}>{doctor.doctor_name}</span>
-                        <Button
-                          size="sm"
-                          kind="danger--tertiary"
-                          renderIcon={TrashCan}
-                          onClick={() =>
-                            launchWorkspace2('preauth-form-workspace', {
-                              workspaceTitle: t('removeDoctor', 'Remove Doctor'),
-                              item,
-                              doctor,
-                              isRemoveDoctor: true,
-                              mutate: onAction,
-                            })
-                          }
-                          iconDescription={t('removeDoctor', 'Remove doctor')}>
-                          {t('remove', 'Remove')}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </>
+              {doctorsError ? (
+                <InlineNotification
+                  kind="error"
+                  lowContrast
+                  hideCloseButton
+                  title={t('doctorsLoadError', 'Failed to load doctors')}
+                  subtitle={
+                    doctorsError instanceof Error
+                      ? doctorsError.message
+                      : t('doctorsLoadErrorGeneric', 'Request failed')
+                  }
+                />
+              ) : isLoadingDoctors ? (
+                <InlineLoading description={t('loadingDoctors', 'Loading doctors…')} />
+              ) : (
+                doctors.length > 0 && (
+                  <>
+                    <div className={styles.kvRow}>
+                      <span className={styles.kvLabel}>{t('doctors', 'Doctors')}</span>
+                      <span className={styles.kvValue}>{doctors.length}</span>
+                    </div>
+                    <div className={styles.attachmentList}>
+                      {doctors.map((doctor) => (
+                        <div key={doctor.uuid} className={styles.attachmentRow}>
+                          <Tag type="cyan" size="sm">
+                            {doctor.identification_number}
+                          </Tag>
+                          <span className={styles.attachmentTitle}>{doctor.doctor_name}</span>
+                          <Button
+                            size="sm"
+                            kind="danger--tertiary"
+                            renderIcon={TrashCan}
+                            onClick={() =>
+                              launchWorkspace2('preauth-form-workspace', {
+                                workspaceTitle: t('removeDoctor', 'Remove Doctor'),
+                                item,
+                                doctor,
+                                isRemoveDoctor: true,
+                                mutate: mutateDoctorAction,
+                              })
+                            }
+                            iconDescription={t('removeDoctor', 'Remove doctor')}>
+                            {t('remove', 'Remove')}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )
               )}
 
               {diagnoses.length > 0 && (
@@ -401,10 +429,20 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
   const isPending = item.workflow_state === 'ELECTIVE_PENDING';
   const isDraft = item.workflow_state === 'ELECTIVE_DRAFT';
   const isRejected = item.workflow_state === 'ELECTIVE_REJECTED';
-  const doctors = item.doctors ?? [];
+  const {
+    doctors,
+    isLoading: isLoadingDoctors,
+    error: doctorsError,
+    mutate: mutateDoctors,
+  } = useClaimDoctors(item.authorization_code);
   const diagnoses = item.diagnoses ?? [];
 
   const preauthAlreadySubmitted = Boolean((item as any).preauth_already_submitted);
+
+  const mutateDoctorAction = () => {
+    onAction();
+    mutateDoctors();
+  };
 
   const handleRequestDoctorApproval = (doctor: { uuid: string; doctor_name: string; identification_number: string }) =>
     launchWorkspace2('preauth-form-workspace', {
@@ -412,7 +450,7 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
       item,
       doctor,
       isRequestDoctorApproval: true,
-      mutate: onAction,
+      mutate: mutateDoctorAction,
     });
 
   const handleRemoveDiagnosis = async (diagnosis: PreauthDiagnosis) => {
@@ -551,50 +589,66 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
         </div>
 
         <div className={styles.expandedCard}>
-          {(doctors.length > 0 || diagnoses.length > 0) && (
+          {(doctors.length > 0 || diagnoses.length > 0 || isLoadingDoctors || doctorsError) && (
             <>
               <p className={styles.expandedCardTitle}>{t('clinicalDetails', 'Clinical details')}</p>
 
-              {doctors.length > 0 && (
-                <>
-                  <div className={styles.kvRow}>
-                    <span className={styles.kvLabel}>{t('doctors', 'Doctors')}</span>
-                    <span className={styles.kvValue}>{doctors.length}</span>
-                  </div>
-                  <div className={styles.attachmentList}>
-                    {doctors.map((doctor) => (
-                      <div key={doctor.uuid} className={styles.attachmentRow}>
-                        <Tag type="cyan" size="sm">
-                          {doctor.identification_number}
-                        </Tag>
-                        <span className={styles.attachmentTitle}>{doctor.doctor_name}</span>
-                        <Button
-                          size="sm"
-                          kind="secondary"
-                          onClick={() => handleRequestDoctorApproval(doctor)}
-                          iconDescription={t('requestDoctorApproval', 'Request doctor approval')}>
-                          {t('requestDoctorApproval', 'Request approval')}
-                        </Button>
-                        <Button
-                          size="sm"
-                          kind="danger--tertiary"
-                          renderIcon={TrashCan}
-                          onClick={() =>
-                            launchWorkspace2('preauth-form-workspace', {
-                              workspaceTitle: t('removeDoctor', 'Remove Doctor'),
-                              item,
-                              doctor,
-                              isRemoveDoctor: true,
-                              mutate: onAction,
-                            })
-                          }
-                          iconDescription={t('removeDoctor', 'Remove doctor')}>
-                          {t('remove', 'Remove')}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </>
+              {doctorsError ? (
+                <InlineNotification
+                  kind="error"
+                  lowContrast
+                  hideCloseButton
+                  title={t('doctorsLoadError', 'Failed to load doctors')}
+                  subtitle={
+                    doctorsError instanceof Error
+                      ? doctorsError.message
+                      : t('doctorsLoadErrorGeneric', 'Request failed')
+                  }
+                />
+              ) : isLoadingDoctors ? (
+                <InlineLoading description={t('loadingDoctors', 'Loading doctors…')} />
+              ) : (
+                doctors.length > 0 && (
+                  <>
+                    <div className={styles.kvRow}>
+                      <span className={styles.kvLabel}>{t('doctors', 'Doctors')}</span>
+                      <span className={styles.kvValue}>{doctors.length}</span>
+                    </div>
+                    <div className={styles.attachmentList}>
+                      {doctors.map((doctor) => (
+                        <div key={doctor.uuid} className={styles.attachmentRow}>
+                          <Tag type="cyan" size="sm">
+                            {doctor.identification_number}
+                          </Tag>
+                          <span className={styles.attachmentTitle}>{doctor.doctor_name}</span>
+                          <Button
+                            size="sm"
+                            kind="secondary"
+                            onClick={() => handleRequestDoctorApproval(doctor)}
+                            iconDescription={t('requestDoctorApproval', 'Request doctor approval')}>
+                            {t('requestDoctorApproval', 'Request approval')}
+                          </Button>
+                          <Button
+                            size="sm"
+                            kind="danger--tertiary"
+                            renderIcon={TrashCan}
+                            onClick={() =>
+                              launchWorkspace2('preauth-form-workspace', {
+                                workspaceTitle: t('removeDoctor', 'Remove Doctor'),
+                                item,
+                                doctor,
+                                isRemoveDoctor: true,
+                                mutate: mutateDoctorAction,
+                              })
+                            }
+                            iconDescription={t('removeDoctor', 'Remove doctor')}>
+                            {t('remove', 'Remove')}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )
               )}
 
               {diagnoses.length > 0 && (
