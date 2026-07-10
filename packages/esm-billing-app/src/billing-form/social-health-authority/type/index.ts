@@ -53,10 +53,14 @@ export interface SHAIntervention {
   fund: string;
   access_point: string;
   needs_preauth: boolean;
+  needs_manual_preauth_approval?: boolean;
   preauth_type: PreauthTypeName;
   payment_mechanism: string;
   annual_quantity_limit: number | null;
   applicable_document_types: Array<ApplicableDocumentType>;
+  required_preauth_document_types?: Array<ApplicableDocumentType>;
+  optional_preauth_document_types?: Array<ApplicableDocumentType>;
+  number_of_doctors_required?: number | null;
 }
 
 export interface VirtualClaimResponse {
@@ -117,6 +121,7 @@ export interface PreauthQueueIntervention {
   response_note: string | null;
   requested_on: string | null;
   responded_on: string | number | null;
+  number_of_doctors_required: number;
 }
 
 export interface PreauthQueueItem {
@@ -146,6 +151,7 @@ export interface PreauthQueueItem {
   applicable_document_types: Array<ApplicableDocumentType>;
   required_preauth_document_types?: Array<ApplicableDocumentType>;
   optional_preauth_document_types?: Array<ApplicableDocumentType>;
+  number_of_doctors_required?: number | null;
   preauth_status: PreauthStatus;
   preauth_already_submitted: boolean;
   approved_amount: string | null;

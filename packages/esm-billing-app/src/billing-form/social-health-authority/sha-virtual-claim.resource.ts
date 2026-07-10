@@ -199,6 +199,7 @@ export const createElectiveAuthorization = async (
   interventionTariff: string = '',
   applicableDocumentTypes: Array<string> = [],
   preauthType: string = '',
+  numberOfDoctorsRequired?: number | null,
 ): Promise<{
   success: boolean;
   authorization_code?: string;
@@ -219,6 +220,7 @@ export const createElectiveAuthorization = async (
       patient_uuid: patientUuid,
       applicable_document_types: applicableDocumentTypes,
       preauth_type: preauthType,
+      ...(numberOfDoctorsRequired != null ? { number_of_doctors_required: numberOfDoctorsRequired } : {}),
     },
   });
   return response.data;

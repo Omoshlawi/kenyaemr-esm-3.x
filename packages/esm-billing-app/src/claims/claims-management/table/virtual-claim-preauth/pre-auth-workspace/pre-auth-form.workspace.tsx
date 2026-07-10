@@ -198,6 +198,9 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
     remove: removeAttachment,
   } = useFieldArray({ control, name: 'attachments' });
 
+  const requiredDoctorsCount = isElective && !isResubmit ? item?.number_of_doctors_required ?? 0 : 0;
+  const hasEnoughDoctors = requiredDoctorsCount === 0 || doctorFields.length >= requiredDoctorsCount;
+
   useEffect(() => {
     if (!hasAnyDocsAccepted) {
       return;
@@ -220,6 +223,21 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
       return;
     }
     setSubmitError(null);
+
+    if (requiredDoctorsCount > 0) {
+      const providedDoctorsCount = (data.doctors ?? []).length;
+      if (providedDoctorsCount < requiredDoctorsCount) {
+        setSubmitError(
+          t(
+            'peerReviewDoctorsRequired',
+            'This intervention requires a peer review by {{required}} doctors. Add {{required}} doctors to enable submission.',
+            { required: requiredDoctorsCount },
+          ),
+        );
+        return;
+      }
+    }
+
     if (requiredPreauthDocs.length > 0) {
       const uploadedTypes = new Set((data.attachments ?? []).filter((a) => a.file != null).map((a) => a.document_type));
       const missing = requiredPreauthDocs.filter((dt) => !uploadedTypes.has(dt));
@@ -806,6 +824,33 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
 
         <div className={styles.twoCol}>
           <FormGroup legendText={<RequiredLabel>{t('doctors', 'Doctors')}</RequiredLabel>}>
+            {requiredDoctorsCount > 0 && (
+              <div className={classNames(styles.inlineNotification, styles.submitError)}>
+                <InlineNotification
+                  kind={hasEnoughDoctors ? 'success' : 'error'}
+                  lowContrast
+                  hideCloseButton
+                  title={
+                    hasEnoughDoctors
+                      ? t('peerReviewDoctorsMetTitle', 'Peer review requirement met')
+                      : t('peerReviewDoctorsRequiredTitle', 'Peer review doctors required')
+                  }
+                  subtitle={
+                    hasEnoughDoctors
+                      ? t(
+                          'peerReviewDoctorsMet',
+                          'This intervention requires a peer review by {{required}} doctors — requirement met.',
+                          { required: requiredDoctorsCount },
+                        )
+                      : t(
+                          'peerReviewDoctorsHint',
+                          'This intervention requires a peer review by {{required}} doctors before it can be submitted. {{current}} of {{required}} added.',
+                          { required: requiredDoctorsCount, current: doctorFields.length },
+                        )
+                  }
+                />
+              </div>
+            )}
             {doctorFields.map((field, idx) => (
               <Layer key={field.id}>
                 <div className={styles.itemCard}>
@@ -1401,7 +1446,7 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
           <Button className={styles.button} kind="secondary" onClick={closeWorkspaceWithoutPrompt}>
             {t('discard', 'Discard')}
           </Button>
-          <Button className={styles.button} disabled={isSubmitting} kind="primary" type="submit">
+          <Button className={styles.button} disabled={isSubmitting || !hasEnoughDoctors} kind="primary" type="submit">
             {isSubmitting ? (
               <InlineLoading description={t('submitting', 'Submitting...') + '...'} role="progressbar" />
             ) : isResubmit ? (

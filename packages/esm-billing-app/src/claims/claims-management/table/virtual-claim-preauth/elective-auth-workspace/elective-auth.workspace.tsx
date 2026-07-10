@@ -195,6 +195,7 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
       const interventionTariff = (intervention as any)?.tariff ?? '';
       const interventionDocTypes = (intervention as any)?.applicable_document_types ?? [];
       const interventionPreauthType = (intervention as any)?.preauth_type ?? '';
+      const interventionNumberOfDoctorsRequired = intervention?.number_of_doctors_required ?? null;
 
       const dispose = showModal('otp-verification-modal', {
         onClose: () => {
@@ -226,6 +227,7 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
             interventionTariff,
             interventionDocTypes,
             interventionPreauthType,
+            interventionNumberOfDoctorsRequired,
           );
           if (!res.success) {
             throw new Error(extractUpstreamError(res, t('authorizeFailed', 'Authorization failed')));
