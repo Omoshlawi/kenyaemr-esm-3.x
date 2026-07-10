@@ -8,7 +8,6 @@ export * from './components/facility-dashboard';
 export * from './components/laboratory';
 export * from './components/mch';
 export * from './components/pharmacy';
-export * from './components/preauth';
 export * from './components/procedures';
 export * from './components/procedures/procedure-queues';
 export * from './components/radiology-and-imaging';

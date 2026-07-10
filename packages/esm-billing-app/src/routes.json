@@ -175,14 +175,6 @@
       "name": "claims-overview-dashboard-link",
       "slot": "claims-management-overview-slot"
     },
-     {
-      "name": "patient-preauth-widget",
-      "component": "patientPreauthWidget",
-      "slot": "ewf-preauth-dashboard-slot",
-      "meta": {
-        "columnSpan": 4
-      }
-    },
     {
       "component": "waiveBillActionButton",
       "name": "waive-bill-action-button",
