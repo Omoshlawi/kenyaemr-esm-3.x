@@ -175,5 +175,7 @@
 
 .interventionName {
   @include type.type-style('body-compact-02');
-  // color: $text-01;
+}
+.paymentModeComboBox {
+  margin-top: layout.$spacing-05;
 }

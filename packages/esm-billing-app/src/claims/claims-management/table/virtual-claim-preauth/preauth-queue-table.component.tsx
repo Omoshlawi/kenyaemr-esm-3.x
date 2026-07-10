@@ -59,7 +59,7 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
   const [submitting] = useState(false);
   const [removingDiagnosisCode, setRemovingDiagnosisCode] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const preauthAlreadySubmitted = Boolean((item as any).preauth_already_submitted);
+  const preauthAlreadySubmitted = Boolean((item as any)?.preauth_already_submitted);
   const canCancelPreauth = CANCELLABLE_PREAUTH_STATUSES.includes(item.preauth_status ?? '');
   const {
     doctors,
@@ -145,7 +145,6 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
   return (
     <div className={styles.expandedPanel}>
       <div className={styles.expandedGrid}>
-        {/* ── Left card: preauth details ─────────────────────────────── */}
         <div className={styles.expandedCard}>
           <p className={styles.expandedCardTitle}>{t('preauthDetails', 'Preauth details')}</p>
 

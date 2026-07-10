@@ -399,7 +399,12 @@ export type SupplementaryEligibilityResponse = {
   schemes?: Array<SupplementaryScheme>;
 };
 
-export type PomsfBalanceMatch = {
+export interface PomsfBalanceEntry {
+  member: string;
+  balance: number;
+}
+
+export interface PomsfBalanceRow {
   scheme_code: string;
   scheme_name: string;
   policy_code: string;
@@ -413,28 +418,31 @@ export type PomsfBalanceMatch = {
   benefit_type: string;
   benefit_limit: number;
   benefit_shared: string;
-  benefit_balance?: Array<{ member?: string; balance?: number }>;
+  benefit_balance: Array<PomsfBalanceEntry>;
   sub_benefit_code: string;
   sub_benefit_name: string;
   sub_benefit_type: string;
   sub_benefit_limit: number;
   sub_benefit_shared: string;
-  balance?: Array<{ member?: string; balance?: number }>;
-};
+  balance: Array<PomsfBalanceEntry>;
+}
 
-export type PomsfBalancesResponse = {
+export interface PomsfBalancesResponse {
   success: boolean;
-  member?: {
-    member_number?: string;
-    principal_member_number?: string;
-    national_id?: string;
-    full_name?: string;
+  member: {
+    member_number: string;
+    principal_member_number: string;
+    national_id: string;
+    sha_number: string;
+    full_name: string;
+    gender: string;
+    phone: string;
+    household_id: string;
   };
-  policy_year?: number;
-  sub_benefit_code?: string;
-  match_count?: number;
-  matches?: Array<PomsfBalanceMatch>;
-};
+  policy_year: number;
+  total: number;
+  balances: Array<PomsfBalanceRow>;
+}
 
 export interface LockCoverArgs {
   consentToken: string;

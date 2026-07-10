@@ -9,7 +9,6 @@ import {
   useSHAInterventions,
 } from '../../billing-form/social-health-authority/sha-virtual-claim.resource';
 import { type SHAIntervention } from '../../billing-form/social-health-authority/type';
-import { formatCurrency } from '../../helpers/currency';
 import { InterventionItem } from '../../claims/claims-management/table/virtual-claim-preauth/type';
 
 type PackageInterventionsProps = {
@@ -21,6 +20,16 @@ type PackageInterventionsProps = {
   allowElectiveInterventions?: boolean;
   onInterventionsCached?: (cache: Record<string, SHAIntervention>) => void;
   onUtilizationStatusChange?: (isExhausted: boolean) => void;
+};
+
+const isElectiveIntervention = (intervention: SHAIntervention | undefined | null): boolean => {
+  if (!intervention) {
+    return false;
+  }
+  const raw = intervention as any;
+  return Boolean(
+    raw.needs_manual_preauth_approval ?? raw.needsManualPreauthApproval ?? raw.is_elective ?? raw.isElective,
+  );
 };
 
 const PackageInterventions: React.FC<PackageInterventionsProps> = ({
@@ -59,6 +68,16 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
     }
   }, [cachedInterventions, onInterventionsCached]);
 
+  useEffect(() => {
+    if (allowElectiveInterventions || !selectedIntervention) {
+      return;
+    }
+    const cached = cachedInterventions[selectedIntervention];
+    if (isElectiveIntervention(cached)) {
+      form.setValue('interventions', null, { shouldValidate: true });
+    }
+  }, [allowElectiveInterventions, selectedIntervention, cachedInterventions, form]);
+
   const items: Array<InterventionItem> = useMemo(() => {
     const base = interventions.length > 0 ? interventions : Object.values(cachedInterventions);
     const extraFromCache: Array<SHAIntervention> =
@@ -71,7 +90,7 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
     const combined = [...base, ...extraFromCache];
 
     const built: Array<InterventionItem> = combined.map((intervention) => {
-      const isElective = Boolean((intervention as any).needs_manual_preauth_approval);
+      const isElective = isElectiveIntervention(intervention);
       const isCapitation = intervention.payment_mechanism?.toUpperCase() === 'CAPITATION';
 
       let suffix: string;
@@ -145,7 +164,7 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
         control={form.control}
         name="interventions"
         render={({ field }) => {
-          const selectedItem = items.find((item) => item.code === field.value) ?? null;
+          const selectedItem = items.find((item) => item.code === field.value && !item.disabled) ?? null;
 
           return (
             <ComboBox
@@ -163,11 +182,11 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
               itemToString={(item: InterventionItem | null) => (item ? item.text : '')}
               selectedItem={selectedItem}
               onChange={({ selectedItem }) => {
-                if (selectedItem && !selectedItem.disabled) {
-                  field.onChange(selectedItem.code);
-                } else if (!selectedItem) {
+                if (!selectedItem || selectedItem.disabled) {
                   field.onChange(null);
+                  return;
                 }
+                field.onChange(selectedItem.code);
               }}
               shouldFilterItem={({
                 item,
@@ -197,7 +216,7 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
               const name = intervention?.name ?? code;
               const needsPreauth = intervention?.needs_preauth ?? false;
               const isCapitation = intervention?.payment_mechanism?.toUpperCase() === 'CAPITATION';
-              const isElective = Boolean((intervention as any)?.needs_manual_preauth_approval);
+              const isElective = isElectiveIntervention(intervention);
 
               if (isElective) {
                 return (

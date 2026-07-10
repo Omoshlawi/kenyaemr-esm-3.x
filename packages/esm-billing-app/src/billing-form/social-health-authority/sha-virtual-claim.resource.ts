@@ -517,30 +517,29 @@ export const useHasSupplementaryPompsCoverage = (patientUuid: string) => {
   };
 };
 
-export const usePomsfBalances = (patientCRId: string, principalMemberNumber: string, subBenefitCode: string) => {
-  const shouldFetch = Boolean(patientCRId && subBenefitCode);
-  const isDependant = Boolean(principalMemberNumber) && principalMemberNumber !== patientCRId;
-  const url = shouldFetch
-    ? `${restBaseUrl}/virtualclaims/billing/pomsf-balances` +
-      `?patient_id=${encodeURIComponent(patientCRId)}` +
-      (isDependant ? `&principal_member_number=${encodeURIComponent(principalMemberNumber)}` : '') +
-      `&sub_benefit_code=${encodeURIComponent(subBenefitCode)}`
-    : null;
+export const usePomsfBalances = (patientId: string, principalMemberNumber: string) => {
+  const params = new URLSearchParams();
+  if (patientId) {
+    params.set('patient_id', patientId);
+  }
+  if (principalMemberNumber) {
+    params.set('principal_member_number', principalMemberNumber);
+  }
 
-  const { data, error, isLoading, mutate } = useSWR<FetchResponse<PomsfBalancesResponse>>(url, openmrsFetch, {
-    revalidateOnFocus: false,
-    dedupingInterval: 5 * 60_000,
-    shouldRetryOnError: false,
-  });
+  const url =
+    patientId && principalMemberNumber
+      ? `${restBaseUrl}/virtualclaims/billing/pomsf-balances?${params.toString()}`
+      : null;
+
+  const { data, error, isLoading } = useSWR<{ data: PomsfBalancesResponse }>(url, openmrsFetch);
 
   return {
-    matches: data?.data?.matches ?? [],
-    matchCount: data?.data?.match_count ?? 0,
+    balances: data?.data?.balances ?? [],
+    total: data?.data?.total ?? 0,
     policyYear: data?.data?.policy_year ?? null,
     member: data?.data?.member ?? null,
     isLoading,
     error,
-    mutate,
   };
 };
 

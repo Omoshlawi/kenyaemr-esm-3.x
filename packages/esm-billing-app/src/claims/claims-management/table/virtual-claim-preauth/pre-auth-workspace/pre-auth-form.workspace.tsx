@@ -37,7 +37,6 @@ import {
   type PreauthDoctor,
   type SupplementaryScheme,
 } from '../../../../../billing-form/social-health-authority/type';
-import PomsfSchemeBalancePicker from '../../../../../billing-form/social-health-authority/pomsf-scheme-balance-picker.component';
 import {
   cancelPreauth,
   lockCover,
@@ -72,6 +71,7 @@ import {
 } from '../constants';
 import { formatCurrency } from '../../../../../helpers/currency';
 import { handleMutation } from '../../../../../bill-administration/payment-modes/payment-mode.resource';
+import EffectiveCoverPicker from '../../../../../billing-form/pomsf/effective-pomsf.component';
 
 const RequiredLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <span>
@@ -248,7 +248,15 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
     try {
       const principalCr = selectedScheme?.principalContributor?.crNumber;
       const policyNumber = selectedScheme?.policy?.number;
-      if (principalCr && policyNumber && item?.authorization_code) {
+      if (selectedScheme && item?.authorization_code) {
+        if (!principalCr || !policyNumber) {
+          throw new Error(
+            t(
+              'coverMissingPolicyNumber',
+              'The selected cover has no policy number from SHA it cannot be locked. Choose another cover or contact SHA.',
+            ),
+          );
+        }
         const lockResult = await lockCover({
           consentToken: item.authorization_code,
           principalCrId: principalCr,
@@ -666,10 +674,10 @@ const PreauthForm: React.FC<Workspace2DefinitionProps<PreauthFormProps, object, 
           )}
         </div>
 
-        <PomsfSchemeBalancePicker
+        <EffectiveCoverPicker
           patientUuid={item?.patient?.uuid ?? ''}
-          patientCRId=""
-          subBenefitCode={item?.sub_benefit_code ?? ''}
+          patientCRId={(item as any)?.beneficiary_cr_id ?? ''}
+          consentToken={item?.authorization_code ?? ''}
           onSchemeSelected={setSelectedScheme}
         />
 

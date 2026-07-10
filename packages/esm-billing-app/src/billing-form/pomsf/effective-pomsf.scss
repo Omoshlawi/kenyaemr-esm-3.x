@@ -1,0 +1,49 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.lockedCoverCard {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  padding: layout.$spacing-04;
+  margin: layout.$spacing-03 0;
+  background-color: colors.$gray-10;
+  border-radius: 0 0.25rem 0.25rem 0;
+}
+
+.lockedCoverHeader {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  padding-bottom: layout.$spacing-02;
+  margin-bottom: layout.$spacing-02;
+  border-bottom: 1px solid colors.$gray-30;
+}
+
+.lockedIcon {
+  color: colors.$green-60;
+}
+
+.lockedTitle {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+}
+
+.lockedCoverRow {
+  display: flex;
+  justify-content: space-between;
+  gap: layout.$spacing-04;
+}
+
+.lockedCoverLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+}
+
+.lockedCoverValue {
+  @include type.type-style('label-01');
+  color: colors.$gray-100;
+  font-weight: 600;
+  text-align: right;
+}

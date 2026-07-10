@@ -57,6 +57,7 @@ import {
 import { extractUpstreamError } from '../claims/claims-management/table/virtual-claim-preauth/utils';
 import { formatCurrency } from '../helpers/currency';
 import { useSHAEligibility } from './hie.resource';
+import PomsfSchemeBalancePicker from './social-health-authority/pomsf-scheme-balance-picker.component';
 
 export interface VisitFormCallbacks {
   onVisitCreatedOrUpdated: (visit: Visit) => Promise<any>;
@@ -448,7 +449,6 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
           facilityBiometricsEnforced: effectiveBiometricsEnforced,
           isMinorOtpLeeway: isMinorOtpEligible,
 
-          // Biometric path
           onStartBiometric: buildBiometricStarter(crIdToUse, codes, paymentMechanism),
           onCheckBiometricStatus: checkBiometricAuthorizationStatus,
           onBiometricSuccess: async (result: { authorization_code: string; consent_token: string; guid: string }) => {
@@ -716,6 +716,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
 
       {shaEnabled && isInsuranceSchemeSha && (
         <section className={styles.sectionContainer}>
+          <PomsfSchemeBalancePicker patientUuid={patientUuid} patientCRId={patientCRId} />
           <div className={styles.sectionTitle}>{t('electiveVisitQuestion', 'Is this an elective visit?')}</div>
           <RadioButtonGroup
             name="is-elective-visit"
@@ -853,6 +854,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
             interventionCacheRef.current = { ...interventionCacheRef.current, ...cache };
           }}
           onUtilizationStatusChange={handleUtilizationStatusChange}
+          allowElectiveInterventions={false}
         />
       )}
 
