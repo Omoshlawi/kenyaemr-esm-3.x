@@ -7,7 +7,6 @@ import {
   Person,
 } from '@openmrs/esm-framework';
 import useSWR from 'swr';
-import { useMemo } from 'react';
 import {
   AuthorizingDeviceOS,
   BatchLinesResponse,
@@ -377,9 +376,8 @@ export const useOtpWhitelistReasons = () => {
     openmrsFetch,
     { revalidateOnFocus: false, dedupingInterval: 5 * 60_000 },
   );
-  const reasons = useMemo(() => data?.data?.reasons ?? [], [data]);
   return {
-    reasons,
+    reasons: data?.data?.reasons ?? [],
     isLoading,
     error,
   };
