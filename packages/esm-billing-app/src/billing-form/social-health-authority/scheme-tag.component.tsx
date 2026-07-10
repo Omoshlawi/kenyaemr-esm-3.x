@@ -7,7 +7,7 @@ import styles from './patient-banner-sha-status.scss';
 import { formatCoverageDate } from './helper';
 
 interface SchemeTagProps {
-  schemeInfo: { scheme: Scheme; eligible: boolean; memberType: string } | null;
+  schemeInfo: { scheme: Scheme | null; eligible: boolean; memberType: string } | null;
   displayName: string;
 }
 
