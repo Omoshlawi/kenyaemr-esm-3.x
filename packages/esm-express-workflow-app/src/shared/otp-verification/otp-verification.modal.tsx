@@ -257,6 +257,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
   }, [onCleanup]);
 
   const selectedReason = whitelistReasons.find((r) => r.code === whitelistReasonCode);
+  const reasonRequiresAttachment = selectedReason?.requires_attachments ?? false;
   const pollElapsedDisplay = `${Math.floor(pollElapsedSec / 60)}:${String(pollElapsedSec % 60).padStart(2, '0')}`;
   const pollTotalDisplay = `${Math.floor(WHITELIST_POLL_TIMEOUT_MS / 60_000)}:00`;
 
@@ -619,10 +620,10 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
       });
       return;
     }
-    if (!whitelistAttachment) {
+    if (reasonRequiresAttachment && !whitelistAttachment) {
       setError({
         type: 'whitelist',
-        message: t('whitelistAttachmentRequired', 'An attachment is required to complete this biometric request.'),
+        message: t('whitelistAttachmentRequired', 'This reason requires an attachment (e.g. medical report).'),
       });
       return;
     }
@@ -1116,25 +1117,27 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
               }}
               disabled={whitelistSubmitting}
             />
-            <FileUploader
-              accept={['.pdf', '.jpg', '.jpeg', '.png']}
-              buttonKind="tertiary"
-              buttonLabel={
-                whitelistAttachment
-                  ? t('replaceAttachment', 'Replace attachment')
-                  : t('addAttachment', 'Add attachment')
-              }
-              filenameStatus="edit"
-              labelDescription={t(
-                'attachmentRequiredDesc',
-                'Required for biometric whitelist requests. Attach a supporting document (PDF/JPG/PNG, max 5 MB).',
-              )}
-              labelTitle={t('attachment', 'Attachment')}
-              multiple={false}
-              onChange={handleAttachmentChange}
-              onDelete={() => setWhitelistAttachment(null)}
-              disabled={whitelistSubmitting}
-            />
+            {reasonRequiresAttachment && (
+              <FileUploader
+                accept={['.pdf', '.jpg', '.jpeg', '.png']}
+                buttonKind="tertiary"
+                buttonLabel={
+                  whitelistAttachment
+                    ? t('replaceAttachment', 'Replace attachment')
+                    : t('addAttachment', 'Add attachment')
+                }
+                filenameStatus="edit"
+                labelDescription={t(
+                  'attachmentRequiredDesc',
+                  'Required for this reason. Attach a supporting document (PDF/JPG/PNG, max 5 MB).',
+                )}
+                labelTitle={t('attachment', 'Attachment')}
+                multiple={false}
+                onChange={handleAttachmentChange}
+                onDelete={() => setWhitelistAttachment(null)}
+                disabled={whitelistSubmitting}
+              />
+            )}
             <Button
               kind="ghost"
               onClick={handleBackFromWhitelist}
@@ -1249,8 +1252,7 @@ const OTPVerificationModal: FC<OTPVerificationModalProps> = ({
                 whitelistSubmitting ||
                 !whitelistReasonCode ||
                 whitelistReasonText.trim().length < MIN_REASON_LENGTH ||
-                !whitelistAttachment ||
-                whitelistAttachment.size === 0
+                (reasonRequiresAttachment && (!whitelistAttachment || whitelistAttachment.size === 0))
               }>
               {whitelistSubmitting ? (
                 <InlineLoading description={t('submittingWhitelist', 'Submitting…')} />
