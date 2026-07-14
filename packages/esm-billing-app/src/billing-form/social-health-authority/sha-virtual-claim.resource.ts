@@ -39,6 +39,7 @@ import {
   extractFetchError,
   extractUpstreamError,
 } from '../../claims/claims-management/table/virtual-claim-preauth/utils';
+import { useMemo } from 'react';
 
 export const useSHASubBenefits = (patientCRId: string) => {
   const url = patientCRId ? `${virtualClaimBaseUrl}/sub-benefits?patient_id=${patientCRId}` : null;
@@ -94,6 +95,19 @@ export const usePreauthQueue = (
     error: result.error,
     mutate: result.mutate,
   };
+};
+
+export const usePatientPendingPreauths = (patientId: string) => {
+  const { isLoading, error, queue } = usePreauthQueue('PENDING', 100, undefined, undefined);
+  const patientPendingPreauths = useMemo(() => {
+    if (isLoading || error) {
+      return [];
+    }
+    return queue.filter((item) => {
+      return item.patient.uuid === patientId || true;
+    });
+  }, [queue, isLoading, error, patientId]);
+  return { pendingPreauths: patientPendingPreauths, isLoading, error };
 };
 
 export const useElectiveCheckin = (authorizationCode: string | null) => {

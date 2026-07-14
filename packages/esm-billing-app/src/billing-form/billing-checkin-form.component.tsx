@@ -52,6 +52,7 @@ import { getPatientCRNumber, toSavannahISO } from './social-health-authority/hel
 import { extractUpstreamError } from '../claims/claims-management/table/virtual-claim-preauth/utils';
 import { formatCurrency } from '../helpers/currency';
 import { useSHAEligibility } from './hie.resource';
+import ElectiveItem from './elective-item.component';
 
 export interface VisitFormCallbacks {
   onVisitCreatedOrUpdated: (visit: Visit) => Promise<any>;
@@ -140,12 +141,9 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
 
   const [isCoverageExhausted, setIsCoverageExhausted] = useState(false);
 
-  const {
-    electiveRecord,
-    isLoading: isLoadingElective,
-    isApproved,
-    isAlreadyUsed,
-  } = useElectiveCheckin(isElectiveVisit === 'yes' ? electiveConsentToken : null);
+  const { electiveRecord, isApproved, isAlreadyUsed } = useElectiveCheckin(
+    isElectiveVisit === 'yes' ? electiveConsentToken : null,
+  );
 
   const isElectiveNotApproved = isElectiveVisit === 'yes' && (!electiveRecord || !isApproved || isAlreadyUsed);
 
@@ -728,118 +726,10 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
           </RadioButtonGroup>
 
           {isElectiveVisit === 'yes' && (
-            <div className={styles.electiveAuthorizationContainer}>
-              <TextInput
-                id="elective-authorization-code"
-                className={styles.electiveAuthorizationInput}
-                labelText={t('authorizationCode', 'Authorization code')}
-                helperText={t('authorizationCodeHelper', 'Enter the code issued during the scheduled preauthorization')}
-                placeholder={t('authorizationCodePlaceholder', 'e.g. CMJ5RTHANG')}
-                value={electiveConsentToken}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-                  setElectiveConsentToken(event.target.value.trim().toUpperCase())
-                }
-              />
-
-              {isLoadingElective && electiveConsentToken.length >= 6 && (
-                <InlineLoading
-                  className={styles.electiveAuthorizationFeedback}
-                  description={t('verifyingAuthorizationCode', 'Verifying authorization code…')}
-                />
-              )}
-
-              {!isLoadingElective && electiveRecord && (
-                <div className={styles.electiveAuthorizationFeedback}>
-                  <InlineNotification
-                    aria-label={t('preauthorizationStatus', 'Preauthorization status')}
-                    kind={isApproved ? 'success' : 'warning'}
-                    lowContrast
-                    title={
-                      isApproved
-                        ? t('preauthorizationApproved', 'Authorization verified — ready for check-in')
-                        : t('preauthorizationPending', 'Authorization pending SHA approval')
-                    }
-                    subtitle={
-                      isApproved
-                        ? t('preauthorizationApprovedSubtitle', 'SHA has approved this preauth. Proceed to send OTP.')
-                        : t(
-                            'preauthorizationPendingDetails',
-                            'Current status: {{state}}. Please wait for SHA approval before check-in.',
-                            { state: (electiveRecord.workflow_state ?? '').replace(/_/g, ' ') },
-                          )
-                    }
-                  />
-                  <div className={styles.electiveInterventionCard}>
-                    <div className={styles.electiveInterventionRow}>
-                      <span className={styles.electiveInterventionLabel}>{t('intervention', 'Intervention')}</span>
-                      <span className={styles.electiveInterventionValue}>
-                        {electiveRecord.intervention_name ||
-                          electiveRecord.elective_intervention_code ||
-                          electiveRecord.intervention_code ||
-                          '—'}
-                      </span>
-                    </div>
-                    <div className={styles.electiveInterventionRow}>
-                      <span className={styles.electiveInterventionLabel}>{t('code', 'Code')}</span>
-                      <span className={styles.electiveInterventionValueMono}>
-                        {electiveRecord.elective_intervention_code ?? electiveRecord.intervention_code ?? '—'}
-                      </span>
-                    </div>
-                    {electiveRecord.service_type && (
-                      <div className={styles.electiveInterventionRow}>
-                        <span className={styles.electiveInterventionLabel}>{t('serviceType', 'Service type')}</span>
-                        <span className={styles.electiveInterventionValue}>
-                          <Tag type="blue" size="sm">
-                            {electiveRecord.service_type}
-                          </Tag>
-                        </span>
-                      </div>
-                    )}
-                    <div className={styles.electiveInterventionRow}>
-                      <span className={styles.electiveInterventionLabel}>{t('status', 'Status')}</span>
-                      <span className={styles.electiveInterventionValue}>
-                        <Tag
-                          type={
-                            isApproved
-                              ? 'green'
-                              : electiveRecord.workflow_state?.includes('REJECTED')
-                              ? 'red'
-                              : 'warm-gray'
-                          }
-                          size="sm">
-                          {(electiveRecord.workflow_state ?? '—').replace('ELECTIVE_', '')}
-                        </Tag>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {!isLoadingElective && isAlreadyUsed && (
-                <InlineNotification
-                  aria-label={t('authCodeAlreadyUsed', 'Authorization code already used')}
-                  className={styles.electiveAuthorizationFeedback}
-                  kind="error"
-                  lowContrast
-                  title={t('authCodeAlreadyUsed', 'Authorization code already used')}
-                  subtitle={t(
-                    'authCodeAlreadyUsedSubtitle',
-                    'This code has already been used to create a claim. Each authorization code can only be used once.',
-                  )}
-                />
-              )}
-
-              {!isLoadingElective && !isAlreadyUsed && electiveConsentToken.length >= 6 && !electiveRecord && (
-                <InlineNotification
-                  aria-label={t('electiveRecordNotFound', 'Elective record not found')}
-                  className={styles.electiveAuthorizationFeedback}
-                  kind="error"
-                  lowContrast
-                  title={t('electiveNotFound', 'No elective record found')}
-                  subtitle={t('checkAuthorizationCode', 'Please verify the authorization code and try again.')}
-                />
-              )}
-            </div>
+            <ElectiveItem
+              electiveConsentToken={electiveConsentToken}
+              onChangeElectiveConsentToken={setElectiveConsentToken}
+            />
           )}
         </section>
       )}

@@ -107,7 +107,7 @@
   "authCodeAlreadyUsed": "Authorization code already used",
   "authCodeAlreadyUsedSubtitle": "This code has already been used to create a claim. Each authorization code can only be used once.",
   "authorizationCode": "Authorization code",
-  "authorizationCodeHelper": "Enter the code issued during the scheduled preauthorization",
+  "authorizationCodeHelper": "Select the code issued during the scheduled preauthorization",
   "authorizationCodePlaceholder": "e.g. CMJ5RTHANG",
   "authorizationStatus": "Authorization Status",
   "authorizeFailed": "Authorization failed",
