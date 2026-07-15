@@ -17,9 +17,8 @@ interface EnhancedPatientBannerPatientInfoProps {
   eligibilityData?: EligibilityResponse;
   isEligibilityLoading?: boolean;
   crNumber?: string;
+  isVerified?: boolean;
 }
-
-type Gender = 'female' | 'male';
 
 const GENDER_ICONS = {
   Female: <GenderFemale />,
@@ -49,6 +48,7 @@ export const EnhancedPatientBannerPatientInfo: React.FC<EnhancedPatientBannerPat
   eligibilityData,
   isEligibilityLoading = false,
   crNumber,
+  isVerified,
 }) => {
   const { t } = useTranslation();
   const name = getPatientName(patient);
@@ -72,7 +72,7 @@ export const EnhancedPatientBannerPatientInfo: React.FC<EnhancedPatientBannerPat
     <div className={styles.patientInfo}>
       <div className={classNames(styles.row, styles.patientNameRow)}>
         <div className={styles.flexRow}>
-          <span className={styles.patientName}>{maskName(name)}</span>
+          <span className={styles.patientName}>{isVerified ? name : maskName(name)}</span>
 
           {genderInfo && (
             <div className={styles.gender}>

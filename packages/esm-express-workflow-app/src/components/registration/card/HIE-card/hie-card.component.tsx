@@ -277,6 +277,7 @@ const HIEDisplayCard: React.FC<HIEDisplayCardProps> = ({
                   renderedFrom="hie-search"
                   eligibilityData={eligibilityResponse}
                   isEligibilityLoading={isEligibilityLoading}
+                  isVerified={isVerified}
                 />
               </div>
 
