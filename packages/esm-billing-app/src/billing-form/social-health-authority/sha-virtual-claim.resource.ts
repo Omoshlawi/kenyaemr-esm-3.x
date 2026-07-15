@@ -191,7 +191,7 @@ export const usePatientPhone = (patientUuid: string) => {
 
 export const createElectiveAuthorization = async (
   patientCRId: string,
-  otp: string,
+  authParams: { otp: string } | { authGuid: string },
   interventionCode: string,
   patientUuid: string,
   serviceType: string = 'OUTPATIENT',
@@ -207,21 +207,30 @@ export const createElectiveAuthorization = async (
   error?: string;
   upstream_error?: { error?: string; message?: string };
 }> => {
+  const body: Record<string, any> = {
+    patient_id: patientCRId,
+    service_type: serviceType,
+    intervention_codes: [interventionCode],
+    intervention_name: interventionName,
+    intervention_tariff: interventionTariff,
+    patient_uuid: patientUuid,
+    applicable_document_types: applicableDocumentTypes,
+    preauth_type: preauthType,
+    ...(numberOfDoctorsRequired != null ? { number_of_doctors_required: numberOfDoctorsRequired } : {}),
+  };
+
+  if ('otp' in authParams) {
+    body.otp = authParams.otp;
+    body.is_biometrics = false;
+  } else {
+    body.auth_guid = authParams.authGuid;
+    body.is_biometrics = true;
+  }
+
   const response = await openmrsFetch(`${virtualClaimBaseUrl}/authorize`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: {
-      patient_id: patientCRId,
-      otp,
-      service_type: serviceType,
-      intervention_codes: [interventionCode],
-      intervention_name: interventionName,
-      intervention_tariff: interventionTariff,
-      patient_uuid: patientUuid,
-      applicable_document_types: applicableDocumentTypes,
-      preauth_type: preauthType,
-      ...(numberOfDoctorsRequired != null ? { number_of_doctors_required: numberOfDoctorsRequired } : {}),
-    },
+    body,
   });
   return response.data;
 };
