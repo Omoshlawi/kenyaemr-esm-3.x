@@ -95,8 +95,8 @@
     },
     {
       "name": "billing-check-in-form",
-      "slot": "visit-form-bottom-slot",
       "component": "billingCheckInForm",
+      "slot": "billing-visit-attributes-slot",
       "order": 1
     },
     {
@@ -411,6 +411,11 @@
     }
   ],
   "workspaces2": [
+    {
+      "name": "visit-attributes-workspace",
+      "component": "visitAttributesWorkspace",
+      "window": "billing-extra-wide-workspace-window"
+    },
     {
       "name": "create-bill-workspace",
       "component": "createBillWorkspace",
