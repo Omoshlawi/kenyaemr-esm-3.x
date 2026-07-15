@@ -101,6 +101,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit, visitStatus }) =
           sortWeight,
           sessionLocation.uuid,
           visitQueueNumberAttributeUuid,
+          visit.startDatetime,
         )
           .then(() => {
             showSnackbar({
