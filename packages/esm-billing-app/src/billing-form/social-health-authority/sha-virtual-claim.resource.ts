@@ -1,13 +1,13 @@
-import {
-  openmrsFetch,
-  restBaseUrl,
-  type FetchResponse,
-  useOpenmrsPagination,
-  useConfig,
-  Person,
-} from '@openmrs/esm-framework';
-import useSWR from 'swr';
+import { openmrsFetch, restBaseUrl, useConfig, useOpenmrsPagination, type FetchResponse } from '@openmrs/esm-framework';
+import { TFunction } from 'i18next';
 import { useMemo } from 'react';
+import useSWR from 'swr';
+import { virtualClaimBaseUrl } from '../../claims/claims-management/table/virtual-claim-preauth/constants';
+import {
+  extractFetchError,
+  extractUpstreamError,
+} from '../../claims/claims-management/table/virtual-claim-preauth/utils';
+import { BillingConfig } from '../../config-schema';
 import {
   AuthorizingDeviceOS,
   BatchLinesResponse,
@@ -35,14 +35,6 @@ import {
   WhitelistStatusPoll,
   WhitelistSubmitResponse,
 } from './type';
-import { virtualClaimBaseUrl } from '../../claims/claims-management/table/virtual-claim-preauth/constants';
-import { BillingConfig } from '../../config-schema';
-import { TFunction } from 'i18next';
-import {
-  extractFetchError,
-  extractUpstreamError,
-} from '../../claims/claims-management/table/virtual-claim-preauth/utils';
-import { useMemo } from 'react';
 
 export const useSHASubBenefits = (patientCRId: string) => {
   const url = patientCRId ? `${virtualClaimBaseUrl}/sub-benefits?patient_id=${patientCRId}` : null;
