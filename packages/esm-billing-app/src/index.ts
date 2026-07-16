@@ -229,13 +229,6 @@ export const manageClaimRequestModal = getAsyncLifecycle(
     })),
   options,
 );
-export const claimSummaryModal = getAsyncLifecycle(
-  () =>
-    import('./claims/claims-management/table/claim-summary-modal/claim-summary.modal').then((m) => ({
-      default: m.ClaimSummaryModal,
-    })),
-  options,
-);
 export const claimPreviewModal = getAsyncLifecycle(
   () => import('./claims/claims-management/table/claim-summary-modal/claim-preview.modal'),
   options,
