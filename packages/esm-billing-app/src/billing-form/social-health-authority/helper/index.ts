@@ -4,6 +4,14 @@ import { CoverageStatus, MemberType } from '../constant';
 import { Scheme } from '../../hie.resource';
 import dayjs from 'dayjs';
 
+const normalizeSchemeName = (name: string): string => (name ?? '').trim().toUpperCase();
+
+const matchesSchemeName = (hieSchemeName: string, trackedSchemeName: string): boolean => {
+  const hieName = normalizeSchemeName(hieSchemeName);
+  const trackedName = normalizeSchemeName(trackedSchemeName);
+  return hieName === trackedName || hieName.startsWith(trackedName);
+};
+
 /**
  * Checks if a scheme's coverage status is active
  * @param scheme - The scheme to check
@@ -56,6 +64,9 @@ export const isSchemeEligibleAndActive = (scheme: Scheme): boolean => {
  * Get eligibility for a specific scheme (checks both PRIMARY and BENEFICIARY)
  * Priority: PRIMARY member type takes precedence over BENEFICIARY
  *
+ * Scheme name matching is exact-first with a prefix fallback, so HIE
+ * variants like "POMSF-SHA" resolve to the tracked "POMSF" scheme.
+ *
  * @param schemes - Array of all schemes
  * @param schemeName - Name of the scheme to check
  * @returns Object containing eligibility status, member type, and scheme details
@@ -64,7 +75,9 @@ export const getSchemeEligibility = (
   schemes: Array<Scheme>,
   schemeName: string,
 ): { eligible: boolean; memberType: string | null; scheme: Scheme | null } => {
-  const schemeMatches = schemes.filter((s) => s.schemeName.toUpperCase() === schemeName.toUpperCase());
+  const exactMatches = schemes.filter((s) => normalizeSchemeName(s.schemeName) === normalizeSchemeName(schemeName));
+  const schemeMatches =
+    exactMatches.length > 0 ? exactMatches : schemes.filter((s) => matchesSchemeName(s.schemeName, schemeName));
 
   if (schemeMatches.length === 0) {
     return { eligible: false, memberType: null, scheme: null };
@@ -105,4 +118,43 @@ export const getPatientCRNumber = (patient: fhir.Patient, shaIdentifierTypeUUID:
   }
   const shaId = patient.identifier.find((id: fhir.Identifier) => id?.type?.coding?.[0]?.code === shaIdentifierTypeUUID);
   return shaId?.value ?? null;
+};
+
+export const extractAuthorizationCode = (claimResponse: any): string | null => {
+  if (!claimResponse) {
+    return null;
+  }
+  const candidates = [
+    claimResponse.authorization_code,
+    claimResponse.claim?.authorization_code,
+    claimResponse.consent_token,
+    claimResponse.claim?.consent_token,
+    claimResponse.data?.authorization_code,
+    claimResponse.data?.claim?.authorization_code,
+    claimResponse.authorizationCode,
+    claimResponse.claim?.authorizationCode,
+  ];
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim().length > 0) {
+      return c.trim();
+    }
+  }
+  return null;
+};
+
+export const computeAgeInYears = (dob: string | undefined | null): number | null => {
+  if (!dob) {
+    return null;
+  }
+  const birth = new Date(dob);
+  if (Number.isNaN(birth.getTime())) {
+    return null;
+  }
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const monthDelta = now.getMonth() - birth.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return age;
 };

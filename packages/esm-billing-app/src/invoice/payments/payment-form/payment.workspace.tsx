@@ -35,8 +35,11 @@ import { useCurrencyFormatting } from '../../../helpers/currency';
 import { PaymentStatus, type LineItem, type MappedBill } from '../../../types';
 import { extractErrorMessagesFromResponse } from '../../../utils';
 import { makePayment } from '../payments.resource';
-import { dispatchClaimLinesToSha } from '../../../billing-form/social-health-authority/sha-virtual-claim.resource';
-import PomsfSchemeBalancePicker from '../../../billing-form/social-health-authority/pomsf-scheme-balance-picker.component';
+import {
+  dispatchClaimLinesToSha,
+  lockCover,
+} from '../../../billing-form/social-health-authority/sha-virtual-claim.resource';
+import { type SupplementaryScheme } from '../../../billing-form/social-health-authority/type';
 
 import styles from './payment.workspace.scss';
 import { getPatientUuidFromUrl } from '../../../prompt-payment/prompt-payment-modal.component';
@@ -46,6 +49,7 @@ import {
   useVisitAttribute,
 } from '../../../bill-administration/patient-billing/workspaces/create-bill/create-bill.resource';
 import { shaDispatchFailed, tariffPreauthDeltaThreshold } from './constant';
+import EffectiveCoverPicker from '../../../billing-form/pomsf/effective-pomsf.component';
 
 type PaymentWorkspaceProps = {
   selectedLineItems: Array<LineItem>;
@@ -182,6 +186,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
   const { format: formatCurrency } = useCurrencyFormatting();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [shaError, setShaError] = useState<string | null>(null);
+  const [selectedScheme, setSelectedScheme] = useState<SupplementaryScheme | null>(null);
   const isTablet = useLayoutType() === 'tablet';
 
   const unPaidLineItems = selectedLineItems.filter((item) => item.paymentStatus !== PaymentStatus.PAID);
@@ -296,6 +301,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
   }, [claimForVisit, sentInterventionCodes, formatCurrency, t]);
 
   const authorizationCode = claimForVisit.authorizationCode ?? null;
+  const beneficiaryCrId = ((claimForVisit as any)?.beneficiary_cr_id as string | undefined) ?? '';
   const requiresShaIntervention = isSHAVisit && interventionItems.length > 0;
 
   const resolverSchema = useMemo(
@@ -404,6 +410,46 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
     let failedAtIndex: number | null = null;
     let failureError: unknown = null;
 
+    const hasShaInsuranceLine = data.payments.some(
+      (line) => line.paymentMode?.uuid === insurancePaymentMethod && line.interventionCode,
+    );
+    const principalCr = selectedScheme?.principalContributor?.crNumber;
+    const policyNumber = selectedScheme?.policy?.number;
+
+    if (isSHAVisit && hasShaInsuranceLine && authorizationCode && selectedScheme) {
+      if (!principalCr || !policyNumber) {
+        const msg = t(
+          'coverMissingPolicyNumber',
+          'The selected cover has no policy number from SHA it cannot be locked. Choose another cover or contact SHA.',
+        );
+        showSnackbar({
+          title: t('coverLockFailedShort', 'Cover lock failed'),
+          kind: 'error',
+          subtitle: msg,
+          isLowContrast: true,
+        });
+        setShaError(msg);
+        return;
+      }
+
+      const lockResult = await lockCover({
+        consentToken: authorizationCode,
+        principalCrId: principalCr,
+        policyNumber,
+      });
+      if (!lockResult.ok) {
+        const msg = lockResult.error ?? t('coverLockFailedShort', 'Cover lock failed');
+        showSnackbar({
+          title: t('coverLockFailedShort', 'Cover lock failed'),
+          kind: 'error',
+          subtitle: msg,
+          isLowContrast: true,
+        });
+        setShaError(msg);
+        return;
+      }
+    }
+
     for (let i = 0; i < data.payments.length; i++) {
       const line = data.payments[i];
       const isShaInsurance = isSHAVisit && line.paymentMode?.uuid === insurancePaymentMethod && line.interventionCode;
@@ -482,6 +528,9 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
     const cacheUrl = `${restBaseUrl}/cashier/bill/${bill.uuid}`;
     mutate((key) => typeof key === 'string' && key.startsWith(cacheUrl), undefined, { revalidate: true });
     mutate((key) => typeof key === 'string' && key.includes('virtualclaims/claim-for-visit'), undefined, {
+      revalidate: true,
+    });
+    mutate((key) => typeof key === 'string' && key.includes('authorizations/effective-cover'), undefined, {
       revalidate: true,
     });
 
@@ -578,6 +627,15 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
             )}
           </div>
 
+          {isSHAVisit && authorizationCode && (
+            <EffectiveCoverPicker
+              patientUuid={patientUuid ?? ''}
+              patientCRId={beneficiaryCrId}
+              consentToken={authorizationCode}
+              onSchemeSelected={setSelectedScheme}
+            />
+          )}
+
           {fields.map((field, index) => {
             const selectedPaymentMode = watchedPayments?.[index]?.paymentMode;
             const showReferenceCode = (selectedPaymentMode?.attributeTypes?.length ?? 0) > 0;
@@ -604,6 +662,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
                         id={`paymentMode-${index}`}
                         itemToString={(item) => (item ? item.name : '')}
                         items={availableModes}
+                        className={styles.paymentModeComboBox}
                         selectedItem={selectedPaymentMode ?? null}
                         onChange={({ selectedItem }) => {
                           onChange(selectedItem);
@@ -633,6 +692,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
                           label={t('amount', 'Amount')}
                           allowEmpty
                           min={0}
+                          className={styles.paymentModeComboBox}
                           value={value ?? ''}
                           onChange={(e, { value: nextValue }) =>
                             onChange(nextValue === '' || nextValue == null ? undefined : Number(nextValue))
@@ -656,6 +716,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
                           id={`referenceCode-${index}`}
                           labelText={t('referenceCode', 'Reference Code')}
                           maxCount={50}
+                          className={styles.paymentModeComboBox}
                           onChange={onChange}
                           placeholder={t('enterReferenceCode', 'Enter reference code')}
                           size="md"
@@ -686,6 +747,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
                           items={interventionItems}
                           itemToString={(item: InterventionItem | null) => (item ? item.text : '')}
                           selectedItem={selectedIntervention}
+                          className={styles.paymentModeComboBox}
                           onChange={({ selectedItem }) => {
                             if (selectedItem && (selectedItem as InterventionItem).disabled) {
                               return;
@@ -706,11 +768,6 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
 
                     {selectedIntervention && (
                       <div className={styles.interventionSummary}>
-                        <PomsfSchemeBalancePicker
-                          patientUuid={patientUuid ?? ''}
-                          patientCRId={(claimForVisit as any)?.beneficiary_cr_id ?? ''}
-                          subBenefitCode={selectedIntervention.subBenefitCode ?? selectedIntervention.code}
-                        />
                         <div className={styles.interventionSummaryRow}>
                           <code className={styles.interventionCode}>{selectedIntervention.code}</code>
                           <span className={styles.interventionName}>{selectedIntervention.name}</span>

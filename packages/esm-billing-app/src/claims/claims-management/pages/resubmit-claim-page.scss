@@ -7,6 +7,34 @@
   flex-direction: column;
   height: 100%;
   background-color: $ui-01;
+
+  // Table styling
+  :global(.cds--data-table) {
+    width: 100%;
+    margin: layout.$spacing-04 0;
+    border-collapse: collapse;
+
+    th,
+    td {
+      padding: layout.$spacing-03;
+      text-align: left;
+      border-bottom: 1px solid $ui-03;
+    }
+
+    th {
+      background-color: $ui-02;
+      font-weight: 600;
+      color: #161616;
+    }
+
+    td {
+      color: #161616;
+    }
+
+    tr:hover {
+      background-color: #f4f4f4;
+    }
+  }
 }
 
 .pageHeader {
@@ -283,34 +311,6 @@
 
   button {
     flex-shrink: 0;
-  }
-}
-
-// Table styling
-:global(.cds--data-table) {
-  width: 100%;
-  margin: layout.$spacing-04 0;
-  border-collapse: collapse;
-
-  th,
-  td {
-    padding: layout.$spacing-03;
-    text-align: left;
-    border-bottom: 1px solid $ui-03;
-  }
-
-  th {
-    background-color: $ui-02;
-    font-weight: 600;
-    color: #161616;
-  }
-
-  td {
-    color: #161616;
-  }
-
-  tr:hover {
-    background-color: #f4f4f4;
   }
 }
 

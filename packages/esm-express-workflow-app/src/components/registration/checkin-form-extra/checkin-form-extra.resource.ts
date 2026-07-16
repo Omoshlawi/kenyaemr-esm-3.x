@@ -55,6 +55,7 @@ export async function postQueueEntry(
   sortWeight: number,
   locationUuid: string,
   visitQueueNumberAttributeUuid: string,
+  visitStartDatetime?: string,
 ) {
   const abortController = new AbortController();
 
@@ -81,7 +82,7 @@ export async function postQueueEntry(
         patient: {
           uuid: patientUuid,
         },
-        startedAt: new Date(),
+        ...(visitStartDatetime ? { startedAt: new Date(visitStartDatetime) } : {}),
         sortWeight: sortWeight,
       },
     },

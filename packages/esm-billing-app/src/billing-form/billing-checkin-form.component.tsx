@@ -48,18 +48,23 @@ import {
   useProviderNationalId,
 } from './social-health-authority/sha-virtual-claim.resource';
 import { type SHAIntervention, VirtualClaimResponse } from './social-health-authority/type';
-import { getPatientCRNumber, toSavannahISO } from './social-health-authority/helper';
+import {
+  computeAgeInYears,
+  extractAuthorizationCode,
+  getPatientCRNumber,
+  toSavannahISO,
+} from './social-health-authority/helper';
 import { extractUpstreamError } from '../claims/claims-management/table/virtual-claim-preauth/utils';
 import { formatCurrency } from '../helpers/currency';
 import { useSHAEligibility } from './hie.resource';
 import ElectiveItem from './elective-item.component';
+import PomsfSchemeBalancePicker from './social-health-authority/pomsf-scheme-balance-picker.component';
 
 export interface VisitFormCallbacks {
   onVisitCreatedOrUpdated: (visit: Visit) => Promise<any>;
   onBeforeVisitSave?: () => Promise<boolean>;
   isSHAVisit?: boolean;
   isElectiveNotApproved?: boolean;
-  /** When true, the visit form's submit button should be disabled. */
   isCoverageExhausted?: boolean;
 }
 
@@ -75,27 +80,6 @@ type BillingCheckInFormValue = VisitAttributesFormValue & {
   admissionDate: Date | null;
   estimatedDaysOfAdmission: number;
 };
-function extractAuthorizationCode(claimResponse: any): string | null {
-  if (!claimResponse) {
-    return null;
-  }
-  const candidates = [
-    claimResponse.authorization_code,
-    claimResponse.claim?.authorization_code,
-    claimResponse.consent_token,
-    claimResponse.claim?.consent_token,
-    claimResponse.data?.authorization_code,
-    claimResponse.data?.claim?.authorization_code,
-    claimResponse.authorizationCode,
-    claimResponse.claim?.authorizationCode,
-  ];
-  for (const c of candidates) {
-    if (typeof c === 'string' && c.trim().length > 0) {
-      return c.trim();
-    }
-  }
-  return null;
-}
 
 const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   patientUuid,
@@ -110,6 +94,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     inPatientVisitTypeUuid,
     crIdentificationNumberUUID,
     enableSHAVerification,
+    minorOtpAgeThreshold,
   } = useConfig<BillingConfig>();
   const shaEnabled = hieFeatureFlags && enableSHAVerification;
 
@@ -121,8 +106,23 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     [patient, crIdentificationNumberUUID],
   );
 
-  const { isPatientWhiteListed, facilityBiometricsEnforced } = useSHAEligibility(patientUuid);
+  const { isPatientWhiteListed, facilityBiometricsEnforced, eligibilityData } = useSHAEligibility(patientUuid);
   const { reasons: whitelistReasons } = useOtpWhitelistReasons();
+
+  const isMinorOtpEligible = useMemo(() => {
+    if (!minorOtpAgeThreshold || minorOtpAgeThreshold <= 0) {
+      return false;
+    }
+    const shaAge = eligibilityData?.age;
+    if (typeof shaAge === 'number') {
+      return shaAge < minorOtpAgeThreshold;
+    }
+    const age = computeAgeInYears(eligibilityData?.dateOfBirth ?? patient?.birthDate);
+    return age !== null && age < minorOtpAgeThreshold;
+  }, [minorOtpAgeThreshold, eligibilityData, patient?.birthDate]);
+
+  const effectiveWhitelistedForOTP = isPatientWhiteListed || isMinorOtpEligible;
+  const effectiveBiometricsEnforced = facilityBiometricsEnforced && !isMinorOtpEligible;
 
   const { currentProvider } = useSession();
   const { providerNationalid } = useProviderNationalId(currentProvider?.uuid ?? '');
@@ -443,10 +443,10 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
           },
 
           authMode: 'multi',
-          whitelistedForOTP: isPatientWhiteListed,
-          facilityBiometricsEnforced,
+          whitelistedForOTP: effectiveWhitelistedForOTP,
+          facilityBiometricsEnforced: effectiveBiometricsEnforced,
+          isMinorOtpLeeway: isMinorOtpEligible,
 
-          // Biometric path
           onStartBiometric: buildBiometricStarter(crIdToUse, codes, paymentMechanism),
           onCheckBiometricStatus: checkBiometricAuthorizationStatus,
           onBiometricSuccess: async (result: { authorization_code: string; consent_token: string; guid: string }) => {
@@ -529,8 +529,9 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     shaEnabled,
     isInsuranceSchemeSha,
     patientCRId,
-    isPatientWhiteListed,
-    facilityBiometricsEnforced,
+    effectiveWhitelistedForOTP,
+    effectiveBiometricsEnforced,
+    isMinorOtpEligible,
     whitelistReasons,
     phoneNumber,
     selectedIntervention,
@@ -713,6 +714,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
 
       {shaEnabled && isInsuranceSchemeSha && (
         <section className={styles.sectionContainer}>
+          <PomsfSchemeBalancePicker patientUuid={patientUuid} patientCRId={patientCRId} />
           <div className={styles.sectionTitle}>{t('electiveVisitQuestion', 'Is this an elective visit?')}</div>
           <RadioButtonGroup
             name="is-elective-visit"
@@ -742,6 +744,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
             interventionCacheRef.current = { ...interventionCacheRef.current, ...cache };
           }}
           onUtilizationStatusChange={handleUtilizationStatusChange}
+          allowElectiveInterventions={false}
         />
       )}
 

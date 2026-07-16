@@ -310,6 +310,7 @@ const ClaimsTable: React.FC<{
 
   const handleSubmitClaim = (claim: PatientClaim) => {
     const isResubmit = tab === 'resubmission';
+    const isFailedToSubmit = claim.provider_workflow_state === 'FAILED_TO_SUBMIT';
     const totalAmount = (claim.bill_lines ?? []).reduce((acc, bl) => acc + (Number(bl.line_total_amount) || 0), 0);
 
     launchWorkspace2(
@@ -325,6 +326,7 @@ const ClaimsTable: React.FC<{
         paymentMechanism: claim.interventions?.[0]?.payment_mechanism,
         isResubmission: isResubmit,
         providerWorkflowState: claim.provider_workflow_state,
+        skipAuthorization: isFailedToSubmit,
         totalAmount,
         mutate,
       },

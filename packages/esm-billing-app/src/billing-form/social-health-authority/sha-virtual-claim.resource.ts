@@ -7,6 +7,7 @@ import {
   Person,
 } from '@openmrs/esm-framework';
 import useSWR from 'swr';
+import { useMemo } from 'react';
 import {
   AuthorizingDeviceOS,
   BatchLinesResponse,
@@ -14,6 +15,7 @@ import {
   BiometricAuthorizeRequest,
   BiometricAuthorizeResponse,
   BiometricConfigResponse,
+  DoctorConsentResult,
   ElectiveCheckinRecord,
   LockCoverArgs,
   LockCoverBackendResponse,
@@ -23,6 +25,7 @@ import {
   PatientIdentifierResponse,
   PomsfBalancesResponse,
   PreauthQueueItem,
+  PreauthRemovalResult,
   ProviderAttributesResponse,
   SHAIntervention,
   SHASubBenefit,
@@ -202,7 +205,7 @@ export const usePatientPhone = (patientUuid: string) => {
 
 export const createElectiveAuthorization = async (
   patientCRId: string,
-  otp: string,
+  authParams: { otp: string } | { authGuid: string },
   interventionCode: string,
   patientUuid: string,
   serviceType: string = 'OUTPATIENT',
@@ -210,6 +213,7 @@ export const createElectiveAuthorization = async (
   interventionTariff: string = '',
   applicableDocumentTypes: Array<string> = [],
   preauthType: string = '',
+  numberOfDoctorsRequired?: number | null,
 ): Promise<{
   success: boolean;
   authorization_code?: string;
@@ -217,20 +221,30 @@ export const createElectiveAuthorization = async (
   error?: string;
   upstream_error?: { error?: string; message?: string };
 }> => {
+  const body: Record<string, any> = {
+    patient_id: patientCRId,
+    service_type: serviceType,
+    intervention_codes: [interventionCode],
+    intervention_name: interventionName,
+    intervention_tariff: interventionTariff,
+    patient_uuid: patientUuid,
+    applicable_document_types: applicableDocumentTypes,
+    preauth_type: preauthType,
+    ...(numberOfDoctorsRequired != null ? { number_of_doctors_required: numberOfDoctorsRequired } : {}),
+  };
+
+  if ('otp' in authParams) {
+    body.otp = authParams.otp;
+    body.is_biometrics = false;
+  } else {
+    body.auth_guid = authParams.authGuid;
+    body.is_biometrics = true;
+  }
+
   const response = await openmrsFetch(`${virtualClaimBaseUrl}/authorize`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: {
-      patient_id: patientCRId,
-      otp,
-      service_type: serviceType,
-      intervention_codes: [interventionCode],
-      intervention_name: interventionName,
-      intervention_tariff: interventionTariff,
-      patient_uuid: patientUuid,
-      applicable_document_types: applicableDocumentTypes,
-      preauth_type: preauthType,
-    },
+    body,
   });
   return response.data;
 };
@@ -388,8 +402,9 @@ export const useOtpWhitelistReasons = () => {
     openmrsFetch,
     { revalidateOnFocus: false, dedupingInterval: 5 * 60_000 },
   );
+  const reasons = useMemo(() => data?.data?.reasons ?? [], [data]);
   return {
-    reasons: data?.data?.reasons ?? [],
+    reasons,
     isLoading,
     error,
   };
@@ -529,30 +544,29 @@ export const useHasSupplementaryPompsCoverage = (patientUuid: string) => {
   };
 };
 
-export const usePomsfBalances = (patientCRId: string, principalMemberNumber: string, subBenefitCode: string) => {
-  const shouldFetch = Boolean(patientCRId && subBenefitCode);
-  const isDependant = Boolean(principalMemberNumber) && principalMemberNumber !== patientCRId;
-  const url = shouldFetch
-    ? `${restBaseUrl}/virtualclaims/billing/pomsf-balances` +
-      `?patient_id=${encodeURIComponent(patientCRId)}` +
-      (isDependant ? `&principal_member_number=${encodeURIComponent(principalMemberNumber)}` : '') +
-      `&sub_benefit_code=${encodeURIComponent(subBenefitCode)}`
-    : null;
+export const usePomsfBalances = (patientId: string, principalMemberNumber: string) => {
+  const params = new URLSearchParams();
+  if (patientId) {
+    params.set('patient_id', patientId);
+  }
+  if (principalMemberNumber) {
+    params.set('principal_member_number', principalMemberNumber);
+  }
 
-  const { data, error, isLoading, mutate } = useSWR<FetchResponse<PomsfBalancesResponse>>(url, openmrsFetch, {
-    revalidateOnFocus: false,
-    dedupingInterval: 5 * 60_000,
-    shouldRetryOnError: false,
-  });
+  const url =
+    patientId && principalMemberNumber
+      ? `${restBaseUrl}/virtualclaims/billing/pomsf-balances?${params.toString()}`
+      : null;
+
+  const { data, error, isLoading } = useSWR<{ data: PomsfBalancesResponse }>(url, openmrsFetch);
 
   return {
-    matches: data?.data?.matches ?? [],
-    matchCount: data?.data?.match_count ?? 0,
+    balances: data?.data?.balances ?? [],
+    total: data?.data?.total ?? 0,
     policyYear: data?.data?.policy_year ?? null,
     member: data?.data?.member ?? null,
     isLoading,
     error,
-    mutate,
   };
 };
 
@@ -797,4 +811,87 @@ export const lockCover = async ({
       upstream: upstreamError,
     };
   }
+};
+
+export const sendDoctorPreauthRequest = async (
+  consentToken: string,
+  interventionCode: string,
+  practitionerRegistrationNumber: string,
+  requestType: string,
+): Promise<DoctorConsentResult> => {
+  const response = await openmrsFetch(`${virtualClaimBaseUrl}/preauth/doctor-consent`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: {
+      practitioner_registration_number: practitionerRegistrationNumber,
+      request_type: requestType,
+      consent_token: consentToken,
+      intervention_code: interventionCode,
+    },
+  });
+  return response.data;
+};
+
+export const removePreauthDoctor = async (
+  consentToken: string,
+  interventionCode: string,
+  practitionerRegistrationNumber: string,
+): Promise<PreauthRemovalResult> => {
+  const response = await fetch(`/openmrs${virtualClaimBaseUrl}/preauth/doctor`, {
+    method: 'DELETE',
+    body: JSON.stringify({
+      consent_token: consentToken,
+      intervention_code: interventionCode,
+      practitioner_registration_number: practitionerRegistrationNumber,
+    }),
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  });
+
+  const data = await response.json();
+
+  if (response.ok && data.success !== false) {
+    return { success: true, message: data.message };
+  }
+
+  return {
+    success: false,
+    error: data.error,
+    upstream_error: data.upstream_error,
+  };
+};
+
+export const removePreauthDiagnosis = async (
+  consentToken: string,
+  icdCode: string,
+  interventionCode: string,
+): Promise<PreauthRemovalResult> => {
+  const response = await fetch(`/openmrs${virtualClaimBaseUrl}/preauth/diagnosis`, {
+    method: 'DELETE',
+    body: JSON.stringify({
+      consent_token: consentToken,
+      icd_code: icdCode,
+      intervention_code: interventionCode,
+    }),
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  });
+
+  const data = await response.json();
+
+  if (response.ok && data.success !== false) {
+    return { success: true, message: data.message };
+  }
+
+  return {
+    success: false,
+    error: data.error,
+    upstream_error: data.upstream_error,
+  };
 };

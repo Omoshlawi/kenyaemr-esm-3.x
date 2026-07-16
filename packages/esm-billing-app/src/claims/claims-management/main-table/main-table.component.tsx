@@ -5,6 +5,7 @@ import {
   DataTableSkeleton,
   DatePicker,
   DatePickerInput,
+  TextInput,
   Pagination,
   Select,
   SelectItem,
@@ -37,10 +38,15 @@ const MainTable: React.FC = () => {
 
   const [fromDate, setFromDate] = useState<string>(dayjs().subtract(30, 'day').format('YYYY-MM-DD'));
   const [toDate, setToDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
+  const [patientName, setPatientName] = useState('');
   const [serviceType, setServiceType] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
 
   const { claims, isLoading, error } = useClaimsMetrics(fromDate, toDate, serviceType || undefined);
+
+  const filteredClaims = claims.filter((claim) =>
+    patientName.trim() ? (claim.patient_name ?? '').toLowerCase().includes(patientName.trim().toLowerCase()) : true,
+  );
 
   const headers = [
     { key: 'dateCreated', header: t('dateCreated', 'Date Created') },
@@ -53,21 +59,24 @@ const MainTable: React.FC = () => {
   ];
 
   const start = (currentPage - 1) * CLAIMS_PAGE_SIZE;
-  const pageResults: VirtualClaim[] = claims.slice(start, start + CLAIMS_PAGE_SIZE);
+  const pageResults: VirtualClaim[] = filteredClaims.slice(start, start + CLAIMS_PAGE_SIZE);
 
   const tableRows = pageResults.map((claim) => {
     const stageCfg = STAGE_CONFIG[claim.display_stage] ?? { label: claim.display_status, type: 'gray' };
     const serviceTagType = SERVICE_TYPE_TAG[claim.service_type] ?? 'gray';
     return {
       id: claim.virtual_claim_uuid,
-      patientName: (
-        <ConfigurableLink
-          style={{ textDecoration: 'none', maxWidth: '50%' }}
-          to={billingUrl}
-          templateParams={{ patientUuid: claim.patient_uuid ?? '', uuid: claim.bill_uuid ?? '' }}>
-          {claim.patient_name ? toTitleCase(claim.patient_name) : '—'}
-        </ConfigurableLink>
-      ),
+      patientName:
+        claim.patient_uuid && claim.bill_uuid ? (
+          <ConfigurableLink
+            style={{ textDecoration: 'none', maxWidth: '50%' }}
+            to={billingUrl}
+            templateParams={{ patientUuid: claim.patient_uuid ?? '', uuid: claim.bill_uuid ?? '' }}>
+            {claim.patient_name ? toTitleCase(claim.patient_name) : '—'}
+          </ConfigurableLink>
+        ) : (
+          claim.patient_name
+        ),
       authCode: claim.authorization_code ?? '—',
       fund: claim.scheme_code ? claim.scheme_code : '—',
       serviceType: claim.service_type ? <Tag type={serviceTagType as any}>{toTitleCase(claim.service_type)}</Tag> : '—',
@@ -80,6 +89,33 @@ const MainTable: React.FC = () => {
   return (
     <div className={styles.container}>
       <div className={styles.filterBar}>
+        <TextInput
+          id="patient-name-filter"
+          labelText={t('patientNameFilter', 'Patient name')}
+          placeholder={t('patientNamePlaceholder', 'Search by patient name')}
+          size="sm"
+          value={patientName}
+          onChange={(event) => {
+            setPatientName(event.target.value);
+            setCurrentPage(1);
+          }}
+          className={styles.patientNameSelect}
+        />
+        <Select
+          id="service-type-filter"
+          labelText={t('serviceType', 'Service Type')}
+          size="sm"
+          value={serviceType}
+          className={styles.serviceTypeSelect}
+          onChange={(e) => {
+            setServiceType(e.target.value);
+            setCurrentPage(1);
+          }}>
+          <SelectItem value="" text={t('all', 'All')} />
+          {SERVICE_TYPES.map((type) => (
+            <SelectItem key={type} value={type} text={type.charAt(0) + type.slice(1).toLowerCase()} />
+          ))}
+        </Select>
         <DatePicker
           datePickerType="range"
           dateFormat="Y-m-d"
@@ -96,21 +132,6 @@ const MainTable: React.FC = () => {
           <DatePickerInput id="from-date" labelText={t('fromDate', 'From')} placeholder="YYYY-MM-DD" size="sm" />
           <DatePickerInput id="to-date" labelText={t('toDate', 'To')} placeholder="YYYY-MM-DD" size="sm" />
         </DatePicker>
-        <Select
-          id="service-type-filter"
-          labelText={t('serviceType', 'Service Type')}
-          size="sm"
-          value={serviceType}
-          className={styles.serviceTypeSelect}
-          onChange={(e) => {
-            setServiceType(e.target.value);
-            setCurrentPage(1);
-          }}>
-          <SelectItem value="" text={t('all', 'All')} />
-          {SERVICE_TYPES.map((type) => (
-            <SelectItem key={type} value={type} text={type.charAt(0) + type.slice(1).toLowerCase()} />
-          ))}
-        </Select>
       </div>
 
       {isLoading ? (
@@ -174,7 +195,7 @@ const MainTable: React.FC = () => {
         page={currentPage}
         pageSize={CLAIMS_PAGE_SIZE}
         pageSizes={[10, 20, 30]}
-        totalItems={claims.length}
+        totalItems={filteredClaims.length}
         onChange={({ page }) => setCurrentPage(page)}
         size={responsiveSize}
       />

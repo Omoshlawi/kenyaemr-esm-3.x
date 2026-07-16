@@ -60,7 +60,9 @@ export enum MemberType {
 
 /**
  * SHA Scheme Names
- * Official insurance scheme names in the Kenyan health system
+ * Official insurance scheme names in the Kenyan health system.
+ * Values are used as prefixes when matching against HIE scheme names,
+ * so suffixed variants (e.g. "POMSF-SHA") also resolve correctly.
  */
 export enum SchemeName {
   /**
@@ -83,7 +85,8 @@ export enum SchemeName {
 
   /**
    * Police Officers Medical Scheme Fund
-   * Health coverage for police officers and their families
+   * Health coverage for police officers and their families.
+   * HIE may return this as "POMSF" or "POMSF-SHA".
    */
   POMSF = 'POMSF',
 }

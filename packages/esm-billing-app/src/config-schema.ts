@@ -51,6 +51,7 @@ export interface BillingConfig {
   detailedViewPageSize: number;
   enableSHAVerification: boolean;
   supplementarySchemePrefixes: Array<string>;
+  minorOtpAgeThreshold: number;
 }
 
 export const configSchema: ConfigSchema = {
@@ -315,5 +316,11 @@ export const configSchema: ConfigSchema = {
       _type: Type.String,
     },
     _default: ['POMSF', 'TSC', 'USALAMA'],
+  },
+  minorOtpAgeThreshold: {
+    _type: Type.Number,
+    _default: 18,
+    _description:
+      'Patients strictly below this age (in years) are permitted the OTP authorization path even when not OTP-whitelisted, since minors cannot complete biometric authorization. Set to 0 to disable.',
   },
 };

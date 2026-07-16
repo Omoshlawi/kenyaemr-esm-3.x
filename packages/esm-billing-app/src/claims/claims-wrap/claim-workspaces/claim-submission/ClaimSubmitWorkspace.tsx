@@ -41,23 +41,19 @@ import {
   useProviderNationalId,
 } from '../../../../billing-form/social-health-authority/sha-virtual-claim.resource';
 import { useSHAEligibility } from '../../../../billing-form/hie.resource';
-import { dischargeClaim, requestDischargeOtp, submitClaim, useDischargeReasons } from './claim-submit-resource';
+import {
+  dischargeClaim,
+  requestDischargeOtp,
+  submitClaim,
+  useCloseReasons,
+  useDischargeReasons,
+} from './claim-submit-resource';
 import { closeInsuranceClaim } from '../../../claims-management/table/claim-summary-modal/claim.resource';
 import { ClaimSubmitFormData, claimSubmitSchema } from './claim-submit-schema';
 import {
   extractUpstreamError,
   toLocalIsoWithOffset,
 } from '../../../claims-management/table/virtual-claim-preauth/utils';
-
-const CANCEL_REASON_OPTIONS = [
-  'WRONG_PATIENT',
-  'NO_SERVICE_GIVEN',
-  'WRONG_BENEFIT',
-  'EXPIRED_VISIT',
-  'EXHAUSTED_BENEFIT',
-  'TIME_BARRED',
-  'OTHER_REASONS',
-];
 
 type ClaimSubmitWorkspaceProps = {
   consentToken: string;
@@ -72,6 +68,7 @@ type ClaimSubmitWorkspaceProps = {
   totalAmount?: number;
   mutate: () => void;
   providerWorkflowState?: string;
+  skipAuthorization?: boolean;
 };
 
 const RequiredLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -98,6 +95,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     isResubmission = false,
     isCancelMode = false,
     providerWorkflowState,
+    skipAuthorization = false,
     totalAmount,
     mutate,
   } = workspaceProps ?? ({} as ClaimSubmitWorkspaceProps);
@@ -105,6 +103,9 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const isInpatient = serviceType === 'INPATIENT';
+  const RESUBMIT_FAILED_STATES = new Set(['FAILED_TO_SUBMIT', 'SUBMIT_FAILED_RETRY']);
+  const isResubmitFailed = RESUBMIT_FAILED_STATES.has((providerWorkflowState ?? '').toUpperCase());
+  const skipAuth = skipAuthorization || isResubmitFailed;
 
   const phoneNumber = usePatientPhone(patientUuid);
   const { isPatientWhiteListed } = useSHAEligibility(patientUuid);
@@ -116,6 +117,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
   const deviceOs = detectAuthorizingDeviceOS();
 
   const { reasons: dischargeReasons, isLoading: isLoadingReasons } = useDischargeReasons();
+  const { reasons: closeReasons, isLoading: isLoadingCloseReasons } = useCloseReasons();
 
   const [dischargeDate, setDischargeDate] = useState<Date>(() => new Date());
   const [dischargeTimeText, setDischargeTimeText] = useState<string>(() => {
@@ -158,7 +160,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
         timeoutInMs: 3000,
       });
       mutate();
-      setTimeout(() => closeWorkspace(), 800);
+      setTimeout(() => closeWorkspace({ discardUnsavedChanges: true }), 800);
     } else {
       setSubmitError(result.upstreamError ?? t('cancelClaimFailed', 'Failed to cancel claim'));
     }
@@ -198,7 +200,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
         consentToken,
         invoiceNumber,
         dischargeReason: dischargeReasonRef.current,
-        skipAuthCheck: isAuthlessResubmit,
+        skipAuthCheck: isAuthlessResubmit || skipAuth,
         ...('otp' in auth ? { otp: (auth as { otp: string }).otp } : {}),
         ...('dischargeAuthGuid' in auth
           ? { dischargeAuthGuid: (auth as { dischargeAuthGuid: string }).dischargeAuthGuid }
@@ -239,7 +241,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
       const res = await createSHABiometricAuthorize({
         agent_id: providerNationalid,
         patient_id: patientCRId,
-        interventions,
+        interventions: [interventions[0]],
         service_type: serviceType,
         workstation_id: workstationId,
         authorizing_device_os: deviceOs,
@@ -359,7 +361,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
             isLowContrast: true,
           });
           mutate();
-          setTimeout(() => closeWorkspace(), 800);
+          setTimeout(() => closeWorkspace({ discardUnsavedChanges: true }), 800);
         });
       },
 
@@ -383,7 +385,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
             isLowContrast: true,
           });
           mutate();
-          setTimeout(() => closeWorkspace(), 800);
+          setTimeout(() => closeWorkspace({ discardUnsavedChanges: true }), 800);
         });
       },
       onBiometricCancel: async (token: string | null) => {
@@ -449,7 +451,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
             isLowContrast: true,
           });
           mutate();
-          setTimeout(() => closeWorkspace(), 800);
+          setTimeout(() => closeWorkspace({ discardUnsavedChanges: true }), 800);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           setSubmitError(msg);
@@ -466,9 +468,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     return null;
   }
 
-  const RESUBMIT_STATES = new Set(['DRAFT_RESUBMIT', 'DRAFT_RESUBMIT_DOCUMENTS', 'DRAFT_RESUBMISSION']);
-  const shouldSkipOtp = isResubmission && RESUBMIT_STATES.has((providerWorkflowState ?? '').toUpperCase());
-
+  const shouldSkipOtp = skipAuth || isResubmission || isResubmitFailed;
   const onContinue = (data: ClaimSubmitFormData) => {
     dischargeReasonRef.current = data.discharge_reason;
     dischargeDateIsoRef.current = isInpatient ? buildDischargeDateIso() : '';
@@ -477,6 +477,14 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     } else {
       launchAuthModal();
     }
+  };
+
+  // A claim that failed to submit already carries its original discharge reason
+  // and authorization on file — retrying it needs neither re-entered.
+  const onContinueResubmitFailed = () => {
+    dischargeReasonRef.current = '';
+    dischargeDateIsoRef.current = isInpatient ? buildDischargeDateIso() : '';
+    launchResubmitConfirm();
   };
 
   const workspaceTitle = isCancelMode
@@ -491,6 +499,22 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
         <div className={styles.form}>
           <div className={styles.formContainer}>
             <section className={styles.formSection}>
+              <section className={styles.formSection}>
+                <Select
+                  id="cancel-reason-type"
+                  labelText={t('cancelReasonType', 'Cancel reason type')}
+                  value={cancelReasonType}
+                  onChange={(e) => setCancelReasonType((e.target as HTMLSelectElement).value)}
+                  disabled={isSubmitting || isLoadingCloseReasons}>
+                  {isLoadingCloseReasons ? (
+                    <SelectItem value="" text={t('loadingReasons', 'Loading reasons…')} />
+                  ) : (
+                    closeReasons.map((reason) => (
+                      <SelectItem key={reason.code} value={reason.code} text={reason.label} />
+                    ))
+                  )}
+                </Select>
+              </section>
               <TextInput
                 id="cancel-reason-text"
                 labelText={t('cancelReason', 'Cancel reason')}
@@ -499,18 +523,6 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
                 onChange={(e) => setCancelReasonText((e.target as HTMLInputElement).value)}
                 disabled={isSubmitting}
               />
-            </section>
-            <section className={styles.formSection}>
-              <Select
-                id="cancel-reason-type"
-                labelText={t('cancelReasonType', 'Cancel reason type')}
-                value={cancelReasonType}
-                onChange={(e) => setCancelReasonType((e.target as HTMLSelectElement).value)}
-                disabled={isSubmitting}>
-                {CANCEL_REASON_OPTIONS.map((opt) => (
-                  <SelectItem key={opt} value={opt} text={t(opt, opt)} />
-                ))}
-              </Select>
             </section>
             {submitError && (
               <InlineNotification
@@ -524,7 +536,11 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
             )}
           </div>
           <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-            <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()} disabled={isSubmitting}>
+            <Button
+              className={styles.button}
+              kind="secondary"
+              onClick={() => closeWorkspace({ discardUnsavedChanges: true })}
+              disabled={isSubmitting}>
               {t('close', 'Close')}
             </Button>
             <Button
@@ -546,7 +562,16 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
 
   return (
     <Workspace2 hasUnsavedChanges={isDirty && !submitSucceeded} title={workspaceTitle}>
-      <form onSubmit={handleSubmit(onContinue)} className={styles.form}>
+      <form
+        onSubmit={
+          isResubmitFailed
+            ? (e) => {
+                e.preventDefault();
+                onContinueResubmitFailed();
+              }
+            : handleSubmit(onContinue)
+        }
+        className={styles.form}>
         <div className={styles.formContainer}>
           <section className={styles.summaryCard}>
             <h6 className={styles.summaryTitle}>{t('claimSummary', 'Claim summary')}</h6>
@@ -574,72 +599,90 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
             </div>
           </section>
 
-          <section className={styles.formSection}>
-            <Controller
-              name="discharge_reason"
-              control={control}
-              render={({ field }) => (
-                <Dropdown
-                  id="discharge-reason"
-                  titleText={<RequiredLabel>{t('dischargeReason', 'Discharge reason')}</RequiredLabel>}
-                  label={
-                    isLoadingReasons
-                      ? t('loadingReasons', 'Loading reasons…')
-                      : t('selectDischargeReason', 'Select a reason')
-                  }
-                  items={dischargeReasonItems}
-                  itemToString={(item) => (item ? item.label : '')}
-                  selectedItem={selectedReasonItem}
-                  onChange={({ selectedItem }) => field.onChange(selectedItem?.id ?? '')}
-                  disabled={isLoadingReasons || isSubmitting}
-                  invalid={!!errors.discharge_reason}
-                  invalidText={errors.discharge_reason?.message}
-                />
+          {isResubmitFailed ? (
+            <InlineNotification
+              kind="info"
+              lowContrast
+              hideCloseButton
+              title={t('resubmitFailedNote', 'No changes needed')}
+              subtitle={t(
+                'resubmitFailedNoteDesc',
+                'This claim already has a discharge reason and authorization on file — resubmitting will retry sending it to SHA without asking again.',
               )}
+              className={styles.errorBanner}
             />
-            {selectedReasonItem?.description && <p className={styles.reasonHint}>{selectedReasonItem.description}</p>}
-          </section>
-
-          {isInpatient && (
-            <section className={styles.formSection}>
-              <p className={styles.sectionLabel}>
-                <RequiredLabel>{t('dischargeDateAndTime', 'Discharge date and time')}</RequiredLabel>
-              </p>
-              <p className={styles.sectionHint}>
-                {t(
-                  'dischargeDateHint',
-                  'Used by SHA for per-diem calculations. Pre-filled with now — adjust if the patient was discharged earlier.',
-                )}
-              </p>
-              <div className={styles.dateTimeRow}>
-                <DatePicker
-                  datePickerType="single"
-                  value={dischargeDate}
-                  maxDate={new Date()}
-                  onChange={(dates) => {
-                    if (dates[0]) {
-                      setDischargeDate(dates[0]);
-                    }
-                  }}>
-                  <DatePickerInput
-                    id="discharge-date"
-                    labelText={t('date', 'Date')}
-                    placeholder="dd/mm/yyyy"
-                    disabled={isSubmitting}
-                  />
-                </DatePicker>
-                <TimePicker
-                  id="discharge-time"
-                  labelText={t('time', 'Time')}
-                  value={dischargeTimeText}
-                  onChange={handleDischargeTimeChange}
-                  disabled={isSubmitting}
-                  pattern="(\d{2}):(\d{2})"
-                  placeholder="hh:mm"
-                  maxLength={5}
+          ) : (
+            <>
+              <section className={styles.formSection}>
+                <Controller
+                  name="discharge_reason"
+                  control={control}
+                  render={({ field }) => (
+                    <Dropdown
+                      id="discharge-reason"
+                      titleText={<RequiredLabel>{t('dischargeReason', 'Discharge reason')}</RequiredLabel>}
+                      label={
+                        isLoadingReasons
+                          ? t('loadingReasons', 'Loading reasons…')
+                          : t('selectDischargeReason', 'Select a reason')
+                      }
+                      items={dischargeReasonItems}
+                      itemToString={(item) => (item ? item.label : '')}
+                      selectedItem={selectedReasonItem}
+                      onChange={({ selectedItem }) => field.onChange(selectedItem?.id ?? '')}
+                      disabled={isLoadingReasons || isSubmitting}
+                      invalid={!!errors.discharge_reason}
+                      invalidText={errors.discharge_reason?.message}
+                    />
+                  )}
                 />
-              </div>
-            </section>
+                {selectedReasonItem?.description && (
+                  <p className={styles.reasonHint}>{selectedReasonItem.description}</p>
+                )}
+              </section>
+
+              {isInpatient && (
+                <section className={styles.formSection}>
+                  <p className={styles.sectionLabel}>
+                    <RequiredLabel>{t('dischargeDateAndTime', 'Discharge date and time')}</RequiredLabel>
+                  </p>
+                  <p className={styles.sectionHint}>
+                    {t(
+                      'dischargeDateHint',
+                      'Used by SHA for per-diem calculations. Pre-filled with now — adjust if the patient was discharged earlier.',
+                    )}
+                  </p>
+                  <div className={styles.dateTimeRow}>
+                    <DatePicker
+                      datePickerType="single"
+                      value={dischargeDate}
+                      maxDate={new Date()}
+                      onChange={(dates) => {
+                        if (dates[0]) {
+                          setDischargeDate(dates[0]);
+                        }
+                      }}>
+                      <DatePickerInput
+                        id="discharge-date"
+                        labelText={t('date', 'Date')}
+                        placeholder="dd/mm/yyyy"
+                        disabled={isSubmitting}
+                      />
+                    </DatePicker>
+                    <TimePicker
+                      id="discharge-time"
+                      labelText={t('time', 'Time')}
+                      value={dischargeTimeText}
+                      onChange={handleDischargeTimeChange}
+                      disabled={isSubmitting}
+                      pattern="(\d{2}):(\d{2})"
+                      placeholder="hh:mm"
+                      maxLength={5}
+                    />
+                  </div>
+                </section>
+              )}
+            </>
           )}
 
           {submitError && (
@@ -666,12 +709,16 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
         </div>
 
         <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()} disabled={isSubmitting}>
+          <Button
+            className={styles.button}
+            kind="secondary"
+            onClick={() => closeWorkspace({ discardUnsavedChanges: true })}
+            disabled={isSubmitting}>
             {t('cancel', 'Cancel')}
           </Button>
           <Button
             className={styles.button}
-            disabled={isSubmitting || isLoadingReasons || submitSucceeded}
+            disabled={isSubmitting || (!isResubmitFailed && isLoadingReasons) || submitSucceeded}
             kind={isResubmission ? 'danger' : 'primary'}
             type="submit"
             renderIcon={submitSucceeded ? CheckmarkFilled : undefined}>

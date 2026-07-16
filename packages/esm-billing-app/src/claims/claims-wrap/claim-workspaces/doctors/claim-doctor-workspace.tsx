@@ -48,6 +48,19 @@ const RequiredLabel: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   </span>
 );
 
+// Only registration_number and National ID map to a value we already hold on the
+// provider record — Alien ID / Refugee ID have no matching provider attribute, so
+// they fall back to manual entry.
+const getIdentifierValue = (type: string, provider: Pick<ProviderResult, 'licenseNumber' | 'nationalId'>): string => {
+  if (type === 'National ID') {
+    return provider.nationalId ?? '';
+  }
+  if (type === 'registration_number') {
+    return provider.licenseNumber ?? '';
+  }
+  return '';
+};
+
 const ClaimDoctorsWorkspace: React.FC<Workspace2DefinitionProps<ClaimDoctorsWorkspaceProps, {}, {}>> = ({
   workspaceProps,
   closeWorkspace,
@@ -96,6 +109,7 @@ const ClaimDoctorsWorkspace: React.FC<Workspace2DefinitionProps<ClaimDoctorsWork
   }, [identificationTypes, getValues, setValue]);
 
   const [rowResults, setRowResults] = useState<Map<string, RowResult>>(new Map());
+  const [selectedProviders, setSelectedProviders] = useState<Map<string, ProviderResult>>(new Map());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const pendingRowsCount = useMemo(() => {
@@ -134,6 +148,11 @@ const ClaimDoctorsWorkspace: React.FC<Workspace2DefinitionProps<ClaimDoctorsWork
           next.delete(fieldId);
           return next;
         });
+        setSelectedProviders((prev) => {
+          const next = new Map(prev);
+          next.delete(fieldId);
+          return next;
+        });
       }
       removeDoctor(idx);
     },
@@ -151,10 +170,30 @@ const ClaimDoctorsWorkspace: React.FC<Workspace2DefinitionProps<ClaimDoctorsWork
 
   const handleProviderSelect = useCallback(
     (idx: number, provider: ProviderResult) => {
+      const fieldId = doctorFields[idx]?.id;
+      if (fieldId) {
+        setSelectedProviders((prev) => {
+          const next = new Map(prev);
+          next.set(fieldId, provider);
+          return next;
+        });
+      }
+
+      // Nursing Council doesn't issue a registration number SHA will accept here —
+      // nurses must be identified by National ID instead. Every other regulator
+      // (Clinical Officers Council, KMPDC, Pharmacy and Poisons Board, ...) keeps
+      // the registration number default.
+      const isNurse = (provider.licenseBody ?? '').toLowerCase().includes('nursing council');
+      const defaultType = isNurse ? 'National ID' : 'registration_number';
+
       setValue(`doctors.${idx}.provider_display`, provider.person?.display ?? '', {
         shouldDirty: true,
       });
-      setValue(`doctors.${idx}.identification_number`, provider.licenseNumber ?? '', {
+      setValue(`doctors.${idx}.identification_type`, defaultType, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      setValue(`doctors.${idx}.identification_number`, getIdentifierValue(defaultType, provider), {
         shouldDirty: true,
         shouldValidate: true,
       });
@@ -163,12 +202,28 @@ const ClaimDoctorsWorkspace: React.FC<Workspace2DefinitionProps<ClaimDoctorsWork
         shouldValidate: true,
       });
     },
-    [setValue],
+    [setValue, doctorFields],
+  );
+
+  const handleIdentificationTypeChange = useCallback(
+    (idx: number, newType: string) => {
+      setValue(`doctors.${idx}.identification_type`, newType, { shouldDirty: true, shouldValidate: true });
+
+      const fieldId = doctorFields[idx]?.id;
+      const provider = fieldId ? selectedProviders.get(fieldId) : undefined;
+      if (provider) {
+        setValue(`doctors.${idx}.identification_number`, getIdentifierValue(newType, provider), {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+      }
+    },
+    [setValue, doctorFields, selectedProviders],
   );
 
   const onSubmit = async (data: ClaimDoctorsFormData) => {
     if (allDone) {
-      closeWorkspace();
+      closeWorkspace({ discardUnsavedChanges: true });
       return;
     }
 
@@ -180,7 +235,7 @@ const ClaimDoctorsWorkspace: React.FC<Workspace2DefinitionProps<ClaimDoctorsWork
       });
 
     if (rowsToSubmit.length === 0) {
-      closeWorkspace();
+      closeWorkspace({ discardUnsavedChanges: true });
       return;
     }
 
@@ -238,7 +293,7 @@ const ClaimDoctorsWorkspace: React.FC<Workspace2DefinitionProps<ClaimDoctorsWork
         isLowContrast: true,
       });
       mutate();
-      setTimeout(() => closeWorkspace(), 1500);
+      setTimeout(() => closeWorkspace({ discardUnsavedChanges: true }), 1500);
     } else {
       showSnackbar({
         title: t('doctorsPartial', 'Some doctors failed'),
@@ -294,6 +349,9 @@ const ClaimDoctorsWorkspace: React.FC<Workspace2DefinitionProps<ClaimDoctorsWork
               const isUploading = status === 'uploading';
               const isFailed = status === 'failed';
               const currentValues = getValues(`doctors.${idx}`);
+              const identifierLabel = identificationTypes.find(
+                (idType) => idType.code === currentValues?.identification_type,
+              )?.label;
 
               return (
                 <Layer key={field.id}>
@@ -330,6 +388,7 @@ const ClaimDoctorsWorkspace: React.FC<Workspace2DefinitionProps<ClaimDoctorsWork
                         selectedDisplay={currentValues?.provider_display ?? ''}
                         selectedLicenseNumber={currentValues?.identification_number ?? ''}
                         selectedRegulationBody={currentValues?.regulation_body ?? ''}
+                        identifierLabel={identifierLabel}
                         onSelect={(provider) => handleProviderSelect(idx, provider)}
                         onLicenseNumberChange={(v) =>
                           setValue(`doctors.${idx}.identification_number`, v, {
@@ -369,6 +428,7 @@ const ClaimDoctorsWorkspace: React.FC<Workspace2DefinitionProps<ClaimDoctorsWork
                         render={({ field }) => (
                           <Select
                             {...field}
+                            onChange={(e) => handleIdentificationTypeChange(idx, e.target.value)}
                             id={`id-type-${idx}`}
                             disabled={isLocked || isUploading || isLoadingTypes}
                             labelText={<RequiredLabel>{t('identificationType', 'Identification type')}</RequiredLabel>}
@@ -414,7 +474,10 @@ const ClaimDoctorsWorkspace: React.FC<Workspace2DefinitionProps<ClaimDoctorsWork
         </div>
 
         <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+          <Button
+            className={styles.button}
+            kind="secondary"
+            onClick={() => closeWorkspace({ discardUnsavedChanges: true })}>
             {t('cancel', 'Cancel')}
           </Button>
           <Button

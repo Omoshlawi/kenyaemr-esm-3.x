@@ -95,8 +95,8 @@
     },
     {
       "name": "billing-check-in-form",
-      "slot": "visit-form-bottom-slot",
       "component": "billingCheckInForm",
+      "slot": "billing-visit-attributes-slot",
       "order": 1
     },
     {
@@ -174,14 +174,6 @@
       "component": "claimsOverview",
       "name": "claims-overview-dashboard-link",
       "slot": "claims-management-overview-slot"
-    },
-     {
-      "name": "patient-preauth-widget",
-      "component": "patientPreauthWidget",
-      "slot": "ewf-preauth-dashboard-slot",
-      "meta": {
-        "columnSpan": 4
-      }
     },
     {
       "component": "waiveBillActionButton",
@@ -419,6 +411,11 @@
     }
   ],
   "workspaces2": [
+    {
+      "name": "visit-attributes-workspace",
+      "component": "visitAttributesWorkspace",
+      "window": "billing-extra-wide-workspace-window"
+    },
     {
       "name": "create-bill-workspace",
       "component": "createBillWorkspace",

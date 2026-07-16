@@ -1,6 +1,6 @@
 {
   "name": "@kenyaemr/esm-3.x-apps",
-  "version": "5.4.3",
+  "version": "5.4.4",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -14,7 +14,7 @@
     "postinstall": "husky install",
     "prettier": "prettier --config prettier.config.js --write \"packages/**/*.{ts,tsx,css,scss}\" \"e2e/**/*.ts\"",
     "release": "yarn workspaces foreach --all --topological version",
-    "start": "openmrs develop --config-url http://localhost:8080/openmrs/spa/openmrs.config.json --config-file ./openmrs.config.json --backend http://localhost:8080 --use-rspack",
+    "start": "openmrs develop",
     "test": "vitest run",
     "test-e2e": "playwright test",
     "test:watch": "vitest",

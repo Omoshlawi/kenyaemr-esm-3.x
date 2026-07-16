@@ -24,6 +24,27 @@ export const useDischargeReasons = () => {
   };
 };
 
+export type CloseReasonOption = {
+  code: string;
+  label: string;
+  description: string;
+};
+
+export type CloseReasonsResponse = {
+  count: number;
+  reasons: Array<CloseReasonOption>;
+};
+
+export const useCloseReasons = () => {
+  const url = `${restBaseUrl}/virtualclaims/billing/close-reasons`;
+  const { data, error, isLoading } = useSWR<FetchResponse<CloseReasonsResponse>>(url, openmrsFetch);
+  return {
+    reasons: data?.data?.reasons ?? [],
+    isLoading,
+    error,
+  };
+};
+
 export const requestDischargeOtp = async (
   consentToken: string,
   patientId: string,
@@ -79,7 +100,7 @@ export const submitClaim = async (
   if (!params.invoiceNumber) {
     return { ok: false, error: t('noInvoiceNumber', 'No invoice number on claim') };
   }
-  if (!params.dischargeReason) {
+  if (!params.skipAuthCheck && !params.dischargeReason) {
     return { ok: false, error: t('dischargeReasonRequired', 'Discharge reason is required') };
   }
   if (!params.skipAuthCheck && !params.otp && !params.dischargeAuthGuid) {
@@ -142,8 +163,11 @@ export const dischargeClaim = async (
     return { ok: false, error: t('dischargeDateRequired', 'Discharge date is required for inpatient claims') };
   }
 
-  if (!params.consentToken || !params.invoiceNumber || !params.dischargeReason) {
+  if (!params.consentToken || !params.invoiceNumber) {
     return { ok: false, error: t('missingRequiredFields', 'Missing required fields') };
+  }
+  if (!params.skipAuthCheck && !params.dischargeReason) {
+    return { ok: false, error: t('dischargeReasonRequired', 'Discharge reason is required') };
   }
   if (!params.skipAuthCheck && !params.otp && !params.dischargeAuthGuid) {
     return {

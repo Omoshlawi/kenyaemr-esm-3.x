@@ -17,6 +17,7 @@ import {
   showSnackbar,
   useConfig,
   useLayoutType,
+  useSession,
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
@@ -27,13 +28,25 @@ import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import styles from './elective-auth.scss';
 import {
+  checkBiometricAuthorizationStatus,
   createElectiveAuthorization,
+  createSHABiometricAuthorize,
+  detectAuthorizingDeviceOS,
+  fetchWhitelistStatus,
+  rejectBiometricAuthorization,
   sendSHAOtp,
+  submitOtpWhitelist,
+  useBiometricAgentStatus,
+  useBiometricConfig,
   useNonPomsfUtilization,
+  useOtpWhitelistReasons,
   usePatientPhone,
+  useProviderNationalId,
   useSHAInterventions,
   useSHASubBenefits,
 } from '../../../../../billing-form/social-health-authority/sha-virtual-claim.resource';
+import { computeAgeInYears } from '../../../../../billing-form/social-health-authority/helper';
+import { useSHAEligibility } from '../../../../../billing-form/hie.resource';
 import { BillingConfig } from '../../../../../config-schema';
 import usePatient from '../../../../../hooks/usePatient';
 import PatientBanner from './patient-banner/patient-banner.component';
@@ -78,7 +91,7 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
   const workspaceTitle =
     workspaceProps?.workspaceTitle ?? t('createElectivePreauth', 'Create Elective Pre-Authorization');
 
-  const { crIdentificationNumberUUID } = useConfig<BillingConfig>();
+  const { crIdentificationNumberUUID, minorOtpAgeThreshold } = useConfig<BillingConfig>();
 
   const {
     control,
@@ -105,6 +118,31 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
     patient?.identifiers?.find((id) => id.identifierType?.uuid === crIdentificationNumberUUID)?.identifier ?? null;
 
   const patientPhone = usePatientPhone(patientUuid ?? '');
+
+  const { isPatientWhiteListed, facilityBiometricsEnforced, eligibilityData } = useSHAEligibility(patientUuid ?? '');
+  const { reasons: whitelistReasons } = useOtpWhitelistReasons();
+
+  const isMinorOtpEligible = useMemo(() => {
+    if (!minorOtpAgeThreshold || minorOtpAgeThreshold <= 0) {
+      return false;
+    }
+    const shaAge = eligibilityData?.age;
+    if (typeof shaAge === 'number') {
+      return shaAge < minorOtpAgeThreshold;
+    }
+    const age = computeAgeInYears(eligibilityData?.dateOfBirth);
+    return age !== null && age < minorOtpAgeThreshold;
+  }, [minorOtpAgeThreshold, eligibilityData]);
+
+  const effectiveWhitelistedForOTP = isPatientWhiteListed || isMinorOtpEligible;
+  const effectiveBiometricsEnforced = facilityBiometricsEnforced && !isMinorOtpEligible;
+  const canUseOtp = !effectiveBiometricsEnforced || effectiveWhitelistedForOTP;
+
+  const { currentProvider } = useSession();
+  const { providerNationalid } = useProviderNationalId(currentProvider?.uuid ?? '');
+  const { agentUrl } = useBiometricConfig();
+  const { workstationId } = useBiometricAgentStatus(agentUrl);
+  const deviceOs = detectAuthorizingDeviceOS();
 
   const { subBenefits, isLoading: loadingSubBenefits } = useSHASubBenefits(crId ?? '');
   const { interventions, isLoading: loadingInterventions } = useSHAInterventions(crId ?? '', subBenefitCode ?? '');
@@ -163,6 +201,79 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
     }
   }, [subBenefitCode, setValue]);
 
+  const buildBiometricStarter = useCallback(
+    (crIdToUse: string, interventionCodeToUse: string, serviceType: string) => {
+      return async () => {
+        if (!providerNationalid) {
+          throw new Error(
+            t(
+              'biometricMissingNationalId',
+              'Provider National ID not configured. Please add it to your provider profile.',
+            ),
+          );
+        }
+        if (!workstationId) {
+          throw new Error(
+            t(
+              'biometricAgentNotReachable',
+              'Biometric agent not running. Please start the agent on this workstation and try again.',
+            ),
+          );
+        }
+
+        const res = await createSHABiometricAuthorize({
+          agent_id: providerNationalid,
+          patient_id: crIdToUse,
+          interventions: [interventionCodeToUse],
+          service_type: serviceType,
+          workstation_id: workstationId,
+          authorizing_device_os: deviceOs,
+          patient_uuid: patientUuid,
+        });
+
+        if (!res.success || !res.embed_url || !res.token || !res.guid) {
+          throw new Error(extractUpstreamError(res, t('biometricStartFailed', 'Could not start biometric session.')));
+        }
+
+        return {
+          embed_url: res.embed_url,
+          authorization_code: res.authorization_code ?? '',
+          consent_token: res.consent_token ?? res.token,
+          token: res.token,
+          guid: res.guid,
+        };
+      };
+    },
+    [providerNationalid, workstationId, deviceOs, patientUuid, t],
+  );
+
+  const handleSubmitWhitelist = useCallback(
+    async (params: { reasonType: string; reason: string; biometricAttempts: number; attachment: File | null }) => {
+      if (!crId) {
+        return { success: false, error: t('noCRNumber', 'Patient has no SHA CR number.') };
+      }
+      return submitOtpWhitelist({
+        beneficiaryCrId: crId,
+        reasonType: params.reasonType,
+        reason: params.reason,
+        biometricAttempts: params.biometricAttempts,
+        attachment: params.attachment ?? undefined,
+      });
+    },
+    [crId, t],
+  );
+
+  const handleCheckWhitelistStatus = useCallback(async (crIdToCheck: string) => {
+    const status = await fetchWhitelistStatus(crIdToCheck);
+    return {
+      is_whitelisted: status.is_whitelisted,
+      has_pending: status.has_pending,
+      is_rejected: status.is_rejected,
+      latest_status: status.latest_status,
+      reviewer_note: status.requests?.[0]?.reviewer_note ?? null,
+    };
+  }, []);
+
   const handleAuthorize = useCallback(
     (data: ElectivePreAuthFormData) => {
       if (!crId) {
@@ -187,7 +298,7 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
       setAuthorizeError('');
       setIsAuthorizing(true);
 
-      let otpVerified = false;
+      let isAuthorized = false;
 
       const interventionCodeToUse = data.interventionCode;
       const intervention = interventions.find((i) => i.code === interventionCodeToUse);
@@ -195,10 +306,45 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
       const interventionTariff = (intervention as any)?.tariff ?? '';
       const interventionDocTypes = (intervention as any)?.applicable_document_types ?? [];
       const interventionPreauthType = (intervention as any)?.preauth_type ?? '';
+      const interventionNumberOfDoctorsRequired = intervention?.number_of_doctors_required ?? null;
+
+      const runAuthorization = async (authParams: { otp: string } | { authGuid: string }) => {
+        const res = await createElectiveAuthorization(
+          crId,
+          authParams,
+          interventionCodeToUse,
+          data.patientUuid,
+          data.serviceType,
+          interventionName,
+          interventionTariff,
+          interventionDocTypes,
+          interventionPreauthType,
+          interventionNumberOfDoctorsRequired,
+        );
+        if (!res.success) {
+          throw new Error(extractUpstreamError(res, t('authorizeFailed', 'Authorization failed')));
+        }
+        isAuthorized = true;
+      };
+
+      const handleAuthorizationSuccess = () => {
+        setIsAuthorizing(false);
+        showSnackbar({
+          title: t('electiveDraftCreated', 'Elective draft created'),
+          subtitle: t(
+            'electiveDraftSubtitle',
+            'Authorization obtained. The elective preauth now appears in the Scheduled tab. Open the row to submit the preauth to SHA.',
+          ),
+          kind: 'success',
+        });
+        handleMutation(`${virtualClaimBaseUrl}/preauth-queue`);
+        mutate?.();
+        closeWorkspaceWithSavedChanges();
+      };
 
       const dispose = showModal('otp-verification-modal', {
         onClose: () => {
-          if (!otpVerified) {
+          if (!isAuthorized) {
             setIsAuthorizing(false);
           }
           dispose();
@@ -216,44 +362,50 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
         },
 
         onVerify: async (enteredOtp: string) => {
-          const res = await createElectiveAuthorization(
-            crId,
-            enteredOtp,
-            interventionCodeToUse,
-            data.patientUuid,
-            data.serviceType,
-            interventionName,
-            interventionTariff,
-            interventionDocTypes,
-            interventionPreauthType,
-          );
-          if (!res.success) {
-            throw new Error(extractUpstreamError(res, t('authorizeFailed', 'Authorization failed')));
-          }
-          otpVerified = true;
+          await runAuthorization({ otp: enteredOtp });
         },
 
         onVerificationSuccess: () => {
           dispose();
-          setIsAuthorizing(false);
-          showSnackbar({
-            title: t('electiveDraftCreated', 'Elective draft created'),
-            subtitle: t(
-              'electiveDraftSubtitle',
-              'Authorization obtained. The elective preauth now appears in the Scheduled tab. Open the row to submit the preauth to SHA.',
-            ),
-            kind: 'success',
-          });
-          handleMutation(`${virtualClaimBaseUrl}/preauth-queue`);
-          mutate?.();
-          closeWorkspaceWithSavedChanges();
+          handleAuthorizationSuccess();
         },
 
         onCleanup: () => {
-          if (!otpVerified) {
+          if (!isAuthorized) {
             setIsAuthorizing(false);
           }
         },
+
+        authMode: 'multi',
+        whitelistedForOTP: effectiveWhitelistedForOTP,
+        facilityBiometricsEnforced: effectiveBiometricsEnforced,
+
+        onStartBiometric: buildBiometricStarter(crId, interventionCodeToUse, data.serviceType),
+        onCheckBiometricStatus: checkBiometricAuthorizationStatus,
+        onBiometricSuccess: async (result: { authorization_code: string; consent_token: string; guid: string }) => {
+          await runAuthorization({ authGuid: result.guid });
+          dispose();
+          handleAuthorizationSuccess();
+        },
+        onBiometricCancel: async (consentToken: string | null) => {
+          if (consentToken) {
+            try {
+              await rejectBiometricAuthorization(consentToken);
+            } catch (err) {
+              throw new Error(
+                extractUpstreamError(
+                  err,
+                  t('biometricCancelFailed', 'Failed to cancel biometric authorization. Please contact support.'),
+                ),
+              );
+            }
+          }
+        },
+
+        patientCRId: crId,
+        whitelistReasons,
+        onSubmitWhitelist: handleSubmitWhitelist,
+        onCheckWhitelistStatus: handleCheckWhitelistStatus,
       });
     },
     [
@@ -263,6 +415,12 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
       isCoverageExhausted,
       utilization,
       selectedInterventionName,
+      effectiveWhitelistedForOTP,
+      effectiveBiometricsEnforced,
+      buildBiometricStarter,
+      whitelistReasons,
+      handleSubmitWhitelist,
+      handleCheckWhitelistStatus,
       mutate,
       closeWorkspace,
       t,
@@ -277,7 +435,7 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
             <p className={styles.helperText}>
               {t(
                 'electiveFormHelper',
-                'Search for a patient, select an elective intervention, then send an OTP to authorize. The elective preauth will appear in the Scheduled tab where you can submit it to SHA.',
+                'Search for a patient, select an elective intervention, then authorize with the patient’s biometrics or an OTP. The elective preauth will appear in the Scheduled tab where you can submit it to SHA.',
               )}
             </p>
 
@@ -517,11 +675,13 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
             type="submit"
             disabled={isAuthorizing || !crId || !interventionCode || isCoverageExhausted || loadingUtilization}>
             {isAuthorizing ? (
-              <InlineLoading description={t('sendingOtp', 'Sending OTP...')} />
+              <InlineLoading description={t('authorizing', 'Authorizing...')} />
             ) : isCoverageExhausted ? (
               t('coverageExhausted', 'Coverage exhausted')
+            ) : canUseOtp ? (
+              t('authorizeWithOtpOrBiometrics', 'Authorize (OTP or biometrics)')
             ) : (
-              t('sendOtpAndAuthorize', 'Send OTP & Authorize')
+              t('authorizeWithBiometrics', 'Authorize with biometrics')
             )}
           </Button>
         </ButtonSet>

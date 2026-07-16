@@ -9,7 +9,6 @@ import {
   useSHAInterventions,
 } from '../../billing-form/social-health-authority/sha-virtual-claim.resource';
 import { type SHAIntervention } from '../../billing-form/social-health-authority/type';
-import { formatCurrency } from '../../helpers/currency';
 import { InterventionItem } from '../../claims/claims-management/table/virtual-claim-preauth/type';
 
 type PackageInterventionsProps = {
@@ -18,8 +17,19 @@ type PackageInterventionsProps = {
   patientUuid: string;
   selectedPackages: string | null;
   showApplicableDocuments?: boolean;
+  allowElectiveInterventions?: boolean;
   onInterventionsCached?: (cache: Record<string, SHAIntervention>) => void;
   onUtilizationStatusChange?: (isExhausted: boolean) => void;
+};
+
+const isElectiveIntervention = (intervention: SHAIntervention | undefined | null): boolean => {
+  if (!intervention) {
+    return false;
+  }
+  const raw = intervention as any;
+  return Boolean(
+    raw.needs_manual_preauth_approval ?? raw.needsManualPreauthApproval ?? raw.is_elective ?? raw.isElective,
+  );
 };
 
 const PackageInterventions: React.FC<PackageInterventionsProps> = ({
@@ -28,6 +38,7 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
   patientUuid,
   selectedPackages,
   showApplicableDocuments,
+  allowElectiveInterventions = false,
   onInterventionsCached,
   onUtilizationStatusChange,
 }) => {
@@ -57,6 +68,16 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
     }
   }, [cachedInterventions, onInterventionsCached]);
 
+  useEffect(() => {
+    if (allowElectiveInterventions || !selectedIntervention) {
+      return;
+    }
+    const cached = cachedInterventions[selectedIntervention];
+    if (isElectiveIntervention(cached)) {
+      form.setValue('interventions', null, { shouldValidate: true });
+    }
+  }, [allowElectiveInterventions, selectedIntervention, cachedInterventions, form]);
+
   const items: Array<InterventionItem> = useMemo(() => {
     const base = interventions.length > 0 ? interventions : Object.values(cachedInterventions);
     const extraFromCache: Array<SHAIntervention> =
@@ -69,12 +90,14 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
     const combined = [...base, ...extraFromCache];
 
     const built: Array<InterventionItem> = combined.map((intervention) => {
-      const isElective = Boolean((intervention as any).needs_manual_preauth_approval);
+      const isElective = isElectiveIntervention(intervention);
       const isCapitation = intervention.payment_mechanism?.toUpperCase() === 'CAPITATION';
 
       let suffix: string;
       if (isElective) {
-        suffix = ` — ${t('scheduledOnly', 'Scheduled only')}`;
+        suffix = allowElectiveInterventions
+          ? ` — ${t('electivePreauth', 'Elective — SHA approval required')}`
+          : ` — ${t('scheduledOnly', 'Scheduled only')}`;
       } else if (isCapitation) {
         suffix = ` — ${t('capitation', 'Capitation (PHC)')}`;
       } else if (intervention.needs_preauth) {
@@ -87,15 +110,15 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
         id: `intervention-${intervention.code}`,
         code: intervention.code,
         text: `${intervention.name}${suffix}`,
-        disabled: isElective,
+        disabled: isElective && !allowElectiveInterventions,
         isElective,
       };
     });
 
     return built.sort((a, b) => Number(a.isElective) - Number(b.isElective));
-  }, [interventions, cachedInterventions, selectedIntervention, t]);
+  }, [interventions, cachedInterventions, selectedIntervention, allowElectiveInterventions, t]);
 
-  const electiveCount = useMemo(() => items.filter((i) => i.isElective).length, [items]);
+  const disabledElectiveCount = useMemo(() => items.filter((i) => i.isElective && i.disabled).length, [items]);
 
   const selectedInterventionDetail = useMemo(() => {
     if (!selectedIntervention) {
@@ -141,7 +164,7 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
         control={form.control}
         name="interventions"
         render={({ field }) => {
-          const selectedItem = items.find((item) => item.code === field.value) ?? null;
+          const selectedItem = items.find((item) => item.code === field.value && !item.disabled) ?? null;
 
           return (
             <ComboBox
@@ -152,18 +175,18 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
               placeholder={t('chooseIntervention', 'Choose an intervention')}
               items={items}
               helperText={
-                electiveCount > 0
+                disabledElectiveCount > 0
                   ? t('electiveInterventionsHint', 'Items disabled require SHA pre-approval via the Preauth Queue.')
                   : undefined
               }
               itemToString={(item: InterventionItem | null) => (item ? item.text : '')}
               selectedItem={selectedItem}
               onChange={({ selectedItem }) => {
-                if (selectedItem && !selectedItem.disabled) {
-                  field.onChange(selectedItem.code);
-                } else if (!selectedItem) {
+                if (!selectedItem || selectedItem.disabled) {
                   field.onChange(null);
+                  return;
                 }
+                field.onChange(selectedItem.code);
               }}
               shouldFilterItem={({
                 item,
@@ -193,7 +216,15 @@ const PackageInterventions: React.FC<PackageInterventionsProps> = ({
               const name = intervention?.name ?? code;
               const needsPreauth = intervention?.needs_preauth ?? false;
               const isCapitation = intervention?.payment_mechanism?.toUpperCase() === 'CAPITATION';
+              const isElective = isElectiveIntervention(intervention);
 
+              if (isElective) {
+                return (
+                  <Tag key={code} type="purple" size="lg" className={styles.tag}>
+                    {name}: {t('electiveWillQueue', 'Elective — a preauth will be raised for SHA approval')}
+                  </Tag>
+                );
+              }
               if (isCapitation) {
                 return (
                   <Tag key={code} type="teal" size="lg" className={styles.tag}>

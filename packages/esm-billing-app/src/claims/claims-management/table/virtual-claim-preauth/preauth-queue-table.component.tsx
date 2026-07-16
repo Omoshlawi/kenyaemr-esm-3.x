@@ -4,6 +4,7 @@ import {
   DataTableSkeleton,
   DatePicker,
   DatePickerInput,
+  ActionableNotification,
   InlineLoading,
   InlineNotification,
   Search,
@@ -24,19 +25,28 @@ import {
   Tabs,
   Tag,
 } from '@carbon/react';
-import { Add, Calendar } from '@carbon/react/icons';
+import { Add, Calendar, TrashCan } from '@carbon/react/icons';
 import { isDesktop, launchWorkspace2, useLayoutType } from '@openmrs/esm-framework';
 import { EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
 import { mutate } from 'swr';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styles from './preauth-queue-table.scss';
-import { usePreauthQueue } from '../../../../billing-form/social-health-authority/sha-virtual-claim.resource';
-import { CANCELLABLE_PREAUTH_STATUSES, PreauthQueueItem } from '../../../../billing-form/social-health-authority/type';
+import {
+  removePreauthDiagnosis,
+  usePreauthQueue,
+} from '../../../../billing-form/social-health-authority/sha-virtual-claim.resource';
+import {
+  CANCELLABLE_PREAUTH_STATUSES,
+  PreauthDiagnosis,
+  PreauthQueueItem,
+} from '../../../../billing-form/social-health-authority/type';
 import { PREAUTH_TYPE_COLORS, WORKFLOW_STATE_COLORS } from './constants';
 import { formatShaDate, isWithinDateRange } from './utils';
 import { formatCurrency } from '../../../../helpers/currency';
+import { extractSavannahErrorMessage } from '../../../../helpers/functions';
 import InterventionCrudLauncher from './intervention-crud-launcher.component';
+import { useClaimDoctors } from '../../../claims-wrap/claim-workspaces/doctors/claim-doctors-resource';
 
 interface ExpandedPanelProps {
   item: PreauthQueueItem;
@@ -47,8 +57,66 @@ interface ExpandedPanelProps {
 const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) => {
   const { t } = useTranslation();
   const [submitting] = useState(false);
-  const preauthAlreadySubmitted = Boolean((item as any).preauth_already_submitted);
+  const [removingDiagnosisCode, setRemovingDiagnosisCode] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const preauthAlreadySubmitted = Boolean((item as any)?.preauth_already_submitted);
   const canCancelPreauth = CANCELLABLE_PREAUTH_STATUSES.includes(item.preauth_status ?? '');
+  const {
+    doctors,
+    isLoading: isLoadingDoctors,
+    error: doctorsError,
+    mutate: mutateDoctors,
+  } = useClaimDoctors(item.authorization_code);
+  const diagnoses = item.diagnoses ?? [];
+
+  const mutateDoctorAction = () => {
+    onAction();
+    mutateDoctors();
+  };
+
+  const handleRequestDoctorApproval = (doctor: { uuid: string; doctor_name: string; identification_number: string }) =>
+    launchWorkspace2('preauth-form-workspace', {
+      workspaceTitle: t('requestDoctorApproval', 'Request Doctor Approval'),
+      item,
+      doctor,
+      isRequestDoctorApproval: true,
+      mutate: mutateDoctorAction,
+    });
+
+  const handleRemoveDiagnosis = async (diagnosis: PreauthDiagnosis) => {
+    if (
+      !window.confirm(
+        t('removeDiagnosisConfirm', 'Remove diagnosis {{code}} from this preauth?', {
+          code: diagnosis.icd_code,
+        }),
+      )
+    ) {
+      return;
+    }
+
+    setActionError(null);
+    setRemovingDiagnosisCode(diagnosis.icd_code);
+
+    try {
+      const result = await removePreauthDiagnosis(item.authorization_code, diagnosis.icd_code, item.intervention_code);
+
+      if (result.success) {
+        onAction();
+        return;
+      }
+
+      setActionError(
+        extractSavannahErrorMessage({
+          error: result.error,
+          upstream_error: result.upstream_error,
+        }) ?? t('removeDiagnosisFailed', 'Could not remove diagnosis'),
+      );
+    } catch (error: any) {
+      setActionError(extractSavannahErrorMessage(error) ?? t('removeDiagnosisFailed', 'Could not remove diagnosis'));
+    } finally {
+      setRemovingDiagnosisCode(null);
+    }
+  };
 
   const handleSubmitPreauth = () =>
     launchWorkspace2('preauth-form-workspace', {
@@ -77,7 +145,6 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
   return (
     <div className={styles.expandedPanel}>
       <div className={styles.expandedGrid}>
-        {/* ── Left card: preauth details ─────────────────────────────── */}
         <div className={styles.expandedCard}>
           <p className={styles.expandedCardTitle}>{t('preauthDetails', 'Preauth details')}</p>
 
@@ -154,6 +221,93 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
         </div>
 
         <div className={styles.expandedCard}>
+          {(doctors.length > 0 || diagnoses.length > 0 || isLoadingDoctors || doctorsError) && (
+            <>
+              <p className={styles.expandedCardTitle}>{t('clinicalDetails', 'Clinical details')}</p>
+
+              {doctorsError ? (
+                <InlineNotification
+                  kind="error"
+                  lowContrast
+                  hideCloseButton
+                  title={t('doctorsLoadError', 'Failed to load doctors')}
+                  subtitle={
+                    doctorsError instanceof Error
+                      ? doctorsError.message
+                      : t('doctorsLoadErrorGeneric', 'Request failed')
+                  }
+                />
+              ) : isLoadingDoctors ? (
+                <InlineLoading description={t('loadingDoctors', 'Loading doctors…')} />
+              ) : (
+                doctors.length > 0 && (
+                  <>
+                    <div className={styles.kvRow}>
+                      <span className={styles.kvLabel}>{t('doctors', 'Doctors')}</span>
+                      <span className={styles.kvValue}>{doctors.length}</span>
+                    </div>
+                    <div className={styles.attachmentList}>
+                      {doctors.map((doctor) => (
+                        <div key={doctor.uuid} className={styles.attachmentRow}>
+                          <Tag type="cyan" size="sm">
+                            {doctor.identification_number}
+                          </Tag>
+                          <span className={styles.attachmentTitle}>{doctor.doctor_name}</span>
+                          <Button
+                            size="sm"
+                            kind="danger--tertiary"
+                            renderIcon={TrashCan}
+                            onClick={() =>
+                              launchWorkspace2('preauth-form-workspace', {
+                                workspaceTitle: t('removeDoctor', 'Remove Doctor'),
+                                item,
+                                doctor,
+                                isRemoveDoctor: true,
+                                mutate: mutateDoctorAction,
+                              })
+                            }
+                            iconDescription={t('removeDoctor', 'Remove doctor')}>
+                            {t('remove', 'Remove')}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )
+              )}
+
+              {diagnoses.length > 0 && (
+                <>
+                  <div className={styles.kvRow}>
+                    <span className={styles.kvLabel}>{t('diagnoses', 'Diagnoses')}</span>
+                    <span className={styles.kvValue}>{diagnoses.length}</span>
+                  </div>
+                  <div className={styles.attachmentList}>
+                    {diagnoses.map((diagnosis) => (
+                      <div key={diagnosis.icd_code} className={styles.attachmentRow}>
+                        <Tag type="blue" size="sm">
+                          {diagnosis.icd_code}
+                        </Tag>
+                        <span className={styles.attachmentTitle}>{diagnosis.display ?? diagnosis.icd_code}</span>
+                        <Button
+                          size="sm"
+                          kind="danger--tertiary"
+                          renderIcon={TrashCan}
+                          onClick={() => handleRemoveDiagnosis(diagnosis)}
+                          disabled={removingDiagnosisCode === diagnosis.icd_code}
+                          iconDescription={t('removeDiagnosis', 'Remove diagnosis')}>
+                          {removingDiagnosisCode === diagnosis.icd_code
+                            ? t('removing', 'Removing...')
+                            : t('remove', 'Remove')}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
           {tab === 'PENDING' && (
             <>
               <p className={styles.expandedCardTitle}>{t('requiredDocuments', 'Required documents')}</p>
@@ -215,6 +369,18 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
             <span className={styles.kvLabel}>{t('claimAuthStatus', 'Auth status')}</span>
             <span className={styles.kvValue}>{item.claim_auth_status ?? '—'}</span>
           </div>
+          {actionError && (
+            <div className={styles.actionNotification}>
+              <ActionableNotification
+                kind="error"
+                lowContrast
+                title={t('actionFailed', 'Action failed')}
+                subtitle={actionError}
+                inline
+                hideCloseButton
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -255,12 +421,70 @@ interface ScheduledExpandedPanelProps {
 
 const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, onAction }) => {
   const { t } = useTranslation();
+  const [submittingDoctorId, setSubmittingDoctorId] = useState<string | null>(null);
+  const [removingDiagnosisCode, setRemovingDiagnosisCode] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const isApproved = item.workflow_state === 'ELECTIVE_APPROVED';
   const isPending = item.workflow_state === 'ELECTIVE_PENDING';
   const isDraft = item.workflow_state === 'ELECTIVE_DRAFT';
   const isRejected = item.workflow_state === 'ELECTIVE_REJECTED';
+  const {
+    doctors,
+    isLoading: isLoadingDoctors,
+    error: doctorsError,
+    mutate: mutateDoctors,
+  } = useClaimDoctors(item.authorization_code);
+  const diagnoses = item.diagnoses ?? [];
 
   const preauthAlreadySubmitted = Boolean((item as any).preauth_already_submitted);
+
+  const mutateDoctorAction = () => {
+    onAction();
+    mutateDoctors();
+  };
+
+  const handleRequestDoctorApproval = (doctor: { uuid: string; doctor_name: string; identification_number: string }) =>
+    launchWorkspace2('preauth-form-workspace', {
+      workspaceTitle: t('requestDoctorApproval', 'Request Doctor Approval'),
+      item,
+      doctor,
+      isRequestDoctorApproval: true,
+      mutate: mutateDoctorAction,
+    });
+
+  const handleRemoveDiagnosis = async (diagnosis: PreauthDiagnosis) => {
+    if (
+      !window.confirm(
+        t('removeDiagnosisConfirm', 'Remove diagnosis {{code}} from this preauth?', {
+          code: diagnosis.icd_code,
+        }),
+      )
+    ) {
+      return;
+    }
+
+    setActionError(null);
+    setRemovingDiagnosisCode(diagnosis.icd_code);
+
+    try {
+      const result = await removePreauthDiagnosis(item.authorization_code, diagnosis.icd_code, item.intervention_code);
+
+      if (result.success) {
+        onAction();
+        return;
+      }
+
+      setActionError(
+        result.error ??
+          (result.upstream_error as { message?: string } | undefined)?.message ??
+          t('removeDiagnosisFailed', 'Could not remove diagnosis'),
+      );
+    } catch (error: any) {
+      setActionError(error?.message ?? t('removeDiagnosisFailed', 'Could not remove diagnosis'));
+    } finally {
+      setRemovingDiagnosisCode(null);
+    }
+  };
 
   const handleSubmitPreauth = () =>
     launchWorkspace2('preauth-form-workspace', {
@@ -364,12 +588,106 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
         </div>
 
         <div className={styles.expandedCard}>
+          {(doctors.length > 0 || diagnoses.length > 0 || isLoadingDoctors || doctorsError) && (
+            <>
+              <p className={styles.expandedCardTitle}>{t('clinicalDetails', 'Clinical details')}</p>
+
+              {doctorsError ? (
+                <InlineNotification
+                  kind="error"
+                  lowContrast
+                  hideCloseButton
+                  title={t('doctorsLoadError', 'Failed to load doctors')}
+                  subtitle={
+                    doctorsError instanceof Error
+                      ? doctorsError.message
+                      : t('doctorsLoadErrorGeneric', 'Request failed')
+                  }
+                />
+              ) : isLoadingDoctors ? (
+                <InlineLoading description={t('loadingDoctors', 'Loading doctors…')} />
+              ) : (
+                doctors.length > 0 && (
+                  <>
+                    <div className={styles.kvRow}>
+                      <span className={styles.kvLabel}>{t('doctors', 'Doctors')}</span>
+                      <span className={styles.kvValue}>{doctors.length}</span>
+                    </div>
+                    <div className={styles.attachmentList}>
+                      {doctors.map((doctor) => (
+                        <div key={doctor.uuid} className={styles.attachmentRow}>
+                          <Tag type="cyan" size="sm">
+                            {doctor.identification_number}
+                          </Tag>
+                          <span className={styles.attachmentTitle}>{doctor.doctor_name}</span>
+                          <Button
+                            size="sm"
+                            kind="secondary"
+                            onClick={() => handleRequestDoctorApproval(doctor)}
+                            iconDescription={t('requestDoctorApproval', 'Request doctor approval')}>
+                            {t('requestDoctorApproval', 'Request approval')}
+                          </Button>
+                          <Button
+                            size="sm"
+                            kind="danger--tertiary"
+                            renderIcon={TrashCan}
+                            onClick={() =>
+                              launchWorkspace2('preauth-form-workspace', {
+                                workspaceTitle: t('removeDoctor', 'Remove Doctor'),
+                                item,
+                                doctor,
+                                isRemoveDoctor: true,
+                                mutate: mutateDoctorAction,
+                              })
+                            }
+                            iconDescription={t('removeDoctor', 'Remove doctor')}>
+                            {t('remove', 'Remove')}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )
+              )}
+
+              {diagnoses.length > 0 && (
+                <>
+                  <div className={styles.kvRow}>
+                    <span className={styles.kvLabel}>{t('diagnoses', 'Diagnoses')}</span>
+                    <span className={styles.kvValue}>{diagnoses.length}</span>
+                  </div>
+                  <div className={styles.attachmentList}>
+                    {diagnoses.map((diagnosis) => (
+                      <div key={diagnosis.icd_code} className={styles.attachmentRow}>
+                        <Tag type="blue" size="sm">
+                          {diagnosis.icd_code}
+                        </Tag>
+                        <span className={styles.attachmentTitle}>{diagnosis.display ?? diagnosis.icd_code}</span>
+                        <Button
+                          size="sm"
+                          kind="danger--tertiary"
+                          renderIcon={TrashCan}
+                          onClick={() => handleRemoveDiagnosis(diagnosis)}
+                          disabled={removingDiagnosisCode === diagnosis.icd_code}
+                          iconDescription={t('removeDiagnosis', 'Remove diagnosis')}>
+                          {removingDiagnosisCode === diagnosis.icd_code
+                            ? t('removing', 'Removing...')
+                            : t('remove', 'Remove')}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
           {(isDraft || isRejected) && (
             <>
               <p className={styles.expandedCardTitle}>{t('requiredDocuments', 'Required documents')}</p>
               {(item.required_preauth_document_types ?? []).length > 0 ? (
                 <div className={styles.docTags}>
-                  {item.required_preauth_document_types.map((doc) => (
+                  {item.required_preauth_document_types?.map((doc) => (
                     <Tag key={doc} type="cool-gray" size="sm">
                       {doc}
                     </Tag>
@@ -444,15 +762,16 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
 
           <div className={styles.inlineNotification}>
             {isDraft && (
-              <InlineNotification
+              <ActionableNotification
                 kind="info"
                 lowContrast
                 title={t('preauthNotSubmitted', 'Preauth not yet submitted')}
                 subtitle={t('createPreauthGuidance', 'Submit an elective preauth to SHA for review.')}
+                inline
               />
             )}
             {isPending && (
-              <InlineNotification
+              <ActionableNotification
                 kind="info"
                 lowContrast
                 title={t('preauthUnderReview', 'Under SHA review')}
@@ -460,10 +779,11 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
                   'preauthPendingGuidance',
                   'SHA is reviewing this elective preauth. Auto-refreshes every 60 seconds.',
                 )}
+                inline
               />
             )}
             {isApproved && (
-              <InlineNotification
+              <ActionableNotification
                 kind="success"
                 lowContrast
                 title={t('preauthApprovedCheckin', 'Approved patient can check in')}
@@ -471,10 +791,11 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
                   'checkInGuidance',
                   'SHA has approved this preauth. The registration desk can now check in the patient to start the elective visit.',
                 )}
+                inline
               />
             )}
             {isRejected && (
-              <InlineNotification
+              <ActionableNotification
                 kind="error"
                 lowContrast
                 title={t('preauthRejected', 'SHA rejected this preauth')}
@@ -483,9 +804,20 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
                     ? t('rejectionReason', 'Reason: {{reason}}', { reason: item.response_note })
                     : t('checkPortal', 'Check the SHA provider portal for full rejection details.')
                 }
+                inline
               />
             )}
           </div>
+          {actionError && (
+            <ActionableNotification
+              kind="error"
+              lowContrast
+              title={t('actionFailed', 'Action failed')}
+              subtitle={actionError}
+              inline
+              hideCloseButton
+            />
+          )}
         </div>
       </div>
 
@@ -620,9 +952,7 @@ const ScheduledTable: React.FC<ScheduledTableProps> = ({ search, fromDate, toDat
               <TableRow>
                 <TableExpandHeader enableToggle {...getExpandHeaderProps()} />
                 {tableHeaders.map((h) => (
-                  <TableHeader key={h.key} {...getHeaderProps({ header: h })}>
-                    {h.header}
-                  </TableHeader>
+                  <TableHeader {...getHeaderProps({ header: h })}>{h.header}</TableHeader>
                 ))}
               </TableRow>
             </TableHead>
@@ -661,7 +991,7 @@ const ScheduledTable: React.FC<ScheduledTableProps> = ({ search, fromDate, toDat
             totalItems={count}
             pageNumber={currentPage}
             pageSize={pageSize}
-            onPageNumberChange={({ page, pageSize: ps }) => {
+            onPageNumberChange={({ page, pageSize: ps }: { page: number; pageSize: number }) => {
               setCurrentPage(page);
               setPageSize(ps);
             }}
@@ -795,9 +1125,7 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
               <TableRow>
                 <TableExpandHeader enableToggle {...getExpandHeaderProps()} />
                 {tableHeaders.map((h) => (
-                  <TableHeader key={h.key} {...getHeaderProps({ header: h })}>
-                    {h.header}
-                  </TableHeader>
+                  <TableHeader {...getHeaderProps({ header: h })}>{h.header}</TableHeader>
                 ))}
               </TableRow>
             </TableHead>
@@ -843,7 +1171,7 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
             totalItems={count}
             pageNumber={currentPage}
             pageSize={pageSize}
-            onPageNumberChange={({ page, pageSize: ps }) => {
+            onPageNumberChange={({ page, pageSize: ps }: { page: number; pageSize: number }) => {
               setCurrentPage(page);
               setPageSize(ps);
             }}

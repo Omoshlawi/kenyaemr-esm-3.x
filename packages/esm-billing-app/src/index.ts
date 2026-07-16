@@ -22,6 +22,7 @@ export const billingCheckInForm = getAsyncLifecycle(
   options,
 );
 export const billingForm = getAsyncLifecycle(() => import('./billing-form/billing-form.component'), options);
+export const visitAttributesWorkspace = getAsyncLifecycle(() => import('./visits/visit-attributes.workspace'), options);
 export const billingDashboard = getAsyncLifecycle(
   () => import('./billing-dashboard/billing-dashboard.component'),
   options,
@@ -137,13 +138,6 @@ export const benefitsPreAuthForm = getAsyncLifecycle(
   () => import('./benefits-package/forms/benefit-pre-auth-form.workspace'),
   options,
 );
-export const patientPreauthWidget = getAsyncLifecycle(
-  () =>
-    import(
-      './claims/claims-management/table/virtual-claim-preauth/patient-preauth-history/patient-preauth-history.component'
-    ),
-  options,
-);
 
 // Payment Components
 export const requirePaymentModal = getAsyncLifecycle(
@@ -232,13 +226,6 @@ export const manageClaimRequestModal = getAsyncLifecycle(
   () =>
     import('./claims/claims-management/table/manage-claim-request.modal').then((m) => ({
       default: m.ManageClaimRequest,
-    })),
-  options,
-);
-export const claimSummaryModal = getAsyncLifecycle(
-  () =>
-    import('./claims/claims-management/table/claim-summary-modal/claim-summary.modal').then((m) => ({
-      default: m.ClaimSummaryModal,
     })),
   options,
 );
