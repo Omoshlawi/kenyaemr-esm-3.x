@@ -8,6 +8,7 @@ import { Printer } from '@carbon/react/icons';
 import PrintComponent from '../print-layout/print.component';
 import SHRDataTable from './shrDataTable.component';
 import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import ReferralSummaryAction from './referral-summary-actions.component';
 
 interface SHRSummaryProps {
   patientUuid: string;
@@ -205,7 +206,13 @@ const SharedHealthRecordsSummary: React.FC<SHRSummaryProps> = ({ patientUuid }) 
       key: 'dateRequested',
       header: t('dateRequested', 'Date Requested'),
     },
+    {
+      key: 'actions',
+      header: t('actions', 'Actions'),
+    },
   ];
+
+  const referralsData = data?.referrals.map((ref) => ({ ...ref, actions: <ReferralSummaryAction item={ref} /> }));
 
   const medicationsHeaders = [
     {
@@ -321,7 +328,7 @@ const SharedHealthRecordsSummary: React.FC<SHRSummaryProps> = ({ patientUuid }) 
                 </TabPanel>
                 <TabPanel>
                   <div>
-                    <SHRDataTable data={data?.referrals} tableHeaders={referralsHeaders} />
+                    <SHRDataTable data={referralsData} tableHeaders={referralsHeaders} />
                   </div>
                 </TabPanel>
               </TabPanels>

@@ -1,0 +1,70 @@
+@use '@carbon/layout';
+@use '@carbon/type' as type;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.summaryCard {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-05;
+}
+
+.summaryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: layout.$spacing-04;
+  flex-wrap: wrap;
+}
+
+.summaryLabel,
+.detailLabel,
+.notesLabel {
+  @include type.type-style('label-01');
+  color: #525252;
+  text-transform: uppercase;
+  letter-spacing: 0.16px;
+}
+
+.summaryTitle {
+  @include type.type-style('productive-heading-03');
+  color: #161616;
+}
+
+.detailGrid {
+  display: grid;
+  gap: layout.$spacing-04;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.detailValue {
+  color: #161616;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.notesCard {
+  padding: layout.$spacing-05;
+}
+
+.notesContent {
+  margin-top: layout.$spacing-03;
+  max-height: 12rem;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  color: #161616;
+  padding-right: layout.$spacing-02;
+}

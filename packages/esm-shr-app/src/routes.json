@@ -90,5 +90,11 @@
       "persistence": "closeable",
       "closeable": true
     }
+  ],
+  "modals": [
+    {
+      "name": "view-refferal-detail-modal",
+      "component": "referralDetailModal"
+    }
   ]
 }
