@@ -99,7 +99,7 @@ export const usePatientPendingPreauths = (patientId: string) => {
       return [];
     }
     return queue.filter((item) => {
-      return item.patient.uuid === patientId || true;
+      return item.patient.uuid === patientId;
     });
   }, [queue, isLoading, error, patientId]);
   return { pendingPreauths: patientPendingPreauths, isLoading, error };
