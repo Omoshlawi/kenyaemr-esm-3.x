@@ -18,7 +18,11 @@ import {
 } from '@carbon/react';
 import { ErrorState, formatDate, useLayoutType } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
-import { ClaimPreview, ClaimPreviewInvoiceLine, useClaimPreview } from '../../../dashboard/form/claims-form.resource';
+import {
+  ClaimPreview,
+  ClaimPreviewInvoiceLine,
+  useClaimPreview,
+} from '../../../patient-dashboard/form/claims-form.resource';
 import styles from './claim-modals.scss';
 import { type LineItem, type MappedBill } from '../../../../types';
 import { Document } from '@carbon/react/icons';

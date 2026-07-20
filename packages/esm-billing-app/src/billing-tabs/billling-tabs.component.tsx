@@ -11,9 +11,12 @@ import ActiveVisit from '../visits/visits.component';
 
 type BillingTabsProps = {
   onTabChange?: (index: number) => void;
+  claimsFromDate: string;
+  claimsToDate: string;
+  onClaimsDateChange: (fromDate: string, toDate: string) => void;
 };
 
-const BillingTabs = ({ onTabChange }: BillingTabsProps) => {
+const BillingTabs = ({ onTabChange, claimsFromDate, claimsToDate, onClaimsDateChange }: BillingTabsProps) => {
   const { t } = useTranslation();
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
 
@@ -38,7 +41,11 @@ const BillingTabs = ({ onTabChange }: BillingTabsProps) => {
           <TabPanel>{<ActiveVisit />}</TabPanel>
           <TabPanel>{<PatientBillsScreen />}</TabPanel>
           <TabPanel>{<BillsTable isOnActiveTab={activeTabIndex === 2} />}</TabPanel>
-          <TabPanel>{activeTabIndex === 3 && <MainTable />}</TabPanel>
+          <TabPanel>
+            {activeTabIndex === 3 && (
+              <MainTable fromDate={claimsFromDate} toDate={claimsToDate} onDateChange={onClaimsDateChange} />
+            )}
+          </TabPanel>
           <TabPanel>{activeTabIndex === 4 && <PreauthQueueTable />}</TabPanel>
         </TabPanels>
       </Tabs>

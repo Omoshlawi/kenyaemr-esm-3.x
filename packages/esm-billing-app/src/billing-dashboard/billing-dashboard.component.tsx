@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import dayjs from 'dayjs';
 import BillingHeader from '../billing-header/billing-header.component';
 import BillingTabs from '../billing-tabs/billling-tabs.component';
 import MetricsCards from '../metrics-cards/metrics-cards.component';
@@ -16,10 +17,17 @@ const PREAUTH_TAB_INDEX = 3;
 function BillingDashboard() {
   const { t } = useTranslation();
   const [activeTabIndex, setActiveTabIndex] = useState(0);
+  const [claimsFromDate, setClaimsFromDate] = useState<string>(dayjs().subtract(30, 'day').format('YYYY-MM-DD'));
+  const [claimsToDate, setClaimsToDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
 
   const currentPath = window.location.pathname;
   const isMainDashboard = currentPath.endsWith('/accounting') || currentPath.endsWith('/accounting/');
   const isClaimsOrPreAuth = activeTabIndex === CLAIMS_TAB_INDEX || activeTabIndex === PREAUTH_TAB_INDEX;
+
+  const handleClaimsDateChange = (fromDate: string, toDate: string) => {
+    setClaimsFromDate(fromDate);
+    setClaimsToDate(toDate);
+  };
 
   if (isMainDashboard) {
     return (
@@ -27,9 +35,14 @@ function BillingDashboard() {
         <BillingHeader title={t('home', 'Home')} />
         <ClockOutStrip />
         <UserHasAccess privilege="o3: View Billing Metrics">
-          {isClaimsOrPreAuth ? <ClaimsCards /> : <MetricsCards />}
+          {isClaimsOrPreAuth ? <ClaimsCards fromDate={claimsFromDate} toDate={claimsToDate} /> : <MetricsCards />}
         </UserHasAccess>
-        <BillingTabs onTabChange={setActiveTabIndex} />
+        <BillingTabs
+          onTabChange={setActiveTabIndex}
+          claimsFromDate={claimsFromDate}
+          claimsToDate={claimsToDate}
+          onClaimsDateChange={handleClaimsDateChange}
+        />
       </main>
     );
   }

@@ -2,7 +2,7 @@ import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader } from '@car
 import { showSnackbar } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { updateAllClaimStatuses } from '../../dashboard/form/claims-form.resource';
+import { updateAllClaimStatuses } from '../../patient-dashboard/form/claims-form.resource';
 import { useClaims } from './use-facility-claims';
 
 export const ManageClaimRequest = ({ closeModal }: { closeModal: () => void }) => {

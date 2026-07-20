@@ -32,7 +32,7 @@ import {
 import { FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useParams } from 'react-router-dom';
-import { useClaimPreview, useVisit, uploadAttachments } from '../../dashboard/form/claims-form.resource';
+import { useClaimPreview, useVisit, uploadAttachments } from '../../patient-dashboard/form/claims-form.resource';
 import {
   getClaimPayerPreview,
   submitInsuranceClaim,

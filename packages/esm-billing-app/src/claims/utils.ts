@@ -1,4 +1,4 @@
-import { updateClaimStatus } from './dashboard/form/claims-form.resource';
+import { updateClaimStatus } from './patient-dashboard/form/claims-form.resource';
 
 export const statusColors = {
   ENTERED: 'blue',

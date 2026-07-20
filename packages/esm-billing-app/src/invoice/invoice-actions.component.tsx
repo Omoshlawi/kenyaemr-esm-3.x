@@ -25,7 +25,7 @@ import startCase from 'lodash-es/startCase';
 import { useCurrencyFormatting } from '../helpers/currency';
 import { useVisitAttribute } from '../bill-administration/patient-billing/workspaces/create-bill/create-bill.resource';
 import { BillingConfig } from '../config-schema';
-import { useVisit } from '../claims/dashboard/form/claims-form.resource';
+import { useVisit } from '../claims/patient-dashboard/form/claims-form.resource';
 
 interface InvoiceActionsProps {
   readonly bill: MappedBill;

@@ -31,10 +31,18 @@ function ClaimsMetricCard({ title, total, items }: { title: string; total?: numb
   );
 }
 
-export default function ClaimsCards() {
+interface ClaimsCardsProps {
+  fromDate?: string;
+  toDate?: string;
+}
+
+export default function ClaimsCards({ fromDate, toDate }: ClaimsCardsProps = {}) {
   const { t } = useTranslation();
-  const { data, isLoading, error, mutate } = useClaimsMetrics();
-  const sectionDate = formatDate(dayjs().toDate());
+  const { data, isLoading, error, mutate } = useClaimsMetrics(fromDate, toDate);
+  const sectionDate =
+    fromDate && toDate
+      ? `${formatDate(dayjs(fromDate).toDate())} — ${formatDate(dayjs(toDate).toDate())}`
+      : formatDate(dayjs().toDate());
 
   if (isLoading) {
     return (

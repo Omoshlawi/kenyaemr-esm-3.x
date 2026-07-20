@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useVisit } from '../claims/dashboard/form/claims-form.resource';
+import { useVisit } from '../claims/patient-dashboard/form/claims-form.resource';
 const usePatientDiagnosis = (patientUUid: string) => {
   const { visits: recentVisit, error, isLoading } = useVisit(patientUUid);
 

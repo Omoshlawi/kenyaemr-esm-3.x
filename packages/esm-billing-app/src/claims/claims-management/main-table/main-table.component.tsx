@@ -31,13 +31,17 @@ import {
 import styles from './main-table.scss';
 import dayjs from 'dayjs';
 
-const MainTable: React.FC = () => {
+interface MainTableProps {
+  fromDate: string;
+  toDate: string;
+  onDateChange: (fromDate: string, toDate: string) => void;
+}
+
+const MainTable: React.FC<MainTableProps> = ({ fromDate, toDate, onDateChange }) => {
   const { t } = useTranslation();
   const layout = useLayoutType();
   const responsiveSize = layout === 'tablet' ? 'lg' : 'sm';
 
-  const [fromDate, setFromDate] = useState<string>(dayjs().subtract(30, 'day').format('YYYY-MM-DD'));
-  const [toDate, setToDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [patientName, setPatientName] = useState('');
   const [serviceType, setServiceType] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -121,13 +125,11 @@ const MainTable: React.FC = () => {
           dateFormat="Y-m-d"
           value={[fromDate, toDate]}
           onChange={(dates) => {
-            if (dates[0]) {
-              setFromDate(dayjs(dates[0]).format('YYYY-MM-DD'));
+            if (dates.length < 2) {
+              return;
             }
-            if (dates[1]) {
-              setToDate(dayjs(dates[1]).format('YYYY-MM-DD'));
-              setCurrentPage(1);
-            }
+            onDateChange(dayjs(dates[0]).format('YYYY-MM-DD'), dayjs(dates[1]).format('YYYY-MM-DD'));
+            setCurrentPage(1);
           }}>
           <DatePickerInput id="from-date" labelText={t('fromDate', 'From')} placeholder="YYYY-MM-DD" size="sm" />
           <DatePickerInput id="to-date" labelText={t('toDate', 'To')} placeholder="YYYY-MM-DD" size="sm" />

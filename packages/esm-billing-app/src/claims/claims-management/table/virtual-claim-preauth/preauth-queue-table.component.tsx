@@ -620,29 +620,33 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
                             {doctor.identification_number}
                           </Tag>
                           <span className={styles.attachmentTitle}>{doctor.doctor_name}</span>
-                          <Button
-                            size="sm"
-                            kind="secondary"
-                            onClick={() => handleRequestDoctorApproval(doctor)}
-                            iconDescription={t('requestDoctorApproval', 'Request doctor approval')}>
-                            {t('requestDoctorApproval', 'Request approval')}
-                          </Button>
-                          <Button
-                            size="sm"
-                            kind="danger--tertiary"
-                            renderIcon={TrashCan}
-                            onClick={() =>
-                              launchWorkspace2('preauth-form-workspace', {
-                                workspaceTitle: t('removeDoctor', 'Remove Doctor'),
-                                item,
-                                doctor,
-                                isRemoveDoctor: true,
-                                mutate: mutateDoctorAction,
-                              })
-                            }
-                            iconDescription={t('removeDoctor', 'Remove doctor')}>
-                            {t('remove', 'Remove')}
-                          </Button>
+                          {!isApproved && (
+                            <>
+                              <Button
+                                size="sm"
+                                kind="secondary"
+                                onClick={() => handleRequestDoctorApproval(doctor)}
+                                iconDescription={t('requestDoctorApproval', 'Request doctor approval')}>
+                                {t('requestDoctorApproval', 'Request approval')}
+                              </Button>
+                              <Button
+                                size="sm"
+                                kind="danger--tertiary"
+                                renderIcon={TrashCan}
+                                onClick={() =>
+                                  launchWorkspace2('preauth-form-workspace', {
+                                    workspaceTitle: t('removeDoctor', 'Remove Doctor'),
+                                    item,
+                                    doctor,
+                                    isRemoveDoctor: true,
+                                    mutate: mutateDoctorAction,
+                                  })
+                                }
+                                iconDescription={t('removeDoctor', 'Remove doctor')}>
+                                {t('remove', 'Remove')}
+                              </Button>
+                            </>
+                          )}
                         </div>
                       ))}
                     </div>

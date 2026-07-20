@@ -198,11 +198,6 @@ export const bulkImportBillableServicesModal = getAsyncLifecycle(
   options,
 );
 
-// Claims Management Components
-export const claimsOverview = getAsyncLifecycle(
-  () => import('./claims/claims-management/main/claims-overview-main.component'),
-  options,
-);
 export const claimAttachmentsWorkspace = getAsyncLifecycle(
   () => import('./claims/claims-wrap/claim-workspaces/attachements/claim-attachements-workspace'),
   options,

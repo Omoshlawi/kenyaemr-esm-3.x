@@ -21,7 +21,7 @@ import { z } from 'zod';
 import { Autosuggest } from '../../autosuggest/autosuggest.component';
 import PatientSearchInfo from '../../autosuggest/patient-search-info.component';
 import SearchEmptyState from '../../autosuggest/search-empty-state.component';
-import { useVisit } from '../../claims/dashboard/form/claims-form.resource';
+import { useVisit } from '../../claims/patient-dashboard/form/claims-form.resource';
 import { MAX_ALLOWED_FILE_SIZE } from '../../constants';
 import { useSystemSetting } from '../../hooks/getMflCode';
 import usePatientDiagnosis from '../../hooks/usePatientDiagnosis';

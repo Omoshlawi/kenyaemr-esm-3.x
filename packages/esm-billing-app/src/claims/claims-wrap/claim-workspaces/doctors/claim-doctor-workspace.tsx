@@ -183,7 +183,9 @@ const ClaimDoctorsWorkspace: React.FC<Workspace2DefinitionProps<ClaimDoctorsWork
       // nurses must be identified by National ID instead. Every other regulator
       // (Clinical Officers Council, KMPDC, Pharmacy and Poisons Board, ...) keeps
       // the registration number default.
-      const isNurse = (provider.licenseBody ?? '').toLowerCase().includes('nursing council');
+      const isNurse =
+        (provider.licenseBody ?? '').toLowerCase().includes('nursing council') ||
+        (provider.licenseBody ?? '').toLowerCase().includes('nck');
       const defaultType = isNurse ? 'National ID' : 'registration_number';
 
       setValue(`doctors.${idx}.provider_display`, provider.person?.display ?? '', {
