@@ -1,13 +1,13 @@
-import {
-  openmrsFetch,
-  restBaseUrl,
-  type FetchResponse,
-  useOpenmrsPagination,
-  useConfig,
-  Person,
-} from '@openmrs/esm-framework';
-import useSWR from 'swr';
+import { openmrsFetch, restBaseUrl, useConfig, useOpenmrsPagination, type FetchResponse } from '@openmrs/esm-framework';
+import { TFunction } from 'i18next';
 import { useMemo } from 'react';
+import useSWR from 'swr';
+import { virtualClaimBaseUrl } from '../../claims/claims-management/table/virtual-claim-preauth/constants';
+import {
+  extractFetchError,
+  extractUpstreamError,
+} from '../../claims/claims-management/table/virtual-claim-preauth/utils';
+import { BillingConfig } from '../../config-schema';
 import {
   AuthorizingDeviceOS,
   BatchLinesResponse,
@@ -35,13 +35,6 @@ import {
   WhitelistStatusPoll,
   WhitelistSubmitResponse,
 } from './type';
-import { virtualClaimBaseUrl } from '../../claims/claims-management/table/virtual-claim-preauth/constants';
-import { BillingConfig } from '../../config-schema';
-import { TFunction } from 'i18next';
-import {
-  extractFetchError,
-  extractUpstreamError,
-} from '../../claims/claims-management/table/virtual-claim-preauth/utils';
 
 export const useSHASubBenefits = (patientCRId: string) => {
   const url = patientCRId ? `${virtualClaimBaseUrl}/sub-benefits?patient_id=${patientCRId}` : null;
@@ -97,6 +90,19 @@ export const usePreauthQueue = (
     error: result.error,
     mutate: result.mutate,
   };
+};
+
+export const usePatientPendingPreauths = (patientId: string) => {
+  const { isLoading, error, queue } = usePreauthQueue('SCHEDULED', 100);
+  const patientPendingPreauths = useMemo(() => {
+    if (isLoading || error) {
+      return [];
+    }
+    return queue.filter((item) => {
+      return item.patient.uuid === patientId;
+    });
+  }, [queue, isLoading, error, patientId]);
+  return { pendingPreauths: patientPendingPreauths, isLoading, error };
 };
 
 export const useElectiveCheckin = (authorizationCode: string | null) => {
