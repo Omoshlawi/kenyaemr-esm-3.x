@@ -291,7 +291,7 @@
       "slot": "ewf-patient-chart-patient-summary-tabs-extension-slot",
       "component": "visitSummary",
       "meta": {
-        "title": "Patient Visit Summary"
+        "title": "Case Summary"
       },
       "order": 0,
       "online": true,

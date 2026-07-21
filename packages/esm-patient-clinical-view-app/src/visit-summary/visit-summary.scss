@@ -3,13 +3,13 @@
 @use '@carbon/layout';
 
 .container {
-  padding: 1rem;
   background-color: colors.$white;
   min-height: 100vh;
 }
 
 .pageHeader {
   margin-bottom: 1rem;
+  display: flex;
 }
 
 .visitSelectorWrapper {
@@ -153,7 +153,6 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: 1rem;
 }
 

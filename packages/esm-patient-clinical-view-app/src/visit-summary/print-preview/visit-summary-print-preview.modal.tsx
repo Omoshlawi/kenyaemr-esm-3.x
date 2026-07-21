@@ -17,8 +17,8 @@ const VisitSummaryPrintPreviewModal: React.FC<VisitSummaryPrintPreviewModalProps
   patient,
 }) => {
   const { t } = useTranslation();
-  const url = visitUuid ? `/openmrs/ws/rest/v1/palladiumemr/visitSummary?visitUuid=${visitUuid}` : null;
-  const modalHeader = t('printPreview', 'Print Preview — Visit Summary {{patientName}}', {
+  const url = visitUuid ? `/openmrs/ws/rest/v1/palladiumemr/caseSummary?visitUuid=${visitUuid}` : null;
+  const modalHeader = t('printPreviewCaseSummary', 'Print Preview — Case Summary {{patientName}}', {
     patientName: getPatientName(patient),
   });
   const { data, isLoading, error } = usePrintPreview(url);

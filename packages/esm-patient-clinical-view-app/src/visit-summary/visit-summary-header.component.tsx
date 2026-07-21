@@ -84,39 +84,6 @@ const VisitSummaryHeader: React.FC<VisitSummaryHeaderProps> = ({
     return `${formatVisitDate(visitDate)} ${visitType ?? ''}`.trim();
   }, [visitDate, visitType, t]);
 
-  const patientName = useMemo(() => {
-    if (!patient?.name?.[0]) {
-      return '';
-    }
-    const name = patient.name[0];
-    return `${name.given?.join(' ') ?? ''} ${name.family ?? ''}`.trim();
-  }, [patient]);
-
-  const patientAge = useMemo(() => {
-    if (!patient?.birthDate) {
-      return null;
-    }
-    return new Date().getFullYear() - new Date(patient.birthDate).getFullYear();
-  }, [patient]);
-
-  const patientDOB = useMemo(() => {
-    if (!patient?.birthDate) {
-      return null;
-    }
-    return formatDate(new Date(patient.birthDate));
-  }, [patient]);
-
-  const patientGender = useMemo(() => {
-    if (!patient?.gender) {
-      return null;
-    }
-    return patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1).toLowerCase();
-  }, [patient]);
-
-  const patientMRN = useMemo(() => {
-    return patient?.identifier?.find((id) => id.type?.text === 'OpenMRS ID' || id.system?.includes('openmrs'))?.value;
-  }, [patient]);
-
   return (
     <div className={styles.pageHeader}>
       <div className={styles.visitSelectorWrapper} ref={dropdownRef}>
@@ -127,7 +94,7 @@ const VisitSummaryHeader: React.FC<VisitSummaryHeaderProps> = ({
           aria-haspopup="listbox"
           aria-expanded={dropdownOpen}>
           <div className={styles.visitSelectorContent}>
-            <span className={styles.visitSelectorLabel}>{t('visitSummary', 'VISIT SUMMARY')}:</span>
+            <span className={styles.visitSelectorLabel}>{t('caseSummary', 'CASE SUMMARY')}:</span>
             <span className={styles.visitSelectorValue}>{triggerLabel}</span>
           </div>
           <ChevronDown
@@ -177,33 +144,7 @@ const VisitSummaryHeader: React.FC<VisitSummaryHeaderProps> = ({
       </div>
 
       <div className={styles.headerRow}>
-        <div>
-          <h1 className={styles.patientName}>{patientName}</h1>
-          <div className={styles.patientDemographics}>
-            {patientMRN && (
-              <span className={styles.demographicItem}>
-                <span>{t('mrn', 'MRN')}:</span> {patientMRN}
-              </span>
-            )}
-            {patientDOB && (
-              <span className={styles.demographicItem}>
-                <span>{t('dob', 'DOB')}:</span> {patientDOB}
-                {patientAge !== null && ` (${patientAge}y)`}
-              </span>
-            )}
-            {patientGender && (
-              <span className={styles.demographicItem}>
-                <span>{t('gender', 'Gender')}:</span> {patientGender}
-              </span>
-            )}
-            {weight?.value && (
-              <span className={styles.demographicItem}>
-                <span>{t('weight', 'Weight')}:</span> {weight.value}
-                {weight.unit}
-              </span>
-            )}
-          </div>
-        </div>
+        <div></div>
         <div className={styles.headerActions}>
           <Button kind="ghost" size="sm" renderIcon={Printer} onClick={handlePrintPreview}>
             {t('print', 'Print')}

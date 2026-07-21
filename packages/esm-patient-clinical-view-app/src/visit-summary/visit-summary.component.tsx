@@ -76,7 +76,7 @@ export const VisitSummary: React.FC<VisitSummaryProps> = ({ patientUuid, visitUu
   }
 
   if (error) {
-    return <ErrorState error={error} headerTitle={t('patientVisitSummary', 'Patient Visit Summary')} />;
+    return <ErrorState error={error} headerTitle={t('caseSummary', 'Case Summary')} />;
   }
 
   if (!summary) {
