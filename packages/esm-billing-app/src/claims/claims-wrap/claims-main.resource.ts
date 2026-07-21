@@ -62,14 +62,23 @@ export function partitionByTab(claim: PatientClaim): ClaimTabKey {
   }
 }
 
+const withCaseSummaryDocumentType = (claims: Array<PatientClaim>): Array<PatientClaim> =>
+  claims.map((claim) => ({
+    ...claim,
+    interventions: claim.interventions.map((intervention) => ({
+      ...intervention,
+      applicable_document_types: [...intervention.applicable_document_types, 'CASE_SUMMARY'],
+    })),
+  }));
+
 export const usePatientClaims = (patientUuid: string, limit = 50) => {
   const url = patientUuid
     ? `${restBaseUrl}/virtualclaims/patient-claims?patient_uuid=${encodeURIComponent(patientUuid)}&limit=${limit}`
     : null;
   const { data, error, isLoading, mutate } = useSWR<FetchResponse<PatientClaimsResponse>>(url, openmrsFetch);
-
+  const patientClaims = withCaseSummaryDocumentType(data?.data.claims ?? []);
   return {
-    claims: data?.data.claims ?? [],
+    claims: patientClaims,
     totalCount: data?.data.total_count ?? 0,
     isLoading,
     error,

@@ -96,8 +96,15 @@ export const useClaimAttachments = (consentToken: string | null) => {
     ? `${restBaseUrl}/virtualclaims/billing/attachments?consent_token=${encodeURIComponent(consentToken)}`
     : null;
   const { data, error, isLoading, mutate } = useSWR<FetchResponse<ClaimAttachmentsResponse>>(url, openmrsFetch);
+  const claimInterventions =
+    data?.data?.interventions?.map((intervention) => {
+      return {
+        ...intervention,
+        applicable_document_types: [...intervention.applicable_document_types, 'CASE_SUMMARY'],
+      };
+    }) ?? [];
   return {
-    interventions: data?.data?.interventions ?? [],
+    interventions: claimInterventions,
     total: data?.data?.total ?? 0,
     isLoading,
     error,
