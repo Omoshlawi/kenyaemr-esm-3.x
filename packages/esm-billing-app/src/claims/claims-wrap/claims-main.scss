@@ -6,40 +6,45 @@
   display: flex;
   align-items: center;
   gap: layout.$spacing-02;
-  white-space: nowrap;
 }
 
 .widgetCard {
   padding: layout.$spacing-05;
 }
+
+.mainContainer {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .tabsContainer {
   padding: layout.$spacing-05;
+  min-width: 0;
+  max-width: 100%;
+
   :global(.cds--table-expand) {
     background-color: colors.$gray-20;
   }
   :global(.cds--data-table) {
     table-layout: auto;
   }
+  :global(.cds--data-table-container) {
+    overflow-x: auto;
+  }
 }
 
 .expandedContent {
   padding: layout.$spacing-05;
   background-color: colors.$gray-10;
+  width: 0;
+  min-width: 100%;
+  box-sizing: border-box;
 }
 
 .syncErrorNotification {
   margin-bottom: layout.$spacing-05;
   max-width: 100%;
-}
-
-.detailsGrid {
-  display: grid;
-  grid-template-columns: 1fr 1.4fr 1.2fr;
-  gap: layout.$spacing-05;
-
-  @media (max-width: 1200px) {
-    grid-template-columns: 1fr;
-  }
+  white-space: normal;
 }
 
 .detailsCard {
@@ -47,6 +52,7 @@
   border: 1px solid colors.$gray-20;
   padding: layout.$spacing-05;
   border-radius: 2px;
+  min-width: 0;
 }
 
 .detailsCardTitle {
@@ -117,6 +123,7 @@
   padding: layout.$spacing-03;
   background-color: colors.$gray-10;
   border-radius: 2px;
+  min-width: 0;
 }
 
 .interventionHeader {
@@ -125,6 +132,7 @@
   gap: layout.$spacing-03;
   flex-wrap: wrap;
   margin-bottom: layout.$spacing-02;
+  min-width: 0;
 }
 
 .interventionCode {
@@ -132,13 +140,14 @@
   background-color: colors.$gray-20;
   padding: 2px 6px;
   border-radius: 2px;
+  flex-shrink: 0;
 }
 
-.interventionName {
+.interventionName,
+.interventionName p {
+  white-space: normal;
   @include type.type-style('body-compact-01');
   font-weight: 500;
-  flex: 1;
-  min-width: 0;
 }
 
 .interventionMeta {
@@ -198,14 +207,26 @@
 
 .ivAttachmentsHeader {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: layout.$spacing-03;
   min-height: 1.5rem;
+}
+
+.ivAttachmentsActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-03;
 
   :global(.cds--btn--ghost) {
     margin-right: calc(-1 * #{layout.$spacing-03});
   }
+}
+
+.addDocBtn {
+  flex-shrink: 0;
 }
 
 .ivAttachmentsLabel {
@@ -230,6 +251,7 @@
 
 .ivAttachmentRow {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: layout.$spacing-03;
   padding: layout.$spacing-02 0;
@@ -243,9 +265,21 @@
 
 .ivAttachmentTitle {
   @include type.type-style('body-compact-01');
-  flex: 1;
+  flex: 1 1 8rem;
   min-width: 0;
   word-break: break-word;
+}
+
+.attachmentActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-03;
+  flex-shrink: 0;
+}
+
+.replaceBtn {
+  flex-shrink: 0;
 }
 
 .billLineItem {
@@ -412,6 +446,14 @@
   display: grid;
   grid-template-columns: 1fr 1.4fr 1.2fr 1fr;
   gap: layout.$spacing-05;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 672px) {
+    grid-template-columns: 1fr;
+  }
 }
 .payerStatusCell {
   display: flex;

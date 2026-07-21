@@ -934,7 +934,6 @@ const ClaimDetailsPanel: React.FC<{
                   <li key={iv.id} className={styles.interventionListItem}>
                     <div className={styles.interventionHeader}>
                       <code className={styles.interventionCode}>{iv.intervention_code}</code>
-                      <span className={styles.interventionName}>{iv.intervention_name}</span>
                       <Tag size="sm" type={isPerDiem ? 'teal' : isCapitation ? 'blue' : 'gray'}>
                         {isPerDiem
                           ? t('perDiem', 'Per diem')
@@ -947,6 +946,9 @@ const ClaimDetailsPanel: React.FC<{
                           {iv.status}
                         </Tag>
                       )}
+                    </div>
+                    <div className={styles.interventionName}>
+                      <p>{iv.intervention_name}</p>
                     </div>
 
                     <div className={styles.interventionMeta}>
@@ -979,7 +981,7 @@ const ClaimDetailsPanel: React.FC<{
                       <div className={styles.preauthAttached}>
                         {preauths.map((p) => (
                           <div key={p.id} className={styles.preauthRow}>
-                            <span className={styles.preauthLabel}>{t('preauthStatus', 'Preauth')}:</span>
+                            <span className={styles.preauthLabel}>{t('preauthLabel', 'Preauth')}:</span>
                             <Tag
                               size="sm"
                               type={
@@ -1007,50 +1009,52 @@ const ClaimDetailsPanel: React.FC<{
                       <div className={styles.ivAttachmentsSection}>
                         <div className={styles.ivAttachmentsHeader}>
                           <span className={styles.ivAttachmentsLabel}>{t('attachments', 'Attachments')}</span>
-                          {canUploadAttachments && (
-                            <Button
-                              size="sm"
-                              kind="ghost"
-                              disabled={
-                                (uploadedTypes.size > 0 && requiredDocs.every((d) => uploadedTypes.has(d))) ||
-                                requiredDocs?.length === 0
-                              }
-                              renderIcon={DocumentAdd}
-                              onClick={() => handleUploadForIntervention(iv)}>
-                              {t('uploadAttachments', 'Upload attachments')}
-                            </Button>
-                          )}
-                          {canUploadAttachments && (
-                            <Button
-                              size="sm"
-                              kind="ghost"
-                              // disabled={
-                              //   (uploadedTypes.size > 0 && requiredDocs.every((d) => uploadedTypes.has(d))) ||
-                              //   requiredDocs?.length === 0
-                              // }
-                              renderIcon={DocumentPdf}
-                              onClick={() => handleGenerateForIntervention(iv)}>
-                              {t('generateDocuments', 'Generate documents')}
-                            </Button>
-                          )}
-                          {tab === 'resubmission' &&
-                            isEditable &&
-                            (() => {
-                              const remaining = requiredDocs.filter((d) => !uploadedTypes.has(d));
-                              if (remaining.length === 0) {
-                                return null;
-                              }
-                              return (
-                                <Button
-                                  size="sm"
-                                  kind="tertiary"
-                                  renderIcon={DocumentAdd}
-                                  className={styles.addDocBtn}
-                                  onClick={() => handleAddDocumentForIntervention(iv, remaining)}>
-                                  {t('addDocumentN', '+ Add document ({{count}})', { count: remaining.length })}
-                                </Button>
-                              );
-                            })()}
+                          <div className={styles.ivAttachmentsActions}>
+                            {canUploadAttachments && (
+                              <Button
+                                size="sm"
+                                kind="ghost"
+                                disabled={
+                                  (uploadedTypes.size > 0 && requiredDocs.every((d) => uploadedTypes.has(d))) ||
+                                  requiredDocs?.length === 0
+                                }
+                                renderIcon={DocumentAdd}
+                                onClick={() => handleUploadForIntervention(iv)}>
+                                {t('uploadAttachments', 'Upload attachments')}
+                              </Button>
+                            )}
+                            {canUploadAttachments && (
+                              <Button
+                                size="sm"
+                                kind="ghost"
+                                // disabled={
+                                //   (uploadedTypes.size > 0 && requiredDocs.every((d) => uploadedTypes.has(d))) ||
+                                //   requiredDocs?.length === 0
+                                // }
+                                renderIcon={DocumentPdf}
+                                onClick={() => handleGenerateForIntervention(iv)}>
+                                {t('generateDocuments', 'Generate documents')}
+                              </Button>
+                            )}
+                            {tab === 'resubmission' &&
+                              isEditable &&
+                              (() => {
+                                const remaining = requiredDocs.filter((d) => !uploadedTypes.has(d));
+                                if (remaining.length === 0) {
+                                  return null;
+                                }
+                                return (
+                                  <Button
+                                    size="sm"
+                                    kind="tertiary"
+                                    renderIcon={DocumentAdd}
+                                    className={styles.addDocBtn}
+                                    onClick={() => handleAddDocumentForIntervention(iv, remaining)}>
+                                    {t('addDocumentN', '+ Add document ({{count}})', { count: remaining.length })}
+                                  </Button>
+                                );
+                              })()}
+                          </div>
                         </div>
 
                         {requiredDocs.length > 0 && (
@@ -1073,7 +1077,7 @@ const ClaimDetailsPanel: React.FC<{
                             </div>
                             {uploadedAttachments.map((a) => (
                               <li key={a.uuid} className={styles.ivAttachmentRow}>
-                                <span>{a.document_type}</span>
+                                <span className={styles.ivAttachmentTitle}>{a.document_type}</span>
                                 <div className={styles.attachmentActions}>
                                   {a.uuid ? (
                                     <a
