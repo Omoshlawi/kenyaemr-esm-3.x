@@ -101,6 +101,16 @@ export const closeClaim = async (payload: {
   });
 };
 
+export const syncClaim = async (consentToken: string) => {
+  const url = `${restBaseUrl}/virtualclaims/admin/sync-claim?consent_token=${encodeURIComponent(consentToken)}`;
+  return openmrsFetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+};
+
 export const useCloseReasons = () => {
   const url = `${restBaseUrl}/virtualclaims/billing/close-reasons`;
   const { data, error, isLoading, mutate } = useSWR<FetchResponse<Array<CloseReason>>>(url, openmrsFetch);

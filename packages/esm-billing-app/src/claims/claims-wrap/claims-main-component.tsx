@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 import {
   Button,
   DataTable,
+  InlineLoading,
   InlineNotification,
+  OverflowMenu,
+  OverflowMenuItem,
   Pagination,
   Tab,
   Table,
@@ -25,7 +28,7 @@ import {
 
 import { useBill } from '../../billing.resource';
 import { MappedBill } from '../../types';
-import { partitionByTab, usePatientClaims } from './claims-main.resource';
+import { partitionByTab, syncClaim, usePatientClaims } from './claims-main.resource';
 import styles from './claims-main.scss';
 import { ClaimTabKey, PatientClaim, PatientClaimDiagnosis, PatientClaimIntervention } from './type';
 import { getPatientUuidFromUrl } from '../../prompt-payment/prompt-payment-modal.component';
@@ -218,6 +221,21 @@ function parseDiagnosisError(raw: string): string {
   return raw;
 }
 
+function parseSyncErrorMessage(raw: string): string {
+  const jsonStart = raw.indexOf('{');
+  if (jsonStart !== -1) {
+    try {
+      const parsed = JSON.parse(raw.slice(jsonStart));
+      if (typeof parsed?.message === 'string' && parsed.message.trim()) {
+        return parsed.message.trim();
+      }
+    } catch {
+      // fall through to raw string handling
+    }
+  }
+  return raw.replace(/^HTTP \d+:\s*/, '').replace(/\n.*$/, '');
+}
+
 const renderPayerStatus = (claim: PatientClaim, tab: ClaimTabKey, t: TFunction): React.ReactNode => {
   if (claim.payer_workflow_state) {
     return (
@@ -273,6 +291,7 @@ const ClaimsTable: React.FC<{
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => defaultPageSize || 10);
+  const [syncingClaimIds, setSyncingClaimIds] = useState<Set<string>>(new Set());
 
   const pageSizeOptions = useMemo(
     () => Array.from(new Set([pageSize, 10, 20, 30, 40, 50])).sort((a, b) => a - b),
@@ -316,7 +335,7 @@ const ClaimsTable: React.FC<{
     launchWorkspace2(
       'claim-submission-workspace',
       {
-        workspaceTitle: isResubmit ? t('resubmitClaim', 'Resubmit claim') : t('submitClaim', 'Submit claim'),
+        workspaceTitle: isResubmit ? t('resubmit', 'Resubmit') : t('submit', 'Submit'),
         consentToken: claim.authorization_code,
         invoiceNumber: receiptNumber ?? '',
         serviceType: claim.service_type,
@@ -334,6 +353,34 @@ const ClaimsTable: React.FC<{
       {},
     );
   };
+
+  const handleSyncClaim = useCallback(
+    async (claimId: string, authorizationCode: string) => {
+      setSyncingClaimIds((prev) => new Set(prev).add(claimId));
+      try {
+        await syncClaim(authorizationCode);
+        mutate();
+        showSnackbar({
+          title: t('claimSynced', 'Claim synced'),
+          subtitle: t('claimSyncedSubtitle', 'Claim details have been updated.'),
+          kind: 'success',
+        });
+      } catch (error: any) {
+        showSnackbar({
+          title: t('claimSyncFailed', 'Could not sync claim'),
+          subtitle: error?.message,
+          kind: 'error',
+        });
+      } finally {
+        setSyncingClaimIds((prev) => {
+          const next = new Set(prev);
+          next.delete(claimId);
+          return next;
+        });
+      }
+    },
+    [mutate, t],
+  );
 
   const claimsById = useMemo(() => {
     const map = new Map<string, PatientClaim>();
@@ -373,7 +420,13 @@ const ClaimsTable: React.FC<{
           (dx) => !!dx.sha_error_message && dx.status !== 'ATTACHED' && !isDxEffectivelyResolved(dx),
         );
         const isResubmit = tab === 'resubmission';
-        row.action = (
+        const claimId = row.id;
+        const isSyncing = syncingClaimIds.has(claimId);
+        row.action = isSyncing ? (
+          <div className={styles.rowActions}>
+            <InlineLoading description={t('claimSyncing', 'Updating claim details…')} />
+          </div>
+        ) : (
           <div className={styles.rowActions}>
             {showSubmitColumn && (
               <Button
@@ -385,48 +438,44 @@ const ClaimsTable: React.FC<{
                 title={
                   hasDiagnosisErrors ? t('fixDiagnosisErrors', 'Fix diagnosis errors before submitting') : undefined
                 }>
-                {isResubmit ? t('resubmitClaim', 'Resubmit claim') : t('submitClaim', 'Submit claim')}
+                {isResubmit ? t('resubmit', 'Resubmit') : t('submit', 'Submit')}
               </Button>
             )}
-            {tab === 'pending' && (
-              <Button
-                size="sm"
-                kind="danger--ghost"
-                onClick={() =>
-                  launchWorkspace2(
-                    'claim-submission-workspace',
-                    {
-                      workspaceTitle: t('cancelClaim', 'Cancel claim'),
-                      isCancelMode: true,
-                      patientUuid,
-                      consentToken: claim.authorization_code,
-                      invoiceNumber: claim.invoice_number ?? '',
-                      serviceType: claim.service_type ?? '',
-                      patientCRId: claim.member_number ?? '',
-                      interventions: [],
-                      mutate,
-                    },
-                    {},
-                    {},
-                  )
-                }>
-                {t('cancel', 'Cancel')}
-              </Button>
-            )}
-            <Button
-              size="sm"
-              kind="ghost"
-              hasIconOnly
-              renderIcon={(props) => <Renew size={16} {...props} />}
-              iconDescription={t('sync', 'Sync')}
-              tooltipPosition="left"
-              onClick={() => mutate()}
-            />
+            <OverflowMenu size="sm" flipped aria-label={t('moreActions', 'More actions')}>
+              {tab === 'pending' && (
+                <OverflowMenuItem
+                  itemText={t('cancel', 'Cancel')}
+                  isDelete
+                  onClick={() =>
+                    launchWorkspace2(
+                      'claim-submission-workspace',
+                      {
+                        workspaceTitle: t('cancelClaim', 'Cancel'),
+                        isCancelMode: true,
+                        patientUuid,
+                        consentToken: claim.authorization_code,
+                        invoiceNumber: claim.invoice_number ?? '',
+                        serviceType: claim.service_type ?? '',
+                        patientCRId: claim.member_number ?? '',
+                        interventions: [],
+                        mutate,
+                      },
+                      {},
+                      {},
+                    )
+                  }
+                />
+              )}
+              <OverflowMenuItem
+                itemText={t('sync', 'Sync')}
+                onClick={() => handleSyncClaim(claimId, claim.authorization_code)}
+              />
+            </OverflowMenu>
           </div>
         );
         return row;
       }),
-    [paginatedClaims, t, showSubmitColumn, tab, mutate],
+    [paginatedClaims, t, showSubmitColumn, tab, mutate, syncingClaimIds, handleSyncClaim],
   );
 
   return (
@@ -774,7 +823,7 @@ const ClaimDetailsPanel: React.FC<{
           lowContrast
           hideCloseButton
           title={t('syncError', 'Sync error')}
-          subtitle={claim.sync_error_message.replace(/^HTTP \d+:\s*/, '').replace(/\n.*$/, '')}
+          subtitle={parseSyncErrorMessage(claim.sync_error_message)}
           className={styles.syncErrorNotification}
         />
       )}

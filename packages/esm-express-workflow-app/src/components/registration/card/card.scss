@@ -2,6 +2,11 @@
 @use '@carbon/type';
 @use '@carbon/colors';
 
+.demographicMismatchNotification {
+  max-width: 100%;
+  margin-bottom: layout.$spacing-04;
+}
+
 .buttonCol {
   grid-column: 1 / -1;
   grid-row: 2;

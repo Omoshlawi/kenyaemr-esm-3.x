@@ -610,6 +610,58 @@ export const convertLocalPatientToFHIR = (localPatient: any): fhir.Patient => {
   };
 };
 
+const normalizeForComparison = (value?: string): string => (value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+const tokenizeName = (value?: string): string[] => normalizeForComparison(value).split(' ').filter(Boolean);
+
+/**
+ * Compares two name fragments (e.g. given names, family names) leniently: they're
+ * considered a match if every word in the shorter one appears in the longer one,
+ * regardless of order. This tolerates one source recording fewer name parts than the
+ * other (e.g. local has "Cynthia" while the HIE has "Cynthia Kamau") without flagging
+ * it as a genuine discrepancy — only a name that's actually different (not just a
+ * subset) counts as a mismatch.
+ */
+const namePartsMatch = (a?: string, b?: string): boolean => {
+  const tokensA = tokenizeName(a);
+  const tokensB = tokenizeName(b);
+  if (tokensA.length === 0 || tokensB.length === 0) {
+    return true;
+  }
+  const [shorter, longer] = tokensA.length <= tokensB.length ? [tokensA, tokensB] : [tokensB, tokensA];
+  const longerSet = new Set(longer);
+  return shorter.every((token) => longerSet.has(token));
+};
+
+const normalizeGender = (value?: string): string => normalizeForComparison(value).charAt(0);
+
+/**
+ * Checks whether a local patient's demographics (name, gender, birth date) differ from
+ * the corresponding HIE patient record for the same national ID. Used to flag cases where
+ * a patient is already registered locally but their record is out of sync with the HIE,
+ * so the discrepancy can be surfaced before the registrar proceeds.
+ *
+ * @param {fhir.Patient} localPatient - The local patient, converted to FHIR shape.
+ * @param {fhir.Patient} hiePatient - The matching HIE patient record.
+ * @returns {boolean} true if the two records have differing name, gender, or birth date.
+ */
+export const hasDemographicMismatch = (localPatient: fhir.Patient, hiePatient: fhir.Patient): boolean => {
+  const localName = localPatient.name?.[0];
+  const hieName = hiePatient.name?.[0];
+
+  const givenMismatch = !namePartsMatch((localName?.given || []).join(' '), (hieName?.given || []).join(' '));
+  const familyMismatch = !namePartsMatch(localName?.family, hieName?.family);
+
+  const genderMismatch =
+    Boolean(localPatient.gender && hiePatient.gender) &&
+    normalizeGender(localPatient.gender) !== normalizeGender(hiePatient.gender);
+
+  const birthDateMismatch =
+    Boolean(localPatient.birthDate && hiePatient.birthDate) && localPatient.birthDate !== hiePatient.birthDate;
+
+  return givenMismatch || familyMismatch || genderMismatch || birthDateMismatch;
+};
+
 /**
  * Checks if the given patient has an identifier with type 'sha-number' or 'SHA Number'
  * or if the identifier value starts with 'CR', 'SHA', or 'BY'.

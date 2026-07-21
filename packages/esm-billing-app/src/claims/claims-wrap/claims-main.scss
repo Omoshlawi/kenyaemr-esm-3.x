@@ -4,7 +4,9 @@
 
 .rowActions {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
+  justify-content: flex-end;
   gap: layout.$spacing-02;
 }
 
@@ -26,10 +28,21 @@
     background-color: colors.$gray-20;
   }
   :global(.cds--data-table) {
-    table-layout: auto;
+    table-layout: fixed;
+    width: 100%;
   }
   :global(.cds--data-table-container) {
     overflow-x: auto;
+  }
+  :global(.cds--data-table td),
+  :global(.cds--data-table th) {
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+  }
+  :global(.cds--data-table th:last-child),
+  :global(.cds--data-table td:last-child) {
+    width: 11rem;
   }
 }
 
