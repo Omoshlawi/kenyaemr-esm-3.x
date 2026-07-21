@@ -308,3 +308,60 @@
 .noDocsRequired {
   margin-bottom: 1rem;
 }
+
+.generateSection {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  margin-bottom: layout.$spacing-05;
+  padding-bottom: layout.$spacing-05;
+  border-bottom: 1px solid var(--omrs-color-bg-medium-contrast);
+}
+
+.generateHeading {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-70;
+  margin: 0;
+}
+
+.generateHint {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+  margin: 0 0 layout.$spacing-02 0;
+}
+
+.genCard {
+  background-color: var(--omrs-color-bg-low-contrast);
+  border: 1px solid var(--omrs-color-bg-medium-contrast);
+  border-radius: layout.$spacing-02;
+  padding: layout.$spacing-05;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  margin-bottom: layout.$spacing-03;
+}
+
+.genCardStaged {
+  border-left: 3px solid colors.$green-50;
+}
+
+.genCardTitle {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.genActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+}
+
+.selectDocuments {
+  margin: layout.$spacing-05 0;
+}
+
+.hiddenInput {
+  display: none;
+}

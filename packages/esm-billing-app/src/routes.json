@@ -516,7 +516,8 @@
     {
       "name": "billing-workspace-window",
       "group": "billing-workspace-group",
-      "canMaximize": true
+      "canMaximize": true,
+      "width": "extra-wide"
     },
     {
       "name": "billing-extra-wide-workspace-window",

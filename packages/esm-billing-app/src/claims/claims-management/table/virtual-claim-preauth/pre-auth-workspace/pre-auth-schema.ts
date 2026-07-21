@@ -40,6 +40,8 @@ export const attachmentSchema = z.object({
     .instanceof(File)
     .nullable()
     .refine((f) => f !== null, 'File is required'),
+  // Client-side only: distinguishes documents generated in-app from manual uploads. Not sent to SHA.
+  source: z.enum(['manual', 'generated']).optional(),
 });
 
 export const basePreauthSchema = z.object({
