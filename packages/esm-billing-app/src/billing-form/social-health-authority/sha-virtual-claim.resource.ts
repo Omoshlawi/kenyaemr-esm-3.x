@@ -649,6 +649,24 @@ export const restoreInterventionOnVisit = async (authorizationCode: string, inte
   return response?.data;
 };
 
+/**
+ * Retire (deactivate) an intervention on the claim. SHA rejects retiring the
+ * last remaining active intervention — switch or close the claim instead.
+ */
+export const retireInterventionOnVisit = async (authorizationCode: string, interventionCode: string) => {
+  const payload = {
+    consent_token: authorizationCode,
+    intervention_code: interventionCode,
+  };
+  const url = `${virtualClaimBaseUrl}/interventions/retire`;
+  const response = await openmrsFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return response?.data ?? response;
+};
+
 export const dispatchClaimLinesToSha = async (
   authorizationCode: string,
   intervention: { code: string; isPerDiem: boolean; paymentMechanism: string | null },

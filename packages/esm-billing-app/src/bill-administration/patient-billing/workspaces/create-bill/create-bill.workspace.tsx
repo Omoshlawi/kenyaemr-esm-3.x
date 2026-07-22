@@ -46,6 +46,7 @@ import { useClaimForVisit, useVisitAttribute } from './create-bill.resource';
 import {
   addInterventionToVisit,
   restoreInterventionOnVisit,
+  retireInterventionOnVisit,
   switchInterventionOnVisit,
   useHasSupplementaryPompsCoverage,
   useNonPomsfUtilization,
@@ -55,6 +56,7 @@ import {
 import styles from './create-bill.style.scss';
 import { InterventionItem, PackageItem } from './type';
 import { extractFetchError } from '../../../../claims/claims-management/table/virtual-claim-preauth/utils';
+import { PREAUTH_TYPE_COLORS } from '../../../../claims/claims-management/table/virtual-claim-preauth/constants';
 
 type CreateBillWorkspaceProps = {
   patientUuid: string;
@@ -65,7 +67,7 @@ type CreateBillWorkspaceProps = {
   };
 };
 
-type ShaMode = 'ADD' | 'SWITCH' | 'RESTORE';
+type ShaMode = 'ADD' | 'SWITCH' | 'RESTORE' | 'RETIRE';
 
 const createBillFormSchema = z.object({
   id: z.string().min(1),
@@ -73,11 +75,12 @@ const createBillFormSchema = z.object({
   unitPrice: z.string().min(1),
   quantity: z.number().min(1),
   needsShaAction: z.boolean().default(true),
-  shaMode: z.enum(['ADD', 'SWITCH', 'RESTORE']).default('ADD'),
+  shaMode: z.enum(['ADD', 'SWITCH', 'RESTORE', 'RETIRE']).default('ADD'),
   packageCode: z.string().nullable().optional(),
   interventionCode: z.string().nullable().optional(),
   fromInterventionCode: z.string().nullable().optional(),
   restoreInterventionCode: z.string().nullable().optional(),
+  retireInterventionCode: z.string().nullable().optional(),
   keepBilledLines: z.boolean().default(true),
   interventionPayload: z.any().nullable().optional(),
 });
@@ -223,6 +226,7 @@ const SHAStep: React.FC<SHAStepProps> = ({
   const packageCode = watch('packageCode') ?? null;
   const interventionCode = watch('interventionCode') ?? null;
   const restoreInterventionCode = watch('restoreInterventionCode') ?? null;
+  const retireInterventionCode = watch('retireInterventionCode') ?? null;
 
   const focusedCode = shaMode === 'RESTORE' ? restoreInterventionCode : interventionCode;
 
@@ -347,18 +351,26 @@ const SHAStep: React.FC<SHAStepProps> = ({
 
   const hasSwitchable = switchableFromItems.length > 0;
   const hasRestorable = restorableItems.length > 0;
+  // SHA refuses to retire the last active intervention — a claim must keep at
+  // least one. Offer the mode only when something would remain afterwards.
+  const hasRetirable = switchableFromItems.length > 1;
 
   useEffect(() => {
-    if ((shaMode === 'SWITCH' && !hasSwitchable) || (shaMode === 'RESTORE' && !hasRestorable)) {
+    if (
+      (shaMode === 'SWITCH' && !hasSwitchable) ||
+      (shaMode === 'RESTORE' && !hasRestorable) ||
+      (shaMode === 'RETIRE' && !hasRetirable)
+    ) {
       setValue('shaMode', 'ADD');
       setValue('packageCode', null);
       setValue('interventionCode', null);
       setValue('fromInterventionCode', null);
       setValue('restoreInterventionCode', null);
+      setValue('retireInterventionCode', null);
       setValue('interventionPayload', null);
       onClearError();
     }
-  }, [shaMode, hasSwitchable, hasRestorable, setValue, onClearError]);
+  }, [shaMode, hasSwitchable, hasRestorable, hasRetirable, setValue, onClearError]);
 
   const selectedIntervention = useMemo(
     () => interventions.find((i) => i.code === interventionCode) ?? null,
@@ -367,6 +379,10 @@ const SHAStep: React.FC<SHAStepProps> = ({
   const selectedRestoreIntervention = useMemo(
     () => currentInterventions.find((iv: any) => iv.intervention_code === restoreInterventionCode) ?? null,
     [currentInterventions, restoreInterventionCode],
+  );
+  const selectedRetireIntervention = useMemo(
+    () => currentInterventions.find((iv: any) => iv.intervention_code === retireInterventionCode) ?? null,
+    [currentInterventions, retireInterventionCode],
   );
 
   const isSelectedElective = Boolean((selectedIntervention as any)?.needs_manual_preauth_approval);
@@ -443,7 +459,31 @@ const SHAStep: React.FC<SHAStepProps> = ({
     );
   }
 
+  const renderPreauthTypeTag = (preauthType?: string | null) => {
+    const type = (preauthType ?? '').toUpperCase();
+    if (!type || type === 'NONE' || type === 'NORMAL') {
+      return null;
+    }
+    return (
+      <Tag type={PREAUTH_TYPE_COLORS[type] ?? 'gray'} size="lg" className={styles.tag}>
+        {t('preauthTypeTag', '{{type}} preauth', { type })}
+      </Tag>
+    );
+  };
+
   const renderInterventionPreview = () => {
+    if (shaMode === 'RETIRE') {
+      if (!selectedRetireIntervention) {
+        return null;
+      }
+      const name = selectedRetireIntervention.intervention_name ?? selectedRetireIntervention.intervention_code;
+      return (
+        <Tag type="red" size="lg" className={styles.tag}>
+          {name}: {t('willRetire', 'Will be retired (can be restored later)')}
+        </Tag>
+      );
+    }
+
     if (shaMode === 'RESTORE') {
       if (!selectedRestoreIntervention) {
         return null;
@@ -459,9 +499,12 @@ const SHAStep: React.FC<SHAStepProps> = ({
         );
       }
       return (
-        <Tag type={needsPreauth ? 'red' : 'green'} size="lg" className={styles.tag}>
-          {name}: {t('willRestore', 'Will be restored to active')}
-        </Tag>
+        <>
+          <Tag type={needsPreauth ? 'red' : 'green'} size="lg" className={styles.tag}>
+            {name}: {t('willRestore', 'Will be restored to active')}
+          </Tag>
+          {needsPreauth && renderPreauthTypeTag((selectedRestoreIntervention as any).preauth_type)}
+        </>
       );
     }
 
@@ -475,9 +518,12 @@ const SHAStep: React.FC<SHAStepProps> = ({
 
     if (isElective) {
       return (
-        <Tag type="purple" size="lg" className={styles.tag}>
-          {name}: {t('PreauthillQueue', 'Preauth will be raised for SHA approval')}
-        </Tag>
+        <>
+          <Tag type="purple" size="lg" className={styles.tag}>
+            {name}: {t('PreauthillQueue', 'Preauth will be raised for SHA approval')}
+          </Tag>
+          {renderPreauthTypeTag((selectedIntervention as any).preauth_type)}
+        </>
       );
     }
     if (isCapitation) {
@@ -488,9 +534,12 @@ const SHAStep: React.FC<SHAStepProps> = ({
       );
     }
     return (
-      <Tag type={needsPreauth ? 'red' : 'green'} size="lg" className={styles.tag}>
-        {name}: {needsPreauth ? t('preauthRequired', 'Preauth required') : t('noPreauthNeeded', 'No preauth needed')}
-      </Tag>
+      <>
+        <Tag type={needsPreauth ? 'red' : 'green'} size="lg" className={styles.tag}>
+          {name}: {needsPreauth ? t('preauthRequired', 'Preauth required') : t('noPreauthNeeded', 'No preauth needed')}
+        </Tag>
+        {needsPreauth && renderPreauthTypeTag((selectedIntervention as any).preauth_type)}
+      </>
     );
   };
 
@@ -499,6 +548,7 @@ const SHAStep: React.FC<SHAStepProps> = ({
     setValue('interventionCode', null);
     setValue('fromInterventionCode', null);
     setValue('restoreInterventionCode', null);
+    setValue('retireInterventionCode', null);
     setValue('interventionPayload', null);
     onClearError();
   };
@@ -518,6 +568,11 @@ const SHAStep: React.FC<SHAStepProps> = ({
           )}
         {shaMode === 'RESTORE' &&
           t('shaRestoreHelper', 'Bring a previously-retired (INACTIVE) intervention back to ACTIVE on this claim.')}
+        {shaMode === 'RETIRE' &&
+          t(
+            'shaRetireHelper',
+            'Deactivate an ACTIVE intervention on this claim. It can be restored later. A claim must keep at least one active intervention.',
+          )}
       </p>
 
       <Stack gap={4}>
@@ -525,20 +580,22 @@ const SHAStep: React.FC<SHAStepProps> = ({
           control={control}
           name="shaMode"
           render={({ field }) => {
-            const idx = field.value === 'RESTORE' ? 2 : field.value === 'SWITCH' ? 1 : 0;
+            const modes: ShaMode[] = ['ADD', 'SWITCH', 'RESTORE', 'RETIRE'];
+            const idx = Math.max(0, modes.indexOf(field.value as ShaMode));
             return (
               <ContentSwitcher
                 size="sm"
                 className={styles.switcher}
                 selectedIndex={idx}
                 onChange={({ index }) => {
-                  const next: ShaMode = index === 2 ? 'RESTORE' : index === 1 ? 'SWITCH' : 'ADD';
+                  const next: ShaMode = modes[index] ?? 'ADD';
                   field.onChange(next);
                   resetForMode(next);
                 }}>
                 <Switch name="ADD" text={t('add', 'Add')} />
                 <Switch name="SWITCH" text={t('switch', 'Switch')} disabled={!hasSwitchable} />
                 <Switch name="RESTORE" text={t('restore', 'Restore')} disabled={!hasRestorable} />
+                <Switch name="RETIRE" text={t('retire', 'Retire')} disabled={!hasRetirable} />
               </ContentSwitcher>
             );
           }}
@@ -595,6 +652,35 @@ const SHAStep: React.FC<SHAStepProps> = ({
                     }}
                     invalid={!!errors.restoreInterventionCode}
                     invalidText={errors.restoreInterventionCode?.message}
+                  />
+                );
+              }}
+            />
+          </Column>
+        )}
+
+        {shaMode === 'RETIRE' && (
+          <Column>
+            <Controller
+              control={control}
+              name="retireInterventionCode"
+              render={({ field }) => {
+                const selectedItem = switchableFromItems.find((i: any) => i.code === field.value) ?? null;
+                return (
+                  <ComboBox
+                    ref={field.ref}
+                    id="sha-bill-retire-intervention"
+                    titleText={t('retireWhich', 'Retire which intervention')}
+                    placeholder={t('chooseActiveIntervention', 'Choose currently-active intervention')}
+                    items={switchableFromItems}
+                    itemToString={(i: any) => (i ? i.text : '')}
+                    selectedItem={selectedItem}
+                    onChange={({ selectedItem }) => {
+                      field.onChange(selectedItem ? selectedItem.code : null);
+                      onClearError();
+                    }}
+                    invalid={!!errors.retireInterventionCode}
+                    invalidText={errors.retireInterventionCode?.message}
                   />
                 );
               }}
@@ -709,8 +795,9 @@ const SHAStep: React.FC<SHAStepProps> = ({
           </Column>
         )}
 
-        {((shaMode !== 'RESTORE' && interventionCode && selectedIntervention) ||
-          (shaMode === 'RESTORE' && restoreInterventionCode && selectedRestoreIntervention)) && (
+        {((shaMode !== 'RESTORE' && shaMode !== 'RETIRE' && interventionCode && selectedIntervention) ||
+          (shaMode === 'RESTORE' && restoreInterventionCode && selectedRestoreIntervention) ||
+          (shaMode === 'RETIRE' && retireInterventionCode && selectedRetireIntervention)) && (
           <Column>
             <div className={styles.tagRow}>{renderInterventionPreview()}</div>
           </Column>
@@ -860,6 +947,7 @@ const CreateBillWorkspace: React.FC<Workspace2DefinitionProps<CreateBillWorkspac
       interventionCode: null,
       fromInterventionCode: null,
       restoreInterventionCode: null,
+      retireInterventionCode: null,
       keepBilledLines: true,
       interventionPayload: null,
     },
@@ -879,6 +967,7 @@ const CreateBillWorkspace: React.FC<Workspace2DefinitionProps<CreateBillWorkspac
   const interventionCode = watch('interventionCode') ?? null;
   const fromInterventionCode = watch('fromInterventionCode') ?? null;
   const restoreInterventionCode = watch('restoreInterventionCode') ?? null;
+  const retireInterventionCode = watch('retireInterventionCode') ?? null;
 
   const shaStepActive = isSHAVisit && needsShaAction;
 
@@ -953,6 +1042,19 @@ const CreateBillWorkspace: React.FC<Workspace2DefinitionProps<CreateBillWorkspac
       }
       return true;
     }
+    if (shaMode === 'RETIRE') {
+      if (!retireInterventionCode) {
+        return false;
+      }
+      if (!activeCodes.has(retireInterventionCode)) {
+        return false;
+      }
+      // The claim must keep at least one active intervention.
+      if (activeCodes.size <= 1) {
+        return false;
+      }
+      return true;
+    }
     return false;
   })();
 
@@ -1015,6 +1117,24 @@ const CreateBillWorkspace: React.FC<Workspace2DefinitionProps<CreateBillWorkspac
           );
           return;
         }
+      } else if (formData.shaMode === 'RETIRE') {
+        if (!formData.retireInterventionCode) {
+          setShaError(t('selectInterventionToRetire', 'Please select the intervention you want to retire.'));
+          return;
+        }
+        if (!activeCodes.has(formData.retireInterventionCode)) {
+          setShaError(t('retireOnlyActive', 'Only active interventions can be retired. The selection is invalid.'));
+          return;
+        }
+        if (activeCodes.size <= 1) {
+          setShaError(
+            t(
+              'cannotRetireLastIntervention',
+              'A claim must keep at least one active intervention. Use Switch to replace it, or close the claim.',
+            ),
+          );
+          return;
+        }
       }
 
       if (isCoverageExhausted) {
@@ -1054,6 +1174,11 @@ const CreateBillWorkspace: React.FC<Workspace2DefinitionProps<CreateBillWorkspac
           if (res?.success === false) {
             throw res;
           }
+        } else if (formData.shaMode === 'RETIRE' && formData.retireInterventionCode) {
+          const res = await retireInterventionOnVisit(authorizationCode, formData.retireInterventionCode);
+          if (res?.success === false) {
+            throw res;
+          }
         }
       } catch (interventionError) {
         const fallback =
@@ -1061,6 +1186,8 @@ const CreateBillWorkspace: React.FC<Workspace2DefinitionProps<CreateBillWorkspac
             ? t('couldNotSwitch', 'Could not switch intervention.')
             : formData.shaMode === 'RESTORE'
             ? t('couldNotRestore', 'Could not restore intervention.')
+            : formData.shaMode === 'RETIRE'
+            ? t('couldNotRetire', 'Could not retire intervention.')
             : t('couldNotAdd', 'Could not add intervention.');
         const message = extractFetchError(interventionError, fallback);
         setShaError(message);
@@ -1070,6 +1197,8 @@ const CreateBillWorkspace: React.FC<Workspace2DefinitionProps<CreateBillWorkspac
               ? t('switchFailed', 'Switch failed — bill not saved')
               : formData.shaMode === 'RESTORE'
               ? t('restoreFailed', 'Restore failed — bill not saved')
+              : formData.shaMode === 'RETIRE'
+              ? t('retireFailed', 'Retire failed — bill not saved')
               : t('addFailed', 'Add failed — bill not saved'),
           subtitle: message,
           kind: 'error',
