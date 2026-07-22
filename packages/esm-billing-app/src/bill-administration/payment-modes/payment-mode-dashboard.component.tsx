@@ -27,6 +27,7 @@ import { PaymentMode } from '../../types';
 import BillingHeader from '../../billing-header/billing-header.component';
 
 import styles from './payment-mode-dashboard.scss';
+import { isDefaultPaymentMode } from './payment-modes-constants';
 
 type PaymentModeDashboardProps = {};
 
@@ -141,7 +142,6 @@ const PaymentModeDashboard: React.FC<PaymentModeDashboardProps> = () => {
                     <TableExpandHeader aria-label="expand row" />
                     {headers.map((header, i) => (
                       <TableHeader
-                        key={i}
                         {...getHeaderProps({
                           header,
                         })}>
@@ -164,6 +164,7 @@ const PaymentModeDashboard: React.FC<PaymentModeDashboardProps> = () => {
                         <TableCell className="cds--table-column-menu">
                           <OverflowMenu size={size} iconDescription={t('actions', 'Actions')} flipped>
                             <OverflowMenuItem
+                              disabled={isDefaultPaymentMode(paymentModes[index].uuid)}
                               onClick={() =>
                                 launchWorkspace2(
                                   'payment-mode-workspace',
@@ -178,6 +179,7 @@ const PaymentModeDashboard: React.FC<PaymentModeDashboardProps> = () => {
                               itemText={t('edit', 'Edit')}
                             />
                             <OverflowMenuItem
+                              disabled={isDefaultPaymentMode(paymentModes[index].uuid)}
                               hasDivider
                               isDelete
                               onClick={() => showDeletePaymentModeModal(paymentModes[index])}

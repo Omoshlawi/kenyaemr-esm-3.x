@@ -288,6 +288,8 @@
   "pastMedications": "Médicaments antérieurs",
   "patientAttended": "Patient pris en charge",
   "patientCategory": "Catégorie du patient",
+  "patientDetailsMismatch": "Patient details do not match",
+  "patientDetailsMismatchSubtitle": "A patient with ID {{id}} is already registered locally, but their details differ from the HIE record. Please update the patient’s details locally before proceeding.",
   "patientExamination": "Examen du patient",
   "patientHistory": "Antécédents du patient",
   "patientManagement": "Prise en charge du patient",

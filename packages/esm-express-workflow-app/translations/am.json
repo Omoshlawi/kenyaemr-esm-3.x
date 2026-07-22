@@ -287,6 +287,8 @@
   "pastMedications": "ያለፉ መድኃኒቶች",
   "patientAttended": "ሕመምተኛ ተንከባክቧል",
   "patientCategory": "የሕመምተኛ ምድብ",
+  "patientDetailsMismatch": "Patient details do not match",
+  "patientDetailsMismatchSubtitle": "A patient with ID {{id}} is already registered locally, but their details differ from the HIE record. Please update the patient’s details locally before proceeding.",
   "patientExamination": "የሕመምተኛ ምርመራ",
   "patientHistory": "የሕመምተኛ ታሪክ",
   "patientManagement": "የሕመምተኛ አስተዳደር",
