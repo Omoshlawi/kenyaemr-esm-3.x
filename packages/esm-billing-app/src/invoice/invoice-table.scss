@@ -31,6 +31,17 @@
   background-color: colors.$gray-10;
 }
 
+.statusCell {
+  display: flex;
+  flex-direction: column;
+  row-gap: layout.$spacing-01;
+}
+
+.statusBreakdown {
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
 .invoiceContainer {
   margin: layout.$spacing-05;
   border: 1px solid $ui-03;

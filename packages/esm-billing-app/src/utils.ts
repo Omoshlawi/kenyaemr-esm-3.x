@@ -123,9 +123,7 @@ function extractMessage(input: string): string | null {
  * @param {ErrorObject} errorObject - The error response object.
  */
 export function extractErrorMessagesFromResponse(errorObject): string {
-  const {
-    error: { fieldErrors, globalErrors, message },
-  } = errorObject ?? {};
+  const { error: { fieldErrors, globalErrors, message } = {} } = errorObject ?? {};
 
   if (Object.keys(fieldErrors ?? {})?.length > 0) {
     return Object.values(fieldErrors)

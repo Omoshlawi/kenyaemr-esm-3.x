@@ -179,3 +179,23 @@
 .paymentModeComboBox {
   margin-top: layout.$spacing-05;
 }
+
+.allocationGroup {
+  margin-top: layout.$spacing-05;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.allocationGroupLabel {
+  @include type.type-style('label-01');
+  color: $text-02;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.allocationTotal {
+  @include type.type-style('body-compact-02');
+  font-weight: 600;
+  margin-top: layout.$spacing-02;
+}

@@ -80,6 +80,12 @@ export interface LineItem {
   order: OpenmrsResource;
   is_return?: boolean;
   is_cancellation?: boolean;
+  // Allocation-aware fields (present on newer cashier backends; optional for backwards compatibility).
+  allocatedPaymentAmount?: number;
+  depositAppliedAmount?: number;
+  amountPaid?: number;
+  balance?: number;
+  settlementStatus?: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'EXEMPTED';
 }
 
 interface PatientLink {
@@ -302,7 +308,11 @@ export interface Payment {
   resourceVersion: string;
 }
 
-export type FormPayment = { method: PaymentMethod; amount: string | number; referenceCode?: number | string };
+export type FormPayment = {
+  method: PaymentMethod | null;
+  amount: string | number | null;
+  referenceCode?: number | string;
+};
 
 export type PaymentFormValue = {
   payment: Array<FormPayment>;

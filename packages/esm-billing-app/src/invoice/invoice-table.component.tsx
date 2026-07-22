@@ -14,8 +14,11 @@ import {
   TableToolbarSearch,
   Tile,
 } from '@carbon/react';
-import { isDesktop, useDebounce, useLayoutType } from '@openmrs/esm-framework';
+import { isDesktop, useConfig, useDebounce, useLayoutType } from '@openmrs/esm-framework';
 import { LineItem, MappedBill, PaymentStatus } from '../types';
+import { BillingConfig } from '../config-schema';
+import { useCurrencyFormatting } from '../helpers/currency';
+import { getOutstandingBalance } from './payments/payment-form/payment-submission.utils';
 import InvoiceTableHeaderRow from './invoice-table-header-row.component';
 import InvoiceTableRow from './invoice-table-row.component';
 import styles from './invoice-table.scss';
@@ -29,6 +32,9 @@ type InvoiceTableProps = {
 
 const InvoiceTable: React.FC<InvoiceTableProps> = ({ bill, isSelectable = true, isLoadingBill, onSelectItem }) => {
   const { t } = useTranslation();
+  const { enablePartialBillPayment } = useConfig<BillingConfig>();
+  const { format: formatCurrency } = useCurrencyFormatting();
+  const allowPartial = Boolean(enablePartialBillPayment);
   const { lineItems } = bill;
   const paidLineItems = lineItems?.filter((item) => item.paymentStatus === 'PAID') ?? [];
   const layout = useLayoutType();
@@ -63,6 +69,30 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ bill, isSelectable = true, 
   ];
   const processBillItem = (item) => (item?.item || item?.billableService)?.split(':')[1];
 
+  const renderStatus = (item: LineItem) => {
+    const label = t(item.paymentStatus);
+    if (!allowPartial) {
+      return label;
+    }
+    const amountPaid = item.amountPaid ?? 0;
+    const balance = getOutstandingBalance(item);
+    const isPartiallyPaid = item.settlementStatus === 'PARTIALLY_PAID' || (amountPaid > 0 && balance > 0);
+    if (!isPartiallyPaid) {
+      return label;
+    }
+    return (
+      <div className={styles.statusCell}>
+        <span>{t('partiallyPaid', 'Partially paid')}</span>
+        <span className={styles.statusBreakdown}>
+          {t('amountPaidVsBalance', '{{paid}} paid / {{balance}} balance', {
+            paid: formatCurrency(amountPaid),
+            balance: formatCurrency(balance),
+          })}
+        </span>
+      </div>
+    );
+  };
+
   const tableRows = useMemo(
     () =>
       filteredLineItems?.map((item, index) => {
@@ -73,7 +103,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ bill, isSelectable = true, 
           id: `${item.uuid}`,
           billItem: processBillItem(item),
           billCode: bill.receiptNumber,
-          status: t(item.paymentStatus),
+          status: renderStatus(item),
+          paymentStatus: item.paymentStatus,
           paymentMethod: item.priceName,
           quantity: item.quantity,
           price: item.price,
@@ -81,7 +112,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ bill, isSelectable = true, 
           disabled: isPaidOrExempted,
         };
       }) ?? [],
-    [bill.receiptNumber, filteredLineItems],
+    [bill.receiptNumber, filteredLineItems, allowPartial, formatCurrency, t],
   );
 
   if (isLoadingBill) {
@@ -110,6 +141,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ bill, isSelectable = true, 
       <DataTable headers={tableHeaders} isSortable rows={tableRows} size={responsiveSize} useZebraStyles>
         {({ rows, headers, getRowProps, getSelectionProps, getTableProps, getToolbarProps }) => (
           <TableContainer
+            useStaticWidth
             description={
               <span className={styles.tableDescription}>
                 <span>{t('itemsToBeBilled', 'Items to be billed')}</span>
@@ -149,7 +181,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ bill, isSelectable = true, 
                     row={row}
                     rowsCount={rows.length}
                     isSelectable={isSelectable}
-                    rowStatus={tableRows[index].status}
+                    rowStatus={tableRows[index].paymentStatus}
                     selectedLineItems={selectedLineItems}
                     getRowProps={getRowProps}
                     getSelectionProps={getSelectionProps}

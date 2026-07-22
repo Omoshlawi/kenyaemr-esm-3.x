@@ -73,6 +73,20 @@ export const makePayment = (billUuid: string, paymentPayload: Record<string, any
   });
 };
 
+/**
+ * Records a payment against the allocation-aware endpoint. The payload must include an
+ * `allocations` array of `{ lineItem, amount }` whose amounts total the payment amount exactly.
+ * Used only by the partial-payment path; the legacy `makePayment` contract is left untouched.
+ */
+export const makeAllocatedPayment = (billUuid: string, paymentPayload: Record<string, any>) => {
+  const url = `${restBaseUrl}/cashier/bill/${billUuid}/allocatedPayment`;
+  return openmrsFetch<PaymentResponse>(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: paymentPayload,
+  });
+};
+
 export interface PaymentResponse {
   uuid: string;
   instanceType: OpenmrsResource;

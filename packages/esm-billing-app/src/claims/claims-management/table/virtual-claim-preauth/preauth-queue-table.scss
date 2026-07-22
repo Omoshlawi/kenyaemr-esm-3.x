@@ -5,6 +5,11 @@
   background-color: var(--omrs-color-bg-low-contrast);
   width: 100%;
   overflow: hidden;
+
+  :global(.cds--data-table) {
+    width: 100%;
+    table-layout: fixed;
+  }
 }
 
 .tableHeader {
@@ -14,11 +19,6 @@
 :global(.cds--data-table-container) {
   width: 100%;
   overflow-x: auto;
-}
-
-:global(.cds--data-table) {
-  width: 100%;
-  table-layout: fixed;
 }
 
 :global(.cds--data-table td),

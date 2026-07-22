@@ -50,6 +50,7 @@ export interface BillingConfig {
   };
   detailedViewPageSize: number;
   enableSHAVerification: boolean;
+  enablePartialBillPayment: boolean;
   supplementarySchemePrefixes: Array<string>;
   minorOtpAgeThreshold: number;
 }
@@ -302,6 +303,14 @@ export const configSchema: ConfigSchema = {
     _type: Type.Boolean,
     _description:
       'Whether to enable SHA verification (OTP/biometrics) during check-in. When disabled, SHA fields, OTP and biometric flows are hidden even if the HIE feature flag is on.',
+    _default: false,
+  },
+  enablePartialBillPayment: {
+    _type: Type.Boolean,
+    _description:
+      'When enabled, cashiers may tender less than the total amount due for the selected line items (partial payment). ' +
+      'Line items are only marked as paid once cumulative payments cover their total. Disabled by default, which ' +
+      'requires payments to settle the selected line items in full before saving.',
     _default: false,
   },
   supplementarySchemePrefixes: {

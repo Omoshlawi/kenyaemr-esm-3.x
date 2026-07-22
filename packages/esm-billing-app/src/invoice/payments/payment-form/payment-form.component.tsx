@@ -1,17 +1,17 @@
-import React, { ChangeEvent, useCallback } from 'react';
-import { Controller, FieldArrayWithId, UseFieldArrayRemove, useFieldArray, useFormContext } from 'react-hook-form';
+import React, { useCallback } from 'react';
+import { Controller, FieldArrayWithId, UseFieldArrayRemove, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { TrashCan, Add } from '@carbon/react/icons';
 import { Button, Dropdown, NumberInputSkeleton, TextInput, NumberInput } from '@carbon/react';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import styles from './payment-form.scss';
 import { usePaymentModes } from '../../../billing.resource';
-import { PaymentFormValue, PaymentMethod } from '../../../types';
+import { FormPayment, PaymentFormValue } from '../../../types';
 
 type PaymentFormProps = {
   disablePayment: boolean;
   amountDue: number;
-  append: (obj: { method: PaymentMethod; amount: number; referenceCode: string }) => void;
+  append: (obj: FormPayment) => void;
   fields: FieldArrayWithId<PaymentFormValue, 'payment', 'id'>[];
   remove: UseFieldArrayRemove;
 };
@@ -37,7 +37,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ disablePayment, amountDue, ap
     setFocus(`payment.${fields.length}.method`);
   }, [append, fields.length, setFocus]);
 
-  const handleRemovePaymentMode = useCallback((index) => remove(index), [remove]);
+  const handleRemovePaymentMode = useCallback((index: number) => remove(index), [remove]);
 
   if (isLoading) {
     return <NumberInputSkeleton />;
@@ -68,7 +68,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ disablePayment, amountDue, ap
                 }}
                 titleText={t('paymentMethod', 'Payment method')}
                 label={t('selectPaymentMethod', 'Select payment method')}
-                items={paymentModes}
+                items={paymentModes ?? []}
                 itemToString={(item) => (item ? item.name : '')}
                 invalid={!!errors?.payment?.[index]?.method}
                 invalidText={errors?.payment?.[index]?.method?.message}
@@ -81,6 +81,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ disablePayment, amountDue, ap
             render={({ field }) => (
               <NumberInput
                 {...field}
+                value={field.value ?? ''}
                 id="paymentAmount"
                 onChange={(e, { value }) => field.onChange(Number(value))}
                 invalid={!!errors?.payment?.[index]?.amount}
