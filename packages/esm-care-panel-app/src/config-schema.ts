@@ -735,6 +735,33 @@ export const configSchema = {
           },
         ],
       },
+      {
+        programName: 'Mental Health',
+        programUuid: '4b6c5ea4-49c6-454e-9fa1-44838e3a4f40',
+        forms: [
+          {
+            formName: 'Mental Health Enrollment',
+            formTranslationKey: 'mentalHealthEnrollment',
+            formUuId: 'e2633aa9-4a45-4b8b-8263-37a71817b7bf',
+            dependancies: [],
+            tags: ['enrollment'],
+          },
+          {
+            formName: 'Mental Health Initial',
+            formTranslationKey: 'mentalHealthInitial',
+            formUuId: '18c209ac-0787-4b51-b9aa-aa8b1581239c',
+            dependancies: [],
+            tags: ['initial'],
+          },
+          {
+            formName: 'Mental Health Followup Form',
+            formTranslationKey: 'mentalHealthFollowupForm',
+            formUuId: '825d118c-8991-478f-840e-d622959238ca',
+            dependancies: ['18c209ac-0787-4b51-b9aa-aa8b1581239c'],
+            tags: ['bound-to-current-visit'],
+          },
+        ],
+      },
     ],
   },
   excludedCarePrograms: {
