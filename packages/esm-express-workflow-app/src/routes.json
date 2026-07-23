@@ -146,21 +146,6 @@
       "order": 0
     },
     {
-      "component": "reportsDashboardLink",
-      "name": "reports-homepage-dashboard-link",
-      "slot": "homepage-dashboard-slot",
-      "meta": {
-        "name": "reports",
-        "slot": "reports-homepage-dashboard-slot",
-        "title": "Reports"
-      }
-    },
-    {
-      "component": "reportsDashboard",
-      "name": "reports-dashboard",
-      "slot": "reports-homepage-dashboard-slot"
-    },
-    {
       "name": "pharmacy-homepage-dashboard-link",
       "component": "pharmacyLink",
       "slot": "homepage-dashboard-slot",

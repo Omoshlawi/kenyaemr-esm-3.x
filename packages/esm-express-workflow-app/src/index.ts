@@ -12,7 +12,6 @@ export * from './components/procedures';
 export * from './components/procedures/procedure-queues';
 export * from './components/radiology-and-imaging';
 export * from './components/registration';
-export * from './components/reports';
 export * from './components/triage';
 const moduleName = '@kenyaemr/esm-express-workflow-app';
 
