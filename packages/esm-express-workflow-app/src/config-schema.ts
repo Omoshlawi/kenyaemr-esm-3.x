@@ -1,4 +1,7 @@
 import { Type } from '@openmrs/esm-framework';
+import { defaultHaemodialysisConfig, type HaemodialysisConfig } from './haemodialysis-config.defaults';
+
+export { defaultHaemodialysisConfig, type HaemodialysisConfig };
 
 export const configSchema = {
   identifierTypes: {
@@ -315,6 +318,18 @@ export const configSchema = {
     _description: 'The patient identifier type UUID for the birth certificate number.',
     _default: '68449e5a-8829-44dd-bfef-c9c8cf2cb9b2',
   },
+  icd11DataSourceUuid: {
+    _type: Type.String,
+    _description: 'UUID for ICD-11 concept source used in diagnosis search',
+    _default: '39ADDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD',
+  },
+
+  haemodialysis: {
+    _type: Type.Object,
+    _description:
+      'Haemodialysis Flow Chart (v1.2) form UUIDs, encounter metadata, concept UUIDs by section, and monitoring slot timing',
+    _default: defaultHaemodialysisConfig,
+  },
 
   anaesthetic: {
     _type: Type.Object,
@@ -539,6 +554,8 @@ export type ExpressWorkflowConfig = {
   shaNumberUUID: string;
   passportUUID: string;
   birthCertificateUUID: string;
+  icd11DataSourceUuid: string;
+  haemodialysis: HaemodialysisConfig;
 };
 export interface ConfigObject {
   requireMaritalStatusOnAgeGreaterThanOrEqualTo: number;

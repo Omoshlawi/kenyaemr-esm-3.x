@@ -1,0 +1,71 @@
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid #000;
+  border-left: 1px solid #000;
+  width: 100%;
+}
+
+.fieldCell {
+  border-right: 1px solid #000;
+  border-bottom: 1px solid #000;
+  padding: 0.35rem 0.5rem;
+  min-height: 2.75rem;
+  box-sizing: border-box;
+}
+
+.fieldLabel {
+  display: block;
+  font-weight: 700;
+  font-size: 0.75rem;
+  margin-bottom: 0.15rem;
+}
+
+.fieldValue {
+  display: block;
+  font-weight: 400;
+  font-size: 0.8125rem;
+}
+
+.span2 {
+  grid-column: span 2;
+}
+
+.section {
+  margin-top: 0.9rem;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.sectionSubtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+.sectionActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.emptyState {
+  border: 1px dashed #c6c6c6;
+  padding: 1rem;
+  font-size: 0.8125rem;
+  color: #525252;
+  background: #fafafa;
+}

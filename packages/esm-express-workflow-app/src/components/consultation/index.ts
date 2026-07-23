@@ -42,3 +42,8 @@ export const encounterDetails = getAsyncLifecycle(
   () => import('./clinical-encounter/encounter-details.component'),
   options,
 );
+
+export const haemodialysisPanel = getAsyncLifecycle(
+  () => import('./clinical-encounter/haemodialysis/haemodialysis.panel'),
+  options,
+);

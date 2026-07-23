@@ -547,6 +547,17 @@
         "basePath": "radiology-and-imaging"
       }
     }
+    ,
+    {
+      "name": "ewf-clinical-encounter-haemodialysis-tab",
+      "component": "haemodialysisPanel",
+      "slot": "ewf-clinical-encounter-haemodialysis-slot",
+      "meta": {
+        "title": "haemodialysis"
+      },
+      "online": true,
+      "offline": false
+    }
   ],
   "workspaces2": [
     {

@@ -1,0 +1,52 @@
+.commentsBlock {
+  margin-top: 0.75rem;
+}
+
+.commentsLabel {
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  font-size: 0.8125rem;
+}
+
+.commentsText {
+  min-height: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.remarksBox {
+  border: 1px solid #000;
+  min-height: 3.5rem;
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+}
+
+.signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  border-top: 1px solid #000;
+  padding-top: 0.75rem;
+}
+
+.signatureBlock {
+  font-size: 0.75rem;
+}
+
+.signatureHeading {
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.signatureLine {
+  margin-top: 1.75rem;
+  border-bottom: 1px solid #000;
+  height: 1.25rem;
+}
+
+.signatureCaption {
+  margin-top: 0.2rem;
+  font-size: 0.6875rem;
+}

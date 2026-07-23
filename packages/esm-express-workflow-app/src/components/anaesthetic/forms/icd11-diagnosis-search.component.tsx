@@ -128,6 +128,12 @@ const DiagnosisSearch: React.FC<DiagnosisSearchProps> = ({
 
     if (!query) {
       onChange(null);
+      return;
+    }
+
+    // Clear selection when the user edits away from the picked result
+    if (value?.uuid && query.trim() !== value.display.trim()) {
+      onChange(null);
     }
   };
 
@@ -164,7 +170,11 @@ const DiagnosisSearch: React.FC<DiagnosisSearchProps> = ({
 
         {searchQuery.length > 0 && searchQuery.length < minChars && (
           <div className={styles.hint}>
-            <InlineLoading description={t('minimumCharacters', 'Type at least 3 characters to search')} />
+            <InlineLoading
+              description={t('minimumCharacters', 'Type at least {{count}} characters to search', {
+                count: minChars,
+              })}
+            />
           </div>
         )}
       </div>

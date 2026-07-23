@@ -37,6 +37,8 @@
     "@hookform/resolvers": "^3.9.1",
     "@superset-ui/embedded-sdk": "^0.2.0",
     "classnames": "^2.3.2",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1",
     "lodash-es": "^4.17.15",
     "react-hook-form": "^7.54.0",
     "react-otp-input": "^3.1.1",

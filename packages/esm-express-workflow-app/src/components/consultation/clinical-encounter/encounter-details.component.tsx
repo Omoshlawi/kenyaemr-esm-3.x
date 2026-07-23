@@ -16,6 +16,7 @@ import { extractValueFromObs, useClinicalEncounterForm, usePatientEncounter } fr
 import styles from './encounter-details.scss';
 import { type Observation } from '../../../types';
 import { ExpressWorkflowConfig } from '../../../config-schema';
+import HaemodialysisPanel from './haemodialysis/haemodialysis.panel';
 
 type EncounterDetailsProps = {
   patientUuid: string;
@@ -82,6 +83,7 @@ const EncounterDetails: React.FC<EncounterDetailsProps> = ({ patientUuid, patien
           <Tab renderIcon={CloudMonitoring}>{t('patientHistory', 'Patient History')}</Tab>
           <Tab renderIcon={Stethoscope}>{t('patientExamination', 'Patient Examination')}</Tab>
           <Tab renderIcon={IbmWatsonDiscovery}>{t('patientManagement', 'Patient Management')}</Tab>
+          <Tab renderIcon={DocumentMultiple_02}>{t('haemodialysis', 'Haemodialysis')}</Tab>
           <Tab renderIcon={DocumentMultiple_02}>{t('labResults', 'Lab Results')}</Tab>
         </TabList>
         <TabPanels>
@@ -132,6 +134,9 @@ const EncounterDetails: React.FC<EncounterDetailsProps> = ({ patientUuid, patien
               title={t('patientManagement', 'Patient Management')}
               cardItems={observationsBySection['Patient Management'] || []}
             />
+          </TabPanel>
+          <TabPanel>
+            <HaemodialysisPanel state={state} />
           </TabPanel>
           <TabPanel>
             <ExtensionSlot name="ewf-clinical-encounter-lab-results-slot" state={state} />

@@ -1,5 +1,12 @@
 {
   "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@carbon/icons-react": ["../../node_modules/@carbon/icons-react/lib/index.d.ts"],
+      "__mocks__": ["../../__mocks__"],
+      "tools": ["../../tools"]
+    }
+  },
   "include": ["src/**/*"],
   "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
 }

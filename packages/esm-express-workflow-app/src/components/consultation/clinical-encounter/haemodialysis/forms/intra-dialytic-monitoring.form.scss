@@ -1,0 +1,93 @@
+.formBody {
+  max-height: 70vh;
+  overflow: auto;
+  padding-right: 0.25rem;
+}
+
+.sessionStart {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.hint,
+.sessionInfo {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: #525252;
+}
+
+.saveError {
+  margin: 0 0 1rem;
+  padding: 0.75rem;
+  border-left: 3px solid #da1e28;
+  background: #fff1f1;
+  color: #161616;
+  font-size: 0.875rem;
+}
+
+.slot {
+  margin-bottom: 0.75rem;
+  border: 1px solid #c6c6c6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.slotSkipped {
+  background: #f4f4f4;
+  border-color: #8d8d8d;
+  opacity: 0.9;
+}
+
+.slotCompleted {
+  background: #edf5ff;
+  border-color: #78a9ff;
+  opacity: 0.95;
+}
+
+.slotLocked {
+  background: #e0e0e0;
+  opacity: 0.85;
+}
+
+.slotActive {
+  background: #defbe6;
+  border-color: #42be65;
+}
+
+.slotUpcoming {
+  background: #f4f4f4;
+  opacity: 0.75;
+}
+
+.slotHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #c6c6c6;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.slotBadge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.slotGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.slotLocked .slotGrid :global(.cds--text-input),
+.slotCompleted .slotGrid :global(.cds--text-input),
+.slotSkipped .slotGrid :global(.cds--text-input),
+.slotUpcoming .slotGrid :global(.cds--text-input) {
+  background: #f4f4f4;
+  cursor: not-allowed;
+}
