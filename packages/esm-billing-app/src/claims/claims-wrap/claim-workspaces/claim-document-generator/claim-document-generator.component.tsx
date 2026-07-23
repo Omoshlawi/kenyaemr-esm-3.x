@@ -1,17 +1,29 @@
-import React from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, InlineLoading, InlineNotification, Layer, ProgressBar, SkeletonText, Tag } from '@carbon/react';
+import {
+  Button,
+  InlineLoading,
+  InlineNotification,
+  Layer,
+  ProgressBar,
+  Select,
+  SelectItem,
+  SkeletonText,
+  Tag,
+} from '@carbon/react';
 import { CheckmarkFilled, DocumentPdf, Renew, TrashCan, Upload, View } from '@carbon/react/icons';
 import classNames from 'classnames';
 
 import styles from './claim-document-generator.scss';
 import {
+  humanizeDocumentType,
   useClaimDocumentGenerator,
   type ClaimDocumentActions,
   type DocumentRow,
   type UseClaimDocumentGeneratorArgs,
 } from './use-claim-document-generator';
 import { type GeneratedDocument } from './claim-document-generator-resource';
+import { DOCUMENT_TYPES } from '../../../claims-management/table/virtual-claim-preauth/constants';
 
 export type ClaimDocumentGeneratorProps = UseClaimDocumentGeneratorArgs;
 
@@ -115,7 +127,11 @@ const DocumentCardActions: React.FC<{ row: DocumentRow; actions: ClaimDocumentAc
   );
 };
 
-const DocumentCard: React.FC<{ row: DocumentRow; actions: ClaimDocumentActions }> = ({ row, actions }) => {
+const DocumentCard: React.FC<{ row: DocumentRow; actions: ClaimDocumentActions; isRemovable?: boolean }> = ({
+  row,
+  actions,
+  isRemovable,
+}) => {
   const { t } = useTranslation();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -129,6 +145,24 @@ const DocumentCard: React.FC<{ row: DocumentRow; actions: ClaimDocumentActions }
 
     event.target.value = '';
   };
+
+  let lockedActions: React.ReactNode;
+  if (row.status === 'deleting') {
+    lockedActions = <InlineLoading description={t('removing', 'Removing…')} />;
+  } else {
+    lockedActions = (
+      <>
+        <Button kind="tertiary" size="sm" renderIcon={Renew} onClick={() => actions.replace(row.documentType)}>
+          {t('replace', 'Replace')}
+        </Button>
+        {isRemovable && (
+          <Button kind="danger--ghost" size="sm" renderIcon={TrashCan} onClick={() => actions.remove(row.documentType)}>
+            {t('delete', 'Delete')}
+          </Button>
+        )}
+      </>
+    );
+  }
 
   return (
     <Layer>
@@ -146,6 +180,16 @@ const DocumentCard: React.FC<{ row: DocumentRow; actions: ClaimDocumentActions }
             <Tag type="green" renderIcon={CheckmarkFilled} size="md">
               {t('uploaded', 'Uploaded')}
             </Tag>
+          )}
+          {isRemovable && !row.isLocked && !row.isBusy && row.status !== 'ready' && (
+            <Button
+              kind="ghost"
+              size="sm"
+              hasIconOnly
+              renderIcon={TrashCan}
+              iconDescription={t('remove', 'Remove')}
+              onClick={() => actions.discard(row.documentType)}
+            />
           )}
         </div>
 
@@ -208,13 +252,7 @@ const DocumentCard: React.FC<{ row: DocumentRow; actions: ClaimDocumentActions }
         )}
 
         <div className={styles.actions}>
-          {row.isLocked ? (
-            <Button kind="tertiary" size="sm" renderIcon={Renew} onClick={() => actions.replace(row.documentType)}>
-              {t('replace', 'Replace')}
-            </Button>
-          ) : (
-            <DocumentCardActions row={row} actions={actions} onPickFile={pickFile} />
-          )}
+          {row.isLocked ? lockedActions : <DocumentCardActions row={row} actions={actions} onPickFile={pickFile} />}
         </div>
 
         <input
@@ -229,9 +267,74 @@ const DocumentCard: React.FC<{ row: DocumentRow; actions: ClaimDocumentActions }
   );
 };
 
-const ClaimDocumentGenerator: React.FC<ClaimDocumentGeneratorProps> = (props) => {
+const ClaimDocumentGenerator: React.FC<ClaimDocumentGeneratorProps> = ({ documentTypes, ...rest }) => {
   const { t } = useTranslation();
-  const { isLoading, error, rows, actions } = useClaimDocumentGenerator(props);
+
+  // Document types the user has added on top of `documentTypes` via the picker below.
+  const [extraTypes, setExtraTypes] = useState<Array<string>>([]);
+  // Extra document types that have been deleted this session — kept out of the workspace until re-added.
+  const [suppressedTypes, setSuppressedTypes] = useState<Array<string>>([]);
+  const [selectedDocType, setSelectedDocType] = useState('');
+
+  const providedSet = useMemo(() => new Set(documentTypes), [documentTypes]);
+  // Uploaded documents that aren't among the applicable types must still surface on reopen so
+  // they can be deleted or regenerated.
+  const uploadedExtraTypes = useMemo(
+    () => (rest.alreadyUploadedTypes ?? []).filter((d) => !providedSet.has(d)),
+    [rest.alreadyUploadedTypes, providedSet],
+  );
+  const effectiveTypes = useMemo(
+    () =>
+      Array.from(new Set([...documentTypes, ...uploadedExtraTypes, ...extraTypes])).filter(
+        (d) => providedSet.has(d) || !suppressedTypes.includes(d),
+      ),
+    [documentTypes, uploadedExtraTypes, extraTypes, suppressedTypes, providedSet],
+  );
+
+  // Drop a deleted extra document from the workspace right away, before the parent data refreshes.
+  const handleRemoved = useCallback(
+    (documentType: string) => {
+      setExtraTypes(extraTypes.filter((d) => d !== documentType));
+      setSuppressedTypes(suppressedTypes.includes(documentType) ? suppressedTypes : [...suppressedTypes, documentType]);
+    },
+    [extraTypes, suppressedTypes],
+  );
+
+  const { isLoading, error, rows, actions } = useClaimDocumentGenerator({
+    ...rest,
+    documentTypes: effectiveTypes,
+    onRemoved: handleRemoved,
+  });
+
+  const pickerOptions = useMemo(() => DOCUMENT_TYPES.filter((d) => !effectiveTypes.includes(d)), [effectiveTypes]);
+
+  const addExtraType = useCallback(
+    (documentType: string) => {
+      if (!documentType) {
+        return;
+      }
+      setSuppressedTypes(suppressedTypes.filter((d) => d !== documentType));
+      setExtraTypes(extraTypes.includes(documentType) ? extraTypes : [...extraTypes, documentType]);
+      setSelectedDocType('');
+    },
+    [extraTypes, suppressedTypes],
+  );
+
+  // Discarding a user-added document also drops its card; provided types keep their card.
+  const handleDiscard = useCallback(
+    (documentType: string) => {
+      actions.discard(documentType);
+      if (!providedSet.has(documentType)) {
+        setExtraTypes(extraTypes.filter((d) => d !== documentType));
+      }
+    },
+    [actions, providedSet, extraTypes],
+  );
+
+  const cardActions = useMemo<ClaimDocumentActions>(
+    () => ({ ...actions, discard: handleDiscard }),
+    [actions, handleDiscard],
+  );
 
   if (isLoading) {
     return <SkeletonText paragraph lineCount={3} className={styles.skeleton} />;
@@ -252,8 +355,25 @@ const ClaimDocumentGenerator: React.FC<ClaimDocumentGeneratorProps> = (props) =>
   return (
     <div className={styles.container}>
       {rows.map((row) => (
-        <DocumentCard key={row.documentType} row={row} actions={actions} />
+        <DocumentCard
+          key={row.documentType}
+          row={row}
+          actions={cardActions}
+          isRemovable={!providedSet.has(row.documentType)}
+        />
       ))}
+      {pickerOptions.length > 0 && (
+        <Select
+          id="additional-doc-type-picker"
+          labelText={t('addOtherSupportiveDocuments', 'Add another supportive document')}
+          value={selectedDocType}
+          onChange={(e) => addExtraType(e.target.value)}>
+          <SelectItem value="" text={t('selectDocumentType', 'Select document type')} />
+          {pickerOptions.map((d) => (
+            <SelectItem key={d} value={d} text={humanizeDocumentType(d)} />
+          ))}
+        </Select>
+      )}
     </div>
   );
 };

@@ -8,6 +8,7 @@ import RequiredLabel from '../components/required-label.component';
 import GenerateDocumentsPanel from '../components/generate-documents-panel.component';
 import { usePreauthDocuments } from '../hooks/use-preauth-documents';
 import { type PreauthFormData } from '../pre-auth-schema';
+import { DOCUMENT_TYPES } from '../../constants';
 import styles from '../pre-auth-form.scss';
 
 interface AttachmentsSectionProps {
@@ -110,6 +111,7 @@ const AttachmentsSection: React.FC<AttachmentsSectionProps> = ({ item }) => {
               <GenerateDocumentsPanel
                 item={item}
                 documentTypes={requiredPreauthDocs}
+                additionalDocumentTypes={DOCUMENT_TYPES}
                 isStaged={isStaged}
                 onStaged={stageGenerated}
                 onUnstaged={unstageGenerated}

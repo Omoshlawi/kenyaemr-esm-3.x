@@ -12,7 +12,7 @@ import {
 import { retireClaimAttachment } from '../attachements/claim-attachments-resource';
 import { BatchAttachmentResult } from '../../../claims-management/table/virtual-claim-preauth/type';
 
-export type RowStatus = 'idle' | 'generating' | 'ready' | 'uploading' | 'uploaded' | 'failed';
+export type RowStatus = 'idle' | 'generating' | 'ready' | 'uploading' | 'uploaded' | 'deleting' | 'failed';
 
 type RowState = {
   status: RowStatus;
@@ -44,6 +44,7 @@ export type ClaimDocumentActions = {
   discard: (documentType: string) => void;
   preview: (documentType: string) => void;
   replace: (documentType: string) => void;
+  remove: (documentType: string) => void;
   manualSelect: (documentType: string, file: File) => void;
 };
 
@@ -56,6 +57,8 @@ export type UseClaimDocumentGeneratorArgs = {
   /** Maps an already-uploaded document type to its attachment uuid so a replacement can retire it first. */
   uploadedAttachmentUuids?: Record<string, string>;
   onUploaded?: (documentType: string, result: BatchAttachmentResult) => void;
+  /** Fired after an uploaded document is successfully retired, so callers can drop its row. */
+  onRemoved?: (documentType: string) => void;
   mutate?: () => void;
 };
 
@@ -71,6 +74,7 @@ export function useClaimDocumentGenerator({
   alreadyUploadedTypes,
   uploadedAttachmentUuids,
   onUploaded,
+  onRemoved,
   mutate,
 }: UseClaimDocumentGeneratorArgs): {
   isLoading: boolean;
@@ -235,6 +239,46 @@ export function useClaimDocumentGenerator({
     });
   }, []);
 
+  // Retire a previously uploaded attachment and reset the row so it can be re-generated.
+  const remove = useCallback(
+    async (documentType: string) => {
+      const existingUuid =
+        rowStatesRef.current[documentType]?.attachmentUuid ?? uploadedAttachmentUuids?.[documentType];
+      if (!existingUuid) {
+        discard(documentType);
+        onRemoved?.(documentType);
+        return;
+      }
+
+      setRow(documentType, { status: 'deleting', error: undefined });
+      const retire = await retireClaimAttachment({ consentToken, attachmentUuid: existingUuid, interventionCode, t });
+      if (!retire.ok) {
+        setRow(documentType, { status: 'failed', error: retire.error });
+        return;
+      }
+
+      setRowStates((prev) => {
+        const row = prev[documentType];
+        if (row?.objectUrl) {
+          URL.revokeObjectURL(row.objectUrl);
+          objectUrls.current = objectUrls.current.filter((url) => url !== row.objectUrl);
+        }
+        return { ...prev, [documentType]: initialRow };
+      });
+      showSnackbar({
+        title: t('documentRemoved', 'Document removed'),
+        subtitle: t('documentRemovedDesc', '{{type}} was removed from the claim', {
+          type: humanizeDocumentType(documentType),
+        }),
+        kind: 'success',
+        isLowContrast: true,
+      });
+      onRemoved?.(documentType);
+      mutate?.();
+    },
+    [consentToken, interventionCode, uploadedAttachmentUuids, discard, onRemoved, mutate, setRow, t],
+  );
+
   const manualSelect = useCallback(
     (documentType: string, file: File) => {
       const mimeType = file.type || 'application/octet-stream';
@@ -251,7 +295,7 @@ export function useClaimDocumentGenerator({
       const state = rowStates[documentType] ?? initialRow;
       const template = endpoints[documentType];
       const missingParams = template ? resolveEndpointTemplate(template, params).missing : [];
-      const isBusy = state.status === 'generating' || state.status === 'uploading';
+      const isBusy = state.status === 'generating' || state.status === 'uploading' || state.status === 'deleting';
       const canGenerate = Boolean(template) && missingParams.length === 0;
       return {
         ...state,
@@ -271,8 +315,8 @@ export function useClaimDocumentGenerator({
   }, [documentTypes, rowStates, endpoints, params, lockedTypes]);
 
   const actions = useMemo<ClaimDocumentActions>(
-    () => ({ generate, upload, cancel, discard, preview, replace, manualSelect }),
-    [generate, upload, cancel, discard, preview, replace, manualSelect],
+    () => ({ generate, upload, cancel, discard, preview, replace, remove, manualSelect }),
+    [generate, upload, cancel, discard, preview, replace, remove, manualSelect],
   );
 
   return { isLoading, error, rows, actions };

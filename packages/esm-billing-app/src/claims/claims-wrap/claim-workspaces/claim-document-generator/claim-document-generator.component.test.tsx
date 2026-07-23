@@ -1,12 +1,18 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi, type MockedFunction } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ClaimDocumentGenerator from './claim-document-generator.component';
+import ClaimDocumentGenerator, { type ClaimDocumentGeneratorProps } from './claim-document-generator.component';
 import { useClaimDocumentGenerator, type ClaimDocumentActions, type DocumentRow } from './use-claim-document-generator';
 
 vi.mock('./use-claim-document-generator', () => ({
   useClaimDocumentGenerator: vi.fn(),
+  humanizeDocumentType: (documentType: string) => documentType.replaceAll('_', ' '),
+}));
+
+// Keep the suite hermetic: the real constants module transitively pulls in @openmrs/esm-framework.
+vi.mock('../../../claims-management/table/virtual-claim-preauth/constants', () => ({
+  DOCUMENT_TYPES: ['CLAIM_FORM', 'LAB_RESULTS', 'DISCHARGE_SUMMARY'],
 }));
 
 const mockUseClaimDocumentGenerator = useClaimDocumentGenerator as MockedFunction<typeof useClaimDocumentGenerator>;
@@ -18,8 +24,12 @@ const actions: ClaimDocumentActions = {
   discard: vi.fn(),
   preview: vi.fn(),
   replace: vi.fn(),
+  remove: vi.fn(),
   manualSelect: vi.fn(),
 };
+
+/** The args the component last passed into the (mocked) hook — used to assert derived document types. */
+const lastHookArgs = () => mockUseClaimDocumentGenerator.mock.calls.at(-1)?.[0];
 
 const buildRow = (overrides: Partial<DocumentRow> = {}): DocumentRow => ({
   documentType: 'CLAIM_FORM',
@@ -35,7 +45,10 @@ const buildRow = (overrides: Partial<DocumentRow> = {}): DocumentRow => ({
   ...overrides,
 });
 
-const renderWith = (result: Partial<ReturnType<typeof useClaimDocumentGenerator>>) => {
+const renderWith = (
+  result: Partial<ReturnType<typeof useClaimDocumentGenerator>>,
+  props: Partial<ClaimDocumentGeneratorProps> = {},
+) => {
   mockUseClaimDocumentGenerator.mockReturnValue({
     isLoading: false,
     error: undefined,
@@ -49,6 +62,7 @@ const renderWith = (result: Partial<ReturnType<typeof useClaimDocumentGenerator>
       interventionCode="SHA-001"
       documentTypes={['CLAIM_FORM']}
       params={{}}
+      {...props}
     />,
   );
 };
@@ -138,7 +152,7 @@ describe('<ClaimDocumentGenerator />', () => {
       await user.click(screen.getByRole('button', { name: 'Upload' }));
       expect(actions.upload).toHaveBeenCalledWith('CLAIM_FORM');
 
-      await user.click(screen.getByRole('button', { name: 'Preview' }));
+      await user.click(screen.getByRole('button', { name: 'Preview uploaded file' }));
       expect(actions.preview).toHaveBeenCalledWith('CLAIM_FORM');
 
       await user.click(screen.getByRole('button', { name: 'Regenerate' }));
@@ -200,6 +214,76 @@ describe('<ClaimDocumentGenerator />', () => {
       expect(buttons).toHaveLength(1);
       await user.click(screen.getByRole('button', { name: 'Replace' }));
       expect(actions.replace).toHaveBeenCalledWith('CLAIM_FORM');
+    });
+
+    it('does not offer a delete action for a default (applicable) document', () => {
+      renderWith({ rows: [buildRow({ status: 'uploaded', isLocked: true })] });
+      expect(screen.getByRole('button', { name: 'Replace' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Delete/ })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('add another document picker', () => {
+    it('renders a picker with document types that are not already listed', () => {
+      renderWith({ rows: [buildRow()] });
+      const picker = screen.getByLabelText('Add another supportive document');
+      expect(picker).toBeInTheDocument();
+      // The already-listed default type is filtered out of the options.
+      expect(screen.queryByRole('option', { name: 'CLAIM FORM' })).not.toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'LAB RESULTS' })).toBeInTheDocument();
+    });
+
+    it('adds the chosen type to the document types handed to the hook', async () => {
+      const user = userEvent.setup();
+      renderWith({ rows: [buildRow()] });
+
+      await user.selectOptions(screen.getByLabelText('Add another supportive document'), 'LAB_RESULTS');
+
+      expect(lastHookArgs()?.documentTypes).toEqual(expect.arrayContaining(['CLAIM_FORM', 'LAB_RESULTS']));
+    });
+  });
+
+  describe('extra uploaded document (not a default type)', () => {
+    const extraLockedRow = (overrides: Partial<DocumentRow> = {}) =>
+      buildRow({ documentType: 'LAB_RESULTS', label: 'LAB RESULTS', status: 'uploaded', isLocked: true, ...overrides });
+
+    it('offers both replace and delete actions', async () => {
+      const user = userEvent.setup();
+      renderWith({ rows: [extraLockedRow()] });
+
+      await user.click(screen.getByRole('button', { name: 'Replace' }));
+      expect(actions.replace).toHaveBeenCalledWith('LAB_RESULTS');
+
+      await user.click(screen.getByRole('button', { name: /Delete/ }));
+      expect(actions.remove).toHaveBeenCalledWith('LAB_RESULTS');
+    });
+
+    it('shows a removing indicator and hides actions while deleting', () => {
+      renderWith({ rows: [extraLockedRow({ status: 'deleting', isBusy: true })] });
+
+      expect(screen.getByText('Removing…')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Replace' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Delete/ })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('reopening with previously uploaded extras', () => {
+    it('surfaces uploaded documents that are not among the default types', () => {
+      renderWith({ rows: [] }, { alreadyUploadedTypes: ['LAB_RESULTS'] });
+      expect(lastHookArgs()?.documentTypes).toContain('LAB_RESULTS');
+    });
+
+    it('drops a deleted extra document from the workspace', async () => {
+      renderWith({ rows: [] }, { alreadyUploadedTypes: ['LAB_RESULTS'] });
+      expect(lastHookArgs()?.documentTypes).toContain('LAB_RESULTS');
+
+      const onRemoved = lastHookArgs()?.onRemoved;
+      expect(onRemoved).toBeTypeOf('function');
+      await act(async () => {
+        onRemoved?.('LAB_RESULTS');
+      });
+
+      expect(lastHookArgs()?.documentTypes).not.toContain('LAB_RESULTS');
     });
   });
 });

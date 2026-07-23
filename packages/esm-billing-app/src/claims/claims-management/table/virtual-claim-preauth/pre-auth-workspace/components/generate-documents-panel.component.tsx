@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, InlineLoading, InlineNotification, Layer, SkeletonText, Tag } from '@carbon/react';
+import { Button, InlineLoading, InlineNotification, Layer, Select, SelectItem, SkeletonText, Tag } from '@carbon/react';
 import { CheckmarkFilled, DocumentPdf, Renew, TrashCan, Upload, View } from '@carbon/react/icons';
 import classNames from 'classnames';
 import { type PreauthQueueItem } from '../../../../../../billing-form/social-health-authority/type';
@@ -9,21 +9,29 @@ import styles from '../pre-auth-form.scss';
 
 const ACCEPTED_FILE_TYPES = '.pdf,.png,.jpg,.jpeg';
 
+const humanize = (documentType: string) => documentType.replaceAll('_', ' ');
+
 interface GenerateDocumentsPanelProps {
   item?: PreauthQueueItem;
   documentTypes: ReadonlyArray<string>;
   isStaged: (documentType: string) => boolean;
   onStaged: (documentType: string, file: File) => void;
   onUnstaged: (documentType: string) => void;
+  /**
+   * Pool of document types the user may add beyond `documentTypes`. When provided, a picker is
+   * rendered at the end so users can attach a supporting document that is not among the required ones.
+   */
+  additionalDocumentTypes?: ReadonlyArray<string>;
 }
 
 const GenerateDocumentCard: React.FC<{
   row: PreauthGenRow;
+  isRemovable?: boolean;
   onGenerate: (documentType: string) => void;
   onPreview: (documentType: string) => void;
   onDiscard: (documentType: string) => void;
   onManualSelect: (documentType: string, file: File) => void;
-}> = ({ row, onGenerate, onPreview, onDiscard, onManualSelect }) => {
+}> = ({ row, isRemovable, onGenerate, onPreview, onDiscard, onManualSelect }) => {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isGenerating = row.status === 'generating';
@@ -121,7 +129,7 @@ const GenerateDocumentCard: React.FC<{
                 onClick={pickFile}>
                 {row.isStaged ? t('replaceFile', 'Replace file') : t('uploadManually', 'Upload manually')}
               </Button>
-              {row.isStaged && (
+              {(row.isStaged || isRemovable) && (
                 <Button
                   kind="danger--ghost"
                   size="sm"
@@ -153,22 +161,58 @@ const GenerateDocumentsPanel: React.FC<GenerateDocumentsPanelProps> = ({
   isStaged,
   onStaged,
   onUnstaged,
+  additionalDocumentTypes,
 }) => {
   const { t } = useTranslation();
+
+  // Document types the user has added on top of `documentTypes` via the picker below.
+  const [extraTypes, setExtraTypes] = useState<Array<string>>([]);
+  const [selectedDocType, setSelectedDocType] = useState('');
+
+  const requiredSet = useMemo(() => new Set(documentTypes), [documentTypes]);
+  const effectiveTypes = useMemo(
+    () => Array.from(new Set([...documentTypes, ...extraTypes])),
+    [documentTypes, extraTypes],
+  );
+
   const { isLoading, error, rows, generate, discard, preview, manualSelect } = usePreauthDocumentGeneration({
     item,
-    documentTypes,
+    documentTypes: effectiveTypes,
     isStaged,
     onStaged,
     onUnstaged,
   });
+
+  const pickerOptions = useMemo(
+    () => (additionalDocumentTypes ?? []).filter((d) => !effectiveTypes.includes(d)),
+    [additionalDocumentTypes, effectiveTypes],
+  );
+
+  const addExtraType = useCallback((documentType: string) => {
+    if (!documentType) {
+      return;
+    }
+    setExtraTypes((prev) => (prev.includes(documentType) ? prev : [...prev, documentType]));
+    setSelectedDocType('');
+  }, []);
+
+  // Discarding a user-added document also drops its row; required rows stay so they can be regenerated.
+  const handleDiscard = useCallback(
+    (documentType: string) => {
+      discard(documentType);
+      if (!requiredSet.has(documentType)) {
+        setExtraTypes((prev) => prev.filter((d) => d !== documentType));
+      }
+    },
+    [discard, requiredSet],
+  );
 
   if (isLoading) {
     return <SkeletonText paragraph lineCount={2} />;
   }
 
   // No configured endpoints for any applicable type — nothing to generate, keep the UI clean.
-  if (error || rows.length === 0) {
+  if (error || (rows.length === 0 && pickerOptions.length === 0)) {
     return null;
   }
 
@@ -185,12 +229,26 @@ const GenerateDocumentsPanel: React.FC<GenerateDocumentsPanelProps> = ({
         <GenerateDocumentCard
           key={row.documentType}
           row={row}
+          isRemovable={!requiredSet.has(row.documentType)}
           onGenerate={generate}
           onPreview={preview}
-          onDiscard={discard}
+          onDiscard={handleDiscard}
           onManualSelect={manualSelect}
         />
       ))}
+      {pickerOptions.length > 0 && (
+        <Select
+          className={styles.selectDocuments}
+          id="additional-doc-type-picker"
+          labelText={t('addAnotherSupportingDocument', 'Add another supporting document')}
+          value={selectedDocType}
+          onChange={(e) => addExtraType(e.target.value)}>
+          <SelectItem value="" text={t('selectDocumentType', 'Select document type')} />
+          {pickerOptions.map((d) => (
+            <SelectItem key={d} value={d} text={humanize(d)} />
+          ))}
+        </Select>
+      )}
     </div>
   );
 };
