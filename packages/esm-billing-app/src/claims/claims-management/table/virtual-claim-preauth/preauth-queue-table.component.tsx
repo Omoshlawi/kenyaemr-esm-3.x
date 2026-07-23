@@ -48,6 +48,11 @@ import { extractSavannahErrorMessage } from '../../../../helpers/functions';
 import InterventionCrudLauncher from './intervention-crud-launcher.component';
 import { useClaimDoctors } from '../../../claims-wrap/claim-workspaces/doctors/claim-doctors-resource';
 
+// usePreauthQueue is server-paginated, but these tables also filter client-side (search, date range),
+// which the pagination hook explicitly doesn't support combining with. Fetch a single generous batch
+// instead and paginate/filter entirely client-side so the page controls and item counts stay accurate.
+const PREAUTH_FETCH_LIMIT = 1000;
+
 interface ExpandedPanelProps {
   item: PreauthQueueItem;
   tab: 'PENDING' | 'COMPLETED' | 'REJECTED';
@@ -424,19 +429,19 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
   const [submittingDoctorId, setSubmittingDoctorId] = useState<string | null>(null);
   const [removingDiagnosisCode, setRemovingDiagnosisCode] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const isApproved = item.workflow_state === 'ELECTIVE_APPROVED';
-  const isPending = item.workflow_state === 'ELECTIVE_PENDING';
-  const isDraft = item.workflow_state === 'ELECTIVE_DRAFT';
-  const isRejected = item.workflow_state === 'ELECTIVE_REJECTED';
+  const isApproved = item?.workflow_state === 'ELECTIVE_APPROVED';
+  const isPending = item?.workflow_state === 'ELECTIVE_PENDING';
+  const isDraft = item?.workflow_state === 'ELECTIVE_DRAFT';
+  const isRejected = item?.workflow_state === 'ELECTIVE_REJECTED';
   const {
     doctors,
     isLoading: isLoadingDoctors,
     error: doctorsError,
     mutate: mutateDoctors,
-  } = useClaimDoctors(item.authorization_code);
-  const diagnoses = item.diagnoses ?? [];
+  } = useClaimDoctors(item?.authorization_code);
+  const diagnoses = item?.diagnoses ?? [];
 
-  const preauthAlreadySubmitted = Boolean((item as any).preauth_already_submitted);
+  const preauthAlreadySubmitted = Boolean((item as any)?.preauth_already_submitted);
 
   const mutateDoctorAction = () => {
     onAction();
@@ -873,9 +878,9 @@ interface ScheduledTableProps {
 
 const ScheduledTable: React.FC<ScheduledTableProps> = ({ search, fromDate, toDate }) => {
   const { t } = useTranslation();
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
-  const { queue, count, isLoading, error, mutate } = usePreauthQueue('SCHEDULED', pageSize);
+  const { queue, isLoading, error, mutate } = usePreauthQueue('SCHEDULED', PREAUTH_FETCH_LIMIT);
 
   const headers = [
     { key: 'patient', header: t('patient', 'Patient') },
@@ -897,6 +902,14 @@ const ScheduledTable: React.FC<ScheduledTableProps> = ({ search, fromDate, toDat
       return matchesSearch && isWithinDateRange(item.date_created, fromDate, toDate);
     });
   }, [queue, search, fromDate, toDate]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const effectivePage = Math.min(currentPage, totalPages);
+
+  const paginated = useMemo(() => {
+    const start = (effectivePage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, effectivePage, pageSize]);
 
   if (isLoading) {
     return (
@@ -929,7 +942,7 @@ const ScheduledTable: React.FC<ScheduledTableProps> = ({ search, fromDate, toDat
     );
   }
 
-  const rows = filtered.map((item, idx) => ({
+  const rows = paginated.map((item, idx) => ({
     id: `${item.claim_uuid}-${item.intervention_code ?? idx}`,
     patient: item.patient?.display ?? '—',
     authorization_code: item.authorization_code,
@@ -938,6 +951,8 @@ const ScheduledTable: React.FC<ScheduledTableProps> = ({ search, fromDate, toDat
     workflow_state: item.workflow_state,
     date_created: item.date_created,
   }));
+
+  const itemsById = new Map(rows.map((row, idx) => [row.id, paginated[idx]]));
 
   return (
     <DataTable rows={rows} headers={headers} isSortable useZebraStyles>
@@ -961,8 +976,8 @@ const ScheduledTable: React.FC<ScheduledTableProps> = ({ search, fromDate, toDat
               </TableRow>
             </TableHead>
             <TableBody>
-              {tableRows.map((row, idx) => {
-                const raw = filtered[idx];
+              {tableRows.map((row) => {
+                const raw = itemsById.get(row.id);
                 return (
                   <React.Fragment key={row.id}>
                     <TableExpandRow {...getRowProps({ row })}>
@@ -982,22 +997,34 @@ const ScheduledTable: React.FC<ScheduledTableProps> = ({ search, fromDate, toDat
                         return <TableCell key={cell.id}>{cell.value ?? '—'}</TableCell>;
                       })}
                     </TableExpandRow>
-                    <TableExpandedRow colSpan={tableHeaders.length + 1} {...getExpandedRowProps({ row })}>
-                      <ScheduledExpandedPanel item={raw} onAction={mutate} />
-                    </TableExpandedRow>
+                    {row.isExpanded && raw ? (
+                      <TableExpandedRow colSpan={tableHeaders.length + 1} {...getExpandedRowProps({ row })}>
+                        <ScheduledExpandedPanel item={raw} onAction={mutate} />
+                      </TableExpandedRow>
+                    ) : (
+                      <TableExpandedRow
+                        className={styles.hiddenRow}
+                        colSpan={tableHeaders.length + 1}
+                        {...getExpandedRowProps({ row })}
+                      />
+                    )}
                   </React.Fragment>
                 );
               })}
             </TableBody>
           </Table>
           <PatientChartPagination
-            currentItems={filtered.length}
-            totalItems={count}
-            pageNumber={currentPage}
+            currentItems={paginated.length}
+            totalItems={filtered.length}
+            pageNumber={effectivePage}
             pageSize={pageSize}
             onPageNumberChange={({ page, pageSize: ps }: { page: number; pageSize: number }) => {
-              setCurrentPage(page);
-              setPageSize(ps);
+              if (ps !== pageSize) {
+                setPageSize(ps);
+                setCurrentPage(1);
+              } else {
+                setCurrentPage(page);
+              }
             }}
           />
         </TableContainer>
@@ -1015,9 +1042,9 @@ interface PreauthTableProps {
 
 const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDate }) => {
   const { t } = useTranslation();
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
-  const { queue, count, isLoading, error, mutate } = usePreauthQueue(tab, pageSize);
+  const { queue, isLoading, error, mutate } = usePreauthQueue(tab, PREAUTH_FETCH_LIMIT);
 
   const headerTitle =
     tab === 'PENDING'
@@ -1047,6 +1074,14 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
       return matchesSearch && isWithinDateRange(dateField, fromDate, toDate);
     });
   }, [queue, search, fromDate, toDate, tab]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const effectivePage = Math.min(currentPage, totalPages);
+
+  const paginated = useMemo(() => {
+    const start = (effectivePage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, effectivePage, pageSize]);
 
   const baseHeaders = [
     { key: 'patient', header: t('patient', 'Patient') },
@@ -1100,7 +1135,7 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
     );
   }
 
-  const rows = filtered.map((item, idx) => ({
+  const rows = paginated.map((item, idx) => ({
     id: `${item.claim_uuid}-${item.intervention_code ?? idx}`,
     patient: item.patient?.display ?? '—',
     authorization_code: item.authorization_code,
@@ -1112,6 +1147,9 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
     approved_amount: formatCurrency(Number(item.approved_amount)) ?? '—',
     responded_on: item.responded_on,
   }));
+
+  const itemsById = new Map(rows.map((row, idx) => [row.id, paginated[idx]]));
+
   return (
     <DataTable rows={rows} headers={headers} isSortable useZebraStyles>
       {({
@@ -1134,8 +1172,8 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
               </TableRow>
             </TableHead>
             <TableBody>
-              {tableRows.map((row, idx) => {
-                const raw = filtered[idx];
+              {tableRows.map((row) => {
+                const raw = itemsById.get(row.id);
                 return (
                   <React.Fragment key={row.id}>
                     <TableExpandRow {...getRowProps({ row })}>
@@ -1162,22 +1200,34 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
                         return <TableCell key={cell.id}>{cell.value ?? '—'}</TableCell>;
                       })}
                     </TableExpandRow>
-                    <TableExpandedRow colSpan={tableHeaders.length + 1} {...getExpandedRowProps({ row })}>
-                      <ExpandedPanel item={raw} tab={tab} onAction={mutate} />
-                    </TableExpandedRow>
+                    {row.isExpanded && raw ? (
+                      <TableExpandedRow colSpan={tableHeaders.length + 1} {...getExpandedRowProps({ row })}>
+                        <ExpandedPanel item={raw} tab={tab} onAction={mutate} />
+                      </TableExpandedRow>
+                    ) : (
+                      <TableExpandedRow
+                        className={styles.hiddenRow}
+                        colSpan={tableHeaders.length + 1}
+                        {...getExpandedRowProps({ row })}
+                      />
+                    )}
                   </React.Fragment>
                 );
               })}
             </TableBody>
           </Table>
           <PatientChartPagination
-            currentItems={filtered.length}
-            totalItems={count}
-            pageNumber={currentPage}
+            currentItems={paginated.length}
+            totalItems={filtered.length}
+            pageNumber={effectivePage}
             pageSize={pageSize}
             onPageNumberChange={({ page, pageSize: ps }: { page: number; pageSize: number }) => {
-              setCurrentPage(page);
-              setPageSize(ps);
+              if (ps !== pageSize) {
+                setPageSize(ps);
+                setCurrentPage(1);
+              } else {
+                setCurrentPage(page);
+              }
             }}
           />
         </TableContainer>

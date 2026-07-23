@@ -16,6 +16,10 @@
   padding: 0;
 }
 
+.hiddenRow {
+  display: none;
+}
+
 :global(.cds--data-table-container) {
   width: 100%;
   overflow-x: auto;

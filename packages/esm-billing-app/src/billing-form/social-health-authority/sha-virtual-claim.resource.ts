@@ -59,7 +59,7 @@ export const useSHAInterventions = (patientCRId: string, subBenefitCode: string)
 
 export const usePreauthQueue = (
   tab: 'ALL' | 'PENDING' | 'COMPLETED' | 'REJECTED' | 'SCHEDULED' = 'ALL',
-  pageSize: number = 20,
+  pageSize: number = 100,
   fromDate?: string,
   toDate?: string,
 ) => {
