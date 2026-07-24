@@ -43,8 +43,11 @@ const SearchBar: React.FC = () => {
     defaultIdentifierType || null,
   );
 
-  const { eligibilityData: eligibilityResponse, isLoading: isEligibilityLoading } =
-    useSHAEligibility(searchedNationalId);
+  const {
+    data: eligibilityResponse,
+    isLoading: isEligibilityLoading,
+    error: eligibilityError,
+  } = useSHAEligibility(searchedNationalId);
   const { patient: localPatientData, isLoading: isLocalSearching } = usePatient(searchQuery);
 
   useEffect(() => {

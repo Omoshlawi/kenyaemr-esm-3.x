@@ -69,7 +69,8 @@ export const useSHAEligibility = (nationalId: string) => {
   const { data, error, isLoading, mutate } = useSWR<{ data: EligibilityResponse }>(url, openmrsFetch);
 
   return {
-    eligibilityData: data?.data,
+    data: data?.data,
+    eligibilityData: data?.data ?? null,
     isLoading,
     error,
     mutate,
