@@ -80,6 +80,13 @@
   margin-top: layout.$spacing-05;
 }
 
+.detailsCardHeaderRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+}
+
 .kvRow {
   display: flex;
   justify-content: space-between;

@@ -208,6 +208,11 @@ export const claimDoctorsWorkspace = getAsyncLifecycle(
   options,
 );
 
+export const manageInterventionsWorkspace = getAsyncLifecycle(
+  () => import('./claims/claims-wrap/claim-workspaces/interventions/manage-interventions-workspace'),
+  options,
+);
+
 export const claimSubmissionWorkspace = getAsyncLifecycle(
   () => import('./claims/claims-wrap/claim-workspaces/claim-submission/ClaimSubmitWorkspace'),
   options,

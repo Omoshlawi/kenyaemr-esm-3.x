@@ -54,6 +54,7 @@ import {
   moveClaimToResubmit,
 } from './claim-workspaces/attachements/claim-attachments-resource';
 import { useClaimDoctors } from './claim-workspaces/doctors/claim-doctors-resource';
+import { PREAUTH_TYPE_COLORS } from '../claims-management/table/virtual-claim-preauth/constants';
 
 interface ClaimsMainProps {
   bill: MappedBill;
@@ -657,6 +658,7 @@ const ClaimDetailsPanel: React.FC<{
 
   const totalBilled = (claim.bill_lines ?? []).reduce((acc, bl) => acc + (Number(bl.line_total_amount) || 0), 0);
   const canUploadAttachments = tab === 'pending' || tab === 'resubmission' || tab === 'sent';
+  const canManageInterventions = tab === 'pending' || tab === 'resubmission';
   const documentParams = useMemo<Record<string, string | undefined>>(
     () => ({
       patientUuid,
@@ -960,9 +962,33 @@ const ClaimDetailsPanel: React.FC<{
         </section>
 
         <section className={styles.detailsCard}>
-          <h6 className={styles.detailsCardTitle}>
-            {t('interventions', 'Interventions')} ({(claim.interventions ?? []).length})
-          </h6>
+          <div className={styles.detailsCardHeaderRow}>
+            <h6 className={styles.detailsCardTitle}>
+              {t('interventions', 'Interventions')} ({(claim.interventions ?? []).length})
+            </h6>
+            {canManageInterventions && (
+              <Button
+                size="sm"
+                kind="ghost"
+                renderIcon={DocumentAdd}
+                onClick={() =>
+                  launchWorkspace2(
+                    'manage-interventions-workspace',
+                    {
+                      workspaceTitle: t('manageInterventions', 'Manage interventions'),
+                      authorizationCode: claim.authorization_code,
+                      patientCRId: claim.member_number ?? '',
+                      interventions: claim.interventions ?? [],
+                      mutate: combinedMutate,
+                    },
+                    {},
+                    {},
+                  )
+                }>
+                {t('manageInterventions', 'Manage interventions')}
+              </Button>
+            )}
+          </div>
 
           {(claim.interventions ?? []).length === 0 ? (
             <p className={styles.muted}>{t('noInterventions', 'No interventions on this claim')}</p>
@@ -978,6 +1004,8 @@ const ClaimDetailsPanel: React.FC<{
                 const uploadedTypes = new Set(uploadedAttachments.map((a) => a.document_type));
                 const requiredDocs = iv.applicable_document_types ?? [];
                 const hasAnyRequiredOrUploaded = requiredDocs.length > 0 || uploadedAttachments.length > 0;
+                const preauthType = (iv.preauth_type ?? '').toUpperCase();
+                const showPreauthType = preauthType && preauthType !== 'NORMAL' && preauthType !== 'NONE';
 
                 return (
                   <li key={iv.id} className={styles.interventionListItem}>
@@ -1021,6 +1049,13 @@ const ClaimDetailsPanel: React.FC<{
                             {iv.preauth_exist
                               ? t('preauthAttached', 'Preauth attached')
                               : t('preauthRequired', 'Preauth required')}
+                          </Tag>
+                        </span>
+                      )}
+                      {showPreauthType && (
+                        <span className={styles.metaItem}>
+                          <Tag size="sm" type={PREAUTH_TYPE_COLORS[preauthType] ?? 'gray'}>
+                            {t('preauthTypeTag', '{{type}} preauth', { type: preauthType })}
                           </Tag>
                         </span>
                       )}

@@ -482,6 +482,11 @@
       "window": "billing-workspace-window"
     },
     {
+      "name": "manage-interventions-workspace",
+      "component": "manageInterventionsWorkspace",
+      "window": "billing-workspace-window"
+    },
+    {
       "name": "claim-submission-workspace",
       "component": "claimSubmissionWorkspace",
       "window": "billing-workspace-window"

@@ -1,0 +1,90 @@
+@use '@carbon/layout';
+@use '@carbon/colors';
+@use '@carbon/type';
+
+.form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.formContainer {
+  flex: 1;
+  padding: layout.$spacing-05;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.claimBanner {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background-color: var(--omrs-color-bg-low-contrast);
+}
+
+.bannerLabel {
+  @include type.type-style('label-01');
+  font-weight: 600;
+  color: var(--omrs-color-ink-medium-contrast);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bannerValue {
+  @include type.type-style('body-short-01');
+  font-weight: 500;
+  color: var(--omrs-color-ink-high-contrast);
+}
+
+.switcher {
+  max-width: 100%;
+}
+
+.helper {
+  @include type.type-style('body-compact-01');
+  color: var(--omrs-color-ink-medium-contrast);
+}
+
+.notification {
+  max-width: 100%;
+}
+
+.previewRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+}
+
+.button {
+  height: layout.$spacing-10;
+  display: flex;
+  align-content: flex-start;
+  align-items: baseline;
+  width: 50%;
+  min-width: 50%;
+
+  :global(.cds--inline-loading) {
+    min-height: layout.$spacing-05;
+  }
+
+  :global(.cds--inline-loading__text) {
+    font-size: unset;
+  }
+}
+
+.spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tablet {
+  padding: 0 layout.$spacing-06;
+}
+
+.desktop {
+  padding: 0;
+}
