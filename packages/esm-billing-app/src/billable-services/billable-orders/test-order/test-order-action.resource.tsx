@@ -7,7 +7,7 @@ import { checkPaymentMethodExclusion, usePatientBills } from '../../../prompt-pa
 
 export const useTestOrderBillStatus = (orderUuid: string, patientUuid: string) => {
   const config = useConfig<BillingConfig>();
-  const { currentVisit, activeVisit } = useVisit(patientUuid);
+  const { activeVisit } = useVisit(patientUuid);
   const { isEmergencyPatient, isLoading: isLoadingQueue } = usePatientQueue(patientUuid);
   const { isLoading, hasPendingPayment } = useOrderPendingPaymentStatus(patientUuid, orderUuid);
 
@@ -15,6 +15,7 @@ export const useTestOrderBillStatus = (orderUuid: string, patientUuid: string) =
   const isExcludedPaymentMethod = checkPaymentMethodExclusion(
     activeVisit,
     config?.paymentMethodsUuidsThatShouldNotShowPrompt,
+    config,
   );
 
   return useMemo(() => {
