@@ -201,7 +201,6 @@
   "operationSuccess": "{{operationName}} réussi avec le statut {{operationType}}",
   "operationSuccessSubtitle": "L'opération s'est déroulée avec succès.",
   "pageRangeText_one": "sur {{count}} page",
-  "pageRangeText_many": "of {{count}} pages",
   "pageRangeText_other": "sur {{count}} pages",
   "passportNumber": "Numéro de passeport",
   "permanent": "Permanent ?",
@@ -327,7 +326,6 @@
   "validLicense": "Licence valide",
   "value": "Valeur (obligatoire)",
   "viewRoles_one": "Voir les rôles ({{count}})",
-  "viewRoles_many": "View roles ({{count}})",
   "viewRoles_other": "Voir les rôles ({{count}})",
   "yes": "Oui",
   "yesRespond": "Oui"
