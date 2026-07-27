@@ -1,12 +1,12 @@
-import { FetchResponse, openmrsFetch } from '@openmrs/esm-framework';
+import { FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { BillingService } from '../types';
 
-const useBillableServices = () => {
-  const customPresentation = `custom:(uuid,name,shortName,serviceStatus,serviceType:(display),servicePrices:(uuid,name,price,paymentMode))`;
-  const url = `/ws/rest/v1/cashier/billableService?v=${customPresentation}`;
+const customPresentation = `custom:(uuid,name,shortName,serviceStatus,serviceType:(display),servicePrices:(uuid,name,price,paymentMode))`;
+const baseUrl = `${restBaseUrl}/cashier/billableService?v=${customPresentation}`;
 
-  const { data, error, isLoading } = useSWR<FetchResponse<{ results: Array<BillingService> }>>(url, openmrsFetch);
+export const useBillableServices = () => {
+  const { data, error, isLoading } = useSWR<FetchResponse<{ results: Array<BillingService> }>>(baseUrl, openmrsFetch);
 
   return {
     error,
@@ -15,4 +15,12 @@ const useBillableServices = () => {
   };
 };
 
-export default useBillableServices;
+export const useBillableServiceByName = (searchTerm: string) => {
+  const url = `${baseUrl}&q=${encodeURIComponent(searchTerm)}`;
+  const { data, error, isLoading } = useSWR<FetchResponse<{ results: Array<BillingService> }>>(url, openmrsFetch);
+  return {
+    isLoading,
+    error,
+    billableServices: data?.data?.results ?? [],
+  };
+};
