@@ -58,7 +58,7 @@ export const useSHAInterventions = (patientCRId: string, subBenefitCode: string)
 };
 
 export const usePreauthQueue = (
-  tab: 'ALL' | 'PENDING' | 'COMPLETED' | 'REJECTED' | 'SCHEDULED' = 'ALL',
+  tab: 'ALL' | 'PENDING' | 'COMPLETED' | 'REJECTED' | 'RESUBMIT' | 'SCHEDULED' = 'ALL',
   pageSize: number = 100,
   fromDate?: string,
   toDate?: string,

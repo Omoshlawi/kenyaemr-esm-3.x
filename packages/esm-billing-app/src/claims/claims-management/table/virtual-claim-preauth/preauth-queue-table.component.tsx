@@ -55,7 +55,7 @@ const PREAUTH_FETCH_LIMIT = 1000;
 
 interface ExpandedPanelProps {
   item: PreauthQueueItem;
-  tab: 'PENDING' | 'COMPLETED' | 'REJECTED';
+  tab: 'PENDING' | 'COMPLETED' | 'REJECTED' | 'RESUBMIT';
   onAction: () => void;
 }
 
@@ -786,7 +786,7 @@ const ScheduledExpandedPanel: React.FC<ScheduledExpandedPanelProps> = ({ item, o
                 title={t('preauthUnderReview', 'Under SHA review')}
                 subtitle={t(
                   'preauthPendingGuidance',
-                  'SHA is reviewing this elective preauth. Auto-refreshes every 60 seconds.',
+                  'SHA is reviewing this elective preauth. Auto-refreshes every 3 minutes.',
                 )}
                 inline
               />
@@ -1034,7 +1034,7 @@ const ScheduledTable: React.FC<ScheduledTableProps> = ({ search, fromDate, toDat
 };
 
 interface PreauthTableProps {
-  tab: 'PENDING' | 'COMPLETED' | 'REJECTED';
+  tab: 'PENDING' | 'COMPLETED' | 'REJECTED' | 'RESUBMIT';
   search: string;
   fromDate: Date | null;
   toDate: Date | null;
@@ -1051,6 +1051,8 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
       ? t('pendingPreauths', 'Pending Pre-Authorizations')
       : tab === 'COMPLETED'
       ? t('completedPreauths', 'Completed Pre-Authorizations')
+      : tab === 'RESUBMIT'
+      ? t('resubmitPreauths', 'Pre-Authorizations Pending Resubmission')
       : t('rejectedPreauths', 'Rejected Pre-Authorizations');
 
   const emptyText =
@@ -1058,6 +1060,8 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
       ? t('noPendingPreauths', 'No pending pre-authorizations')
       : tab === 'COMPLETED'
       ? t('noCompletedPreauths', 'No approved pre-authorizations')
+      : tab === 'RESUBMIT'
+      ? t('noResubmitPreauths', 'No pre-authorizations pending resubmission')
       : t('noRejectedPreauths', 'No rejected pre-authorizations');
 
   const filtered = useMemo(() => {
@@ -1070,7 +1074,9 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
         item.intervention_code?.toLowerCase().includes(q) ||
         item.intervention_name?.toLowerCase().includes(q);
       const dateField =
-        tab === 'PENDING' ? item.date_created : item.responded_on ?? item.requested_on ?? item.date_created;
+        tab === 'PENDING' || tab === 'RESUBMIT'
+          ? item.date_created
+          : item.responded_on ?? item.requested_on ?? item.date_created;
       return matchesSearch && isWithinDateRange(dateField, fromDate, toDate);
     });
   }, [queue, search, fromDate, toDate, tab]);
@@ -1106,6 +1112,12 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
       ...baseHeaders,
       { key: 'service_type', header: t('serviceType', 'Service Type') },
       { key: 'responded_on', header: t('rejectedOn', 'Rejected On') },
+    ],
+    RESUBMIT: [
+      ...baseHeaders,
+      { key: 'service_type', header: t('serviceType', 'Service Type') },
+      { key: 'status', header: t('status', 'Status') },
+      { key: 'date_created', header: t('dateCreated', 'Date Created') },
     ],
   };
 
@@ -1146,6 +1158,8 @@ const PreauthTable: React.FC<PreauthTableProps> = ({ tab, search, fromDate, toDa
     date_created: item.date_created,
     approved_amount: formatCurrency(Number(item.approved_amount)) ?? '—',
     responded_on: item.responded_on,
+    status: item.preauth_status ?? '—',
+    response_note: item.response_note ?? '—',
   }));
 
   const itemsById = new Map(rows.map((row, idx) => [row.id, paginated[idx]]));
@@ -1243,6 +1257,7 @@ const PreauthQueueTable: React.FC = () => {
   const { queue: completedQueue } = usePreauthQueue('COMPLETED');
   const { queue: rejectedQueue } = usePreauthQueue('REJECTED');
   const { queue: scheduledQueue } = usePreauthQueue('SCHEDULED');
+  const { queue: resubmitQueue } = usePreauthQueue('RESUBMIT');
 
   const [search, setSearch] = useState('');
   const [activeTabIndex, setActiveTabIndex] = useState(0);
@@ -1281,6 +1296,10 @@ const PreauthQueueTable: React.FC = () => {
   const scheduledFiltered = useMemo(
     () => filterQueue(scheduledQueue, 'date_created'),
     [scheduledQueue, search, fromDate, toDate],
+  );
+  const resubmitFiltered = useMemo(
+    () => filterQueue(resubmitQueue, 'date_created'),
+    [resubmitQueue, search, fromDate, toDate],
   );
 
   const approvedScheduledCount = scheduledFiltered.filter((i) => i.workflow_state === 'ELECTIVE_APPROVED').length;
@@ -1342,6 +1361,14 @@ const PreauthQueueTable: React.FC = () => {
                 </Tag>
               )}
             </Tab>
+            <Tab>
+              {t('resubmit', 'Resubmit')}
+              {resubmitFiltered.length > 0 && (
+                <Tag type="warm-gray" size="sm" className={styles.tagStatus}>
+                  {resubmitFiltered.length}
+                </Tag>
+              )}
+            </Tab>
           </TabList>
 
           <div className={styles.tabsToolbar}>
@@ -1389,6 +1416,9 @@ const PreauthQueueTable: React.FC = () => {
           </TabPanel>
           <TabPanel>
             <ScheduledTable search={search} fromDate={fromDate} toDate={toDate} />
+          </TabPanel>
+          <TabPanel>
+            <PreauthTable tab="RESUBMIT" search={search} fromDate={fromDate} toDate={toDate} />
           </TabPanel>
         </TabPanels>
       </Tabs>
