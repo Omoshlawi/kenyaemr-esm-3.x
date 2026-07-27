@@ -5,16 +5,16 @@ import userEvent from '@testing-library/user-event';
 import { PaymentMode } from '../types';
 import { deletePaymentMode } from './payment-mode.resource';
 
-const mockDeletePaymentMode = jest.mocked(deletePaymentMode);
+const mockDeletePaymentMode = vi.mocked(deletePaymentMode);
 
-jest.mock('./payment-mode.resource', () => ({
-  deletePaymentMode: jest.fn(),
+vi.mock('./payment-mode.resource', () => ({
+  deletePaymentMode: vi.fn(),
 }));
 
 describe('DeletePaymentModeModal', () => {
   test('should be able to delete payment mode when user clicks on delete button', async () => {
     const user = userEvent.setup();
-    const mockCloseModal = jest.fn();
+    const mockCloseModal = vi.fn();
     const mockPaymentMode = {
       uuid: '123',
       name: 'Test Payment Mode',
@@ -39,7 +39,7 @@ describe('DeletePaymentModeModal', () => {
 
   test('should be able to cancel deletion of payment mode when user clicks on cancel button', async () => {
     const user = userEvent.setup();
-    const mockCloseModal = jest.fn();
+    const mockCloseModal = vi.fn();
     const mockPaymentMode = {
       uuid: '123',
       name: 'Test Payment Mode',

@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import GlobalPropertyWorkspace from './global-property.workspace';
 

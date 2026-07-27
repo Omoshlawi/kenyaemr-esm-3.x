@@ -4,28 +4,33 @@ import '@testing-library/jest-dom';
 import { SWRConfig } from 'swr';
 import { updateRelationship } from '../../relationships/relationship.resources';
 import { showSnackbar } from '@openmrs/esm-framework';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import EndRelationshipWorkspace from './case-management-workspace.component';
 
-jest.mock('../../relationships/relationship.resources', () => ({
-  updateRelationship: jest.fn(),
+vi.mock('../../relationships/relationship.resources', () => ({
+  updateRelationship: vi.fn(),
 }));
 
-jest.mock('@openmrs/esm-framework', () => ({
-  showSnackbar: jest.fn(),
+vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@openmrs/esm-framework')>()),
+  showSnackbar: vi.fn(),
 }));
 
 describe('EndRelationshipWorkspace', () => {
-  const mockCloseWorkspace = jest.fn();
+  const mockCloseWorkspace = vi.fn();
   const mockRelationshipUuid = '235634748948357462514';
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders the workspace with the correct content', () => {
     render(
       <SWRConfig value={{ provider: () => new Map() }}>
-        <EndRelationshipWorkspace closeWorkspace={mockCloseWorkspace} relationshipUuid={mockRelationshipUuid} />
+        <EndRelationshipWorkspace
+          closeWorkspace={mockCloseWorkspace}
+          workspaceProps={{ relationshipUuid: mockRelationshipUuid }}
+        />
       </SWRConfig>,
     );
 
@@ -40,7 +45,10 @@ describe('EndRelationshipWorkspace', () => {
   it('closes the workspace when the discard button is clicked', () => {
     render(
       <SWRConfig value={{ provider: () => new Map() }}>
-        <EndRelationshipWorkspace closeWorkspace={mockCloseWorkspace} relationshipUuid={mockRelationshipUuid} />
+        <EndRelationshipWorkspace
+          closeWorkspace={mockCloseWorkspace}
+          workspaceProps={{ relationshipUuid: mockRelationshipUuid }}
+        />
       </SWRConfig>,
     );
 

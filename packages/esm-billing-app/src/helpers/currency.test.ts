@@ -8,10 +8,10 @@ import {
 
 // Mock localStorage
 const mockLocalStorage = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
 };
 
 Object.defineProperty(window, 'localStorage', {
@@ -20,7 +20,7 @@ Object.defineProperty(window, 'localStorage', {
 
 describe('Currency Utilities', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('DEFAULT_LOCALE_CURRENCY_MAP', () => {
@@ -72,9 +72,9 @@ describe('Currency Utilities', () => {
     beforeEach(() => {
       // Mock Intl.NumberFormat
       const mockFormatter = {
-        format: jest.fn((value) => `$${value.toFixed(2)}`),
+        format: vi.fn((value) => `$${value.toFixed(2)}`),
       };
-      jest.spyOn(Intl, 'NumberFormat').mockImplementation(() => mockFormatter as any);
+      vi.spyOn(Intl, 'NumberFormat').mockImplementation(() => mockFormatter as any);
     });
 
     it('should format positive amounts correctly', () => {
@@ -94,9 +94,9 @@ describe('Currency Utilities', () => {
     beforeEach(() => {
       // Mock Intl.NumberFormat
       const mockFormatter = {
-        format: jest.fn((value) => `$${value.toFixed(2)}`),
+        format: vi.fn((value) => `$${value.toFixed(2)}`),
       };
-      jest.spyOn(Intl, 'NumberFormat').mockImplementation(() => mockFormatter as any);
+      vi.spyOn(Intl, 'NumberFormat').mockImplementation(() => mockFormatter as any);
     });
 
     it('should format amounts without negative sign handling', () => {

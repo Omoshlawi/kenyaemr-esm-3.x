@@ -6,13 +6,13 @@ import userEvent from '@testing-library/user-event';
 import { LineItem, MappedBill, PaymentMethod } from '../../../../types';
 import { showSnackbar } from '@openmrs/esm-framework';
 
-const mockedUsePaymentModes = usePaymentModes as jest.MockedFunction<typeof usePaymentModes>;
-const mockProcessBillPayment = processBillPayment as jest.MockedFunction<typeof processBillPayment>;
-const mockShowSnackbar = showSnackbar as jest.MockedFunction<typeof showSnackbar>;
+const mockedUsePaymentModes = usePaymentModes as vi.MockedFunction<typeof usePaymentModes>;
+const mockProcessBillPayment = processBillPayment as vi.MockedFunction<typeof processBillPayment>;
+const mockShowSnackbar = showSnackbar as vi.MockedFunction<typeof showSnackbar>;
 
-jest.mock('../../../../billing.resource', () => ({
-  processBillPayment: jest.fn(),
-  usePaymentModes: jest.fn(),
+vi.mock('../../../../billing.resource', () => ({
+  processBillPayment: vi.fn(),
+  usePaymentModes: vi.fn(),
 }));
 
 const mockedBill: MappedBill = {
@@ -85,16 +85,15 @@ describe('BillWaiverForm', () => {
       paymentModes: mockedPaymentMode,
       isLoading: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     render(
       <WaiveBillForm
-        bill={mockedBill}
-        closeWorkspace={jest.fn()}
-        patientUuid="some-patient-uuid"
-        promptBeforeClosing={jest.fn()}
-        setTitle={jest.fn()}
-        closeWorkspaceWithSavedChanges={jest.fn()}
+        workspaceProps={{ bill: mockedBill }}
+        closeWorkspace={vi.fn()}
+        promptBeforeClosing={vi.fn()}
+        setTitle={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
       />,
     );
     expect(screen.getByText('Bill Items')).toBeInTheDocument();

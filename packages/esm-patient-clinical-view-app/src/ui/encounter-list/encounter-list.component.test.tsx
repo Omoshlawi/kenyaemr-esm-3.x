@@ -14,6 +14,7 @@ import {
 } from '../../../../../__mocks__/encounter-observation.mock';
 import { waitForLoadingToFinish } from '../../../../../tools/test-helpers';
 import { openmrsFetch, usePagination } from '@openmrs/esm-framework';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 const testProps = {
   tableHeaders: mockTableHeaders,
@@ -24,16 +25,16 @@ const testProps = {
   headerTitle: mockHeaderTitle,
   description: mockDescription,
   formList: mockFormList,
-  filter: jest.fn(),
+  filter: vi.fn(),
   launchOptions: mockLaunchOptions,
   isExpandable: true,
 };
 
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
-const mockUsePagination = usePagination as jest.Mock;
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockUsePagination = vi.mocked(usePagination);
 
 describe('EncounterList', () => {
-  afterEach(() => jest.clearAllMocks());
+  afterEach(() => vi.clearAllMocks());
 
   test('should render loading datatable skeleton', async () => {
     // Mock SWRImmutable hook to return error state
@@ -77,12 +78,12 @@ describe('EncounterList', () => {
     await user.click(expandCurrentRowButton);
   });
 
-  xit('renders an error state if there was a problem fetching encounters data', async () => {
+  test.skip('renders an error state if there was a problem fetching encounters data', async () => {
     mockOpenmrsFetch.mockReturnValueOnce({
       isLoading: false,
       error: new Error('some error'),
       encounters: [],
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<EncounterList {...testProps} />);
@@ -91,7 +92,7 @@ describe('EncounterList', () => {
   });
 
   test('renders an empty state if there is no data available', async () => {
-    mockOpenmrsFetch.mockReturnValueOnce({ isLoading: false, error: null, encounters: [], onFormSave: jest.fn() });
+    mockOpenmrsFetch.mockReturnValueOnce({ isLoading: false, error: null, encounters: [], onFormSave: vi.fn() });
     mockUsePagination.mockImplementation(() => ({
       currentPage: 1,
       goTo: () => {},

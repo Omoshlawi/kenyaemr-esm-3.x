@@ -6,17 +6,17 @@ import { deleteBillableService } from '../../service-catalog/billable-service.re
 import { showSnackbar } from '@openmrs/esm-framework';
 import type { ChargeAble } from '../../service-catalog/charge-summary.resource';
 
-jest.mock('../../service-catalog/billable-service.resource', () => ({
-  deleteBillableService: jest.fn(),
+vi.mock('../../service-catalog/billable-service.resource', () => ({
+  deleteBillableService: vi.fn(),
 }));
-jest.mock('@openmrs/esm-framework', () => ({
-  showSnackbar: jest.fn(),
+vi.mock('@openmrs/esm-framework', () => ({
+  showSnackbar: vi.fn(),
   restBaseUrl: 'http://fake-api',
 }));
-jest.mock('swr', () => ({
-  mutate: jest.fn(),
+vi.mock('swr', () => ({
+  mutate: vi.fn(),
 }));
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, defaultText: string) => defaultText,
   }),
@@ -33,10 +33,10 @@ describe('<DeleteBillableServiceModal />', () => {
     servicePrices: [{ uuid: 'sp-1', name: 'Standard Price', price: 100 }],
     concept: { uuid: 'c-1', display: 'Concept Display' },
   };
-  const closeModal = jest.fn();
+  const closeModal = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders header, message, and both buttons', () => {
@@ -56,7 +56,7 @@ describe('<DeleteBillableServiceModal />', () => {
   });
 
   it('performs delete flow and shows success snackbar', async () => {
-    (deleteBillableService as jest.Mock).mockResolvedValue(undefined);
+    (deleteBillableService as vi.Mock).mockResolvedValue(undefined);
 
     render(<DeleteBillableServiceModal closeModal={closeModal} chargeableItem={fullItem} />);
 
@@ -80,7 +80,7 @@ describe('<DeleteBillableServiceModal />', () => {
   });
 
   it('shows error snackbar on delete failure', async () => {
-    (deleteBillableService as jest.Mock).mockRejectedValue(new Error('failure'));
+    (deleteBillableService as vi.Mock).mockRejectedValue(new Error('failure'));
 
     render(<DeleteBillableServiceModal closeModal={closeModal} chargeableItem={fullItem} />);
 

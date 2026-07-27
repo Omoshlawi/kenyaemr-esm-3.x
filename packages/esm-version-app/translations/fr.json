@@ -1,13 +1,13 @@
 {
-  "buildDateTime": "Build date time",
-  "emergency": "Emergency",
-  "facilityLogo": "Facility logo",
-  "frontendModules": "Frontend modules",
-  "loadingFacilityInformation": "Loading facility information...",
-  "mainModuleVersion": "Main Module Version",
-  "moduleName": "Module name",
-  "noVersionFound": "No version found",
-  "spaVersion": "SPA Version",
+  "buildDateTime": "Construisez l'heure de date",
+  "emergency": "Urgence",
+  "facilityLogo": "Logo de l'installation",
+  "frontendModules": "Modules frontaux",
+  "loadingFacilityInformation": "Informations sur l'installation de chargement...",
+  "mainModuleVersion": "Version du module principal",
+  "moduleName": "Nom du module",
+  "noVersionFound": "Aucune version trouvée",
+  "spaVersion": "Version SPA",
   "systemInfo": "Informations système",
   "version": "Version"
 }

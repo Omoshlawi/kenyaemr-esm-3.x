@@ -11,8 +11,8 @@ import { usePatientEncounter, useClinicalEncounterForm } from '../../../hooks/us
 const mockLaunchWorkspaceRequiringVisit = vi.fn();
 
 // Mock dependencies
-vi.mock('@openmrs/esm-framework', () => ({
-  ...vi.importActual<typeof import('@openmrs/esm-framework')>('@openmrs/esm-framework'),
+vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@openmrs/esm-framework')>()),
   formatDatetime: vi.fn((date, options) => '15-Jan-2024'),
   parseDate: vi.fn((date) => new Date(date)),
   openmrsFetch: vi.fn(),
@@ -40,12 +40,16 @@ vi.mock('@openmrs/esm-patient-common-lib', () => ({
   useLaunchWorkspaceRequiringVisit: vi.fn(),
 }));
 
-vi.mock('@carbon/react', () => ({
-  ...vi.importActual<typeof import('@carbon/react')>('@carbon/react'),
+vi.mock('@carbon/react', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@carbon/react')>()),
   TabsSkeleton: vi.fn(() => <div data-testid="tabs-skeleton">Loading tabs...</div>),
 }));
 
 vi.mock('../../../hooks/usePatientEncounter');
+
+vi.mock('./haemodialysis/haemodialysis.panel', () => ({
+  default: () => <div data-testid="haemodialysis-panel" />,
+}));
 
 const mockUsePatientEncounter = usePatientEncounter as MockedFunction<typeof usePatientEncounter>;
 const mockUseClinicalEncounterForm = useClinicalEncounterForm as MockedFunction<typeof useClinicalEncounterForm>;
@@ -158,14 +162,14 @@ describe('EncounterDetails', () => {
       encounters: mockEncounters as Array<any>,
       isLoading: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     mockUseClinicalEncounterForm.mockReturnValue({
       form: {},
       conceptLabelMap: mockConceptLabelMap,
       isLoading: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
   });
 
@@ -174,11 +178,12 @@ describe('EncounterDetails', () => {
       render(<EncounterDetails patientUuid={patientUuid} />);
 
       const tabs = screen.getAllByRole('tab');
-      expect(tabs).toHaveLength(5);
+      expect(tabs).toHaveLength(6);
       expect(screen.getAllByText('Visit Details').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Patient History').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Patient Examination').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Patient Management').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Haemodialysis').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Lab Results').length).toBeGreaterThan(0);
     });
 
@@ -265,13 +270,9 @@ describe('EncounterDetails', () => {
       await user.click(addButton);
 
       expect(mockLaunchWorkspaceRequiringVisit).toHaveBeenCalledWith({
-        workspaceTitle: 'Visit Details',
         mutateForm: expect.any(Function),
-        formInfo: {
-          encounterUuid: '',
-          formUuid: 'e958f902-64df-4819-afd4-7fb061f59308',
-          additionalProps: {},
-        },
+        encounterUuid: '',
+        form: { uuid: 'e958f902-64df-4819-afd4-7fb061f59308' },
       });
     });
 
@@ -290,7 +291,8 @@ describe('EncounterDetails', () => {
 
       expect(mockLaunchWorkspaceRequiringVisit).toHaveBeenCalledWith(
         expect.objectContaining({
-          workspaceTitle: 'Patient History',
+          encounterUuid: '',
+          form: { uuid: 'e958f902-64df-4819-afd4-7fb061f59308' },
         }),
       );
     });
@@ -302,7 +304,7 @@ describe('EncounterDetails', () => {
         encounters: [],
         isLoading: true,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<EncounterDetails patientUuid={patientUuid} />);
@@ -318,7 +320,7 @@ describe('EncounterDetails', () => {
         encounters: [],
         isLoading: false,
         error: new Error(errorMessage),
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<EncounterDetails patientUuid={patientUuid} />);
@@ -336,7 +338,7 @@ describe('EncounterDetails', () => {
         encounters: [],
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<EncounterDetails patientUuid={patientUuid} />);
@@ -365,7 +367,7 @@ describe('EncounterDetails', () => {
         ],
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<EncounterDetails patientUuid={patientUuid} />);
@@ -395,7 +397,7 @@ describe('EncounterDetails', () => {
         ],
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<EncounterDetails patientUuid={patientUuid} />);
@@ -410,7 +412,7 @@ describe('EncounterDetails', () => {
         conceptLabelMap: null,
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<EncounterDetails patientUuid={patientUuid} />);
@@ -449,7 +451,7 @@ describe('EncounterDetails', () => {
         ],
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<EncounterDetails patientUuid={patientUuid} />);
@@ -466,7 +468,7 @@ describe('EncounterDetails', () => {
 
       // Component should render tabs
       const tabs = screen.getAllByRole('tab');
-      expect(tabs).toHaveLength(5);
+      expect(tabs).toHaveLength(6);
 
       // Check Patient History section
       const historyTab = tabs[1];
@@ -505,7 +507,7 @@ describe('EncounterDetails', () => {
         encounters: multipleEncounters as Array<any>,
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<EncounterDetails patientUuid={patientUuid} />);
@@ -521,7 +523,7 @@ describe('EncounterDetails', () => {
       render(<EncounterDetails patientUuid={patientUuid} />);
 
       const tabs = screen.getAllByRole('tab');
-      expect(tabs).toHaveLength(5);
+      expect(tabs).toHaveLength(6);
 
       // All tabs should be accessible
       tabs.forEach((tab) => {

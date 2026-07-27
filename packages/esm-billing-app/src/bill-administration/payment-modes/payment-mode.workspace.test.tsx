@@ -6,17 +6,18 @@ import { createPaymentMode } from './payment-mode.resource';
 import { showSnackbar } from '@openmrs/esm-framework';
 
 const testProps = {
-  closeWorkspace: jest.fn(),
-  promptBeforeClosing: jest.fn(),
-  closeWorkspaceWithSavedChanges: jest.fn(),
-  setTitle: jest.fn(),
+  closeWorkspace: vi.fn(),
+  workspaceProps: {},
+  promptBeforeClosing: vi.fn(),
+  closeWorkspaceWithSavedChanges: vi.fn(),
+  setTitle: vi.fn(),
 };
 
-const mockCreatePaymentMode = jest.mocked(createPaymentMode);
+const mockCreatePaymentMode = vi.mocked(createPaymentMode);
 
-jest.mock('./payment-mode.resource', () => ({
-  ...jest.requireActual('./payment-mode.resource'),
-  createPaymentMode: jest.fn(),
+vi.mock('./payment-mode.resource', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./payment-mode.resource')>()),
+  createPaymentMode: vi.fn(),
 }));
 
 describe('PaymentModeWorkspace', () => {
@@ -171,7 +172,7 @@ describe('PaymentModeWorkspace', () => {
     };
 
     const user = userEvent.setup();
-    render(<PaymentModeWorkspace {...testProps} initialPaymentMode={initialPaymentMode} />);
+    render(<PaymentModeWorkspace {...testProps} workspaceProps={{ initialPaymentMode }} />);
 
     // make the attribute type required
     const attributeRequiredToggle = screen.getByRole('switch', { name: /Attribute required/i });

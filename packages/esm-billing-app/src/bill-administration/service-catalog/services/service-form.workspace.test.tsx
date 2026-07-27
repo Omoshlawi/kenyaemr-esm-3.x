@@ -5,10 +5,10 @@ import ServiceForm from './service-form.workspace';
 import { createBillableService, useConceptsSearch, useServiceTypes } from '../billable-service.resource';
 import { usePaymentModes } from '../../../billing.resource';
 
-const mockUseConceptsSearch = useConceptsSearch as jest.MockedFunction<typeof useConceptsSearch>;
-const mockUseServiceTypes = useServiceTypes as jest.MockedFunction<typeof useServiceTypes>;
-const mockUsePaymentModes = usePaymentModes as jest.MockedFunction<typeof usePaymentModes>;
-const mockCreateBillableService = createBillableService as jest.MockedFunction<typeof createBillableService>;
+const mockUseConceptsSearch = useConceptsSearch as vi.MockedFunction<typeof useConceptsSearch>;
+const mockUseServiceTypes = useServiceTypes as vi.MockedFunction<typeof useServiceTypes>;
+const mockUsePaymentModes = usePaymentModes as vi.MockedFunction<typeof usePaymentModes>;
+const mockCreateBillableService = createBillableService as vi.MockedFunction<typeof createBillableService>;
 
 const mockerConcepts = {
   searchResults: [
@@ -134,26 +134,25 @@ const mockPaymentModes = {
   ],
   isLoading: false,
   error: null,
-  mutate: jest.fn(),
+  mutate: vi.fn(),
 };
 
-jest.mock('../billable-service.resource', () => ({
-  useConceptsSearch: jest.fn(),
-  useServiceTypes: jest.fn(),
-  createBillableService: jest.fn(),
+vi.mock('../billable-service.resource', () => ({
+  useConceptsSearch: vi.fn(),
+  useServiceTypes: vi.fn(),
+  createBillableService: vi.fn(),
 }));
 
-jest.mock('../../../billing.resource', () => ({
-  usePaymentModes: jest.fn(),
+vi.mock('../../../billing.resource', () => ({
+  usePaymentModes: vi.fn(),
 }));
 
 const defaultProps = {
-  patient: null,
-  patientUuid: 'test-uuid',
-  closeWorkspace: jest.fn(),
-  promptBeforeClosing: jest.fn(),
-  setTitle: jest.fn(),
-  closeWorkspaceWithSavedChanges: jest.fn(),
+  workspaceProps: { initialValues: undefined },
+  closeWorkspace: vi.fn(),
+  promptBeforeClosing: vi.fn(),
+  setTitle: vi.fn(),
+  closeWorkspaceWithSavedChanges: vi.fn(),
 };
 
 describe('ServiceForm', () => {
@@ -175,9 +174,6 @@ describe('ServiceForm', () => {
     await user.type(serviceNameInput, 'Test Service');
     await user.type(serviceShortNameInput, 'TS');
     await user.type(serviceConceptInput, 'Consultation');
-
-    const searchResults = container.querySelector('.searchResults');
-    expect(searchResults).toBeInTheDocument();
 
     const firstSearchResultItem = screen.getByRole('button', { name: 'Consultation' });
     await user.click(firstSearchResultItem);

@@ -1,18 +1,24 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import { mockProgram } from '../../../../__mocks__/program-summary.mock';
 import { formatDate } from '@openmrs/esm-framework';
 import ProgramSummary, { ProgramSummaryProps } from './program-summary.component';
 
-jest.mock('../hooks/useProgramSummary', () => ({
-  useProgramSummary: jest.fn(() => ({
-    data: mockProgram,
-    isError: false,
-    isLoading: false,
-  })),
-}));
+vi.mock('../hooks/useProgramSummary', async () => {
+  const { mockProgram: program } = await vi.importActual<typeof import('../../../../__mocks__/program-summary.mock')>(
+    '../../../../__mocks__/program-summary.mock',
+  );
+  return {
+    useProgramSummary: vi.fn(() => ({
+      data: program,
+      isError: false,
+      isLoading: false,
+    })),
+  };
+});
 
-const mockFormatDate = (date) => formatDate(new Date(date));
+const mockFormatDate = (date: string) => formatDate(new Date(date));
 
 describe('ProgramSummary Component', () => {
   const mockProps: ProgramSummaryProps = {
@@ -40,7 +46,7 @@ describe('ProgramSummary Component', () => {
     expect(screen.getByText(`01-Aug-2023`)).toBeInTheDocument();
   });
 
-  xit('displays TB program details correctly', async () => {
+  it.skip('displays TB program details correctly', async () => {
     const tbProps: ProgramSummaryProps = {
       ...mockProps,
       programName: 'TB',

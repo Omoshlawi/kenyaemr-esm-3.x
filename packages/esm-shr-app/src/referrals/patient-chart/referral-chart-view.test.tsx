@@ -1,12 +1,13 @@
 import React from 'react';
 import { screen, render } from '@testing-library/react';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import ReferralReasonsView from './referral-chart-view.component';
 import * as resource from '../refferals.resource';
-import * as mock from '@openmrs/esm-framework/mock';
+import * as framework from '@openmrs/esm-framework';
 
-jest.mock('../refferals.resource');
+vi.mock('../refferals.resource');
 
-jest.spyOn(mock, 'useConfig').mockReturnValue({
+vi.spyOn(framework, 'useConfig').mockReturnValue({
   nationalPatientUniqueIdentifier: '12f85081e2-b4be-4e48-b3a4-7994b69bb101',
 });
 
@@ -99,13 +100,16 @@ const mockReferral = {
 
 describe('ReferralReasonsView', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('should show missing national unique patient identifier message if patient does not have one assigned', () => {
-    jest
-      .spyOn(resource, 'useCommunityReferral')
-      .mockReturnValue({ isError: null, isLoading: false, isValidating: false, referral: null as any });
+    vi.spyOn(resource, 'useCommunityReferral').mockReturnValue({
+      isError: null,
+      isLoading: false,
+      isValidating: false,
+      referral: null as any,
+    });
     render(<ReferralReasonsView patient={{ ...mockFhirPatient, identifier: [] }} />);
     expect(screen.getByText('Referrals')).toBeInTheDocument();
     expect(
@@ -116,9 +120,12 @@ describe('ReferralReasonsView', () => {
   });
 
   test('should show referral data if patient has a national unique patient identifier assigned', () => {
-    jest
-      .spyOn(resource, 'useCommunityReferral')
-      .mockReturnValue({ isError: null, isLoading: false, isValidating: false, referral: mockReferral as any });
+    vi.spyOn(resource, 'useCommunityReferral').mockReturnValue({
+      isError: null,
+      isLoading: false,
+      isValidating: false,
+      referral: mockReferral as any,
+    });
     render(<ReferralReasonsView patient={mockFhirPatient} />);
     expect(screen.getByText('Referrals')).toBeInTheDocument();
     expect(screen.getByText('Status')).toBeInTheDocument();
@@ -131,5 +138,49 @@ describe('ReferralReasonsView', () => {
     expect(screen.getByText(mockReferral.referralReasons.reasonCode)).toBeInTheDocument();
     expect(screen.getByText(mockReferral.referralReasons.clinicalNote)).toBeInTheDocument();
     expect(screen.getByText(mockReferral.referredFrom)).toBeInTheDocument();
+  });
+
+  test('shows progress while referral data is loading', () => {
+    vi.spyOn(resource, 'useCommunityReferral').mockReturnValue({
+      isError: null,
+      isLoading: true,
+      isValidating: false,
+      referral: {} as any,
+    });
+    const { container } = render(<ReferralReasonsView patient={mockFhirPatient} />);
+    expect(container.querySelector('.cds--skeleton')).toBeInTheDocument();
+  });
+
+  test('shows an empty state when the patient has no referrals', () => {
+    vi.spyOn(resource, 'useCommunityReferral').mockReturnValue({
+      isError: null,
+      isLoading: false,
+      isValidating: false,
+      referral: { active: [], completed: [] } as any,
+    });
+    render(<ReferralReasonsView patient={mockFhirPatient} />);
+    expect(screen.getByText(/There are no/i)).toBeInTheDocument();
+  });
+
+  test('shows an error when referrals cannot be loaded', () => {
+    vi.spyOn(resource, 'useCommunityReferral').mockReturnValue({
+      isError: new Error('Referral service unavailable'),
+      isLoading: false,
+      isValidating: false,
+      referral: { status: 'ACTIVE' } as any,
+    });
+    render(<ReferralReasonsView patient={mockFhirPatient} />);
+    expect(screen.getByText('Error State')).toBeInTheDocument();
+  });
+
+  test('indicates when visible referral data is refreshing', () => {
+    vi.spyOn(resource, 'useCommunityReferral').mockReturnValue({
+      isError: null,
+      isLoading: false,
+      isValidating: true,
+      referral: mockReferral as any,
+    });
+    render(<ReferralReasonsView patient={mockFhirPatient} />);
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 });

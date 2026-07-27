@@ -1,21 +1,21 @@
 import React from 'react';
-import dayjs from 'dayjs';
 import userEvent from '@testing-library/user-event';
 import { render, screen, act } from '@testing-library/react';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { useConfig } from '@openmrs/esm-framework';
 import { usePatientSummary } from '../hooks/usePatientSummary';
 import { mockPatient } from '../../../../__mocks__/patient-summary.mock';
 import PatientSummary from './patient-summary.component';
 
-jest.mock('../hooks/usePatientSummary');
+vi.mock('../hooks/usePatientSummary');
 
-const mockedUseConfig = useConfig as jest.Mock;
-const mockedUsePatientSummary = usePatientSummary as jest.Mock;
+const mockedUseConfig = vi.mocked(useConfig);
+const mockedUsePatientSummary = vi.mocked(usePatientSummary);
 
 // Mock window.open and window.print
-const mockOpen = jest.fn();
-const mockPrint = jest.fn();
-const mockClose = jest.fn();
+const mockOpen = vi.fn();
+const mockPrint = vi.fn();
+const mockClose = vi.fn();
 
 Object.defineProperty(window, 'open', {
   writable: true,
@@ -41,7 +41,7 @@ describe('PatientSummary', () => {
     mockClose.mockClear();
   });
 
-  afterEach(() => jest.clearAllMocks());
+  afterEach(() => vi.clearAllMocks());
 
   it('renders a skeleton loader when loading', () => {
     render(<PatientSummary patientUuid={mockPatient.uuid} />);
@@ -111,12 +111,12 @@ describe('PatientSummary', () => {
     // Mock the print window
     const mockPrintWindow = {
       document: {
-        write: jest.fn(),
-        close: jest.fn(),
+        write: vi.fn(),
+        close: vi.fn(),
       },
-      focus: jest.fn(),
-      print: jest.fn(),
-      close: jest.fn(),
+      focus: vi.fn(),
+      print: vi.fn(),
+      close: vi.fn(),
     };
     mockOpen.mockReturnValue(mockPrintWindow);
 

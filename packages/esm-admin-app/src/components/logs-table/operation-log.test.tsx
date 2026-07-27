@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import LogTable from './operation-log-table.component';
 import { ETLResponse } from '../../types';

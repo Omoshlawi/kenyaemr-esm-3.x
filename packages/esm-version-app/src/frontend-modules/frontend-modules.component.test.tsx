@@ -1,23 +1,16 @@
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
-import { describe, it, beforeEach, expect, vi } from 'vitest';
+import { describe, it, beforeEach, expect } from 'vitest';
 
 import FrontendModule from './frontend-modules.component';
-import { useFrontendModules } from '../hooks/useFrontendModules';
-
-vi.mock('../hooks/useFrontendModules');
-
-type UseFrontendModulesMock = ReturnType<typeof vi.fn>;
 
 describe('FrontendModule', () => {
-  const useFrontendModulesMock = useFrontendModules as unknown as UseFrontendModulesMock;
-
   beforeEach(() => {
-    vi.clearAllMocks();
+    window.installedModules = [];
   });
 
   it('renders table headers for module name and version', () => {
-    useFrontendModulesMock.mockReturnValue([{ name: 'Test module', version: '1.0.0' }]);
+    window.installedModules = [['@openmrs/test-module', { version: '1.0.0' }]];
 
     render(<FrontendModule />);
 
@@ -27,10 +20,10 @@ describe('FrontendModule', () => {
   });
 
   it('renders a row for each frontend module with name and version', () => {
-    useFrontendModulesMock.mockReturnValue([
-      { name: 'Module A', version: '1.0.0' },
-      { name: 'Module B', version: '2.0.0' },
-    ]);
+    window.installedModules = [
+      ['@openmrs/Module A', { version: '1.0.0' }],
+      ['@openmrs/Module B', { version: '2.0.0' }],
+    ];
 
     render(<FrontendModule />);
 
@@ -49,7 +42,7 @@ describe('FrontendModule', () => {
   });
 
   it('falls back to "No version found" when version is missing', () => {
-    useFrontendModulesMock.mockReturnValue([{ name: 'No Version Module' }]);
+    window.installedModules = [['@openmrs/No Version Module', {}]];
 
     render(<FrontendModule />);
 

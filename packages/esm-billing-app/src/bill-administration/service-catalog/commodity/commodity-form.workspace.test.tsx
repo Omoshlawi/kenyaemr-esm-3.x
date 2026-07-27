@@ -6,8 +6,8 @@ import { useCommodityItem } from './useCommodityItem';
 import { usePaymentModes } from '../../../billing.resource';
 import { createBillableService } from '../billable-service.resource';
 
-jest.mock('../billable-service.resource', () => ({
-  createBillableService: jest.fn(),
+vi.mock('../billable-service.resource', () => ({
+  createBillableService: vi.fn(),
 }));
 
 const mockStockItems = [
@@ -99,8 +99,8 @@ const mockStockItems = [
   },
 ];
 
-const mockUseCommodityItem = useCommodityItem as jest.MockedFunction<typeof useCommodityItem>;
-const mockUsePaymentModes = usePaymentModes as jest.MockedFunction<typeof usePaymentModes>;
+const mockUseCommodityItem = useCommodityItem as vi.MockedFunction<typeof useCommodityItem>;
+const mockUsePaymentModes = usePaymentModes as vi.MockedFunction<typeof usePaymentModes>;
 
 const mockPaymentModes = {
   paymentModes: [
@@ -208,25 +208,24 @@ const mockPaymentModes = {
     },
   ],
   isLoading: false,
-  mutate: jest.fn(),
+  mutate: vi.fn(),
   error: null,
 };
 
-jest.mock('./useCommodityItem', () => ({
-  useCommodityItem: jest.fn(),
+vi.mock('./useCommodityItem', () => ({
+  useCommodityItem: vi.fn(),
 }));
 
-jest.mock('../../../billing.resource', () => ({
-  usePaymentModes: jest.fn(),
+vi.mock('../../../billing.resource', () => ({
+  usePaymentModes: vi.fn(),
 }));
 
 const commodityFormProps = {
-  patient: {} as fhir.Patient,
-  patientUuid: 'patient-123',
-  closeWorkspace: jest.fn(),
-  promptBeforeClosing: jest.fn(),
-  closeWorkspaceWithSavedChanges: jest.fn(),
-  setTitle: jest.fn(),
+  workspaceProps: { initialValues: undefined },
+  closeWorkspace: vi.fn(),
+  promptBeforeClosing: vi.fn(),
+  closeWorkspaceWithSavedChanges: vi.fn(),
+  setTitle: vi.fn(),
 };
 
 describe('CommodityForm', () => {
@@ -236,7 +235,7 @@ describe('CommodityForm', () => {
       isLoading: false,
       isValidating: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     mockUsePaymentModes.mockReturnValue(mockPaymentModes);
   });

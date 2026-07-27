@@ -1,0 +1,12 @@
+@use '@carbon/layout';
+
+.menu {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-04;
+}
+
+.icon {
+  flex-shrink: 0;
+  fill: currentColor;
+}

@@ -25,7 +25,7 @@ const mockData = {
   commodities: {},
 };
 
-xdescribe('SchemaViewer', () => {
+describe.skip('SchemaViewer', () => {
   test('should render the schema viewer', async () => {
     const user = userEvent.setup();
     render(<SchemaViewer data={JSON.stringify(mockData)} />);

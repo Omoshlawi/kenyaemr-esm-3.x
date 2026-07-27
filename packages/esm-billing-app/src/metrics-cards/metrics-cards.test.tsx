@@ -3,14 +3,16 @@ import { render, screen } from '@testing-library/react';
 import MetricsCards from './metrics-cards.component';
 import { useBillSummary } from './metrics.resource';
 
-const mockUseBillSummary = useBillSummary as jest.Mock;
+const mockUseBillSummary = useBillSummary as vi.Mock;
 
-jest.mock('./metrics.resource', () => ({
-  useBillSummary: jest.fn(),
+vi.mock('./metrics.resource', () => ({
+  useBillSummary: vi.fn(),
 }));
 
-jest.mock('../helpers', () => ({
-  convertToCurrency: jest.fn((amount: number) => (amount != null ? `KES ${Number(amount).toFixed(2)}` : 'KES 0.00')),
+vi.mock('../helpers/currency', () => ({
+  useCurrencyFormatting: () => ({
+    format: (amount: number) => (amount != null ? `KES ${Number(amount).toFixed(2)}` : 'KES 0.00'),
+  }),
 }));
 
 const mockBillSummary = {
@@ -22,7 +24,7 @@ const mockBillSummary = {
 
 describe('MetricsCards', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders loading state when data is loading', () => {
@@ -38,11 +40,7 @@ describe('MetricsCards', () => {
       error: new Error('Internal server error'),
     });
     render(<MetricsCards />);
-    expect(
-      screen.getByText(
-        /Sorry, there was a problem displaying this information. You can try to reload this page, or contact the site administrator and quote the error code above./i,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Error State')).toBeInTheDocument();
   });
 
   it('renders metrics cards with bill summary data', () => {

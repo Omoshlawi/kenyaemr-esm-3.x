@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event';
 
 window.getOpenmrsSpaBase = () => '/openmrs/spa/';
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),

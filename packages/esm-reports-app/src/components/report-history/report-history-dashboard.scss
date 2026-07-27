@@ -1,0 +1,9 @@
+@use '@carbon/layout';
+
+.reportHistoryDashboard {
+  padding: layout.$spacing-05;
+
+  :global(.cds--table-toolbar) {
+    position: relative !important;
+  }
+}

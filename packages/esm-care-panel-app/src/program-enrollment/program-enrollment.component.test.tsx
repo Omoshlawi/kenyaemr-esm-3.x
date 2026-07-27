@@ -1,20 +1,22 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import ProgramEnrollment from './program-enrollment.component';
 import { useHeiOutcome } from '../hooks/useHeiOutcome';
-jest.mock('react-i18next', () => ({
-  useTranslation: jest.fn(() => ({ t: (key: string) => key })),
+
+vi.mock('react-i18next', () => ({
+  useTranslation: vi.fn(() => ({ t: (key: string, fallback?: string) => fallback ?? key })),
 }));
 
-jest.mock('../hooks/useHeiOutcome', () => ({
-  useHeiOutcome: jest.fn(),
+vi.mock('../hooks/useHeiOutcome', () => ({
+  useHeiOutcome: vi.fn(),
 }));
 
-const mockFormEntrySub = jest.fn();
+const mockFormEntrySub = vi.fn();
 
 describe('ProgramEnrollment Component', () => {
   beforeEach(() => {
-    (useHeiOutcome as jest.Mock).mockReturnValue({ heiOutcome: { heiNumber: null } });
+    vi.mocked(useHeiOutcome).mockReturnValue({ heiOutcome: { heiNumber: null } });
   });
 
   it('renders without crashing', () => {

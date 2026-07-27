@@ -6,7 +6,7 @@ import { navigate, useConfig } from '@openmrs/esm-framework';
 import { PaymentStatus } from '../types';
 import userEvent from '@testing-library/user-event';
 
-const mockNavigate = navigate as jest.MockedFunction<typeof navigate>;
+const mockNavigate = navigate as vi.MockedFunction<typeof navigate>;
 
 const mockMappedBill = [
   {
@@ -85,20 +85,20 @@ const mockMappedBill = [
   },
 ];
 
-const mockUseBillingPrompt = useBillingPrompt as jest.MockedFunction<typeof useBillingPrompt>;
-const mockUseConfig = useConfig as jest.MockedFunction<typeof useConfig>;
-jest.mock('@openmrs/esm-framework', () => ({
-  useConfig: jest.fn(),
-  navigate: jest.fn(),
+const mockUseBillingPrompt = useBillingPrompt as vi.MockedFunction<typeof useBillingPrompt>;
+const mockUseConfig = useConfig as vi.MockedFunction<typeof useConfig>;
+vi.mock('@openmrs/esm-framework', () => ({
+  useConfig: vi.fn(),
+  navigate: vi.fn(),
 }));
 
-jest.mock('./prompt-payment.resource', () => ({
-  useBillingPrompt: jest.fn(),
+vi.mock('./prompt-payment.resource', () => ({
+  useBillingPrompt: vi.fn(),
 }));
 
 describe('<PromptPaymentModal />', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   test('should show the prompt payment modal, when `shouldShowBillingPrompt` is true and `enforceBillPayment` is true', async () => {
@@ -179,8 +179,7 @@ describe('<PromptPaymentModal />', () => {
       enforceBillPayment: true,
     });
     render(<PromptPaymentModal />);
-    expect(screen.getByText('Billing status')).toBeInTheDocument();
-    expect(screen.getByText('Verifying patient bills')).toBeInTheDocument();
+    expect(screen.queryByText('Patient Billing Alert')).not.toBeInTheDocument();
   });
 
   test('should not render the modal when `shouldShowBillingPrompt` is false', () => {

@@ -7,7 +7,7 @@ import { type ReportRequest } from '../types';
  * Fetches the execution history (report requests) for a given report.
  * Polls while there are in-flight requests so running rows update automatically.
  */
-export const useReportRequests = (reportUuid: string) => {
+export const useReportRequestsByReportUuid = (reportUuid: string) => {
   const url = reportUuid ? `${restBaseUrl}/kenyaemr/reportRequests?reportUuid=${reportUuid}` : null;
 
   const { data, isLoading, isValidating, error, mutate } = useSWR<{ data: { results: Array<ReportRequest> } }>(
@@ -16,6 +16,21 @@ export const useReportRequests = (reportUuid: string) => {
     { refreshInterval: 10000 },
   );
 
+  return {
+    requests: data?.data?.results ?? [],
+    isLoading,
+    isValidating,
+    error,
+    mutate,
+  };
+};
+
+export const useReportRequests = () => {
+  const { data, isLoading, isValidating, error, mutate } = useSWR<{ data: { results: Array<ReportRequest> } }>(
+    `${restBaseUrl}/kenyaemr/reportRequests`,
+    openmrsFetch,
+    { refreshInterval: 10000 },
+  );
   return {
     requests: data?.data?.results ?? [],
     isLoading,

@@ -40,20 +40,20 @@ const mockBillableItems = [
   },
 ];
 
-const mockUseCashPoint = useCashPoint as jest.MockedFunction<typeof useCashPoint>;
-const mockUseBillableItems = useBillableItems as jest.MockedFunction<typeof useBillableItems>;
+const mockUseCashPoint = useCashPoint as vi.MockedFunction<typeof useCashPoint>;
+const mockUseBillableItems = useBillableItems as vi.MockedFunction<typeof useBillableItems>;
 
-jest.mock('../billing.resource', () => ({
-  useBillableItems: jest.fn(),
-  useCashPoint: jest.fn(),
-  createPatientBill: jest.fn(),
+vi.mock('../billing.resource', () => ({
+  useBillableItems: vi.fn(),
+  useCashPoint: vi.fn(),
+  createPatientBill: vi.fn(),
 }));
 
-const testProps = { patientUuid: 'some-patient-uuid', setBillingInfo: jest.fn(), setExtraVisitInfo: jest.fn() };
+const testProps = { patientUuid: 'some-patient-uuid', setBillingInfo: vi.fn(), setExtraVisitInfo: vi.fn() };
 
-xdescribe('BillingCheckInForm', () => {
+describe.skip('BillingCheckInForm', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   test('should show the loading spinner while retrieving data', () => {
@@ -62,7 +62,7 @@ xdescribe('BillingCheckInForm', () => {
       isLoading: true,
       error: null,
       searchTerm: '',
-      setSearchTerm: jest.fn(),
+      setSearchTerm: vi.fn(),
     });
     mockUseCashPoint.mockReturnValueOnce({ cashPoints: [], isLoading: true, error: null });
     renderBillingCheckinForm();
@@ -77,7 +77,7 @@ xdescribe('BillingCheckInForm', () => {
       isLoading: true,
       error: null,
       searchTerm: '',
-      setSearchTerm: jest.fn(),
+      setSearchTerm: vi.fn(),
     });
     mockUseCashPoint.mockReturnValueOnce({ cashPoints: [], isLoading: false, error });
     renderBillingCheckinForm();
@@ -94,7 +94,7 @@ xdescribe('BillingCheckInForm', () => {
       isLoading: true,
       error: null,
       searchTerm: '',
-      setSearchTerm: jest.fn(),
+      setSearchTerm: vi.fn(),
     });
     renderBillingCheckinForm();
 

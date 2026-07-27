@@ -2,12 +2,28 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import NavbarActionButton from './navbar-action-button.component';
-import { navigate, useDebounce } from '@openmrs/esm-framework';
+import { navigate, useConfig, useDebounce } from '@openmrs/esm-framework';
+import { type MockedFunction } from 'vitest';
 
-const mockUseDebounce = useDebounce as jest.MockedFunction<typeof useDebounce>;
+const mockUseConfig = useConfig as MockedFunction<typeof useConfig>;
+const mockUseDebounce = useDebounce as MockedFunction<typeof useDebounce>;
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (_key: string, defaultText: string, options?: Record<string, string>) =>
+      defaultText.replace(/\{\{(\w+)\}\}/g, (_, name) => options?.[name] ?? ''),
+  }),
+}));
 
 describe('Navbar Action Button', () => {
   test('should render navbar action button', async () => {
+    mockUseConfig.mockReturnValue({
+      excludeLinks: [],
+      instanceName: 'KenyaEMR ',
+      clinicalEncounterFormUuid: 'form-uuid',
+    });
+    mockUseDebounce.mockImplementation((value) => value);
+
     const { baseElement } = renderNavbarActionButton();
 
     // should render the global action button

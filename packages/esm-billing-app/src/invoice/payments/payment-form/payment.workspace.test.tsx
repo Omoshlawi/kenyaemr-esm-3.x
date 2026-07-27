@@ -14,8 +14,6 @@ import {
 import { dispatchClaimLinesToSha } from '../../../billing-form/social-health-authority/sha-virtual-claim.resource';
 import PaymentWorkspace from './payment.workspace';
 
-vi.mock('workbox-window', () => ({ Workbox: class Workbox {} }));
-
 vi.mock('@openmrs/esm-framework', () => ({
   ResponsiveWrapper: ({ children }: React.PropsWithChildren) => <>{children}</>,
   Workspace2: ({ children }: React.PropsWithChildren) => <>{children}</>,

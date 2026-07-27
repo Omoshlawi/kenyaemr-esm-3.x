@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { OverflowMenu, OverflowMenuItem } from '@carbon/react';
-import { Download } from '@carbon/react/icons';
+import { ComboButton, MenuItem } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
 import { type ReportRequest } from '../../types';
 import { downloadFormatLabel, downloadReportRequestFile } from '../utils';
@@ -50,21 +49,21 @@ const ReportDownloadMenu: React.FC<ReportDownloadMenuProps> = ({
   };
 
   return (
-    <OverflowMenu
-      flipped={flipped}
+    <ComboButton
       size={size}
-      renderIcon={Download}
-      iconDescription={t('download', 'Download')}
-      aria-label={t('downloadReport', 'Download report')}>
+      label={t('download', 'Download')}
+      disabled={isDownloading}
+      menuAlignment={flipped ? 'bottom-end' : 'bottom'}
+      onClick={() => handleDownload(formats[0])}>
       {formats.map((format) => (
-        <OverflowMenuItem
+        <MenuItem
           key={format}
           disabled={isDownloading}
           onClick={() => handleDownload(format)}
-          itemText={t('downloadAs', 'Download as {{format}}', { format: downloadFormatLabel[format] })}
+          label={t('downloadAs', 'Download as {{format}}', { format: downloadFormatLabel[format] })}
         />
       ))}
-    </OverflowMenu>
+    </ComboButton>
   );
 };
 

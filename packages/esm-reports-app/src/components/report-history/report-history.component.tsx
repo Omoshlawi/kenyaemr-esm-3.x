@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -33,7 +33,7 @@ import {
 } from '@openmrs/esm-framework';
 
 import { useReportDefinition } from '../../hooks/useReportDefinition';
-import { useReportRequests } from '../../hooks/useReportRequests';
+import { useReportRequestsByReportUuid } from '../../hooks/useReportRequests';
 import { type ReportRequest } from '../../types';
 import ReportDownloadMenu from '../report-download-menu/report-download-menu.component';
 import styles from './report-history.scss';
@@ -79,10 +79,16 @@ const formatDuration = (ms: number | null): string => {
 const ReportHistory: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { reportUuid = '' } = useParams();
 
   const { report, isLoading: isLoadingReport, error: reportError } = useReportDefinition(reportUuid);
-  const { requests, isLoading: isLoadingRequests, error: requestsError } = useReportRequests(reportUuid);
+  const {
+    requests,
+    isLoading: isLoadingRequests,
+    error: requestsError,
+    mutate: mutateRequests,
+  } = useReportRequestsByReportUuid(reportUuid);
 
   const [searchTerm, setSearchTerm] = React.useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -148,7 +154,7 @@ const ReportHistory: React.FC = () => {
   );
 
   const handleRunReport = () => {
-    launchWorkspace2('report-request-workspace', { reportUuid });
+    launchWorkspace2('report-request-workspace', { reportUuid, mutateRequests: mutateRequests, navigate });
   };
 
   if (isLoadingReport || isLoadingRequests) {
@@ -171,7 +177,10 @@ const ReportHistory: React.FC = () => {
   return (
     <div className={styles.container}>
       <div className={styles.breadcrumb}>
-        <button type="button" className={styles.backButton} onClick={() => navigate('/')}>
+        <button
+          type="button"
+          className={styles.backButton}
+          onClick={() => (location.key === 'default' ? navigate('/') : navigate(-1))}>
           <ArrowLeft size={16} />
           {t('backToAllReports', 'Back to all reports')}
         </button>

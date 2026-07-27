@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLeftNav, WorkspaceContainer } from '@openmrs/esm-framework';
+import { useLeftNav } from '@openmrs/esm-framework';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import styles from './shr-home.scss';
@@ -16,7 +16,6 @@ const SHRHome: React.FC = () => {
           <Route path="/" element={<ReferralWrap />} />
         </Routes>
       </main>
-      <WorkspaceContainer key="referrals" contextKey="referrals" />
     </BrowserRouter>
   );
 };

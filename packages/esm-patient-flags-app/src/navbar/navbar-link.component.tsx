@@ -44,6 +44,7 @@ const NavBarLink: React.FC<NavBarLinkItemProps> = ({ icon, label, url, hideOverl
   };
 
   const issues = getFacilityIssues();
+
   const hasError = issues.length > 0;
   const isHealthy = isStatusItem && hasFacilityData && !hasError;
 

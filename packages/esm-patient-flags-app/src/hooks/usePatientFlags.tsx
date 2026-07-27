@@ -4,7 +4,7 @@ import useSWR from 'swr';
 interface PatientFlagsReturnType {
   patientFlags: Array<string>;
   isLoading: boolean;
-  error: Error;
+  error?: Error;
 }
 
 /**
@@ -15,10 +15,7 @@ interface PatientFlagsReturnType {
  */
 export const usePatientFlags = (patientUuid: string): PatientFlagsReturnType => {
   const patientFlagsUrl = `/ws/rest/v1/kenyaemr/flags?patientUuid=${patientUuid}`;
-  const { data, mutate, error, isLoading } = useSWR<{ data: { results: Array<string> } }>(
-    patientFlagsUrl,
-    openmrsFetch,
-  );
+  const { data, error, isLoading } = useSWR<{ data: { results: Array<string> } }>(patientFlagsUrl, openmrsFetch);
   const patientFlags = typeof data?.data === 'string' ? [] : data?.data?.results ?? [];
   return { patientFlags, isLoading, error };
 };

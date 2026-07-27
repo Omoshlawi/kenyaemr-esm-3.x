@@ -9,8 +9,8 @@ const testProps = {
   patientUuid: 'some-uuid',
 };
 
-const mockbills = useBills as jest.MockedFunction<typeof useBills>;
-const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as jest.MockedFunction<
+const mockbills = useBills as vi.MockedFunction<typeof useBills>;
+const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as vi.MockedFunction<
   typeof useLaunchWorkspaceRequiringVisit
 >;
 
@@ -29,11 +29,13 @@ const mockBillsData = [
   { uuid: '12', patientName: 'John Doe', identifier: '12345678', billingService: 'MCH', totalAmount: 1300 },
 ];
 
-jest.mock('../invoice/invoice-table.component', () => jest.fn(() => <div>Invoice table</div>));
+vi.mock('../invoice/invoice-table.component', () => ({
+  default: vi.fn(() => <div>Invoice table</div>),
+}));
 
-jest.mock('../billing.resource', () => ({
-  ...jest.requireActual('../billing.resource'),
-  useBills: jest.fn(() => ({
+vi.mock('../billing.resource', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../billing.resource')>()),
+  useBills: vi.fn(() => ({
     bills: mockBillsData,
     isLoading: false,
     isValidating: false,
@@ -41,18 +43,18 @@ jest.mock('../billing.resource', () => ({
   })),
 }));
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  ...jest.requireActual('@openmrs/esm-patient-common-lib'),
-  useLaunchWorkspaceRequiringVisit: jest.fn(),
+vi.mock('@openmrs/esm-patient-common-lib', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@openmrs/esm-patient-common-lib')>()),
+  useLaunchWorkspaceRequiringVisit: vi.fn(),
 }));
 
 describe('BillHistory', () => {
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('should render loading datatable skeleton', () => {
-    mockbills.mockReturnValueOnce({ isLoading: true, isValidating: false, error: null, bills: [], mutate: jest.fn() });
+    mockbills.mockReturnValueOnce({ isLoading: true, isValidating: false, error: null, bills: [], mutate: vi.fn() });
     render(<BillHistory {...testProps} />);
     const loadingSkeleton = screen.getByRole('table');
     expect(loadingSkeleton).toBeInTheDocument();
@@ -65,10 +67,10 @@ describe('BillHistory', () => {
       isValidating: false,
       error: new Error('some error'),
       bills: [],
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     render(<BillHistory {...testProps} />);
-    const errorState = screen.getByText(/Sorry, there was a problem displaying this information./);
+    const errorState = screen.getByText('Error State');
     expect(errorState).toBeInTheDocument();
   });
 
@@ -79,7 +81,7 @@ describe('BillHistory', () => {
       isValidating: false,
       error: null,
       bills: mockBillsData as any,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     render(<BillHistory {...testProps} />);
     expect(screen.getByText('Visit time')).toBeInTheDocument();
@@ -112,7 +114,7 @@ describe('BillHistory', () => {
   });
 
   test('should render empty state view when there are no bills', async () => {
-    mockbills.mockReturnValueOnce({ isLoading: false, isValidating: false, error: null, bills: [], mutate: jest.fn() });
+    mockbills.mockReturnValueOnce({ isLoading: false, isValidating: false, error: null, bills: [], mutate: vi.fn() });
     render(<BillHistory {...testProps} />);
   });
 });

@@ -1,16 +1,49 @@
-import React, { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useCallback, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Pagination, SkeletonText, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@carbon/react';
-import { ErrorState, formatDate, formatDatetime, parseDate } from '@openmrs/esm-framework';
+import {
+  Accordion,
+  AccordionItem,
+  Button,
+  Layer,
+  Pagination,
+  SkeletonText,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Tile,
+} from '@carbon/react';
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ErrorState,
+  formatDate,
+  formatDatetime,
+  parseDate,
+  usePagination,
+} from '@openmrs/esm-framework';
+import capitalize from 'lodash-es/capitalize';
 
 import { useReportData } from '../../hooks/useReportData';
 import { type ReportDataSet } from '../../types';
 import ReportDownloadMenu from '../report-download-menu/report-download-menu.component';
 import styles from './report-view.scss';
 import dayjs from 'dayjs';
+import { toTitleCase } from '../utils';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 15;
+const PAGE_SIZE_OPTIONS = [15, 30, 50, 100];
+
+const renderJsonValue = (value: unknown): string => {
+  try {
+    return JSON.stringify(value) ?? '--';
+  } catch {
+    return '--';
+  }
+};
 
 const renderValue = (value: unknown): string => {
   if (value === null || value === undefined || value === '') {
@@ -18,7 +51,10 @@ const renderValue = (value: unknown): string => {
   }
   if (typeof value === 'object') {
     const record = value as Record<string, unknown>;
-    return String(record.display ?? record.value ?? record.name ?? JSON.stringify(value));
+    const displayValue = record.display ?? record.value ?? record.name;
+    return displayValue === undefined || typeof displayValue === 'object'
+      ? renderJsonValue(displayValue ?? value)
+      : renderValue(displayValue);
   }
 
   if (typeof value === 'number') {
@@ -26,33 +62,64 @@ const renderValue = (value: unknown): string => {
     return formatDate(unixConvertedDate, { noToday: true, time: false });
   }
 
-  return String(value);
+  if (typeof value === 'string' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return value.toString();
+  }
+
+  return '--';
 };
 
-const RowDataSetTable: React.FC<{ dataSet: ReportDataSet }> = ({ dataSet }) => {
+const RowDataSetTable: React.FC<{ dataSet: ReportDataSet; title: string }> = ({ dataSet, title }) => {
   const { t } = useTranslation();
-  const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
 
-  const pagedRows = useMemo(
-    () => dataSet.rows.slice((page - 1) * pageSize, page * pageSize),
-    [dataSet.rows, page, pageSize],
+  const { results, currentPage, goTo } = usePagination(dataSet.rows ?? [], pageSize);
+
+  const getRowKey = (row: Record<string, unknown>, rowIndex: number) => {
+    const rowId = row.id;
+
+    if (typeof rowId === 'string' || typeof rowId === 'number') {
+      return String(rowId);
+    }
+
+    return `${dataSet.key}-${(currentPage - 1) * pageSize + rowIndex}`;
+  };
+
+  const handlePaginationChange = useCallback(
+    ({ page, pageSize: newSize }: { page: number; pageSize: number }) => {
+      if (newSize !== pageSize) {
+        setPageSize(newSize);
+        goTo(1);
+        return;
+      }
+      goTo(page);
+    },
+    [pageSize, goTo],
   );
+
+  if (results?.length === 0) {
+    return (
+      <div className={styles.emptyState}>
+        <p className={styles.emptyStateTitle}>{toTitleCase(title)}</p>
+        <p className={styles.emptyStateSubtitle}>{t('noDataSetData', 'This data set did not return any data.')}</p>
+      </div>
+    );
+  }
 
   return (
     <>
       <div className={styles.tableWrapper}>
-        <Table size="sm" useZebraStyles>
+        <Table size="xs" useZebraStyles>
           <TableHead>
             <TableRow>
               {dataSet.columns.map((column) => (
-                <TableHeader key={column.name}>{column.label || column.name}</TableHeader>
+                <TableHeader key={column.name}>{capitalize(column.label || column.name)}</TableHeader>
               ))}
             </TableRow>
           </TableHead>
           <TableBody>
-            {pagedRows.map((row, rowIndex) => (
-              <TableRow key={rowIndex}>
+            {results?.map((row, rowIndex) => (
+              <TableRow key={getRowKey(row, rowIndex)}>
                 {dataSet.columns.map((column) => (
                   <TableCell key={column.name}>{renderValue(row[column.name])}</TableCell>
                 ))}
@@ -63,26 +130,36 @@ const RowDataSetTable: React.FC<{ dataSet: ReportDataSet }> = ({ dataSet }) => {
       </div>
       {dataSet.rows.length > PAGE_SIZE && (
         <Pagination
-          page={page}
-          pageSize={pageSize}
-          pageSizes={[20, 50, 100]}
-          totalItems={dataSet.rows.length}
+          itemsPerPageText={t('itemsPerPage', 'Items per page:')}
+          forwardText={t('nextPage', 'Next page')}
+          backwardText={t('previousPage', 'Previous page')}
           itemRangeText={(min, max, total) =>
             t('minMaxItems', '{{min}}-{{max}} of {{total}} items', { min, max, total })
           }
-          onChange={({ page: newPage, pageSize: newPageSize }) => {
-            setPage(newPage);
-            setPageSize(newPageSize);
-          }}
+          pageRangeText={(_current, total) => t('pageRangeText', 'of {{count}} pages', { count: total })}
+          page={currentPage}
+          pageSize={pageSize}
+          pageSizes={PAGE_SIZE_OPTIONS}
+          totalItems={dataSet.rows.length}
+          onChange={handlePaginationChange}
         />
       )}
     </>
   );
 };
 
-const IndicatorDataSetTable: React.FC<{ dataSet: ReportDataSet }> = ({ dataSet }) => {
+const IndicatorDataSetTable: React.FC<{ dataSet: ReportDataSet; title: string }> = ({ dataSet, title }) => {
   const { t } = useTranslation();
   const values = dataSet.values ?? {};
+
+  if (Object.keys(values).length === 0) {
+    return (
+      <div className={styles.emptyState}>
+        <p className={styles.emptyStateTitle}>{toTitleCase(title)}</p>
+        <p className={styles.emptyStateSubtitle}>{t('noIndicatorData', 'This indicator did not return any data.')}</p>
+      </div>
+    );
+  }
 
   return (
     <div className={`${styles.tableWrapper} ${styles.indicatorTable}`}>
@@ -109,8 +186,10 @@ const IndicatorDataSetTable: React.FC<{ dataSet: ReportDataSet }> = ({ dataSet }
 const ReportView: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { reportUuid = '', requestId = '' } = useParams();
   const { reportData, isLoading, error } = useReportData(requestId);
+  const [openKeys, setOpenKeys] = useState<Set<string> | null>(null);
 
   if (isLoading) {
     return (
@@ -130,11 +209,52 @@ const ReportView: React.FC = () => {
   }
 
   const { request, definition, parameters, dataSets } = reportData;
+  const dataSetList = Object.values(dataSets ?? {});
+
+  const dataSetHasData = (dataSet: ReportDataSet) =>
+    (dataSet.rows?.length ?? 0) > 0 || Object.keys(dataSet.values ?? {}).length > 0;
+
+  const isIndicatorDataSet = (dataSet: ReportDataSet) =>
+    (!dataSet.rows || dataSet.rows.length === 0) && Boolean(dataSet.values);
+
+  const sortedDataSetList = [...dataSetList].sort((a, b) => {
+    const aHasData = dataSetHasData(a);
+    const bHasData = dataSetHasData(b);
+    if (aHasData !== bHasData) {
+      return aHasData ? -1 : 1;
+    }
+    return (a.name || a.key).localeCompare(b.name || b.key);
+  });
+
+  const defaultOpenKeys = new Set(sortedDataSetList.slice(0, 1).map((dataSet) => dataSet.key));
+  const effectiveOpenKeys = openKeys ?? defaultOpenKeys;
+  const allExpanded =
+    sortedDataSetList.length > 0 && sortedDataSetList.every((dataSet) => effectiveOpenKeys.has(dataSet.key));
+  const hasIndicatorDataSet = sortedDataSetList.some(isIndicatorDataSet);
+
+  const toggleAll = () => {
+    setOpenKeys(allExpanded ? new Set() : new Set(sortedDataSetList.map((dataSet) => dataSet.key)));
+  };
+
+  const toggleDataSet = (key: string) => {
+    setOpenKeys((prev) => {
+      const next = new Set(prev ?? defaultOpenKeys);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
 
   return (
     <div className={styles.container}>
       <div className={styles.breadcrumb}>
-        <button type="button" className={styles.backButton} onClick={() => navigate(`/report/${reportUuid}`)}>
+        <button
+          type="button"
+          className={styles.backButton}
+          onClick={() => (location.key === 'default' ? navigate(`/report/${reportUuid}`) : navigate(-1))}>
           {t('reportsHistory', 'Report History')}
         </button>
         <span>/</span>
@@ -167,15 +287,60 @@ const ReportView: React.FC = () => {
         </div>
       )}
 
-      {Object.values(dataSets ?? {}).map((dataSet) => {
-        const isIndicator = (!dataSet.rows || dataSet.rows.length === 0) && dataSet.values;
-        return (
-          <div key={dataSet.key} className={styles.dataSet}>
-            <h3 className={styles.dataSetTitle}>{dataSet.name || dataSet.key}</h3>
-            {isIndicator ? <IndicatorDataSetTable dataSet={dataSet} /> : <RowDataSetTable dataSet={dataSet} />}
-          </div>
-        );
-      })}
+      <div className={styles.dataSets}>
+        {dataSetList.length === 0 ? (
+          <Layer className={styles.emptyState}>
+            <Tile className={styles.emptyStateTile}>
+              <p className={styles.emptyStateTitle}>{t('noReportData', 'No report data')}</p>
+              <p className={styles.emptyStateSubtitle}>
+                {t('noReportDataDescription', 'This report did not return any data.')}
+              </p>
+            </Tile>
+          </Layer>
+        ) : (
+          <>
+            {hasIndicatorDataSet && (
+              <div className={styles.dataSetsHeader}>
+                <div>
+                  <h3 className={styles.dataSetsTitle}>{t('reportSections', 'Report sections')}</h3>
+                  <p className={styles.dataSetsHint}>
+                    {t(
+                      'reportSectionsHint',
+                      'Expand a section to view its data. The data is sorted by section with data first.',
+                    )}
+                  </p>
+                </div>
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  onClick={toggleAll}
+                  renderIcon={allExpanded ? ChevronUpIcon : ChevronDownIcon}>
+                  {allExpanded ? t('collapseAll', 'Collapse all') : t('expandAll', 'Expand all')}
+                </Button>
+              </div>
+            )}
+            <Accordion className={styles.accordion}>
+              {sortedDataSetList.map((dataSet) => {
+                const isIndicator = isIndicatorDataSet(dataSet);
+                return (
+                  <AccordionItem
+                    key={dataSet.key}
+                    title={toTitleCase(dataSet.name || dataSet.key)}
+                    open={effectiveOpenKeys.has(dataSet.key)}
+                    onHeadingClick={() => toggleDataSet(dataSet.key)}
+                    className={styles.dataSet}>
+                    {isIndicator ? (
+                      <IndicatorDataSetTable dataSet={dataSet} title={dataSet.name || dataSet.key} />
+                    ) : (
+                      <RowDataSetTable dataSet={dataSet} title={dataSet.name || dataSet.key} />
+                    )}
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
+          </>
+        )}
+      </div>
     </div>
   );
 };

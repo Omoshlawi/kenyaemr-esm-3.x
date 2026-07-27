@@ -1,15 +1,15 @@
 {
-  "adrAssessment": "ADR Assessment",
-  "adrAssessmentEncounters": "ADR Assessment Encounters",
-  "adrReport": "ADR Report",
-  "encounters": "Encounters",
-  "endDate": "End date",
-  "noAdrEncountersFound": "Adr assessment encounters",
-  "noEncountersFoundTitle": "No encounters found",
-  "printReport": "Print Report",
-  "review": "Review",
-  "sendEmail": "Send Email",
-  "startDate": "Start date",
-  "summaryOfAdrAssessmentEncounters": "Summary of ADR assessment encounters",
-  "totalAdrAssessment": "Total ADR assessment"
+  "adrAssessment": "Tathmini ya ADR",
+  "adrAssessmentEncounters": "Mkutano wa Tathmini ya ADR",
+  "adrReport": "Taarifa ya ADR",
+  "encounters": "Mkutano wa",
+  "endDate": "Mwisho wa tarehe",
+  "noAdrEncountersFound": "Uchunguzi wa Adr",
+  "noEncountersFoundTitle": "Hakuna mawasiliano yaliyopatikana",
+  "printReport": "Taarifa ya",
+  "review": "Ukaguzi wa",
+  "sendEmail": "Kutuma barua pepe",
+  "startDate": "Tarehe ya kuanza",
+  "summaryOfAdrAssessmentEncounters": "Muhtasari wa tathmini ya ADR",
+  "totalAdrAssessment": "Tathmini ya ADR"
 }

@@ -7,33 +7,37 @@ import { mockPatient } from '../../../../__mocks__/patient.mock';
 import { MappedBill } from '../types';
 
 // Mock dependencies
-jest.mock('@openmrs/esm-framework', () => ({
-  ...jest.requireActual('@openmrs/esm-framework'),
-  usePatient: jest.fn(),
-  getPatientName: jest.fn((patient) => {
+vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@openmrs/esm-framework')>()),
+  usePatient: vi.fn(),
+  getPatientName: vi.fn((patient) => {
     return `${patient?.name?.[0]?.given?.[0]} ${patient?.name?.[0]?.family}`;
   }),
-  ConfigurableLink: jest.fn(({ children, to, templateParams }) => (
+  ConfigurableLink: vi.fn(({ children, to, templateParams }) => (
     <a href={to.replace('${patientUuid}', templateParams.patientUuid).replace('${uuid}', templateParams.uuid)}>
       {children}
     </a>
   )),
 }));
 
-jest.mock('../helpers', () => ({
-  convertToCurrency: jest.fn((amount) => `KES ${amount.toFixed(2)}`),
+vi.mock('../helpers/currency', () => ({
+  useCurrencyFormatting: () => ({
+    format: (amount) => `KES ${amount.toFixed(2)}`,
+  }),
 }));
 
-jest.mock('./patient-bills-dashboard/empty-patient-bill.component', () => {
-  return jest.fn(({ title, subTitle }) => (
-    <div>
-      <p>{title}</p>
-      <p>{subTitle}</p>
-    </div>
-  ));
+vi.mock('./patient-bills-dashboard/empty-patient-bill.component', () => {
+  return {
+    default: vi.fn(({ title, subTitle }) => (
+      <div>
+        <p>{title}</p>
+        <p>{subTitle}</p>
+      </div>
+    )),
+  };
 });
 
-const mockUsePatient = usePatient as jest.MockedFunction<typeof usePatient>;
+const mockUsePatient = usePatient as vi.MockedFunction<typeof usePatient>;
 
 const mockBills: Array<MappedBill> = [
   {
@@ -125,11 +129,11 @@ const mockBills: Array<MappedBill> = [
 ];
 
 describe('PatientBills', () => {
-  const mockOnCancel = jest.fn();
+  const mockOnCancel = vi.fn();
   const patientUuid = '8673ee4f-e2ab-4077-ba55-4980f408773e';
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockUsePatient.mockReturnValue({
       patient: mockPatient as any,
       isLoading: false,
@@ -244,10 +248,10 @@ describe('PatientBills', () => {
 });
 
 describe('PatientHeader', () => {
-  const mockOnCancel = jest.fn();
+  const mockOnCancel = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should render patient name, gender, and identifier', () => {

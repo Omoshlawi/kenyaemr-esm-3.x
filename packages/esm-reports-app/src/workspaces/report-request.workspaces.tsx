@@ -19,7 +19,6 @@ import {
   OpenmrsDatePicker,
   ResponsiveWrapper,
   Workspace2,
-  navigate,
   showSnackbar,
   useLayoutType,
   type Workspace2DefinitionProps,
@@ -28,9 +27,12 @@ import {
 import styles from './report-request.workspace.scss';
 import { requestReport, useReportDefinition } from '../hooks/useReportDefinition';
 import { type ReportParameter, type ReportWithDefinition } from '../types';
+import { type NavigateFunction } from 'react-router-dom';
 
 type ReportRequestWorkspacesProps = {
   reportUuid: string;
+  mutateRequests: () => void;
+  navigate: NavigateFunction;
 };
 
 const isDateType = (type: string) => type === 'java.util.Date';
@@ -77,10 +79,18 @@ const serializeValue = (parameter: ReportParameter, value: unknown) => {
 type ReportRequestFormProps = {
   report: ReportWithDefinition;
   parameters: Array<ReportParameter>;
+  mutateRequests: () => void;
   closeWorkspace: Workspace2DefinitionProps<ReportRequestWorkspacesProps>['closeWorkspace'];
+  navigate: NavigateFunction;
 };
 
-const ReportRequestForm: React.FC<ReportRequestFormProps> = ({ report, parameters, closeWorkspace }) => {
+const ReportRequestForm: React.FC<ReportRequestFormProps> = ({
+  report,
+  parameters,
+  closeWorkspace,
+  mutateRequests,
+  navigate,
+}) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
 
@@ -104,8 +114,9 @@ const ReportRequestForm: React.FC<ReportRequestFormProps> = ({ report, parameter
         kind: 'success',
         subtitle: t('reportQueuedSubtitle', '{{name}} has been queued for processing.', { name: report.name }),
       });
+      mutateRequests();
       closeWorkspace({ discardUnsavedChanges: true });
-      navigate({ to: `${(globalThis as any).spaBase}/reporting/report/${report.uuid}` });
+      navigate(`/report/${report.uuid}`);
     } catch (error: any) {
       showSnackbar({
         title: t('reportRequestError', 'Error requesting report'),
@@ -233,32 +244,72 @@ const ReportRequestForm: React.FC<ReportRequestFormProps> = ({ report, parameter
     </Form>
   );
 };
+interface ReportRequestBodyProps {
+  reportUuid: string;
+  mutateRequests: () => void;
+  closeWorkspace: Workspace2DefinitionProps<ReportRequestWorkspacesProps>['closeWorkspace'];
+  navigate: NavigateFunction;
+}
+
+const ReportRequestBody: React.FC<ReportRequestBodyProps> = ({
+  reportUuid,
+  closeWorkspace,
+  mutateRequests,
+  navigate,
+}) => {
+  const { t } = useTranslation();
+  const { report, parameters, isLoading, error } = useReportDefinition(reportUuid);
+
+  if (isLoading) {
+    return (
+      <div className={styles.formContainer}>
+        <SkeletonText heading width="60%" />
+        <SkeletonText paragraph lineCount={3} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.formContainer}>
+        <ErrorState error={error} headerTitle={t('reportRequest', 'Report Request')} />
+      </div>
+    );
+  }
+
+  if (!report) {
+    return (
+      <div className={styles.formContainer}>
+        <p className={styles.emptyState}>{t('reportNotFound', 'Report not found.')}</p>
+      </div>
+    );
+  }
+
+  return (
+    <ReportRequestForm
+      report={report}
+      parameters={parameters}
+      closeWorkspace={closeWorkspace}
+      mutateRequests={mutateRequests}
+      navigate={navigate}
+    />
+  );
+};
 
 const ReportRequestWorkspaces: React.FC<Workspace2DefinitionProps<ReportRequestWorkspacesProps>> = ({
   closeWorkspace,
   workspaceProps,
 }) => {
   const { t } = useTranslation();
-  const { report, parameters, isLoading, error } = useReportDefinition(workspaceProps?.reportUuid ?? '');
 
   return (
     <Workspace2 title={t('reportRequest', 'Report Request')} hasUnsavedChanges={false}>
-      {isLoading ? (
-        <div className={styles.formContainer}>
-          <SkeletonText heading width="60%" />
-          <SkeletonText paragraph lineCount={3} />
-        </div>
-      ) : error ? (
-        <div className={styles.formContainer}>
-          <ErrorState error={error} headerTitle={t('reportRequest', 'Report Request')} />
-        </div>
-      ) : report ? (
-        <ReportRequestForm report={report} parameters={parameters} closeWorkspace={closeWorkspace} />
-      ) : (
-        <div className={styles.formContainer}>
-          <p className={styles.emptyState}>{t('reportNotFound', 'Report not found.')}</p>
-        </div>
-      )}
+      <ReportRequestBody
+        reportUuid={workspaceProps?.reportUuid ?? ''}
+        mutateRequests={workspaceProps?.mutateRequests ?? (() => {})}
+        closeWorkspace={closeWorkspace}
+        navigate={workspaceProps?.navigate ?? (() => {})}
+      />
     </Workspace2>
   );
 };

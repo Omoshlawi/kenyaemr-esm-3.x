@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 import { vi, describe, it, expect } from 'vitest';
 import EmptyState from './empty-state-log.components';
 import React from 'react';

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useVisit } from '@openmrs/esm-framework';
-import { useOrderBasket } from '@openmrs/esm-patient-common-lib';
+import { useOrderBasket, type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
 
 const defaultVisitCustomRepresentation =
   'custom:(uuid,display,voided,indication,startDatetime,stopDatetime,' +
@@ -18,9 +18,10 @@ export function useMarkIncompleteOrdersOnMissingDiagnosis(patientUuid: string, p
   const { activeVisit, isLoading } = useVisit(patientUuid, defaultVisitCustomRepresentation);
   const { orders, setOrders } = useOrderBasket(patient);
 
-  const hasDrugOrder = orders.some((order) => 'drug' in order);
+  const drugOrders = orders.filter((order): order is DrugOrderBasketItem => 'drug' in order);
+  const hasDrugOrder = drugOrders.length > 0;
   const diagnoses = activeVisit?.encounters?.flatMap((encounter) => encounter.diagnoses) ?? [];
-  const hasMainDiagnosis = diagnoses.some((diagnosis) => diagnosis.rank === 2);
+  const hasMainDiagnosis = diagnoses.some((diagnosis) => diagnosis?.rank === 2);
 
   useEffect(() => {
     if (!hasDrugOrder) {
@@ -28,25 +29,24 @@ export function useMarkIncompleteOrdersOnMissingDiagnosis(patientUuid: string, p
     }
 
     const shouldBeIncomplete = !hasMainDiagnosis;
-    setOrders('drug', (currentOrders = []) => {
-      let hasChange = false;
+    let hasChange = false;
 
-      const updatedOrders = currentOrders.map((order) => {
-        if (!('drug' in order) || order.isOrderIncomplete === shouldBeIncomplete) {
-          return order;
-        }
-        hasChange = true;
-        return { ...order, isOrderIncomplete: shouldBeIncomplete };
-      });
-
-      return hasChange ? updatedOrders : currentOrders;
+    const updatedOrders = drugOrders.map((order) => {
+      if (order.isOrderIncomplete === shouldBeIncomplete) {
+        return order;
+      }
+      hasChange = true;
+      return { ...order, isOrderIncomplete: shouldBeIncomplete };
     });
 
+    if (hasChange) {
+      setOrders('drug', updatedOrders);
+    }
+
     return () => {
-      setOrders('drug', (currentOrders = []) =>
-        currentOrders.map((order) =>
-          'drug' in order && order.isOrderIncomplete ? { ...order, isOrderIncomplete: false } : order,
-        ),
+      setOrders(
+        'drug',
+        updatedOrders.map((order) => (order.isOrderIncomplete ? { ...order, isOrderIncomplete: false } : order)),
       );
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

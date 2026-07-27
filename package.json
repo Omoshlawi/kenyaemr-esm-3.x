@@ -18,7 +18,8 @@
     "test": "vitest run",
     "test-e2e": "playwright test",
     "test:watch": "vitest",
-    "verify": "turbo run lint && turbo run typescript"
+    "translate": "node ./tools/translate-missing.mjs",
+    "verify": "turbo run lint && turbo run typescript && yarn test"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": "eslint --cache --fix"

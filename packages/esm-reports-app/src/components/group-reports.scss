@@ -2,12 +2,20 @@
 @use '@carbon/layout';
 
 .groupReportsContainer {
-  margin: layout.$spacing-05;
+  padding: layout.$spacing-05;
+  background-color: colors.$white;
 }
 
-.reportGroupPanel {
+.filterDropdown {
+  min-width: layout.$spacing-13 * 1.5;
+  border-bottom: none;
+
+  & > div {
+    border-bottom: none !important;
+  }
+}
+
+.filtersContainer {
   display: flex;
-  flex-direction: column;
-  gap: layout.$spacing-05;
-  padding-top: layout.$spacing-05;
+  align-items: flex-end;
 }

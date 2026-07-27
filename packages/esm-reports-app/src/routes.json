@@ -32,7 +32,16 @@
    }
   ],
   "extensions": [
-    
+    {
+      "component": "reportsLeftPanelLink",
+      "name": "reports-left-panel-link",
+      "slot": "reports-left-panel-slot"
+    },
+    {
+      "component": "reportsHistoryDashboardLink",
+      "name": "reports-history-dashboard-link",
+      "slot": "reports-left-panel-slot"
+    }
   ],
   "modals": [
     

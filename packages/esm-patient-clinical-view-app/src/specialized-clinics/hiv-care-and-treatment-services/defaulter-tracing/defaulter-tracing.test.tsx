@@ -3,17 +3,27 @@ import { screen, render } from '@testing-library/react';
 import DefaulterTracing from './defaulter-tracing.component';
 import { usePatientTracing } from '../../../hooks/usePatientTracing';
 import useEvent from '@testing-library/user-event';
-import * as mock from '@openmrs/esm-framework/mock';
+import { useConfig } from '@openmrs/esm-framework';
+import { describe, expect, test, vi } from 'vitest';
 
-const usePatientTracingMock = usePatientTracing as jest.MockedFunction<typeof usePatientTracing>;
-const launchWorkspaceMock = mock.launchWorkspace as jest.MockedFunction<typeof mock.launchWorkspace>;
+const { launchWorkspaceMock } = vi.hoisted(() => ({ launchWorkspaceMock: vi.fn() }));
+const usePatientTracingMock = vi.mocked(usePatientTracing);
 
-jest.mock('../../../hooks/usePatientTracing', () => ({
+vi.mock('../../../hooks/usePatientTracing', () => ({
   defaulterTracingEncounterUuid: 'some-uuid',
-  usePatientTracing: jest.fn(),
+  usePatientTracing: vi.fn(),
 }));
 
-jest.spyOn(mock, 'useConfig').mockReturnValue({
+vi.mock('@openmrs/esm-patient-common-lib', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@openmrs/esm-patient-common-lib')>()),
+  useLaunchWorkspaceRequiringVisit: vi.fn(() => launchWorkspaceMock),
+  usePatientChartStore: vi.fn(() => ({
+    visitContext: { uuid: 'visit-uuid' },
+    mutateVisitContext: vi.fn(),
+  })),
+}));
+
+vi.mocked(useConfig).mockReturnValue({
   formsList: {
     defaulterTracingFormUuid: 'defaulterTracingFormUuid',
   },
@@ -26,22 +36,26 @@ describe('DefaulterTracing', () => {
       encounters: [],
       isLoading: false,
       error: undefined,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     });
-    render(<DefaulterTracing patientUuid="patientUuid" />);
-    const recordDefaulterTracing = screen.getByRole('button', { name: /Record Defaulter Tracing/i });
+    const patient = { resourceType: 'Patient', id: 'patientUuid' } as fhir.Patient;
+    render(<DefaulterTracing patientUuid="patientUuid" patient={patient} />);
+    const recordDefaulterTracing = screen.getByRole('button', { name: 'Record' });
     await user.click(recordDefaulterTracing);
-    expect(launchWorkspaceMock).toBeCalledWith('patient-form-entry-workspace', {
-      formInfo: {
+    expect(launchWorkspaceMock).toHaveBeenCalledWith(
+      {
+        workspaceTitle: 'Defaulter Tracing Form',
+        form: { uuid: 'defaulterTracingFormUuid' },
         encounterUuid: '',
-        formUuid: 'defaulterTracingFormUuid',
-        patientUuid: 'patientUuid',
-        visitTypeUuid: '',
-        visitUuid: '',
       },
-      mutateForm: expect.any(Function),
-      workspaceTitle: 'Defaulter Tracing',
-    });
+      {},
+      expect.objectContaining({
+        patient,
+        patientUuid: 'patientUuid',
+        visitContext: { uuid: 'visit-uuid' },
+        mutateVisitContext: expect.any(Function),
+      }),
+    );
   });
 });

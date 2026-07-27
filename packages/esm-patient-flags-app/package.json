@@ -20,12 +20,14 @@
   "scripts": {
     "analyze": "rspack build --mode=production --analyze",
     "build": "rspack --mode=production",
-    "coverage": "echo \"Jest has been removed; no unit test runner is configured\" && exit 0",
+    "coverage": "yarn --cwd ../.. vitest run packages/esm-patient-flags-app/src --coverage",
     "debug": "npm run serve",
     "extract-translations": "i18next 'src/**/*.{ts,tsx}' --config ../../tools/i18next-parser.config.js",
     "lint": "eslint src --ext ts,tsx",
     "serve": "rspack serve --mode=development",
     "start": "openmrs develop",
+    "test": "yarn --cwd ../.. vitest run packages/esm-patient-flags-app/src",
+    "test:watch": "yarn --cwd ../.. vitest packages/esm-patient-flags-app/src",
     "typescript": "tsc"
   },
   "browserslist": [

@@ -8,9 +8,10 @@ import { usePharmacyOrders } from './pharmacy-orders.resource';
 
 // Mock the workspace launcher hook
 const mockLaunchAddDrugOrder = vi.fn();
-vi.mock('@openmrs/esm-patient-common-lib', () => ({
-  ...vi.importActual<typeof import('@openmrs/esm-patient-common-lib')>('@openmrs/esm-patient-common-lib'),
+vi.mock('@openmrs/esm-patient-common-lib', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@openmrs/esm-patient-common-lib')>()),
   useLaunchWorkspaceRequiringVisit: vi.fn(() => mockLaunchAddDrugOrder),
+  usePatientChartStore: vi.fn(() => ({ visitContext: { uuid: 'test-visit-uuid' } })),
 }));
 
 // Mock the pharmacy orders hook
@@ -99,9 +100,9 @@ describe('PharmacyOrders Component', () => {
     },
   ];
 
-  const mockMutate = jest.fn();
-  const mockGoTo = jest.fn();
-  const mockSetCurrPageSize = jest.fn() as unknown as React.Dispatch<React.SetStateAction<number>>;
+  const mockMutate = vi.fn();
+  const mockGoTo = vi.fn();
+  const mockSetCurrPageSize = vi.fn() as unknown as React.Dispatch<React.SetStateAction<number>>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -399,8 +400,9 @@ describe('PharmacyOrders Component', () => {
 
       // Should not crash and should show empty state
       await waitFor(() => {
-        expect(screen.getByText('No medication orders')).toBeInTheDocument();
+        expect(screen.getByText('Medication Orders')).toBeInTheDocument();
       });
+      expect(mockUsePharmacyOrders).toHaveBeenCalledWith('', '');
     });
 
     it('should handle medication request without dispense quantity', async () => {

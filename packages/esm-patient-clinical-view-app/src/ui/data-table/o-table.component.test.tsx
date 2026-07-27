@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { formConceptMap, mockTableHeaders, mockTableRows } from '../../../../../__mocks__/encounter-observations.mock';
 import { OTable } from './o-table.component';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 const testProps = {
   tableHeaders: mockTableHeaders,
@@ -13,7 +14,7 @@ const testProps = {
 
 describe('ObsTable', () => {
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('should render the table component', async () => {

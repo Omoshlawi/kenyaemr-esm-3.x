@@ -25,12 +25,12 @@
   "noMainDiagnosisSubtitlecWarning": "Le diagnostic principal est requis, veuillez ajouter le diagnostic principal au formulaire de consultation clinique",
   "queueScreen": "Écran de file d’attente",
   "referrals": "Références",
-  "regulatoryNotActive": "Regulatory operational status is not active",
+  "regulatoryNotActive": "Le statut opérationnel réglementaire n'est pas actif",
   "reports": "Rapports",
   "search": "Recherche",
   "serviceAvailabilityAdmin": "Administration de la disponibilité des services",
   "serviceQueuesAdmin": "Gestion des files d’attente",
-  "shaOperationalNotActive": "SHA operational status is not active",
+  "shaOperationalNotActive": "Le statut opérationnel du SHA n'est pas actif",
   "suppliesDispensing": "Dispensation des fournitures",
   "systemInfo": "Informations système"
 }

@@ -7,7 +7,7 @@ import { processBillItems } from '../../../../billing.resource';
 import CreateBillWorkspace from './create-bill.workspace';
 import { useBillableItem } from '../../../../billable-services/billable-orders/useBillableItem';
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key, defaultText, options) => {
       if (options) {
@@ -18,24 +18,29 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
-jest.mock('@openmrs/esm-framework', () => ({
-  useConfig: jest.fn(),
-  useLayoutType: jest.fn(),
-  showSnackbar: jest.fn(),
+vi.mock('@openmrs/esm-framework', () => ({
+  useConfig: vi.fn(),
+  useLayoutType: vi.fn(),
+  useVisit: vi.fn(() => ({ activeVisit: null })),
+  usePatient: vi.fn(() => ({ patient: null })),
+  showSnackbar: vi.fn(),
+  openmrsFetch: vi.fn(),
+  Workspace2: ({ children }) => <div>{children}</div>,
   ResponsiveWrapper: ({ children }) => <div>{children}</div>,
   restBaseUrl: '/openmrs/ws/rest/v1',
 }));
 
-jest.mock('../../../../billable-services/billable-orders/useBillableItem', () => ({
-  useBillableItem: jest.fn(),
+vi.mock('../../../../billable-services/billable-orders/useBillableItem', () => ({
+  useBillableItem: vi.fn(),
 }));
 
-jest.mock('../../../../billing.resource', () => ({
-  processBillItems: jest.fn(),
+vi.mock('../../../../billing.resource', () => ({
+  processBillItems: vi.fn(),
 }));
 
-jest.mock('swr', () => ({
-  mutate: jest.fn(),
+vi.mock('swr', () => ({
+  default: vi.fn(() => ({ data: undefined, isLoading: false, error: null })),
+  mutate: vi.fn(),
 }));
 
 describe('CreateBillWorkspace', () => {
@@ -140,33 +145,40 @@ describe('CreateBillWorkspace', () => {
   };
 
   const defaultProps = {
-    patientUuid: 'patient-uuid',
-    order: mockOrder,
-    closeWorkspace: jest.fn(),
-    closeWorkspaceWithSavedChanges: jest.fn(),
-    promptBeforeClosing: jest.fn(),
-    setTitle: jest.fn(),
-    closeModal: jest.fn(),
+    workspaceProps: {
+      patientUuid: 'patient-uuid',
+      order: mockOrder,
+      medicationRequestBundle: undefined,
+    },
+    closeWorkspace: vi.fn(),
+    closeWorkspaceWithSavedChanges: vi.fn(),
+    promptBeforeClosing: vi.fn(),
+    setTitle: vi.fn(),
+    closeModal: vi.fn(),
   };
 
   // Reset mocks before each test
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Setup default mock implementations
-    (useConfig as jest.Mock).mockReturnValue({
+    (useConfig as vi.Mock).mockReturnValue({
       cashPointUuid: 'cash-point-uuid',
       cashierUuid: 'cashier-uuid',
+      visitAttributeTypes: {
+        insuranceScheme: 'insurance-scheme-uuid',
+        claimScheme: 'claim-scheme-uuid',
+      },
     });
 
-    (useLayoutType as jest.Mock).mockReturnValue('desktop');
+    (useLayoutType as vi.Mock).mockReturnValue('desktop');
 
-    (useBillableItem as jest.Mock).mockReturnValue({
+    (useBillableItem as vi.Mock).mockReturnValue({
       billableItem: mockBillableItem,
       isLoading: false,
     });
 
-    (processBillItems as jest.Mock).mockResolvedValue({});
+    (processBillItems as vi.Mock).mockResolvedValue({});
   });
 
   test('renders the form with correct initial state', async () => {
@@ -218,7 +230,7 @@ describe('CreateBillWorkspace', () => {
 
   test('handles loading state correctly', () => {
     // Mock loading state
-    (useBillableItem as jest.Mock).mockReturnValue({
+    (useBillableItem as vi.Mock).mockReturnValue({
       billableItem: null,
       isLoading: true,
     });
@@ -233,7 +245,7 @@ describe('CreateBillWorkspace', () => {
 
     // Mock API error
     const mockError = new Error('Failed to process bill');
-    (processBillItems as jest.Mock).mockRejectedValue(mockError);
+    (processBillItems as vi.Mock).mockRejectedValue(mockError);
 
     render(<CreateBillWorkspace {...defaultProps} />);
 

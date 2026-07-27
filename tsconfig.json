@@ -20,10 +20,12 @@
     "noEmit": true,
     "paths": {
       "__mocks__": ["./__mocks__"],
+      "@openmrs/esm-framework-real": ["./node_modules/@openmrs/esm-framework/dist/index.d.ts"],
       "tools": ["./tools"],
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "target": "esnext",
+    "types": ["vitest/globals", "fhir", "webpack-env"]
   }
 }

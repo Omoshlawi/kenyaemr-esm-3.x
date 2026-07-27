@@ -2,8 +2,6 @@
 @use '@carbon/layout';
 
 .container {
-  border: 1px solid colors.$gray-20;
-
   :global(.cds--table-toolbar) {
     position: relative !important;
   }

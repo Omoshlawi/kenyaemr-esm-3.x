@@ -1,23 +1,10 @@
-import React, { useEffect, useMemo } from 'react';
-import { useVisit } from '@openmrs/esm-framework';
+import React from 'react';
 import { InlineNotification } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 
 import styles from './patient-diagnosis.scss';
 import { useOrderBasket, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
 import { useMarkIncompleteOrdersOnMissingDiagnosis } from './patient-diagnosis.resource';
-
-const defaultVisitCustomRepresentation =
-  'custom:(uuid,display,voided,indication,startDatetime,stopDatetime,' +
-  'encounters:(uuid,display,encounterDatetime,' +
-  'form:(uuid,name),location:ref,' +
-  'encounterType:ref,' +
-  'encounterProviders:(uuid,display,' +
-  'provider:(uuid,display)),diagnoses),' +
-  'patient:(uuid,display),' +
-  'visitType:(uuid,name,display),' +
-  'attributes:(uuid,display,attributeType:(name,datatypeClassname,uuid),value),' +
-  'location:(uuid,name,display))';
 
 type PatientDiagnosisContentProps = {
   patientUuid: string;

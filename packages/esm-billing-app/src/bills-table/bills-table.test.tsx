@@ -1,24 +1,29 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { useBills } from '../billing.resource';
+import { usePaginatedBills } from '../billing.resource';
 import BillsTable from './bills-table.component';
 import userEvent from '@testing-library/user-event';
 
-const mockbills = useBills as jest.Mock;
+const mockbills = usePaginatedBills as vi.Mock;
 
 const mockBillsData = [
   { uuid: '1', patientName: 'John Doe', identifier: '12345678', visitType: 'Checkup', patientUuid: 'uuid1' },
   { uuid: '2', patientName: 'Mary Smith', identifier: '98765432', visitType: 'Wake up', patientUuid: 'uuid2' },
 ];
 
-jest.mock('../billing.resource', () => ({
-  ...jest.requireActual('../billing.resource'),
-  useBills: jest.fn(() => ({
+vi.mock('../billing.resource', () => ({
+  usePaginatedBills: vi.fn(() => ({
     bills: mockBillsData,
     isLoading: false,
     isValidating: false,
     error: null,
+    pagination: { goTo: vi.fn(), currentPage: 1, totalCount: 0 },
   })),
+}));
+
+vi.mock('@openmrs/esm-patient-common-lib', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@openmrs/esm-patient-common-lib')>()),
+  usePaginationInfo: () => ({ pageSizes: [10] }),
 }));
 
 describe('BillsTable', () => {
@@ -26,9 +31,16 @@ describe('BillsTable', () => {
 
   beforeEach(() => {
     user = userEvent.setup();
+    mockbills.mockReturnValue({
+      bills: mockBillsData,
+      isLoading: false,
+      isValidating: false,
+      error: null,
+      pagination: { goTo: vi.fn(), currentPage: 1, totalCount: 0 },
+    });
   });
 
-  xit('renders data table with pending bills', () => {
+  it.skip('renders data table with pending bills', () => {
     render(<BillsTable />);
 
     expect(screen.getByText('Visit time')).toBeInTheDocument();
@@ -44,11 +56,12 @@ describe('BillsTable', () => {
   });
 
   it('displays empty state when there are no bills', () => {
-    mockbills.mockImplementationOnce(() => ({
+    mockbills.mockImplementation(() => ({
       bills: [],
       isLoading: false,
       isValidating: false,
       error: null,
+      pagination: { goTo: vi.fn(), currentPage: 1, totalCount: 0 },
     }));
 
     render(<BillsTable />);
@@ -57,11 +70,12 @@ describe('BillsTable', () => {
   });
 
   it('should not display the table when the data is loading', () => {
-    mockbills.mockImplementationOnce(() => ({
-      bills: undefined,
+    mockbills.mockImplementation(() => ({
+      bills: [],
       isLoading: true,
       isValidating: false,
       error: null,
+      pagination: { goTo: vi.fn(), currentPage: 1, totalCount: 0 },
     }));
 
     render(<BillsTable />);
@@ -73,11 +87,12 @@ describe('BillsTable', () => {
   });
 
   it('should display the error state when there is error', () => {
-    mockbills.mockImplementationOnce(() => ({
-      activeVisits: undefined,
+    mockbills.mockImplementation(() => ({
+      bills: [],
       isLoading: false,
       isValidating: false,
       error: 'Error in fetching data',
+      pagination: { goTo: vi.fn(), currentPage: 1, totalCount: 0 },
     }));
 
     render(<BillsTable />);
@@ -101,22 +116,23 @@ describe('BillsTable', () => {
     expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
 
     // Should filter the table when bill payment status combobox is changed
-    const billCategorySelect = screen.getByRole('combobox');
+    const billCategorySelect = screen.getAllByRole('combobox')[0];
     expect(billCategorySelect).toBeInTheDocument();
     await user.click(billCategorySelect, { name: 'All bills' });
-    expect(mockbills).toHaveBeenCalledWith('', '');
+    expect(mockbills).toHaveBeenCalledWith(true, { billStatus: '', pageSize: 10 });
 
     await user.click(screen.getByText('Pending bills'));
     expect(screen.getByText('Pending bills')).toBeInTheDocument();
-    expect(mockbills).toHaveBeenCalledWith('', 'PENDING');
+    expect(mockbills).toHaveBeenCalledWith(true, { billStatus: 'PENDING', pageSize: 10 });
   });
 
   test('should show the loading spinner while retrieving data', () => {
-    mockbills.mockImplementationOnce(() => ({
-      bills: undefined,
+    mockbills.mockImplementation(() => ({
+      bills: [],
       isLoading: true,
       isValidating: false,
       error: null,
+      pagination: { goTo: vi.fn(), currentPage: 1, totalCount: 0 },
     }));
 
     render(<BillsTable />);

@@ -2,28 +2,28 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useTranslation } from 'react-i18next';
-import { useLayoutType, usePagination, showModal, launchWorkspace, LayoutType } from '@openmrs/esm-framework';
+import { useLayoutType, usePagination, showModal, launchWorkspace2, LayoutType } from '@openmrs/esm-framework';
 import ChargeSummaryTable from './charge-summary-table.component';
 import { useChargeSummaries, type ChargeAble } from './charge-summary.resource';
 import { downloadExcelTemplateFile } from './form-helper';
 
-jest.mock('@openmrs/esm-framework', () => {
-  const originalModule = jest.requireActual('@openmrs/esm-framework');
+vi.mock('@openmrs/esm-framework', async (importOriginal) => {
+  const originalModule = await importOriginal<typeof import('@openmrs/esm-framework')>();
   return {
     ...originalModule,
-    useLayoutType: jest.fn(),
-    usePagination: jest.fn(),
-    showModal: jest.fn(),
-    launchWorkspace: jest.fn(),
+    useLayoutType: vi.fn(),
+    usePagination: vi.fn(),
+    showModal: vi.fn(),
+    launchWorkspace2: vi.fn(),
   };
 });
-jest.mock('./charge-summary.resource', () => ({
-  useChargeSummaries: jest.fn(),
+vi.mock('./charge-summary.resource', () => ({
+  useChargeSummaries: vi.fn(),
 }));
 
-jest.mock('./form-helper', () => ({
-  downloadExcelTemplateFile: jest.fn(),
-  searchTableData: jest.fn((data, searchString) => data),
+vi.mock('./form-helper', () => ({
+  downloadExcelTemplateFile: vi.fn(),
+  searchTableData: vi.fn((data, searchString) => data),
 }));
 
 const mockChargeSummaryItems: ChargeAble[] = [
@@ -53,11 +53,11 @@ const mockChargeSummaryItems: ChargeAble[] = [
 ];
 
 describe('ChargeSummaryTable', () => {
-  const mockUseLayoutType = useLayoutType as jest.MockedFunction<typeof useLayoutType>;
-  const mockUsePagination = usePagination as jest.MockedFunction<typeof usePagination>;
-  const mockShowModal = showModal as jest.MockedFunction<typeof showModal>;
-  const mockLaunchWorkspace = launchWorkspace as jest.MockedFunction<typeof launchWorkspace>;
-  const mockUseChargeSummaries = useChargeSummaries as jest.MockedFunction<typeof useChargeSummaries>;
+  const mockUseLayoutType = useLayoutType as vi.MockedFunction<typeof useLayoutType>;
+  const mockUsePagination = usePagination as vi.MockedFunction<typeof usePagination>;
+  const mockShowModal = showModal as vi.MockedFunction<typeof showModal>;
+  const mockLaunchWorkspace = launchWorkspace2 as vi.MockedFunction<typeof launchWorkspace2>;
+  const mockUseChargeSummaries = useChargeSummaries as vi.MockedFunction<typeof useChargeSummaries>;
 
   beforeEach(() => {
     mockUseLayoutType.mockReturnValue('desktop' as LayoutType);
@@ -68,16 +68,16 @@ describe('ChargeSummaryTable', () => {
       paginated: true,
       showNextButton: false,
       showPreviousButton: false,
-      goTo: jest.fn(),
-      goToNext: jest.fn(),
-      goToPrevious: jest.fn(),
+      goTo: vi.fn(),
+      goToNext: vi.fn(),
+      goToPrevious: vi.fn(),
     });
     mockUseChargeSummaries.mockReturnValue({
       chargeSummaryItems: mockChargeSummaryItems,
       isLoading: false,
       isValidating: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
   });
 
@@ -87,7 +87,7 @@ describe('ChargeSummaryTable', () => {
       isLoading: true,
       isValidating: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<ChargeSummaryTable />);
@@ -100,7 +100,7 @@ describe('ChargeSummaryTable', () => {
       isLoading: false,
       isValidating: false,
       error: new Error('Test error'),
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<ChargeSummaryTable />);
@@ -114,7 +114,7 @@ describe('ChargeSummaryTable', () => {
       isLoading: false,
       isValidating: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<ChargeSummaryTable />);
@@ -122,7 +122,7 @@ describe('ChargeSummaryTable', () => {
     const launchFormButton = screen.getByRole('button', { name: /Record/i });
     expect(launchFormButton).toBeInTheDocument();
     await user.click(launchFormButton);
-    expect(mockLaunchWorkspace).toHaveBeenCalledWith('billable-service-form');
+    expect(mockLaunchWorkspace).toHaveBeenCalledWith('billable-service-form', {}, {}, {});
   });
 
   test('renders table with data', () => {
@@ -162,10 +162,15 @@ describe('ChargeSummaryTable', () => {
     const editButton = screen.getByText('Edit charge item');
     await user.click(editButton);
 
-    expect(mockLaunchWorkspace).toHaveBeenCalledWith('billable-service-form', {
-      initialValues: mockChargeSummaryItems[0],
-      workspaceTitle: 'Edit Service Charge Item',
-    });
+    expect(mockLaunchWorkspace).toHaveBeenCalledWith(
+      'billable-service-form',
+      {
+        initialValues: mockChargeSummaryItems[0],
+        workspaceTitle: 'Edit Service Charge Item',
+      },
+      {},
+      {},
+    );
   });
 
   test('handles edit commodity action', async () => {

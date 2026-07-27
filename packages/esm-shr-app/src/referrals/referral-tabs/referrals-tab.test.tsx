@@ -1,34 +1,35 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { launchWorkspace, showSnackbar } from '@openmrs/esm-framework';
+import { launchWorkspace2, showSnackbar } from '@openmrs/esm-framework';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import ReferralTabs from './referrals-tabs.component';
 import * as resource from '../refferals.resource';
 
 // Mock dependencies
-jest.mock('@openmrs/esm-framework', () => ({
-  ...jest.requireActual('@openmrs/esm-framework'),
-  launchWorkspace: jest.fn(),
-  showSnackbar: jest.fn(),
-  useLayoutType: jest.fn(() => 'tablet'),
-  isDesktop: jest.fn(() => true),
+vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@openmrs/esm-framework')>()),
+  launchWorkspace2: vi.fn(),
+  showSnackbar: vi.fn(),
+  useLayoutType: vi.fn(() => 'tablet'),
+  isDesktop: vi.fn(() => true),
 }));
 
-jest.mock('../refferals.resource', () => ({
-  pullFacilityReferrals: jest.fn(),
+vi.mock('../refferals.resource', () => ({
+  pullFacilityReferrals: vi.fn(),
 }));
 
-jest.mock('../referrals.component', () => {
-  return jest.fn(({ status }) => <div data-testid={`referral-table-${status}`}>Referral Table - {status}</div>);
+vi.mock('../referrals.component', () => {
+  return {
+    default: vi.fn(({ status }) => <div data-testid={`referral-table-${status}`}>Referral Table - {status}</div>),
+  };
 });
 
-const mockPullFacilityReferrals = resource.pullFacilityReferrals as jest.MockedFunction<
-  typeof resource.pullFacilityReferrals
->;
+const mockPullFacilityReferrals = vi.mocked(resource.pullFacilityReferrals);
 
 describe('ReferralTabs', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('should render the referral tabs component with three tabs', () => {
@@ -55,7 +56,7 @@ describe('ReferralTabs', () => {
     // Check that the active tab's table is visible (not hidden)
     const tabPanels = screen.getAllByRole('tabpanel');
     expect(tabPanels[0]).not.toHaveAttribute('hidden');
-    expect(screen.getAllByText('Referral Table - active')).toHaveLength(2); // Two "active" tabs
+    expect(within(tabPanels[0]).getByText('Referral Table - active')).toBeInTheDocument();
   });
 
   test('should switch to the second tab (From Facility) when clicked', async () => {
@@ -80,14 +81,14 @@ describe('ReferralTabs', () => {
     expect(completedTab.closest('button')).toHaveAttribute('aria-selected', 'true');
   });
 
-  test('should call launchWorkspace when the "Refer Patient" button is clicked', async () => {
+  test('should call launchWorkspace2 when the "Refer Patient" button is clicked', async () => {
     const user = userEvent.setup();
     render(<ReferralTabs />);
 
     const referPatientButton = screen.getByRole('button', { name: /Refer Patient/i });
     await user.click(referPatientButton);
 
-    expect(launchWorkspace).toHaveBeenCalledWith('facility-referral-form', {
+    expect(launchWorkspace2).toHaveBeenCalledWith('facility-referral-form', {
       workspaceTitle: 'Referral Form',
     });
   });

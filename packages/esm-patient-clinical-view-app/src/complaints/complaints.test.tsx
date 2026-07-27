@@ -6,20 +6,21 @@ import PatientComplaintsComponent from './patient-complaints.component';
 import { usePaginatedEncounters, useForm, extractComplaintsFromObservations } from './complaints.resource';
 import { useConfig, isDesktop } from '@openmrs/esm-framework';
 import { usePaginationInfo } from '@openmrs/esm-patient-common-lib';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the dependencies
-jest.mock('./complaints.resource', () => ({
-  usePaginatedEncounters: jest.fn(),
-  useForm: jest.fn(),
-  extractComplaintsFromObservations: jest.fn(),
+vi.mock('./complaints.resource', () => ({
+  usePaginatedEncounters: vi.fn(),
+  useForm: vi.fn(),
+  extractComplaintsFromObservations: vi.fn(),
 }));
-jest.mock('@openmrs/esm-framework', () => ({
-  ...jest.requireActual('@openmrs/esm-framework'),
-  useConfig: jest.fn(),
-  isDesktop: jest.fn(),
+vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@openmrs/esm-framework')>()),
+  useConfig: vi.fn(),
+  isDesktop: vi.fn(),
   ErrorState: ({ headerTitle }) => <div data-testid="error-state">{headerTitle}</div>,
 }));
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
+vi.mock('@openmrs/esm-patient-common-lib', () => ({
   CardHeader: ({ title, children }) => (
     <div>
       {title}
@@ -27,15 +28,15 @@ jest.mock('@openmrs/esm-patient-common-lib', () => ({
     </div>
   ),
   EmptyState: ({ displayText }) => <div data-testid="empty-state">{displayText}</div>,
-  usePaginationInfo: jest.fn(),
+  usePaginationInfo: vi.fn(),
 }));
 
-const mockUsePaginatedEncounters = usePaginatedEncounters as jest.Mock;
-const mockUseForm = useForm as jest.Mock;
-const mockUseConfig = useConfig as jest.Mock;
-const mockIsDesktop = isDesktop as unknown as jest.Mock;
-const mockUsePaginationInfo = usePaginationInfo as jest.Mock;
-const mockExtractComplaintsFromObservations = extractComplaintsFromObservations as jest.Mock;
+const mockUsePaginatedEncounters = vi.mocked(usePaginatedEncounters);
+const mockUseForm = vi.mocked(useForm);
+const mockUseConfig = vi.mocked(useConfig);
+const mockIsDesktop = vi.mocked(isDesktop);
+const mockUsePaginationInfo = vi.mocked(usePaginationInfo);
+const mockExtractComplaintsFromObservations = vi.mocked(extractComplaintsFromObservations);
 
 const mockConfig = {
   encounterTypes: {
@@ -159,7 +160,7 @@ const mockComplaints = [
 
 describe('PatientComplaintsComponent', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockUseConfig.mockReturnValue(mockConfig);
     mockIsDesktop.mockReturnValue(true);
     mockUsePaginationInfo.mockReturnValue({
@@ -175,7 +176,7 @@ describe('PatientComplaintsComponent', () => {
       isLoading: true,
       error: null,
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       totalPages: 1,
     });
     mockUseForm.mockReturnValue({
@@ -197,7 +198,7 @@ describe('PatientComplaintsComponent', () => {
       isLoading: false,
       error: mockError,
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       totalPages: 1,
     });
     mockUseForm.mockReturnValue({
@@ -219,7 +220,7 @@ describe('PatientComplaintsComponent', () => {
       isLoading: false,
       error: null,
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       totalPages: 1,
     });
     mockUseForm.mockReturnValue({
@@ -240,7 +241,7 @@ describe('PatientComplaintsComponent', () => {
       isLoading: false,
       error: null,
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       totalPages: 1,
     });
     mockUseForm.mockReturnValue({
@@ -261,7 +262,7 @@ describe('PatientComplaintsComponent', () => {
       isLoading: false,
       error: null,
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       totalPages: 1,
     });
     mockUseForm.mockReturnValue({
@@ -287,7 +288,7 @@ describe('PatientComplaintsComponent', () => {
 
   it('should handle pagination correctly', async () => {
     const user = userEvent.setup();
-    const mockGoTo = jest.fn();
+    const mockGoTo = vi.fn();
 
     // Create enough complaints data to enable pagination (more than 5 items for page size 5)
     const paginationComplaints = [
@@ -333,7 +334,7 @@ describe('PatientComplaintsComponent', () => {
       isLoading: false,
       error: null,
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       totalPages: 1,
     });
     mockUseForm.mockReturnValue({
@@ -356,7 +357,7 @@ describe('PatientComplaintsComponent', () => {
       isLoading: false,
       error: null,
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       totalPages: 1,
     });
     mockUseForm.mockReturnValue({
@@ -404,7 +405,7 @@ describe('PatientComplaintsComponent', () => {
       isLoading: false,
       error: null,
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       totalPages: 1,
     });
     mockUseForm.mockReturnValue({
@@ -427,7 +428,7 @@ describe('PatientComplaintsComponent', () => {
       isLoading: false,
       error: null,
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       totalPages: 1,
     });
     mockUseForm.mockReturnValue({
@@ -449,7 +450,7 @@ describe('PatientComplaintsComponent', () => {
       isLoading: false,
       error: null,
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       totalPages: 1,
     });
     mockUseForm.mockReturnValue({
@@ -473,7 +474,7 @@ describe('PatientComplaintsComponent', () => {
       isLoading: false,
       error: null,
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       totalPages: 1,
     });
     mockUseForm.mockReturnValue({
@@ -493,7 +494,7 @@ describe('PatientComplaintsComponent', () => {
       isLoading: false,
       error: null,
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       totalPages: 2,
     });
     mockUseForm.mockReturnValue({

@@ -8,43 +8,44 @@ import { useBill, processBillPayment, usePaymentModes } from '../billing.resourc
 
 import Invoice from './invoice.component';
 
-const mockedBill = jest.mocked(useBill);
-const mockedProcessBillPayment = jest.mocked(processBillPayment);
-const mockedUsePaymentModes = jest.mocked(usePaymentModes);
-const mockedUseReactToPrint = jest.mocked(useReactToPrint);
+const mockedBill = vi.mocked(useBill);
+const mockedProcessBillPayment = vi.mocked(processBillPayment);
+const mockedUsePaymentModes = vi.mocked(usePaymentModes);
+const mockedUseReactToPrint = vi.mocked(useReactToPrint);
 
-jest.mock('../billing.resource', () => ({
-  useBill: jest.fn(),
-  processBillPayment: jest.fn(),
-  useDefaultFacility: jest.fn().mockReturnValue({ uuid: '54065383-b4d4-42d2-af4d-d250a1fd2590', display: 'MTRH' }),
+vi.mock('../billing.resource', () => ({
+  useBill: vi.fn(),
+  processBillPayment: vi.fn(),
+  usePaymentModes: vi.fn(),
+  useDefaultFacility: vi.fn().mockReturnValue({ uuid: '54065383-b4d4-42d2-af4d-d250a1fd2590', display: 'MTRH' }),
 }));
 
-jest.mock('react-router-dom', () => {
-  const originalModule = jest.requireActual('react-router-dom');
+vi.mock('react-router-dom', async (importOriginal) => {
+  const originalModule = await importOriginal<typeof import('react-router-dom')>();
 
   return {
     ...originalModule,
-    useParams: jest.fn().mockReturnValue({ patientUuid: 'patientUuid', billUuid: 'billUuid' }),
+    useParams: vi.fn().mockReturnValue({ patientUuid: 'patientUuid', billUuid: 'billUuid' }),
   };
 });
 
-jest.mock('react-to-print', () => {
-  const originalModule = jest.requireActual('react-to-print');
+vi.mock('react-to-print', async (importOriginal) => {
+  const originalModule = await importOriginal<typeof import('react-to-print')>();
 
   return {
     ...originalModule,
-    useReactToPrint: jest.fn(),
+    useReactToPrint: vi.fn(),
   };
 });
 
-xdescribe('Invoice', () => {
+describe.skip('Invoice', () => {
   beforeEach(() => {
     mockedBill.mockReturnValue({
       bill: mockBill,
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     mockedUsePaymentModes.mockReturnValue({
@@ -54,11 +55,11 @@ xdescribe('Invoice', () => {
       ],
       isLoading: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
   });
 
-  afterEach(() => jest.clearAllMocks());
+  afterEach(() => vi.clearAllMocks());
 
   test('should be able to search through the invoice table and settle a bill', async () => {
     const user = userEvent.setup();
@@ -187,7 +188,7 @@ xdescribe('Invoice', () => {
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     mockedUsePaymentModes.mockReturnValue({
@@ -197,7 +198,7 @@ xdescribe('Invoice', () => {
       ],
       isLoading: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     renderInvoice();

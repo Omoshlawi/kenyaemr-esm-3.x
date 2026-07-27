@@ -1,0 +1,12 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+
+.container {
+  background-color: colors.$white-0;
+  height: calc(100vh - var(--omrs-topnav-height));
+  overflow-y: auto;
+}
+
+:global(.omrs-breakpoint-gt-tablet) .container {
+  margin-left: var(--omrs-sidenav-width);
+}

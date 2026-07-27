@@ -1,13 +1,13 @@
 {
-  "buildDateTime": "Build date time",
-  "emergency": "Emergency",
-  "facilityLogo": "Facility logo",
-  "frontendModules": "Frontend modules",
-  "loadingFacilityInformation": "Loading facility information...",
-  "mainModuleVersion": "Main Module Version",
-  "moduleName": "Module name",
-  "noVersionFound": "No version found",
-  "spaVersion": "SPA Version",
-  "systemInfo": "System Info",
-  "version": "Version"
+  "buildDateTime": "Kujenga tarehe",
+  "emergency": "Dharura ya dharura",
+  "facilityLogo": "Nembo ya logo",
+  "frontendModules": "Moduli za mbele",
+  "loadingFacilityInformation": "Taarifa ya Kitengo cha Mawasiliano...",
+  "mainModuleVersion": "Tafsiri ya Module",
+  "moduleName": "Jina la mfumo",
+  "noVersionFound": "Hakuna toleo lililopatikana",
+  "spaVersion": "Tafsiri ya SPA",
+  "systemInfo": "Mfumo wa Info",
+  "version": "Tafsiri ya Version"
 }

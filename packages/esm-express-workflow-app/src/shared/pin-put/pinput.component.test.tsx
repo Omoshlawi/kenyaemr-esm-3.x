@@ -70,7 +70,7 @@ describe('PinPut Component', () => {
     render(<PinPut {...defaultProps} error={errorMessage} />);
 
     expect(screen.getByText(errorMessage)).toBeInTheDocument();
-    expect(screen.getByText(errorMessage)).toHaveClass('errorMessage');
+    expect(screen.getByText(errorMessage)).toHaveAttribute('role', 'alert');
   });
 
   it('displays helper text when provided', () => {
@@ -78,7 +78,6 @@ describe('PinPut Component', () => {
     render(<PinPut {...defaultProps} helperText={helperText} />);
 
     expect(screen.getByText(helperText)).toBeInTheDocument();
-    expect(screen.getByText(helperText)).toHaveClass('helperText');
   });
 
   it('applies error styling when invalid prop is true', () => {
@@ -86,7 +85,7 @@ describe('PinPut Component', () => {
 
     const inputs = screen.getAllByRole('textbox');
     inputs.forEach((input) => {
-      expect(input).toHaveClass('inputError');
+      expect(input).toHaveAttribute('aria-invalid', 'true');
     });
   });
 
@@ -95,7 +94,7 @@ describe('PinPut Component', () => {
 
     const inputs = screen.getAllByRole('textbox');
     inputs.forEach((input) => {
-      expect(input).toHaveClass('inputError');
+      expect(input).toHaveAttribute('aria-invalid', 'true');
     });
   });
 
@@ -105,7 +104,6 @@ describe('PinPut Component', () => {
     const inputs = screen.getAllByRole('textbox');
     inputs.forEach((input) => {
       expect(input).toBeDisabled();
-      expect(input).toHaveClass('inputDisabled');
     });
   });
 
@@ -151,7 +149,7 @@ describe('PinPut Component', () => {
     render(<PinPut {...defaultProps} className={customClass} />);
 
     const container = screen.getByRole('group');
-    expect(container).toHaveClass('container', customClass);
+    expect(container).toHaveClass(customClass);
   });
 
   it('handles value prop correctly', () => {

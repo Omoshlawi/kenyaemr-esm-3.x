@@ -1,20 +1,22 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { PatientDischargeWorkspace } from './patient-discharge.workspace';
 import { usePatient, useEmrConfiguration, useVisit } from '@openmrs/esm-framework';
 import { usePatientDischarge } from './patient-discharge.resource';
 
-jest.mock('@openmrs/esm-framework', () => ({
-  usePatient: jest.fn(),
-  useEmrConfiguration: jest.fn(),
-  ExtensionSlot: jest.fn().mockImplementation(({ name }) => <div data-testid={name} />),
+vi.mock('@openmrs/esm-framework', () => ({
+  usePatient: vi.fn(),
+  useEmrConfiguration: vi.fn(),
+  useVisit: vi.fn(),
+  ExtensionSlot: vi.fn().mockImplementation(({ name }) => <div data-testid={name} />),
 }));
 
-jest.mock('./patient-discharge.resource', () => ({
-  usePatientDischarge: jest.fn(),
+vi.mock('./patient-discharge.resource', () => ({
+  usePatientDischarge: vi.fn(),
 }));
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
@@ -60,10 +62,10 @@ describe('PatientDischargeWorkspace', () => {
         column: 1,
       },
     },
-    closeWorkspace: jest.fn(),
-    closeWorkspaceWithSavedChanges: jest.fn(),
-    promptBeforeClosing: jest.fn(),
-    setTitle: jest.fn(),
+    closeWorkspace: vi.fn(),
+    closeWorkspaceWithSavedChanges: vi.fn(),
+    promptBeforeClosing: vi.fn(),
+    setTitle: vi.fn(),
   };
 
   const mockPatient = {
@@ -83,33 +85,33 @@ describe('PatientDischargeWorkspace', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (useVisit as jest.Mock).mockReturnValue({
+    vi.clearAllMocks();
+    vi.mocked(useVisit).mockReturnValue({
       isLoading: false,
-      currentVisit: mockVisit,
+      activeVisit: mockVisit,
       error: null,
-    });
-    (usePatient as jest.Mock).mockReturnValue({
+    } as any);
+    vi.mocked(usePatient).mockReturnValue({
       patient: mockPatient,
       isLoading: false,
       error: null,
-    });
-    (useEmrConfiguration as jest.Mock).mockReturnValue({
+    } as any);
+    vi.mocked(useEmrConfiguration).mockReturnValue({
       emrConfiguration: mockEmrConfiguration,
       isLoadingEmrConfiguration: false,
       errorFetchingEmrConfiguration: null,
-    });
-    (usePatientDischarge as jest.Mock).mockReturnValue({
-      handleDischarge: jest.fn(),
-    });
+    } as any);
+    vi.mocked(usePatientDischarge).mockReturnValue({
+      handleDischarge: vi.fn(),
+    } as any);
   });
 
   test('renders loading state when data is being fetched', () => {
-    (useVisit as jest.Mock).mockReturnValue({
+    vi.mocked(useVisit).mockReturnValue({
       isLoading: true,
-      currentVisit: null,
+      activeVisit: null,
       error: null,
-    });
+    } as any);
 
     render(<PatientDischargeWorkspace {...mockProps} />);
     const loadingSpinner = screen.getAllByText(/loading/i);
@@ -117,11 +119,11 @@ describe('PatientDischargeWorkspace', () => {
   });
 
   test('renders error state when there is an error', () => {
-    (useVisit as jest.Mock).mockReturnValue({
+    vi.mocked(useVisit).mockReturnValue({
       isLoading: false,
-      currentVisit: null,
+      activeVisit: null,
       error: new Error('Test error'),
-    });
+    } as any);
 
     render(<PatientDischargeWorkspace {...mockProps} />);
     expect(screen.getByText('error')).toBeInTheDocument();
@@ -143,11 +145,11 @@ describe('PatientDischargeWorkspace', () => {
   });
 
   test('handles missing visit data gracefully', () => {
-    (useVisit as jest.Mock).mockReturnValue({
+    vi.mocked(useVisit).mockReturnValue({
       isLoading: false,
-      currentVisit: null,
+      activeVisit: null,
       error: null,
-    });
+    } as any);
 
     render(<PatientDischargeWorkspace {...mockProps} />);
     expect(screen.getByTestId('visit-context-header-slot')).toBeInTheDocument();
