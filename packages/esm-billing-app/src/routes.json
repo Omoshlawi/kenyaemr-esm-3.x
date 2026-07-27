@@ -535,7 +535,9 @@
     {
       "name": "billing-workspace-group",
       "persistence": "closeable",
-      "closeable": true
+      "closeable": true,
+      "overlay": true,
+      "scopePattern": "/home/accounting"
     }
   ]
 }
