@@ -89,6 +89,14 @@ export const customEndVisitModal = getAsyncLifecycle(
   },
 );
 
+export const demographicSyncModal = getAsyncLifecycle(
+  () => import('./components/registration/card/Local-card/demographic-sync.modal'),
+  {
+    featureName: 'demographic-sync-modal',
+    moduleName,
+  },
+);
+
 export const anaestheticFormWorkspace = getAsyncLifecycle(
   () => import('./components/anaesthetic/forms/anaesthetic-form.component'),
   options,

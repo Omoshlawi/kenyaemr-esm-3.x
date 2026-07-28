@@ -599,6 +599,10 @@
     {
       "name": "print-prescription-modal",
       "component": "printPrescriptionModal"
+    },
+    {
+      "name": "demographic-sync-modal",
+      "component": "demographicSyncModal"
     }
   ]
 }

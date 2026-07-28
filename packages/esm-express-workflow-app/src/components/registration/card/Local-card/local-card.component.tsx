@@ -1,11 +1,19 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Button, InlineNotification } from '@carbon/react';
+import { Button } from '@carbon/react';
 import { TwoFactorAuthentication, ChevronUp, ChevronDown } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
 import classNames from 'classnames';
 import styles from '../card.scss';
 import { LocalResponse, type HIEBundleResponse, type EligibilityResponse } from '../../type';
-import { launchWorkspace2, launchWorkspaceGroup2, PatientPhoto, showModal, type Visit } from '@openmrs/esm-framework';
+import {
+  launchWorkspace2,
+  launchWorkspaceGroup2,
+  PatientPhoto,
+  showModal,
+  useConfig,
+  type Visit,
+} from '@openmrs/esm-framework';
+import { type ExpressWorkflowConfig } from '../../../../config-schema';
 import { EnhancedPatientBannerPatientInfo } from '../../patient-banner/patient-banner.component';
 import {
   convertLocalPatientToFHIR,
@@ -40,8 +48,10 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
   isEligibilityLoading = false,
 }) => {
   const { t } = useTranslation();
+  const { enableDemographicSync } = useConfig<ExpressWorkflowConfig>();
   const [verifiedPatients, setVerifiedPatients] = useState<Set<string>>(new Set());
   const [otpRequestedFor, setOtpRequestedFor] = useState<Set<string>>(new Set());
+  const [syncedPatientUuids, setSyncedPatientUuids] = useState<Set<string>>(new Set());
   const [activePhoneNumbers, setActivePhoneNumbers] = useState<Map<string, string>>(new Map());
   const [showDependentsForPatient, setShowDependentsForPatient] = useState<Set<string>>(new Set());
   const { otpSource, isLoading: isLoadingOtpSource, error: otpSourceError } = useOtpSource();
@@ -194,6 +204,21 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
     [otpExpiryMinutes, searchedNationalId, otpSource],
   );
 
+  const handleCompareAndSync = useCallback(
+    (localPatient: any, localFhirPatient: fhir.Patient, hiePatient: fhir.Patient, patientUuid: string) => {
+      const dispose = showModal('demographic-sync-modal', {
+        closeModal: () => dispose(),
+        localPatient,
+        localFhirPatient,
+        hiePatient,
+        onSynced: () => {
+          setSyncedPatientUuids((prev) => new Set(prev).add(patientUuid));
+        },
+      });
+    },
+    [],
+  );
+
   const handleQueuePatient = useCallback((activeVisit: any, patientUuid: string) => {
     const dispose = showModal('transition-patient-to-latest-queue-modal', {
       closeModal: () => {
@@ -229,10 +254,10 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
         const hiePatientData: any = findHIEPatientData(localPatient);
         const patientHasDependents: boolean = hiePatientData ? hasDependents(hiePatientData) : false;
         const showDependents: boolean = showDependentsForPatient.has(patientUuid);
-        const demographicMismatch: boolean = hiePatientData
-          ? hasDemographicMismatch(fhirPatient, hiePatientData)
-          : false;
-        const mismatchIdentifier = getNationalIdFromPatient(fhirPatient) || searchedNationalId;
+        const demographicMismatch: boolean =
+          hiePatientData && !syncedPatientUuids.has(patientUuid)
+            ? hasDemographicMismatch(fhirPatient, hiePatientData)
+            : false;
 
         const patientPhoneNumber = getPatientPhoneNumber(localPatient);
         const { onRequestOtp, onVerify, cleanup } = createDynamicOTPHandlers(
@@ -243,20 +268,6 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
 
         return (
           <React.Fragment key={patientKey}>
-            {demographicMismatch && (
-              <InlineNotification
-                kind="warning"
-                lowContrast
-                hideCloseButton
-                className={styles.demographicMismatchNotification}
-                title={t('patientDetailsMismatch', 'Patient details do not match')}
-                subtitle={t(
-                  'patientDetailsMismatchSubtitle',
-                  'A patient with ID {{id}} is already registered locally, but their details differ from the HIE record. Please update the patient’s details locally before proceeding.',
-                  { id: mismatchIdentifier || patientUuid },
-                )}
-              />
-            )}
             <div
               className={classNames(styles.container, styles.localPatient, {
                 [styles.verifiedPatient]: isVerified,
@@ -278,6 +289,14 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
 
               <div className={styles.buttonCol}>
                 <div className={styles.actionButtons}>
+                  {enableDemographicSync && hiePatientData && demographicMismatch && (
+                    <Button
+                      kind="secondary"
+                      size="sm"
+                      onClick={() => handleCompareAndSync(localPatient, fhirPatient, hiePatientData, patientUuid)}>
+                      {t('compareAndSync', 'Compare & sync')}
+                    </Button>
+                  )}
                   {!isVerified && !otpRequested && (
                     <Button
                       kind="primary"

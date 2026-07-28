@@ -242,6 +242,13 @@ export const configSchema = {
     _description: 'Whether the visit location field in the Start Visit form should be view-only.',
     _default: false,
   },
+  enableDemographicSync: {
+    _type: Type.Boolean,
+    _description:
+      'Whether registrars can compare a local patient against the HIE record and overwrite the local ' +
+      'demographics with the HIE values. Off by default because syncing rewrites the local record.',
+    _default: false,
+  },
   visitAttributeTypes: {
     _type: Type.Array,
     _elements: {
@@ -538,6 +545,7 @@ export type ExpressWorkflowConfig = {
   showRecommendedVisitTypeTab: boolean;
   visitTypeResourceUrl: string;
   disableChangingVisitLocation: boolean;
+  enableDemographicSync: boolean;
   restrictByVisitLocationTag: boolean;
   visitAttributeTypes: Array<{
     displayInThePatientBanner: boolean;

@@ -601,7 +601,9 @@ export const convertLocalPatientToFHIR = (localPatient: any): fhir.Patient => {
     name: [
       {
         text: localPatient.person?.personName?.display || '',
-        given: localPatient.person?.personName?.givenName ? [localPatient.person.personName.givenName] : [],
+        given: [localPatient.person?.personName?.givenName, localPatient.person?.personName?.middleName].filter(
+          Boolean,
+        ),
         family: localPatient.person?.personName?.familyName || '',
       },
     ],
@@ -610,28 +612,29 @@ export const convertLocalPatientToFHIR = (localPatient: any): fhir.Patient => {
   };
 };
 
-const normalizeForComparison = (value?: string): string => (value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+const normalizeForComparison = (value?: string): string =>
+  (value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+
+const normalizeDate = (value?: string): string => {
+  if (!value) {
+    return '';
+  }
+  const trimmed = value.trim();
+  const match = trimmed.match(/^\d{4}-\d{2}-\d{2}/);
+  if (match) {
+    return match[0];
+  }
+  const parsed = new Date(trimmed);
+  return isNaN(parsed.getTime()) ? trimmed : parsed.toISOString().slice(0, 10);
+};
 
 const tokenizeName = (value?: string): string[] => normalizeForComparison(value).split(' ').filter(Boolean);
-
-/**
- * Compares two name fragments (e.g. given names, family names) leniently: they're
- * considered a match if every word in the shorter one appears in the longer one,
- * regardless of order. This tolerates one source recording fewer name parts than the
- * other (e.g. local has "Cynthia" while the HIE has "Cynthia Kamau") without flagging
- * it as a genuine discrepancy — only a name that's actually different (not just a
- * subset) counts as a mismatch.
- */
-const namePartsMatch = (a?: string, b?: string): boolean => {
-  const tokensA = tokenizeName(a);
-  const tokensB = tokenizeName(b);
-  if (tokensA.length === 0 || tokensB.length === 0) {
-    return true;
-  }
-  const [shorter, longer] = tokensA.length <= tokensB.length ? [tokensA, tokensB] : [tokensB, tokensA];
-  const longerSet = new Set(longer);
-  return shorter.every((token) => longerSet.has(token));
-};
 
 const normalizeGender = (value?: string): string => normalizeForComparison(value).charAt(0);
 
@@ -645,21 +648,62 @@ const normalizeGender = (value?: string): string => normalizeForComparison(value
  * @param {fhir.Patient} hiePatient - The matching HIE patient record.
  * @returns {boolean} true if the two records have differing name, gender, or birth date.
  */
-export const hasDemographicMismatch = (localPatient: fhir.Patient, hiePatient: fhir.Patient): boolean => {
-  const localName = localPatient.name?.[0];
-  const hieName = hiePatient.name?.[0];
+export const hasDemographicMismatch = (localPatient: fhir.Patient, hiePatient: fhir.Patient): boolean =>
+  getDemographicDifferences(localPatient, hiePatient).length > 0;
 
-  const givenMismatch = !namePartsMatch((localName?.given || []).join(' '), (hieName?.given || []).join(' '));
-  const familyMismatch = !namePartsMatch(localName?.family, hieName?.family);
+export interface DemographicDifference {
+  field: 'name' | 'gender' | 'birthDate';
+  localValue: string;
+  hieValue: string;
+}
 
-  const genderMismatch =
-    Boolean(localPatient.gender && hiePatient.gender) &&
-    normalizeGender(localPatient.gender) !== normalizeGender(hiePatient.gender);
+export const formatPatientName = (patient?: fhir.Patient): string => {
+  const name = patient?.name?.[0];
+  if (!name) {
+    return '';
+  }
+  const given = (name.given || []).filter(Boolean).join(' ');
+  return [given, name.family].filter(Boolean).join(' ').trim() || name.text?.trim() || '';
+};
 
-  const birthDateMismatch =
-    Boolean(localPatient.birthDate && hiePatient.birthDate) && localPatient.birthDate !== hiePatient.birthDate;
+export const getDemographicDifferences = (
+  localPatient: fhir.Patient,
+  hiePatient: fhir.Patient,
+): Array<DemographicDifference> => {
+  const differences: Array<DemographicDifference> = [];
 
-  return givenMismatch || familyMismatch || genderMismatch || birthDateMismatch;
+  const localNameTokens = tokenizeName(formatPatientName(localPatient));
+  const hieNameTokens = tokenizeName(formatPatientName(hiePatient));
+  if (localNameTokens.length > 0 && hieNameTokens.length > 0) {
+    const [shorter, longer] =
+      localNameTokens.length <= hieNameTokens.length
+        ? [localNameTokens, hieNameTokens]
+        : [hieNameTokens, localNameTokens];
+    const longerSet = new Set(longer);
+    if (!shorter.every((token) => longerSet.has(token))) {
+      differences.push({
+        field: 'name',
+        localValue: formatPatientName(localPatient),
+        hieValue: formatPatientName(hiePatient),
+      });
+    }
+  }
+
+  if (
+    localPatient.gender &&
+    hiePatient.gender &&
+    normalizeGender(localPatient.gender) !== normalizeGender(hiePatient.gender)
+  ) {
+    differences.push({ field: 'gender', localValue: localPatient.gender, hieValue: hiePatient.gender });
+  }
+
+  const localBirthDate = normalizeDate(localPatient.birthDate);
+  const hieBirthDate = normalizeDate(hiePatient.birthDate);
+  if (localBirthDate && hieBirthDate && localBirthDate !== hieBirthDate) {
+    differences.push({ field: 'birthDate', localValue: localBirthDate, hieValue: hieBirthDate });
+  }
+
+  return differences;
 };
 
 /**
