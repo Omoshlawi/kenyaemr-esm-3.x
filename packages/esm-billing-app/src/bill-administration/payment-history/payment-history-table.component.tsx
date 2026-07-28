@@ -15,50 +15,62 @@ import {
 } from '@carbon/react';
 import { Download } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
-import { useDebounce, useLayoutType, usePagination } from '@openmrs/esm-framework';
-import { usePaginationInfo } from '@openmrs/esm-patient-common-lib';
-import { DataTableRow, MappedBill } from '../../types';
+import { useDebounce, useLayoutType, showSnackbar } from '@openmrs/esm-framework';
+import { MappedBill, PaymentStatus } from '../../types';
 import { exportToExcel } from '../../helpers/excelExport';
 import dayjs from 'dayjs';
 import { useCurrencyFormatting } from '../../helpers/currency';
+import { fetchBillsForExport } from '../../billing.resource';
+import { usePaymentFilterContext } from './usePaymentFilterContext';
+import { usePaymentHistoryQueryFilters } from './usePaymentTransactionHistory';
+
+interface TablePagination {
+  totalCount: number;
+  currentPage: number;
+  paginated: boolean;
+  goTo: (page: number) => void;
+}
 
 export const PaymentHistoryTable = ({
   headers,
   rows = [],
+  pagination,
+  pageSize,
+  onPageSizeChange,
 }: {
   headers: Array<DataTableHeader>;
   rows: Array<MappedBill>;
+  pagination: TablePagination;
+  pageSize: number;
+  onPageSizeChange: (size: number) => void;
 }) => {
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
+  const { filters, dateRange } = usePaymentFilterContext();
+  const { cashierUuids, paymentModeUuids, serviceTypeUuids } = usePaymentHistoryQueryFilters(filters);
 
-  const [pageSize, setPageSize] = useState(10);
   const responsiveSize = useLayoutType() !== 'tablet' ? 'sm' : 'md';
   const [searchString, setSearchString] = useState('');
-  const debouncedSearchString = useDebounce(searchString, 1000);
+  const [isExporting, setIsExporting] = useState(false);
+  const debouncedSearchString = useDebounce(searchString, 500);
 
+  // Free-text search runs client-side against the current page only; backend search is not yet wired up.
   const searchResults = useMemo(() => {
-    if (rows !== undefined && rows.length > 0) {
-      if (debouncedSearchString && debouncedSearchString.trim() !== '') {
-        const search = debouncedSearchString.toLowerCase();
-        return rows?.filter((activeBillRow) =>
-          Object.entries(activeBillRow).some(([header, value]) => {
-            if (header === 'patientUuid') {
-              return false;
-            }
-            return `${value}`.toLowerCase().includes(search);
-          }),
-        );
-      }
+    if (!debouncedSearchString || debouncedSearchString.trim() === '') {
+      return rows;
     }
-
-    return rows;
+    const search = debouncedSearchString.toLowerCase();
+    return rows.filter((activeBillRow) =>
+      Object.entries(activeBillRow).some(([header, value]) => {
+        if (header === 'patientUuid') {
+          return false;
+        }
+        return `${value}`.toLowerCase().includes(search);
+      }),
+    );
   }, [debouncedSearchString, rows]);
 
-  const { currentPage, goTo, results } = usePagination(searchResults, pageSize);
-  const { pageSizes } = usePaginationInfo(pageSize, rows.length, currentPage, results.length);
-
-  const transformedRows = results.map((row) => {
+  const transformedRows = searchResults.map((row) => {
     return {
       ...row,
       id: `${row.id}`,
@@ -72,35 +84,47 @@ export const PaymentHistoryTable = ({
     };
   });
 
-  const handleExport = () => {
-    const dataForExport = rows.map((row) => {
-      return {
-        ...row,
-        totalAmount: formatCurrency(row.payments.reduce((acc, payment) => acc + payment.amountTendered, 0)),
-      };
-    });
-    const data = dataForExport.map((row) => {
-      return {
-        'Receipt Number': row.receiptNumber,
-        'Patient ID': row.identifier,
-        'Patient Name': row.patientName,
-        'Mode of Payment': row.payments
-          .map((payment: (typeof row.payments)[0]) => payment.instanceType.name)
-          .join(', '),
-        'Total Amount Due': row.lineItems.reduce((acc, item) => acc + item.price, 0),
-        'Date of Payment': dayjs(row.payments[0].dateCreated).format('DD-MM-YYYY'),
-        'Total Amount Paid': row.payments.reduce((acc, payment) => acc + payment.amountTendered, 0),
-        'Reason/Reference': row.payments
-          .map(({ attributes }) => attributes.map(({ value }) => value).join(' '))
-          .filter((code) => code !== '')
-          .join(', '),
-      };
-    });
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const allBills = await fetchBillsForExport({
+        billStatus: PaymentStatus.PAID,
+        startingDate: dayjs(dateRange[0]).toDate(),
+        endDate: dayjs(dateRange[1]).toDate(),
+        cashierUuids,
+        paymentModeUuids,
+        serviceTypeUuids,
+      });
 
-    exportToExcel(data, {
-      fileName: `Transaction History - ${dayjs().format('DDD-MMM-YYYY:HH-mm-ss')}`,
-      sheetName: t('paymentHistory', 'Payment History'),
-    });
+      const data = allBills.map((row) => {
+        return {
+          'Receipt Number': row.receiptNumber,
+          'Patient ID': row.identifier,
+          'Patient Name': row.patientName,
+          'Mode of Payment': row.payments.map((payment) => payment.instanceType.name).join(', '),
+          'Total Amount Due': row.lineItems.reduce((acc, item) => acc + item.price, 0),
+          'Date of Payment': row.payments[0] ? dayjs(row.payments[0].dateCreated).format('DD-MM-YYYY') : '',
+          'Total Amount Paid': row.payments.reduce((acc, payment) => acc + payment.amountTendered, 0),
+          'Reason/Reference': row.payments
+            .map(({ attributes }) => attributes.map(({ value }) => value).join(' '))
+            .filter((code) => code !== '')
+            .join(', '),
+        };
+      });
+
+      exportToExcel(data, {
+        fileName: `Transaction History - ${dayjs().format('DDD-MMM-YYYY:HH-mm-ss')}`,
+        sheetName: t('paymentHistory', 'Payment History'),
+      });
+    } catch (error) {
+      showSnackbar({
+        kind: 'error',
+        title: t('exportFailed', 'Export failed'),
+        subtitle: error?.message ?? t('exportFailedSubtitle', 'Unable to export transaction history'),
+      });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -115,8 +139,13 @@ export const PaymentHistoryTable = ({
           onChange={(event) => setSearchString(event.target.value)}
         />
 
-        <Button size={responsiveSize} renderIcon={Download} iconDescription="Download" onClick={handleExport}>
-          {t('download', 'Download')}
+        <Button
+          size={responsiveSize}
+          renderIcon={Download}
+          iconDescription="Download"
+          onClick={handleExport}
+          disabled={isExporting}>
+          {isExporting ? t('exporting', 'Exporting…') : t('download', 'Download')}
         </Button>
       </div>
       <DataTable useZebraStyles size="sm" rows={transformedRows} headers={headers}>
@@ -153,20 +182,22 @@ export const PaymentHistoryTable = ({
           </TableContainer>
         )}
       </DataTable>
-      {pageSizes.length > 1 && (
+      {pagination.paginated && (
         <Pagination
           forwardText={t('nextPage', 'Next page')}
           backwardText={t('previousPage', 'Previous page')}
-          page={currentPage ?? 1}
+          page={pagination.currentPage ?? 1}
           pageSize={pageSize ?? 10}
-          pageSizes={pageSizes}
-          totalItems={searchResults.length ?? 0}
+          pageSizes={[10, 20, 50, 100]}
+          totalItems={pagination.totalCount ?? 0}
           size={responsiveSize}
-          onChange={({ page: newPage, pageSize }) => {
-            if (newPage !== currentPage) {
-              goTo(newPage);
+          onChange={({ page: newPage, pageSize: newPageSize }) => {
+            if (newPageSize !== pageSize) {
+              onPageSizeChange(newPageSize);
             }
-            setPageSize(pageSize);
+            if (newPage !== pagination.currentPage) {
+              pagination.goTo(newPage);
+            }
           }}
         />
       )}

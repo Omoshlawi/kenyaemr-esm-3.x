@@ -42,7 +42,7 @@ export const PaymentTypeFilter: React.FC<PaymentTypeFilterProps> = () => {
   ];
 
   return (
-    <div style={{ width: '15rem' }}>
+    <div style={{ minWidth: '20rem' }}>
       <MultiSelect
         label={t('paymentType', 'Payment Type')}
         id="payment-type-filter"

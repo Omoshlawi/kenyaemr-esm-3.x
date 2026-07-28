@@ -11,11 +11,13 @@ import {
   DataTableSkeleton,
 } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
-import { usePaymentModeGroupTotals } from './usePaymentModeGroupTotals';
 import { usePaymentFilterContext } from './usePaymentFilterContext';
 import EmptyPatientBill from '../../past-patient-bills/patient-bills-dashboard/empty-patient-bill.component';
 import { useLayoutType } from '@openmrs/esm-framework';
-import { usePaymentTransactionHistory } from './usePaymentTransactionHistory';
+import { usePaymentHistoryQueryFilters } from './usePaymentTransactionHistory';
+import { usePaymentModeSummary } from '../../billing.resource';
+import { PaymentStatus } from '../../types';
+import dayjs from 'dayjs';
 import { useCurrencyFormatting } from '../../helpers/currency';
 
 const PaymentMethodDistribution = () => {
@@ -23,14 +25,21 @@ const PaymentMethodDistribution = () => {
   const { format: formatCurrency } = useCurrencyFormatting();
 
   const responsiveSize = useLayoutType() !== 'tablet' ? 'sm' : 'md';
-  const { filters } = usePaymentFilterContext();
-  const { bills: filteredBills, isLoading } = usePaymentTransactionHistory(filters);
-  const paymentModesGroupTotals = usePaymentModeGroupTotals(filteredBills);
+  const { filters, dateRange } = usePaymentFilterContext();
+  const { cashierUuids, paymentModeUuids, serviceTypeUuids } = usePaymentHistoryQueryFilters(filters);
+  const { summaries, isLoading } = usePaymentModeSummary({
+    billStatus: PaymentStatus.PAID,
+    startingDate: dayjs(dateRange[0]).toDate(),
+    endDate: dayjs(dateRange[1]).toDate(),
+    cashierUuids,
+    paymentModeUuids,
+    serviceTypeUuids,
+  });
 
-  const rows = paymentModesGroupTotals.map((total, index) => ({
+  const rows = summaries.map((summary, index) => ({
     id: index.toString(),
-    paymentMode: total?.type,
-    total: formatCurrency(total?.total as number),
+    paymentMode: summary?.paymentMode,
+    total: formatCurrency(summary?.total as number),
   }));
 
   const headers = [
@@ -44,7 +53,7 @@ const PaymentMethodDistribution = () => {
     },
   ];
 
-  const computedTotal = paymentModesGroupTotals.reduce((acc, total) => acc + total?.total, 0);
+  const computedTotal = summaries.reduce((acc, summary) => acc + (summary?.total ?? 0), 0);
 
   if (isLoading) {
     return <DataTableSkeleton headers={headers} aria-label="sample table" />;

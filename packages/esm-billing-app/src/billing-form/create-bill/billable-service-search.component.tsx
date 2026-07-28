@@ -73,7 +73,7 @@ const BillableServiceSearch: React.FC<BillableServiceSearchProps> = ({ addedServ
       <Layer>
         <Search
           labelText={t('searchBillableItems', 'Search billable items')}
-          placeholder={t('searchPlaceholder', 'Search procedure codes or items...')}
+          placeholder={t('searchForChargeableItemOrServicePlaceholder', 'Search chargeable items or services...')}
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
           onClear={() => setSearchTerm('')}

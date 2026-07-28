@@ -7,7 +7,6 @@ import { z } from 'zod';
 
 import styles from '../payment-history.scss';
 import { usePaymentFilterContext } from '../usePaymentFilterContext';
-import { usePaymentTransactionHistory } from '../usePaymentTransactionHistory';
 import { useTimeSheets } from '../../payment-points/payment-points.resource';
 
 const schema = z.object({
@@ -17,16 +16,11 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export const TimesheetsFilter = () => {
-  const { filters, setFilters } = usePaymentFilterContext();
-  const { bills } = usePaymentTransactionHistory(filters);
+  const { filters } = usePaymentFilterContext();
   const { cashiers } = filters;
   const { timesheets } = useTimeSheets();
-  const billsCashierUUIDs = bills
-    .map((bill) => bill.cashier)
-    .filter((cashier) => cashiers.includes(cashier.uuid))
-    .map((c) => c.uuid);
 
-  const uniqueBillsCashiersUUIDS = Array.from(new Set(billsCashierUUIDs));
+  const uniqueBillsCashiersUUIDS = Array.from(new Set(cashiers));
   const selectedCashiersTimesheets = timesheets
     .sort((a, b) => new Date(b.clockIn).getTime() - new Date(a.clockIn).getTime())
     .filter((sheet) => {

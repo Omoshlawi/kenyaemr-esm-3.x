@@ -115,6 +115,9 @@ export const usePaginatedBills = (
     startingDate?: Date;
     endDate?: Date;
     pageSize?: number;
+    cashierUuids?: Array<string>;
+    paymentModeUuids?: Array<string>;
+    serviceTypeUuids?: Array<string>;
   } = {},
 ) => {
   const {
@@ -123,15 +126,25 @@ export const usePaginatedBills = (
     startingDate = dayjs().startOf('day').toDate(),
     endDate = dayjs().endOf('day').toDate(),
     pageSize = 10,
+    cashierUuids = [],
+    paymentModeUuids = [],
+    serviceTypeUuids = [],
   } = options;
 
   const startingDateISO = startingDate.toISOString();
   const endDateISO = endDate.toISOString();
 
+  const optionalFilters = [
+    patientUuid ? `patientUuid=${patientUuid}` : '',
+    cashierUuids.length ? `cashierUuid=${cashierUuids.join(',')}` : '',
+    paymentModeUuids.length ? `paymentModeUuid=${paymentModeUuids.join(',')}` : '',
+    serviceTypeUuids.length ? `serviceTypeUuid=${serviceTypeUuids.join(',')}` : '',
+  ]
+    .filter(Boolean)
+    .join('&');
+
   const baseParams = `status=${billStatus}&v=${BILLS_REP}&createdOnOrAfter=${startingDateISO}&createdOnOrBefore=${endDateISO}`;
-  const fullUrl = patientUuid
-    ? `${restBaseUrl}/cashier/bill?${baseParams}&patientUuid=${patientUuid}`
-    : `${restBaseUrl}/cashier/bill?${baseParams}`;
+  const fullUrl = `${restBaseUrl}/cashier/bill?${baseParams}${optionalFilters ? `&${optionalFilters}` : ''}`;
 
   const {
     data: rawBills,
@@ -178,6 +191,112 @@ export const usePaginatedBills = (
       goToPrevious,
       pageSize,
     },
+  };
+};
+
+/**
+ * Fetches the full set of bills matching the given filters in a single request, bypassing pagination.
+ * Intended only for on-demand actions like exporting, where the caller genuinely needs every row.
+ */
+export const fetchBillsForExport = async (options: {
+  billStatus?: PaymentStatus.PENDING | '' | string;
+  startingDate?: Date;
+  endDate?: Date;
+  cashierUuids?: Array<string>;
+  paymentModeUuids?: Array<string>;
+  serviceTypeUuids?: Array<string>;
+}): Promise<Array<MappedBill>> => {
+  const {
+    billStatus = '',
+    startingDate = dayjs().startOf('day').toDate(),
+    endDate = dayjs().endOf('day').toDate(),
+    cashierUuids = [],
+    paymentModeUuids = [],
+    serviceTypeUuids = [],
+  } = options;
+
+  const optionalFilters = [
+    cashierUuids.length ? `cashierUuid=${cashierUuids.join(',')}` : '',
+    paymentModeUuids.length ? `paymentModeUuid=${paymentModeUuids.join(',')}` : '',
+    serviceTypeUuids.length ? `serviceTypeUuid=${serviceTypeUuids.join(',')}` : '',
+  ]
+    .filter(Boolean)
+    .join('&');
+
+  const params =
+    `status=${billStatus}&v=${BILLS_REP}` +
+    `&createdOnOrAfter=${startingDate.toISOString()}&createdOnOrBefore=${endDate.toISOString()}` +
+    `&limit=10000${optionalFilters ? `&${optionalFilters}` : ''}`;
+
+  const { data } = await openmrsFetch<{ results: Array<PatientInvoice> }>(`${restBaseUrl}/cashier/bill?${params}`);
+  const sorted = sortBy(data?.results ?? [], ['dateCreated']).reverse();
+  return sorted.map((bill) => mapBillProperties(bill));
+};
+
+/**
+ * Lists providers that can be used to populate the cashier filter without loading every bill.
+ */
+export const useCashiers = () => {
+  const url = `${restBaseUrl}/provider?v=custom:(uuid,display)`;
+  const { data, isLoading, error } = useSWR<{ data: { results: Array<{ uuid: string; display: string }> } }>(
+    url,
+    openmrsFetch,
+    { errorRetryCount: 2 },
+  );
+  return { cashiers: data?.data?.results ?? [], isLoading, error };
+};
+
+export interface PaymentModeSummary {
+  paymentModeUuid: string;
+  paymentMode: string;
+  total: number;
+}
+
+/**
+ * Fetches payment totals grouped by payment mode from the server-side aggregation endpoint,
+ * so the summary tab no longer needs to load every bill to compute the breakdown client-side.
+ */
+export const usePaymentModeSummary = (options: {
+  billStatus?: PaymentStatus.PAID | '' | string;
+  startingDate?: Date;
+  endDate?: Date;
+  cashierUuids?: Array<string>;
+  paymentModeUuids?: Array<string>;
+  serviceTypeUuids?: Array<string>;
+}) => {
+  const {
+    billStatus = '',
+    startingDate = dayjs().startOf('day').toDate(),
+    endDate = dayjs().endOf('day').toDate(),
+    cashierUuids = [],
+    paymentModeUuids = [],
+    serviceTypeUuids = [],
+  } = options;
+
+  const optionalFilters = [
+    billStatus ? `status=${billStatus}` : '',
+    cashierUuids.length ? `cashierUuid=${cashierUuids.join(',')}` : '',
+    paymentModeUuids.length ? `paymentModeUuid=${paymentModeUuids.join(',')}` : '',
+    serviceTypeUuids.length ? `serviceTypeUuid=${serviceTypeUuids.join(',')}` : '',
+  ]
+    .filter(Boolean)
+    .join('&');
+
+  const params =
+    `createdOnOrAfter=${startingDate.toISOString()}&createdOnOrBefore=${endDate.toISOString()}` +
+    `${optionalFilters ? `&${optionalFilters}` : ''}`;
+  const url = `${restBaseUrl}/cashier/billPaymentModeSummary?${params}`;
+
+  const { data, error, isLoading, isValidating, mutate } = useSWR<{
+    data: { results: Array<PaymentModeSummary> };
+  }>(url, openmrsFetch, { errorRetryCount: 2, keepPreviousData: true });
+
+  return {
+    summaries: data?.data?.results ?? [],
+    error,
+    isLoading,
+    isValidating,
+    mutate,
   };
 };
 

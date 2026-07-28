@@ -1,33 +1,31 @@
 import { MultiSelect, SkeletonIcon } from '@carbon/react';
 import React from 'react';
 import styles from '../payment-history.scss';
-import { useBillsServiceTypes } from '../useBillServiceTypes';
+import { useServiceTypes } from '../../service-catalog/billable-service.resource';
 import { useTranslation } from 'react-i18next';
 import { usePaymentFilterContext } from '../usePaymentFilterContext';
-import { usePaymentTransactionHistory } from '../usePaymentTransactionHistory';
 
 export const ServiceTypeFilter = () => {
   const { t } = useTranslation();
   const { filters, setFilters } = usePaymentFilterContext();
-  const { bills: filteredBills } = usePaymentTransactionHistory(filters);
-  const { billsServiceTypes, isLoading } = useBillsServiceTypes(filteredBills);
+  const { serviceTypes, isLoading } = useServiceTypes();
 
   if (isLoading) {
     return <SkeletonIcon className={styles.skeletonIcon} />;
   }
 
-  const initialSelectedItems = filters.serviceTypes.map((type) => ({
-    id: type,
-    text: type,
+  const initialSelectedItems = filters.serviceTypes.map((uuid) => ({
+    id: uuid,
+    text: serviceTypes.find((type) => type.uuid === uuid)?.display ?? uuid,
   }));
 
   const serviceTypeSelectOptions = [
     {
       id: 'select-all',
-      text: 'Select All',
+      text: t('selectAll', 'Select All'),
       isSelectAll: true,
     },
-    ...billsServiceTypes.map((type) => ({
+    ...serviceTypes.map((type) => ({
       id: type.uuid,
       text: type.display,
     })),
@@ -35,21 +33,19 @@ export const ServiceTypeFilter = () => {
 
   const handleServiceTypeSelection = (selectedItems: Array<{ id: string; text: string }>) => {
     if (selectedItems.some((item) => item.id === 'select-all')) {
-      const allServiceTypes = billsServiceTypes.map((type) => type.uuid);
-      setFilters({ ...filters, serviceTypes: allServiceTypes });
+      setFilters({ ...filters, serviceTypes: serviceTypes.map((type) => type.uuid) });
       return;
     }
 
-    const selectedServiceTypes = selectedItems.map((item) => item.id);
-    setFilters({ ...filters, serviceTypes: selectedServiceTypes });
+    setFilters({ ...filters, serviceTypes: selectedItems.map((item) => item.id) });
   };
 
-  if (billsServiceTypes.length === 0) {
+  if (serviceTypes.length === 0) {
     return null;
   }
 
   return (
-    <div style={{ width: '15rem' }}>
+    <div style={{ minWidth: '20rem' }}>
       <MultiSelect
         id="service-type-filter"
         label={t('serviceType', 'Service Type')}

@@ -1,5 +1,5 @@
 import { DataTableSkeleton } from '@carbon/react';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import EmptyPatientBill from '../../past-patient-bills/patient-bills-dashboard/empty-patient-bill.component';
 import { PaymentHistoryTable } from './payment-history-table.component';
@@ -9,7 +9,8 @@ import { usePaymentTransactionHistory } from './usePaymentTransactionHistory';
 export const PaymentHistoryViewer = () => {
   const { t } = useTranslation();
   const { filters } = usePaymentFilterContext();
-  const { bills: filteredBills, isLoading } = usePaymentTransactionHistory(filters);
+  const [pageSize, setPageSize] = useState(10);
+  const { bills, isLoading, pagination } = usePaymentTransactionHistory(filters, pageSize);
 
   const headers = useMemo(
     () => [
@@ -27,8 +28,14 @@ export const PaymentHistoryViewer = () => {
     <>
       {isLoading ? (
         <DataTableSkeleton headers={headers} aria-label={t('transactionHistory', 'Transaction History')} />
-      ) : filteredBills.length > 0 ? (
-        <PaymentHistoryTable headers={headers} rows={filteredBills} />
+      ) : bills.length > 0 ? (
+        <PaymentHistoryTable
+          headers={headers}
+          rows={bills}
+          pagination={pagination}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+        />
       ) : (
         <EmptyPatientBill
           title={t('noTransactionHistory', 'No transaction history')}

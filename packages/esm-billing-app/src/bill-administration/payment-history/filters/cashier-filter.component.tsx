@@ -2,7 +2,7 @@ import React from 'react';
 import { MultiSelect } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { usePaymentFilterContext } from '../usePaymentFilterContext';
-import { usePaymentTransactionHistory } from '../usePaymentTransactionHistory';
+import { useCashiers } from '../../../billing.resource';
 
 interface MultiSelectItem {
   id: string;
@@ -13,10 +13,7 @@ interface MultiSelectItem {
 export const CashierFilter: React.FC = () => {
   const { t } = useTranslation();
   const { filters, setFilters } = usePaymentFilterContext();
-  const { bills, isLoading } = usePaymentTransactionHistory(filters);
-  const uniqueCashiers = Array.from(
-    new Map(bills.map((transaction) => [transaction.cashier.uuid, transaction.cashier])).values(),
-  );
+  const { cashiers, isLoading } = useCashiers();
 
   const cashierSelectOptions: MultiSelectItem[] = [
     {
@@ -24,28 +21,31 @@ export const CashierFilter: React.FC = () => {
       text: t('allCashiers', 'All Cashiers'),
       isSelectAll: true,
     },
-    ...uniqueCashiers.map((cashier) => ({
+    ...cashiers.map((cashier) => ({
       id: cashier.uuid,
       text: cashier.display,
     })),
   ];
 
   const handleCashierSelection = (selectedItems: MultiSelectItem[]) => {
-    const selectedNames = selectedItems.map((item) => item.id);
-    setFilters({ ...filters, cashiers: selectedNames });
+    if (selectedItems.some((item) => item.id === 'select-all')) {
+      setFilters({ ...filters, cashiers: cashiers.map((cashier) => cashier.uuid) });
+      return;
+    }
+    setFilters({ ...filters, cashiers: selectedItems.map((item) => item.id) });
   };
 
-  const initialSelectedItems = filters?.cashiers?.map((cashierName) => ({
-    id: uniqueCashiers.find((cashier) => cashier.display === cashierName)?.uuid ?? cashierName,
-    text: cashierName,
+  const initialSelectedItems = (filters?.cashiers ?? []).map((uuid) => ({
+    id: uuid,
+    text: cashiers.find((cashier) => cashier.uuid === uuid)?.display ?? uuid,
   }));
 
-  if (uniqueCashiers.length === 0) {
+  if (isLoading || cashiers.length === 0) {
     return null;
   }
 
   return (
-    <div style={{ width: '15rem' }}>
+    <div style={{ minWidth: '20rem' }}>
       <MultiSelect
         id="cashier-filter"
         label={t('cashier', 'Cashier')}
@@ -54,7 +54,7 @@ export const CashierFilter: React.FC = () => {
         initialSelectedItems={initialSelectedItems}
         itemToString={(item) => (item ? item.text : '')}
         selectionFeedback="top-after-reopen"
-        onChange={(event) => handleCashierSelection(event.selectedItems)}
+        onChange={(event) => handleCashierSelection(event.selectedItems ?? [])}
       />
     </div>
   );
