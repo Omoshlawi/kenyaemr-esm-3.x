@@ -1,6 +1,6 @@
 import React from 'react';
 import { Drug } from '@openmrs/esm-patient-common-lib';
-import { useBillableItem, useDrugQuantityByConceptUuid, useSockItemInventory } from '../useBillableItem';
+import { useBillableItem, useDrugQuantityByConceptUuid } from '../useBillableItem';
 import { useTranslation } from 'react-i18next';
 import styles from './drug-order.scss';
 import { useCurrencyFormatting } from '../../../helpers/currency';
@@ -17,10 +17,10 @@ const DrugOrder: React.FC<DrugOrderProps> = ({ drug }) => {
     quantity,
     quantityUoM,
     isLoading: isLoadingInventory,
-  } = useDrugQuantityByConceptUuid(drug?.concept?.display ?? '');
+  } = useDrugQuantityByConceptUuid(drug?.concept?.uuid ?? '');
   const { billableItem, isLoading } = useBillableItem(drug?.concept?.uuid, drug?.uuid);
   if (isLoading || isLoadingInventory) {
-    return <InlineLoading />;
+    return <InlineLoading description={t('loadingDrugBillAndStockInfo', 'Loading drug prices and stock level info')} />;
   }
   return (
     <div className={styles.drugOrderContainer}>
