@@ -7,6 +7,8 @@
   "cumulativeProgressHeiFinalOutcomes": "Cumulative progress in addressing HEI final outcome",
   "cumulativeProgressMissedoppotunityVL": "Cumulative progress of missed opportunity in viral load testing",
   "cumulativeProgressOfAddressingLinkedToArt": "Cumulative progress of addressing Linkage to ART",
+  "dataTransmission": "Data Transmission",
+  "dataTransmissionPipelines": "Data transmission pipeline",
   "day": "Day",
   "delayedEAC": "Delayed enhanced adherence counselling",
   "delayedVLTesting": "Number of client on ART that visited, were eligible for VL sampling and no VL was done",

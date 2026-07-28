@@ -7,6 +7,8 @@
   "cumulativeProgressHeiFinalOutcomes": "Progrès cumulés dans la prise en charge des résultats finaux HEI",
   "cumulativeProgressMissedoppotunityVL": "Progrès cumulés des occasions manquées de test de charge virale",
   "cumulativeProgressOfAddressingLinkedToArt": "Progrès cumulés dans la prise en charge du lien vers l’ART",
+  "dataTransmission": "Data Transmission",
+  "dataTransmissionPipelines": "Data transmission pipeline",
   "day": "Jour",
   "delayedEAC": "Conseil renforcé d’adhérence (EAC) retardé",
   "delayedVLTesting": "Nombre de clients sous ART ayant consulté, éligibles au prélèvement de charge virale et sans test réalisé",
