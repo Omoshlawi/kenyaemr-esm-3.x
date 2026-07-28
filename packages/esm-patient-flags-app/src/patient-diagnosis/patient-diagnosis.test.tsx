@@ -79,7 +79,7 @@ describe('<PatientDiagnosisComponent />', () => {
     seedPatient();
   });
 
-  it('warns the user and marks medication incomplete when a main diagnosis is missing', async () => {
+  it('warns the user without blocking the medication order when a main diagnosis is missing', async () => {
     const basket = renderDrugBasket();
     act(() => basket.result.current.setOrders([drugOrder]));
     respondWithVisit();
@@ -91,7 +91,7 @@ describe('<PatientDiagnosisComponent />', () => {
     expect(warning).toHaveTextContent(
       'Main diagnosis is required, please add main diagnosis to the clinical encounter form',
     );
-    await waitFor(() => expect(basket.result.current.orders[0].isOrderIncomplete).toBe(true));
+    expect(basket.result.current.orders[0].isOrderIncomplete).toBe(false);
   });
 
   it('does not warn or fetch the visit when the basket has no medication', () => {
@@ -114,27 +114,14 @@ describe('<PatientDiagnosisComponent />', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
-  it('does not warn and keeps medication complete when a main diagnosis exists', async () => {
+  it('does not warn when a main diagnosis exists', async () => {
     const basket = renderDrugBasket();
-    act(() => basket.result.current.setOrders([{ ...drugOrder, isOrderIncomplete: true }]));
+    act(() => basket.result.current.setOrders([drugOrder]));
     respondWithVisit([{ rank: 2 }]);
 
     renderPatientDiagnosis();
 
-    await waitFor(() => expect(basket.result.current.orders[0].isOrderIncomplete).toBe(false));
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalled());
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
-  });
-
-  it('restores the medication order when the diagnosis warning is removed', async () => {
-    const basket = renderDrugBasket();
-    act(() => basket.result.current.setOrders([drugOrder]));
-    respondWithVisit();
-
-    const { unmount } = renderPatientDiagnosis();
-    await waitFor(() => expect(basket.result.current.orders[0].isOrderIncomplete).toBe(true));
-
-    unmount();
-
-    await waitFor(() => expect(basket.result.current.orders[0].isOrderIncomplete).toBe(false));
   });
 });

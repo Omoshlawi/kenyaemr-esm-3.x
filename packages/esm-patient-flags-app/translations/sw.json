@@ -22,7 +22,7 @@
   "legacyAdmin": "Usimamizi wa Usimamizi",
   "manageStocks": "Usimamizi wa Hifadhi",
   "noMainDiagnosis": "Uchunguzi wa msingi unahitajika",
-  "noMainDiagnosisSubtitlecWarning": "Utambuzi mkuu unahitajika, tafadhali ongeza utambuzi mkuu kwa fomu ya kukutana kliniki",
+  "noMainDiagnosisSubtitleWarning": "Main diagnosis is required, please add main diagnosis to the clinical encounter form",
   "queueScreen": "Kutafuta Screen",
   "referrals": "Mapendekezo ya",
   "regulatoryNotActive": "Mfumo wa utendaji kazi wa Serikali hauna tija",

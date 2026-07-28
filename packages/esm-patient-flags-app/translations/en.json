@@ -22,7 +22,7 @@
   "legacyAdmin": "Legacy Admin",
   "manageStocks": "Manage Stocks",
   "noMainDiagnosis": "Main diagnosis required",
-  "noMainDiagnosisSubtitlecWarning": "Main diagnosis is required, please add main diagnosis to the clinical encounter form",
+  "noMainDiagnosisSubtitleWarning": "Main diagnosis is required, please add main diagnosis to the clinical encounter form",
   "queueScreen": "Queue Screen",
   "referrals": "Referrals",
   "regulatoryNotActive": "Regulatory operational status is not active",

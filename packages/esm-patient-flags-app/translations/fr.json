@@ -22,7 +22,7 @@
   "legacyAdmin": "Administration héritée",
   "manageStocks": "Gestion des stocks",
   "noMainDiagnosis": "Diagnostic principal requis",
-  "noMainDiagnosisSubtitlecWarning": "Le diagnostic principal est requis, veuillez ajouter le diagnostic principal au formulaire de consultation clinique",
+  "noMainDiagnosisSubtitleWarning": "Main diagnosis is required, please add main diagnosis to the clinical encounter form",
   "queueScreen": "Écran de file d’attente",
   "referrals": "Références",
   "regulatoryNotActive": "Le statut opérationnel réglementaire n'est pas actif",
