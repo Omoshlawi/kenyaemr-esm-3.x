@@ -747,8 +747,8 @@ export const configSchema = {
             tags: ['enrollment'],
           },
           {
-            formName: 'Psychiatric Clinic Form',
-            formTranslationKey: 'psychiatricClinicForm',
+            formName: 'Psychiatric Initial Form',
+            formTranslationKey: 'psychiatricInitialForm',
             formUuId: '1fbd26f1-0478-437c-be1e-b8468bd03ffa',
             dependancies: [],
             tags: ['initial'],
