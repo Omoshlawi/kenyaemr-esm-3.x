@@ -1,0 +1,34 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.container {
+  background-color: colors.$gray-10;
+  padding: layout.$spacing-03;
+  flex-grow: 0;
+  width: fit-content;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-05;
+}
+
+.metricsContainer {
+  border-bottom: 1px solid colors.$gray-20;
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-03;
+}
+.configContainer {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-03;
+}
+
+.metricItem {
+  display: flex;
+  flex-direction: row;
+  gap: layout.$spacing-05;
+}
