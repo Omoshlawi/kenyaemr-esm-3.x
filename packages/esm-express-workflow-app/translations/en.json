@@ -339,8 +339,6 @@
   "pastMedications": "Past Medications",
   "patientAttended": "Patient attended to",
   "patientCategory": "Patient Category",
-  "patientDetailsMismatch": "Patient details do not match",
-  "patientDetailsMismatchSubtitle": "A patient with ID {{id}} is already registered locally, but their details differ from the HIE record. Please update the patient’s details locally before proceeding.",
   "patientExamination": "Patient Examination",
   "patientHistory": "Patient History",
   "patientManagement": "Patient Management",

@@ -210,7 +210,7 @@ export const launchResultsButton = getAsyncLifecycle(
   () => import('./lab-results/launch-results-button.component'),
   options,
 );
-
+// t('caseSummary','Case Summary')
 export const visitSummary = getAsyncLifecycle(() => import('./visit-summary/visit-summary.component'), options);
 
 export const visitSummaryPrintPreviewModal = getAsyncLifecycle(

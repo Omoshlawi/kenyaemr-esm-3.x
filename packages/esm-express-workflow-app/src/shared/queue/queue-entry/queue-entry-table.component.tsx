@@ -74,7 +74,7 @@ const QueueEntryTable: React.FC<QueueEntryTableProps> = ({
       { header: t('comingFrom', 'Coming from'), key: 'previousQueue' },
       { header: t('priority', 'Priority'), key: 'priority' },
       { header: t('priorityComment', 'Priority Comment'), key: 'priorityComment' },
-      { header: t('status', 'status'), key: 'status' },
+      { header: t('status', 'Status'), key: 'status' },
       { header: t('queue', 'Queue'), key: 'queue' },
       { header: t('waitTime', 'Wait time'), key: 'waitTime' },
     ],

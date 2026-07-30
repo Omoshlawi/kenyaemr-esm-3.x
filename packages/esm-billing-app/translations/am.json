@@ -619,6 +619,7 @@
   "loadingDescription": "Loading",
   "loadingDiagnoses": "Loading diagnoses...",
   "loadingDoctors": "Loading doctors…",
+  "loadingDrugBillAndStockInfo": "Loading drug prices and stock level info",
   "loadingInterventions": "Loading interventions...",
   "loadingMetrics": "Loading metrics...",
   "loadingPatient": "Loading patient...",

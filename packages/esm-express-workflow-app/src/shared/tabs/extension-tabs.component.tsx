@@ -28,7 +28,7 @@ const ExtensionTabs: React.FC<ExtensionTabsProps> = ({ extensionSlotName, patien
       <Tabs>
         <TabList contained>
           {extensions.map((ext) => (
-            <Tab key={ext.name}>{translateFrom(extensionSlotModuleName, ext.meta.title, ext.meta.title)}</Tab>
+            <Tab key={ext.name}>{translateFrom(ext.moduleName, ext.meta.title, ext.meta.title)}</Tab>
           ))}
         </TabList>
         <TabPanels
