@@ -6,7 +6,8 @@ import TransmissionPipelineTabs from './transmission-pipeline-tabs.component';
 import { Layer } from '@carbon/react';
 import { TransmissionPipeline } from './transmission.type';
 import { useDataPipelines } from './transmission.resources';
-import PipelineSummary from './pipeline-summary/pipeline-summary.component';
+import PipelineSummary from './pipeline-summary.component';
+import PipelineActions from './pipeline-actions.component';
 
 const DataTransmissionDashboard = () => {
   const { t } = useTranslation();
@@ -17,7 +18,12 @@ const DataTransmissionDashboard = () => {
   return (
     <Layer className={styles.tabsContainer}>
       <FacilityDashboardHeader title={t('dataTransmission', 'Data Transmission')} />
-      {activePipeline && <PipelineSummary pipeline={activePipeline} />}
+      {activePipeline && (
+        <div className={styles.headerContainer}>
+          <PipelineSummary pipeline={activePipeline} />
+          <PipelineActions pipeline={activePipeline} />
+        </div>
+      )}
       <TransmissionPipelineTabs onActivePipelineChange={setPipeline} />
     </Layer>
   );

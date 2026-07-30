@@ -3,6 +3,7 @@ import useSWR from 'swr';
 import {
   DataPipeline,
   DatasetMetric,
+  DatasetQueue,
   FailedDataset,
   PipelineStatus,
   QueueSummary,
@@ -97,6 +98,17 @@ export const usePipelineExtractedDataset = (pipelineSlug: string) => {
     isLoading,
     error,
     mutate,
+  };
+};
+
+export const useQueueDetail = (pipeline: string, queueId: number) => {
+  const url = `${restBaseUrl}/kenyaemril/datapipeline/${pipeline}/queue/${queueId}`;
+  const { data, error, isLoading, mutate } = useSWR<FetchResponse<DatasetQueue>>(url, openmrsFetch);
+  return {
+    isLoading,
+    mutate,
+    error,
+    queue: data?.data,
   };
 };
 const toDisplay = (str: string) => capitalize(str.replaceAll('_', ' '));

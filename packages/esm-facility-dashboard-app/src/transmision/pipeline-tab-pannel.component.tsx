@@ -1,5 +1,6 @@
 import {
   DataTable,
+  Layer,
   Tab,
   Table,
   TableBody,
@@ -27,26 +28,28 @@ const PipelineTabPannel: React.FC<PipelineTabPannelProps> = ({ pipeline }) => {
   const { t } = useTranslation();
 
   return (
-    <Tabs>
-      <TabList contained>
-        <Tab>{t('extractedDatasets', 'Extracted datasets')}</Tab>
-        <Tab>{t('pushedDatasets', 'Pushed datasets')}</Tab>
-        <Tab>{t('failedBatches', 'Failed batches')}</Tab>
-      </TabList>
-      <TabPanels>
-        <TabPanel>
-          <ExtractedDataset pipeline={pipeline} />
-        </TabPanel>
+    <Layer>
+      <Tabs>
+        <TabList contained>
+          <Tab>{t('extractedDatasets', 'Extracted datasets')}</Tab>
+          <Tab>{t('pushedDatasets', 'Pushed datasets')}</Tab>
+          <Tab>{t('failedBatches', 'Failed batches')}</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel>
+            <ExtractedDataset pipeline={pipeline} />
+          </TabPanel>
 
-        <TabPanel>
-          <PushedDataset pipeline={pipeline} />
-        </TabPanel>
+          <TabPanel>
+            <PushedDataset pipeline={pipeline} />
+          </TabPanel>
 
-        <TabPanel>
-          <FailedDataset pipeline={pipeline} />
-        </TabPanel>
-      </TabPanels>
-    </Tabs>
+          <TabPanel>
+            <FailedDataset pipeline={pipeline} />
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </Layer>
   );
 };
 

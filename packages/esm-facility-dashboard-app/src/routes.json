@@ -33,7 +33,12 @@
       "name": "data-transmission-dashboard"
     }
   ],
-  "modals": [],
+  "modals": [
+    {
+      "component": "queuePayloadModal",
+      "name": "transmission-queue-payload-modal"
+    }
+  ],
   "pages": [
     {
       "component": "root",

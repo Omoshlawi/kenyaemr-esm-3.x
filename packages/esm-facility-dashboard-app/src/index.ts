@@ -53,3 +53,4 @@ export const dataTransmissionDashboard = getAsyncLifecycle(
   () => import('./transmision/transmission-dashboard.component'),
   options,
 );
+export const queuePayloadModal = getAsyncLifecycle(() => import('./transmision/queue-payload-view.modal'), options);

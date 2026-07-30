@@ -1,8 +1,8 @@
 import { Layer } from '@carbon/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { usePipelineMetrics } from '../transmission.resources';
-import { TransmissionPipeline } from '../transmission.type';
+import { usePipelineMetrics } from './transmission.resources';
+import { TransmissionPipeline } from './transmission.type';
 import styles from './pipeline-summary.scss';
 
 type PipelineSummaryProps = {

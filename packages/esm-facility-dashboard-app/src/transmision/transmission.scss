@@ -5,3 +5,13 @@
 .tabsContainer {
   padding: layout.$spacing-05;
 }
+
+.headerContainer {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: end;
+  margin-bottom: layout.$spacing-05;
+  gap: layout.$spacing-03;
+}

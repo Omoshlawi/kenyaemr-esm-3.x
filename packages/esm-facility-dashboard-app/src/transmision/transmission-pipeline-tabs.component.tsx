@@ -1,4 +1,4 @@
-import { Tab, TabList, TabPanel, TabPanels, Tabs, TabsSkeleton } from '@carbon/react';
+import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs, TabsSkeleton } from '@carbon/react';
 import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -29,23 +29,25 @@ const TransmissionPipelineTabs: React.FC<TransmissionPipelineTabsProps> = ({ onA
     );
   }
   return (
-    <Tabs
-      onChange={({ selectedIndex }) => {
-        onActivePipelineChange(pipelines[selectedIndex]);
-      }}>
-      <TabList contained>
-        {pipelines.map((pipeline) => (
-          <Tab key={pipeline.slug}>{getPipelineName(pipeline.pipeline, t)}</Tab>
-        ))}
-      </TabList>
-      <TabPanels>
-        {pipelines.map((pipeline) => (
-          <TabPanel key={pipeline.slug}>
-            <PipelineTabPannel pipeline={pipeline} />
-          </TabPanel>
-        ))}
-      </TabPanels>
-    </Tabs>
+    <Layer>
+      <Tabs
+        onChange={({ selectedIndex }) => {
+          onActivePipelineChange(pipelines[selectedIndex]);
+        }}>
+        <TabList contained>
+          {pipelines.map((pipeline) => (
+            <Tab key={pipeline.slug}>{getPipelineName(pipeline.pipeline, t)}</Tab>
+          ))}
+        </TabList>
+        <TabPanels>
+          {pipelines.map((pipeline) => (
+            <TabPanel key={pipeline.slug}>
+              <PipelineTabPannel pipeline={pipeline} />
+            </TabPanel>
+          ))}
+        </TabPanels>
+      </Tabs>
+    </Layer>
   );
 };
 

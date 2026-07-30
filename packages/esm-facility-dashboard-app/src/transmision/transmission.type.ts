@@ -56,3 +56,22 @@ export type FailedDataset = {
   sentAt: string | null;
   fetchDate: string | null;
 };
+
+export type DatasetQueue = {
+  queueId: number;
+  pipeline: DataPipeline;
+  batchUuid: string;
+  datasetType: string;
+  recordCount: number;
+  status: PipelineStatus;
+  retryCount: number;
+  maxRetries: number;
+  httpResponseCode: number;
+  lastError: string;
+  nextAttemptTime?: string;
+  lastAttemptTime: string;
+  extractedAt: string;
+  sentAt?: string;
+  fetchDate: string;
+  payload: string;
+};
