@@ -1,6 +1,7 @@
 {
   "aboveSiteDashboard": "Above site facility Dashboard",
   "aboveSiteFacilityDashboard": "Above site facility Dashboard",
+  "actions": "Actions",
   "air": "Air",
   "cumulativeProgressDelayedEAC": "Cumulative Progress in addressing delayed EAC",
   "cumulativeProgressDnapcrPending": "Cumulative Progress in addressing  HEI PCR results",
@@ -15,6 +16,7 @@
   "delayedEAC": "Delayed enhanced adherence counselling",
   "delayedVLTesting": "Number of client on ART that visited, were eligible for VL sampling and no VL was done",
   "dnapcrPending": "HEI (6-8 weeks) without DNA-PCR Results",
+  "drain queue": "Drain queueu",
   "endDate": "End date",
   "errorLoadingData": "Error loading data",
   "extractedAt": "Extracted at",
@@ -60,6 +62,7 @@
   "percentageOfPendingPCRDNAResults": "% HEI (6-8 weeks) without DNA-PCR results",
   "percentageOfPregnantOrPostpartumPatients": "% of pregnant or postpartum patients",
   "percentageTestedPositiveNotLinked": "% tested positive not linked",
+  "pipelineActions": "Pipeline actions",
   "prepNotlinked": "High risk -ve PBFW not on PrEP",
   "progressEnrollingHighRiskPBFWToPrEP": "Progress enroling high risk PBFW to PrEP",
   "progressInAddressingDelayedEAC": "Progress in addressing delayed EAC",
@@ -80,6 +83,8 @@
   "surveillance": "Surveillance",
   "surveillanceSummary": "Surveillance Summary",
   "thirtyDaysProgressTracker": "Thirty days progress tracker",
+  "triggerExtraction": "Trigger extraction",
+  "view": "View",
   "viewOnSuperset": "View on Superset",
   "virallyUnSuppressedWithoutAdherenceCounselingFor2Weeks": "Virally Unsuppressed clients without enhanced adherence counseling (EAC) within 2 weeks"
 }

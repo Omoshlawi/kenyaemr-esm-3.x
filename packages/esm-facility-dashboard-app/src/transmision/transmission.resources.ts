@@ -143,3 +143,21 @@ export const getPipelineStatusDisplay = (status: PipelineStatus, t: TFunction) =
       return t('uknownStatus', 'Uknown status');
   }
 };
+
+export const requeueDataset = async (pipeline: string, queueId: number) => {
+  const url = `${restBaseUrl}/kenyaemril/datapipeline/${pipeline}/requeue/${queueId}`;
+  const res = await openmrsFetch<DatasetQueue>(url, { method: 'POST' });
+  return res.data;
+};
+
+export const triggerExtraction = async (pipeline: string) => {
+  const url = `${restBaseUrl}/kenyaemril/datapipeline/${pipeline}/extract`;
+  const res = await openmrsFetch<{}>(url, { method: 'POST' });
+  return res.data;
+};
+
+export const drainQueue = async (pipeline: string, requeueDeaLetter: boolean = false) => {
+  const url = `${restBaseUrl}/kenyaemril/datapipeline/${pipeline}/drain?requeueDeadLetter=${requeueDeaLetter}`;
+  const res = await openmrsFetch<{}>(url, { method: 'POST' });
+  return res.data;
+};

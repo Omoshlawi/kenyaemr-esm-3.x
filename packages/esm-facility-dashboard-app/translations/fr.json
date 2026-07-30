@@ -1,6 +1,7 @@
 {
   "aboveSiteDashboard": "Tableau de bord des établissements au-dessus du site",
   "aboveSiteFacilityDashboard": "Tableau de bord des établissements au-dessus du site",
+  "actions": "Actions",
   "air": "Air",
   "cumulativeProgressDelayedEAC": "Progrès cumulés dans la prise en charge des EAC retardés",
   "cumulativeProgressDnapcrPending": "Progrès cumulés dans la prise en charge des résultats PCR HEI",
@@ -15,6 +16,7 @@
   "delayedEAC": "Conseil renforcé d’adhérence (EAC) retardé",
   "delayedVLTesting": "Nombre de clients sous ART ayant consulté, éligibles au prélèvement de charge virale et sans test réalisé",
   "dnapcrPending": "HEI (6–8 semaines) sans résultats ADN-PCR",
+  "drain queue": "Drain queueu",
   "endDate": "Date de fin",
   "errorLoadingData": "Erreur lors du chargement des données",
   "extractedAt": "Extracted at",
@@ -60,6 +62,7 @@
   "percentageOfPendingPCRDNAResults": "% HEI (6–8 semaines) sans résultats ADN-PCR",
   "percentageOfPregnantOrPostpartumPatients": "% de patientes enceintes ou en post-partum",
   "percentageTestedPositiveNotLinked": "% testés positifs non liés",
+  "pipelineActions": "Pipeline actions",
   "prepNotlinked": "PBFW séronégatives à haut risque non sous PrEP",
   "progressEnrollingHighRiskPBFWToPrEP": "Progrès dans l’enrôlement des PBFW à haut risque vers la PrEP",
   "progressInAddressingDelayedEAC": "Progrès dans la prise en charge des EAC retardés",
@@ -80,6 +83,8 @@
   "surveillance": "Surveillance",
   "surveillanceSummary": "Résumé de la surveillance",
   "thirtyDaysProgressTracker": "Suivi des progrès sur trente jours",
+  "triggerExtraction": "Trigger extraction",
+  "view": "View",
   "viewOnSuperset": "Voir sur Superset",
   "virallyUnSuppressedWithoutAdherenceCounselingFor2Weeks": "Clients avec charge virale non supprimée sans conseil renforcé d’adhérence (EAC) pendant 2 semaines"
 }

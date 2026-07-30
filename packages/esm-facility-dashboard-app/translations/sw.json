@@ -1,6 +1,7 @@
 {
   "aboveSiteDashboard": "Above Site Dashboard",
   "aboveSiteFacilityDashboard": "Tovuti ya Dashboard",
+  "actions": "Actions",
   "air": "Hewa Hewa Hewa Hewa",
   "cumulativeProgressDelayedEAC": "Hatua za dharura za kukabiliana na EAC",
   "cumulativeProgressDnapcrPending": "Hatua za kukabiliana na matokeo ya HEI PCR",
@@ -15,6 +16,7 @@
   "delayedEAC": "Delayed EAC",
   "delayedVLTesting": "Idadi ya mteja kwenye ART ambayo alitembelea, walikuwa na haki ya sampuli ya VL na hakuna VL ilifanyika",
   "dnapcrPending": "Pending DNA-PCR Results",
+  "drain queue": "Drain queueu",
   "endDate": "Mwisho wa tarehe",
   "errorLoadingData": "Makosa ya kupakia data",
   "extractedAt": "Extracted at",
@@ -60,6 +62,7 @@
   "percentageOfPendingPCRDNAResults": "Asilimia ya HEI (wiki 6-8) bila matokeo ya DNA-PCR",
   "percentageOfPregnantOrPostpartumPatients": "Asilimia ya wagonjwa wajawazito au baada ya kujifungua",
   "percentageTestedPositiveNotLinked": "Asilimia ya waliofanyiwa utafiti hawakuhusishwa",
+  "pipelineActions": "Pipeline actions",
   "prepNotlinked": "Hatari ya juu - PBFW sio juu ya PrEP",
   "progressEnrollingHighRiskPBFWToPrEP": "Kujiandikisha kwa hatari kubwa ya PBFW kwa PrEP",
   "progressInAddressingDelayedEAC": "Hatua za dharura za kukabiliana na EAC",
@@ -80,6 +83,8 @@
   "surveillance": "Ufuatiliaji wa ufuatiliaji",
   "surveillanceSummary": "Muhtasari wa Ufuatiliaji",
   "thirtyDaysProgressTracker": "Siku 30 za kufuatilia maendeleo",
+  "triggerExtraction": "Trigger extraction",
+  "view": "View",
   "viewOnSuperset": "Maoni kwenye Superset",
   "virallyUnSuppressedWithoutAdherenceCounselingFor2Weeks": "Wateja wasio na wasiwasi bila ushauri wa kuzingatia (EAC) ndani ya wiki mbili"
 }

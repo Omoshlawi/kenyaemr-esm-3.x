@@ -1,6 +1,7 @@
 {
   "aboveSiteDashboard": "ከጣቢያ በላይ ዳሽቦርድ",
   "aboveSiteFacilityDashboard": "ከጣቢያ በላይ የተቋም ዳሽቦርድ",
+  "actions": "Actions",
   "air": "Air",
   "cumulativeProgressDelayedEAC": "ዘግይቶ EACን በመፍታት የተጠራቀመ ሂደት",
   "cumulativeProgressDnapcrPending": "የHEI PCR ውጤቶችን በመፍታት የተጠራቀመ ሂደት",
@@ -15,6 +16,7 @@
   "delayedEAC": "ዘግይቶ EAC",
   "delayedVLTesting": "ኤአርቲ ላይ ያሉ፣ ለVL ናሙና ብቁ የሆኑ እና VL ያልተሰራላቸው ታካሚዎች ብዛት",
   "dnapcrPending": "በመጠባበቅ ላይ ያሉ የDNA-PCR ውጤቶች",
+  "drain queue": "Drain queueu",
   "endDate": "የማብቂያ ቀን",
   "errorLoadingData": "ዳታ በመጫን ላይ ስህተት",
   "extractedAt": "Extracted at",
@@ -60,6 +62,7 @@
   "percentageOfPendingPCRDNAResults": "የHEI (6-8 ሳምንታት) ያለ DNA-PCR ውጤቶች መቶኛ",
   "percentageOfPregnantOrPostpartumPatients": "የነፍሰ ጡር ወይም ከወሊድ በኋላ ያሉ ታካሚዎች መቶኛ",
   "percentageTestedPositiveNotLinked": "አዎንታዊ ተብለው የተፈተሹ ግን ያልተገናኙ መቶኛ",
+  "pipelineActions": "Pipeline actions",
   "prepNotlinked": "ከፍተኛ ስጋት -ve PBFW PrEP ላይ የሌሉ",
   "progressEnrollingHighRiskPBFWToPrEP": "ከፍተኛ ስጋት ያለባቸውን PBFW ወደ PrEP በማስመዝገብ ላይ ያለው ሂደት",
   "progressInAddressingDelayedEAC": "ዘግይቶ EACን በመፍታት ላይ ያለው ሂደት",
@@ -80,6 +83,8 @@
   "surveillance": "ክትትል",
   "surveillanceSummary": "የክትትል ማጠቃለያ",
   "thirtyDaysProgressTracker": "ሰላሳ ቀናት የሂደት መከታተያ",
+  "triggerExtraction": "Trigger extraction",
+  "view": "View",
   "viewOnSuperset": "በSuperset ላይ ይመልከቱ",
   "virallyUnSuppressedWithoutAdherenceCounselingFor2Weeks": "በ2 ሳምንታት ውስጥ የተሻሻለ የአድሀረንስ ምክር (EAC) ያልተሰጣቸው በቫይረስ ያልተጨቆኑ ታካሚዎች"
 }
