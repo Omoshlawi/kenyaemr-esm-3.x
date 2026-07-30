@@ -1,4 +1,4 @@
-import { PaymentStatus } from '../../types';
+import { LineItem, PaymentStatus } from '../../types';
 
 /**
  * Checks if a specific billable item exists within a collection of billable items
@@ -26,6 +26,30 @@ export const extractServiceIdentifier = (billableItem) => {
   const serviceIdentifier = billableItem.item || billableItem.billableService;
   return serviceIdentifier ? serviceIdentifier.split(':')[0] : null;
 };
+
+export type LineItemPayload = {
+  uuid: string;
+  item: string | null;
+  billableService: string | null;
+  quantity: number;
+  price: number;
+  priceName: string;
+  priceUuid: string;
+  lineItemOrder: number;
+  paymentStatus: string;
+};
+
+export const toLineItemPayload = (lineItem: LineItem | LineItemPayload): LineItemPayload => ({
+  uuid: lineItem.uuid,
+  item: extractServiceIdentifier(lineItem),
+  billableService: extractServiceIdentifier(lineItem),
+  quantity: lineItem.quantity,
+  price: lineItem.price,
+  priceName: lineItem.priceName,
+  priceUuid: lineItem.priceUuid,
+  lineItemOrder: lineItem.lineItemOrder,
+  paymentStatus: lineItem.paymentStatus,
+});
 
 /**
  * Formats a Kenyan phone number to include country code (254)
@@ -151,9 +175,7 @@ export const createPaymentPayload = (
 
   // Process selected items and update their payment status
   const processedSelectedBillableItems = selectedBillableItems.map((billableItem) => ({
-    ...billableItem,
-    billableService: extractServiceIdentifier(billableItem),
-    item: extractServiceIdentifier(billableItem),
+    ...toLineItemPayload(billableItem),
     paymentStatus: determineBillableItemPaymentStatus(
       lineItems.length,
       billableItem,
@@ -166,29 +188,22 @@ export const createPaymentPayload = (
   const remainingLineItems =
     selectedBillableItems.length > 0
       ? // If items were selected, exclude them from the original line items
-        lineItems.filter((lineItem) => {
-          const isItemSelected = processedSelectedBillableItems.some(
-            (selectedItem) => selectedItem.uuid === lineItem.uuid,
-          );
-          return !isItemSelected;
-        })
+        lineItems
+          .filter((lineItem: LineItem) => {
+            const isItemSelected = processedSelectedBillableItems.some(
+              (selectedItem: LineItemPayload) => selectedItem.uuid === lineItem.uuid,
+            );
+            return !isItemSelected;
+          })
+          .map(toLineItemPayload)
       : // If no items were selected, update payment status for all line items
         lineItems.map((lineItem) => ({
-          ...lineItem,
-          item: extractServiceIdentifier(lineItem),
-          billableService: extractServiceIdentifier(lineItem),
+          ...toLineItemPayload(lineItem),
           paymentStatus: isBillableItemFullyPaid(totalPaidAmount, lineItem),
         }));
 
   // Combine selected and remaining items into final processed list
-  const processedLineItems = [
-    ...processedSelectedBillableItems,
-    ...remainingLineItems.map((item) => ({
-      ...item,
-      item: extractServiceIdentifier(item),
-      billableService: extractServiceIdentifier(item),
-    })),
-  ];
+  const processedLineItems = [...processedSelectedBillableItems, ...remainingLineItems];
 
   // Determine final bill status
   const hasUnpaidItems = processedLineItems.some((item) => item.paymentStatus === PaymentStatus.PENDING);

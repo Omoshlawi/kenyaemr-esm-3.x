@@ -134,9 +134,6 @@ describe('BillWaiverForm', () => {
       lineItems: [
         {
           uuid: 'e53c5589-e588-4bb9-bb72-6d4d16189679',
-          display: 'BillLineItem',
-          voided: false,
-          voidReason: null,
           item: '3f5d0684-a280-477e-a67b-2a956a1f6dca',
           billableService: '3f5d0684-a280-477e-a67b-2a956a1f6dca',
           quantity: 1,
@@ -145,8 +142,6 @@ describe('BillWaiverForm', () => {
           priceUuid: '',
           lineItemOrder: 0,
           paymentStatus: 'PAID',
-          resourceVersion: '1.8',
-          itemOrServiceConceptUuid: '',
         },
       ],
       payments: [

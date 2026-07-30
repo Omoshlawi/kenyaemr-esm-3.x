@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
 import { processBillPayment, usePaymentModes } from '../billing.resource';
 import { BillingConfig } from '../config-schema';
-import { extractServiceIdentifier } from '../invoice/payments/utils';
+import { toLineItemPayload, type LineItemPayload } from '../invoice/payments/utils';
 import { getErrorMessage, getRequestStatus, readableStatusMap } from '../m-pesa/mpesa-resource';
 import { useClockInStatus } from '../bill-administration/payment-points/use-clock-in-status';
-import { LineItem, MappedBill, PaymentStatus, RequestStatus, Timesheet } from '../types';
+import { MappedBill, PaymentStatus, RequestStatus, Timesheet } from '../types';
 import { extractErrorMessagesFromResponse, waitForASecond } from '../utils';
 
 export const createMobileMoneyPaymentPayload = (
@@ -48,18 +48,14 @@ export const createMobileMoneyPaymentPayload = (
   };
 
   const updatedPayments = [...previousPayments, newPayment];
-  const updatedLineItems: LineItem[] = [];
+  const updatedLineItems: LineItemPayload[] = [];
 
   let remainingPayment = tenderedAmount + amount;
 
   for (let i = 0; i < bill.lineItems.length; i++) {
     const lineItem = bill.lineItems[i];
     const totalLineItemAmount = lineItem.price * lineItem.quantity;
-    const newLineItem: LineItem = {
-      ...lineItem,
-      billableService: extractServiceIdentifier(lineItem),
-      item: extractServiceIdentifier(lineItem),
-    };
+    const newLineItem = toLineItemPayload(lineItem);
 
     if (remainingPayment >= totalLineItemAmount) {
       remainingPayment -= totalLineItemAmount;

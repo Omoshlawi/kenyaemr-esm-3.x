@@ -1,6 +1,7 @@
 import { LineItem, MappedBill, Payment, PaymentMethod, PaymentStatus } from './types';
 import { spaBasePath } from './constants';
 import { type VirtualClaim } from './hooks/useClaimsMetrics';
+import { toLineItemPayload, type LineItemPayload } from './invoice/payments/utils';
 
 // Helper functions
 const formatAmount = (amount: number): number => {
@@ -14,7 +15,7 @@ const findWaiverPaymentMode = (paymentModes: PaymentMethod[]): PaymentMethod | u
 const createWaiverAttributes = (
   waiverPaymentMode: PaymentMethod | undefined,
   waiveReason: string,
-): Array<{ attributeType: string; value: string }> => {
+): Array<{ attributeType: string | undefined; value: string }> => {
   if (!waiverPaymentMode?.uuid || !waiverPaymentMode.attributeTypes[0]) {
     return [];
   }
@@ -67,7 +68,7 @@ export const createBillWaiverPayload = (
 ): {
   cashPoint: string;
   cashier: string;
-  lineItems: Array<LineItem>;
+  lineItems: Array<LineItem> | Array<LineItemPayload & { paymentStatus: PaymentStatus }>;
   payments: Array<any>;
   patient: string;
 } => {
@@ -80,7 +81,7 @@ export const createBillWaiverPayload = (
   const waiverAttributes = createWaiverAttributes(waiverPaymentMode, waiveReason);
 
   const billPayment = {
-    amount: formatAmount(totalAmount),
+    amount: formatAmount(amountWaived),
     amountTendered: formatAmount(amountWaived),
     attributes: waiverAttributes,
     instanceType: waiverPaymentMode?.uuid,
@@ -88,10 +89,8 @@ export const createBillWaiverPayload = (
 
   const previousPaymentsPayload = bill.payments.map(createPaymentPayload);
 
-  const processedLineItems = lineItems.map((lineItem) => ({
-    ...lineItem,
-    billableService: processBillItem(lineItem),
-    item: processBillItem(lineItem),
+  const processedLineItems: Array<LineItemPayload & { paymentStatus: PaymentStatus }> = lineItems.map((lineItem) => ({
+    ...toLineItemPayload(lineItem),
     paymentStatus: totalAmount === amountWaived ? PaymentStatus.PAID : PaymentStatus.POSTED,
   }));
 
@@ -103,8 +102,6 @@ export const createBillWaiverPayload = (
     patient: bill.patientUuid,
   };
 };
-
-const processBillItem = (item) => (item?.item || item?.billableService)?.split(':')[0];
 
 function extractMessage(input: string): string | null {
   const parts = input?.split('=>');
