@@ -38,7 +38,6 @@
   "noRunsSubtitle": "Ce rapport n'a pas encore été demandé.",
   "OTHER": "Autres",
   "pageRangeText_one": "des {{count}} page",
-  "pageRangeText_many": "of {{count}} pages",
   "pageRangeText_other": "des {{count}} page",
   "patientFollowUpReports": "Rapports de suivi des patients",
   "previousPage": "Page précédente",

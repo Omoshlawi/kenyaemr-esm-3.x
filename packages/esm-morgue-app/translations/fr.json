@@ -237,7 +237,6 @@
   "Service": "Services",
   "sex": "Sexe :",
   "sharedCompartment_one": "{{count}} partage",
-  "sharedCompartment_many": "{{count}} sharing",
   "sharedCompartment_other": "{{count}} partagent",
   "sign": "Signer :",
   "signature": "Signature :",
