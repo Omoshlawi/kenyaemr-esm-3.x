@@ -47,6 +47,7 @@ import {
   submitClaim,
   useCloseReasons,
   useDischargeReasons,
+  usePreviewClaim,
 } from './claim-submit-resource';
 import { closeInsuranceClaim } from '../../../claims-management/table/claim-summary-modal/claim.resource';
 import { ClaimSubmitFormData, claimSubmitSchema } from './claim-submit-schema';
@@ -54,6 +55,8 @@ import {
   extractUpstreamError,
   toLocalIsoWithOffset,
 } from '../../../claims-management/table/virtual-claim-preauth/utils';
+import ClaimReviewSection from './claim-review-section.component';
+import ClaimShaPreview from './claim-sha-preview.component';
 
 type ClaimSubmitWorkspaceProps = {
   consentToken: string;
@@ -69,6 +72,16 @@ type ClaimSubmitWorkspaceProps = {
   mutate: () => void;
   providerWorkflowState?: string;
   skipAuthorization?: boolean;
+  preview?: {
+    interventions?: Array<{
+      intervention_code: string;
+      intervention_name?: string;
+      preauth_type?: string;
+      payment_mechanism?: string | null;
+    }>;
+    diagnoses?: Array<{ icd_code: string; icd_description?: string; status?: string }>;
+    billLines?: Array<{ item_name?: string | null; intervention_code?: string; line_total_amount?: number | null }>;
+  };
 };
 
 const RequiredLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -97,8 +110,18 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     providerWorkflowState,
     skipAuthorization = false,
     totalAmount,
+    preview,
     mutate,
   } = workspaceProps ?? ({} as ClaimSubmitWorkspaceProps);
+
+  const previewDiagnoses = preview?.diagnoses ?? [];
+  const previewBillLines = preview?.billLines ?? [];
+
+  const {
+    preview: shaPreview,
+    isLoading: isLoadingShaPreview,
+    error: shaPreviewError,
+  } = usePreviewClaim(isCancelMode ? undefined : consentToken);
 
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -535,7 +558,8 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
               />
             )}
           </div>
-          <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
+          <ButtonSet
+            className={classNames(styles.buttonSet, { [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
             <Button
               className={styles.button}
               kind="secondary"
@@ -598,6 +622,12 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
               )}
             </div>
           </section>
+
+          {!isCancelMode && (
+            <ClaimShaPreview preview={shaPreview} isLoading={isLoadingShaPreview} error={shaPreviewError} />
+          )}
+
+          <ClaimReviewSection diagnoses={previewDiagnoses} billLines={previewBillLines} />
 
           {isResubmitFailed ? (
             <InlineNotification
@@ -708,7 +738,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
           )}
         </div>
 
-        <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
+        <ButtonSet className={classNames(styles.buttonSet, { [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
           <Button
             className={styles.button}
             kind="secondary"

@@ -3,6 +3,56 @@ import { extractFetchError, extractUpstreamError } from '../../../claims-managem
 import { TFunction } from 'i18next';
 import useSWR from 'swr';
 
+export type ClaimPreviewSHAIntervention = {
+  intervention_code?: string;
+  intervention_name?: string;
+  intervention_payment_mechanism?: string;
+  keph_level_tarrif?: string | number;
+  accrued_per_diem_amount?: string | number;
+  accrued_per_diem_days?: number;
+};
+
+export type ClaimPreviewSHAInvoice = {
+  invoice_number?: string;
+  total_amount?: string | number;
+  net_amount?: string | number;
+};
+
+export type ClaimPreviewResponse = {
+  success: boolean;
+  consent_token: string;
+  ready_to_dispatch: boolean;
+  local?: {
+    summary?: Record<string, number | boolean>;
+    workflow_state?: string;
+  };
+  sha?: {
+    workflow_state?: string;
+    invoices?: Array<ClaimPreviewSHAInvoice>;
+    interventions?: Array<ClaimPreviewSHAIntervention>;
+    [key: string]: unknown;
+  };
+  sha_error?: string;
+};
+
+export const usePreviewClaim = (consentToken?: string) => {
+  const url = consentToken
+    ? `${restBaseUrl}/virtualclaims/billing/preview-claim?consent_token=${encodeURIComponent(consentToken)}`
+    : null;
+  const { data, error, isLoading, isValidating, mutate } = useSWR<FetchResponse<ClaimPreviewResponse>>(
+    url,
+    openmrsFetch,
+    { revalidateOnFocus: false, shouldRetryOnError: false },
+  );
+  return {
+    preview: data?.data ?? null,
+    isLoading,
+    isValidating,
+    error,
+    mutate,
+  };
+};
+
 export type DischargeReasonOption = {
   code: string;
   label: string;

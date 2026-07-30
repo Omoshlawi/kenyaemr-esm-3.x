@@ -36,6 +36,71 @@
   color: colors.$gray-100;
 }
 
+.previewCard {
+  background-color: colors.$gray-10;
+  border-radius: 2px;
+  padding: layout.$spacing-05;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.previewHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+}
+
+.previewGroup {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.previewGroupTitle {
+  @include type.type-style('label-01');
+  font-weight: 600;
+  color: colors.$gray-70;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.previewList {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.previewItem {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-02 0;
+  border-bottom: 1px solid colors.$gray-20;
+}
+
+.previewCode {
+  @include type.type-style('code-01');
+  flex-shrink: 0;
+}
+
+.previewName {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-100;
+  flex: 1;
+}
+
+.previewAmount {
+  @include type.type-style('body-compact-01');
+  font-weight: 600;
+  color: colors.$gray-100;
+  margin-left: auto;
+}
+
 .summaryGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -102,12 +167,17 @@ code {
 }
 
 .dateTimeRow {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: layout.$spacing-04;
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
 
-  @media (max-width: 600px) {
-    grid-template-columns: 1fr;
+  > :first-child {
+    flex: 0 1 14rem;
+  }
+
+  > :last-child {
+    flex: 0 1 8rem;
   }
 }
 
@@ -115,9 +185,17 @@ code {
   max-width: 100%;
 }
 
+.buttonSet {
+  display: flex;
+  width: 100%;
+  gap: 0;
+  margin-top: auto;
+}
+
 .button {
-  flex: 1;
-  max-width: 50%;
+  flex: 1 1 50%;
+  width: 50%;
+  max-width: none;
   height: layout.$spacing-10;
   display: flex;
   align-items: center;

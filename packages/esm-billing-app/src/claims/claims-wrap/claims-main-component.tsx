@@ -348,6 +348,24 @@ const ClaimsTable: React.FC<{
         providerWorkflowState: claim.provider_workflow_state,
         skipAuthorization: isFailedToSubmit,
         totalAmount,
+        preview: {
+          interventions: (claim.interventions ?? []).map((i) => ({
+            intervention_code: i.intervention_code,
+            intervention_name: i.intervention_name,
+            preauth_type: i.preauth_type,
+            payment_mechanism: i.payment_mechanism,
+          })),
+          diagnoses: (claim.diagnoses ?? []).map((d) => ({
+            icd_code: d.icd_code,
+            icd_description: d.icd_description,
+            status: d.status,
+          })),
+          billLines: (claim.bill_lines ?? []).map((bl) => ({
+            item_name: bl.item_name,
+            intervention_code: bl.intervention_code,
+            line_total_amount: bl.line_total_amount,
+          })),
+        },
         mutate,
       },
       {},
