@@ -28,10 +28,12 @@ import {
 } from '@openmrs/esm-framework';
 import { EmptyState } from '@openmrs/esm-patient-common-lib';
 import { MappedAdrEncounter } from '../../types';
-import { Email, Printer, TaskView } from '@carbon/react/icons';
+import { type CarbonIconProps, Email, Printer, TaskView } from '@carbon/react/icons';
 type adrEncounterProps = {
   encounters: Array<MappedAdrEncounter>;
 };
+
+const ReviewIcon = (props: CarbonIconProps) => <TaskView {...props} />;
 
 const AdrEncounter: React.FC<adrEncounterProps> = ({ encounters }) => {
   const { t } = useTranslation();
@@ -47,18 +49,17 @@ const AdrEncounter: React.FC<adrEncounterProps> = ({ encounters }) => {
     { header: 'Provider', key: 'provider' },
     { header: 'Actions', key: 'action' },
   ];
-  const sortedEncounters = encounters.sort((a, b) => {
+  const sortedEncounters = [...encounters].sort((a, b) => {
     const dateA = new Date(a.encounterDatetime || 0).getTime();
     const dateB = new Date(b.encounterDatetime || 0).getTime();
     return dateB - dateA;
   });
-  const { paginated, goTo, results, currentPage } = usePagination(encounters, pageSize);
-  const ReviewIcon = (props) => <TaskView {...props} />;
+  const { paginated, goTo, currentPage } = usePagination(encounters, pageSize);
 
-  const handler = (encounter) => {
+  const handler = (encounter: MappedAdrEncounter) => {
     launchWorkspace2('patient-adr-workspace', { encounter: encounter }, {}, {});
   };
-  const handleSendEmail = (encounter) => {
+  const handleSendEmail = (encounter: MappedAdrEncounter) => {
     const dispose = showModal('adr-email-modal', {
       onClose: () => dispose(),
       encounter,
@@ -145,7 +146,6 @@ const AdrEncounter: React.FC<adrEncounterProps> = ({ encounters }) => {
                 <TableRow>
                   {headers.map((header) => (
                     <TableHeader
-                      key={header.key}
                       {...getHeaderProps({
                         header,
                       })}>
@@ -157,7 +157,6 @@ const AdrEncounter: React.FC<adrEncounterProps> = ({ encounters }) => {
               <TableBody>
                 {rows.map((row) => (
                   <TableRow
-                    key={row.id}
                     {...getRowProps({
                       row,
                     })}>

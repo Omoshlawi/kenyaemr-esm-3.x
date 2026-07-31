@@ -60,6 +60,17 @@ jobs:
       - name: Run lint, type checks & tests
         run: yarn verify
 
+      - name: Generate coverage report
+        run: yarn test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Build packages
         run: yarn turbo run build --concurrency=5 
 

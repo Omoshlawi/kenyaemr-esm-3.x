@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  ComposedModal,
   ModalHeader,
   ModalBody,
   ModalFooter,
@@ -11,8 +10,7 @@ import {
   Button,
 } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
-import { showToast, restBaseUrl } from '@openmrs/esm-framework';
-import styles from './print-preview.scss';
+import { showToast } from '@openmrs/esm-framework';
 
 interface EmailModalProps {
   encounter: {

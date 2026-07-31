@@ -1,6 +1,7 @@
 :wave: *New to our project? Be sure to review the [OpenMRS 3 Frontend Developer Documentation](https://o3-docs.openmrs.org). You may find the [Map of the Project](https://o3-docs.openmrs.org/docs/core-concepts) especially helpful.* :teacher: 
 
-![Node.js CI](https://github.com/palladiumkenya/kenyaemr-esm-3.x/actions/workflows/ci.yml/badge.svg)
+![Node.js CI](https://github.com/palladium-hub/kenyaemr-esm-3.x/actions/workflows/ci.yml/badge.svg)
+[![codecov](https://codecov.io/gh/Palladium-hub/kenyaemr-esm-3.x/branch/main/graph/badge.svg)](https://codecov.io/gh/Palladium-hub/kenyaemr-esm-3.x)
 
 # KenyaEMR 3.x custom packages
 
