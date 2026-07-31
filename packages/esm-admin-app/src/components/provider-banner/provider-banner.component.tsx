@@ -9,7 +9,7 @@ import upperCase from 'lodash-es/upperCase';
 const ProviderBannerTag: React.FC = () => {
   const { currentProvider } = useSession();
   const { t } = useTranslation();
-  const currentProviderUuid = currentProvider?.uuid;
+  const currentProviderUuid = currentProvider?.uuid ?? '';
   const { isLoading, error, providerAttributes } = useProviderAttributes(currentProviderUuid);
 
   const getAttributeValue = (attributes: Array<Attribute>, displayName: string): string => {
@@ -59,11 +59,29 @@ const ProviderBannerTag: React.FC = () => {
   }
 
   const name = upperCase(providerAttributes?.person?.display) || 'NONE';
-  const hwi = getAttributeValue(providerAttributes?.attributes, 'Provider unique identifier') || 'NONE';
-  const licenseExpiry = getAttributeValue(providerAttributes?.attributes, 'License Expiry Date');
+  const hwi = getAttributeValue(providerAttributes?.attributes ?? [], 'Provider unique identifier') || 'NONE';
+  const licenseExpiry = getAttributeValue(providerAttributes?.attributes ?? [], 'License Expiry Date');
   const formattedExpiry = formatDate(licenseExpiry) || '0000-00-00';
   const shouldShowLicenseExpiry = !!licenseExpiry;
   const licenseStatus = getLicenseStatus(licenseExpiry);
+
+  if (error) {
+    return (
+      <div className={styles.providerBanner}>
+        <div className={styles.bannerContent}>
+          <div className={styles.divider} />
+          <div className={styles.infoItem}>
+            <span className={styles.label}>{t('providerLabel', 'Provider:')}</span>
+            <span className={styles.statusIndicator} title={error?.message ?? String(error)}>
+              <Tag size="md" type="red">
+                {t('errorLoadingProvider', 'Error loading provider information')}
+              </Tag>
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.providerBanner}>
@@ -76,28 +94,22 @@ const ProviderBannerTag: React.FC = () => {
 
         <div className={styles.divider} />
 
-        <>
-          <div className={styles.infoItem}>
-            <span className={styles.label}>{t('nameProvider', 'Name:')}</span>
-            <span className={styles.value}>{name}</span>
-          </div>
-          <div className={styles.divider} />
-          <div className={styles.infoItem}>
-            <span className={styles.label}>{t('licenseProvider', 'License:')}</span>
+        <div className={styles.infoItem}>
+          <span className={styles.label}>{t('nameProvider', 'Name:')}</span>
+          <span className={styles.value}>{name}</span>
+        </div>
+        <div className={styles.divider} />
+        <div className={styles.infoItem}>
+          <span className={styles.label}>{t('licenseProvider', 'License:')}</span>
 
-            {shouldShowLicenseExpiry && (
-              <>
-                <span className={styles.value}>{formattedExpiry}</span>
-              </>
-            )}
+          {shouldShowLicenseExpiry && <span className={styles.value}>{formattedExpiry}</span>}
 
-            <span className={styles.statusIndicator}>
-              <Tag size="md" type={licenseStatus.tagType}>
-                {licenseStatus.message}
-              </Tag>
-            </span>
-          </div>
-        </>
+          <span className={styles.statusIndicator}>
+            <Tag size="md" type={licenseStatus.tagType}>
+              {licenseStatus.message}
+            </Tag>
+          </span>
+        </div>
       </div>
     </div>
   );

@@ -260,20 +260,15 @@ const UserList: React.FC = () => {
           <OverflowMenuItem
             className={styles.btn}
             onClick={() => {
-              const selectedUser = users.find((u) => u.uuid === user.uuid);
-              if (selectedUser) {
-                launchWorkspace2(
-                  'manage-user-workspace',
-                  {
-                    workspaceTitle: t('editUser', 'Edit User'),
-                    initialUserValue: user,
-                  },
-                  {},
-                  {},
-                );
-              } else {
-                console.error('User not found:', user.uuid);
-              }
+              launchWorkspace2(
+                'manage-user-workspace',
+                {
+                  workspaceTitle: t('editUser', 'Edit User'),
+                  initialUserValue: user,
+                },
+                {},
+                {},
+              );
             }}
             itemText={t('editUser', 'Edit user')}
           />
