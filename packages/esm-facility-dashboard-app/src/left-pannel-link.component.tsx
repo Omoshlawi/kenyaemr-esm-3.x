@@ -36,7 +36,7 @@ function LinkExtension({ config }: { config: LinkConfig }) {
     <ConfigurableLink
       to={`${window.getOpenmrsSpaBase()}facility-dashboard${name && name !== 'facility-dashboard' ? `/${name}` : ''}`}
       className={`cds--side-nav__link ${getName(name) === urlSegment && 'active-left-nav-link'}`}>
-      {t(title, title)}
+      {t(title)}
     </ConfigurableLink>
   );
 }

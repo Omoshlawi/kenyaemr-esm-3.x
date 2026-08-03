@@ -19,6 +19,13 @@ type PushedDatasetProps = {
 };
 const PushedDataset: React.FC<PushedDatasetProps> = ({ pipeline }) => {
   const { t } = useTranslation();
+  const headers = [
+    { key: 'day', header: t('day', 'Day') },
+    { key: 'datasetType', header: t('datasetType', 'Dataset type') },
+    { key: 'recordCount', header: t('recordCount', 'Records') },
+    { key: 'datasets', header: t('datasets', 'Datasets') },
+  ];
+  const title = t('pushedDataset', 'Pushed Dataset');
   const { pushedDatasets, error, isLoading } = usePipelinePushedDataset(pipeline.slug);
   const pushedRows = useMemo(() => {
     return pushedDatasets.map((ds, i) => ({
@@ -33,29 +40,17 @@ const PushedDataset: React.FC<PushedDatasetProps> = ({ pipeline }) => {
     return <DataTableSkeleton />;
   }
   if (error) {
-    return <ErrorState error={error} headerTitle={t('pushedDataset', 'Pushed Dataset')} />;
+    return <ErrorState error={error} headerTitle={title} />;
   }
   if (pushedDatasets.length === 0) {
-    return (
-      <EmptyState
-        headerTitle={t('pushedDataset', 'Pushed Dataset')}
-        displayText={t('pushedDataset', 'Pushed Dataset')}
-      />
-    );
+    return <EmptyState headerTitle={title} displayText={title} />;
   }
   return (
     <TableContainer>
-      <CardHeader title={t('pushedDataset', 'Pushed Dataset')}>
+      <CardHeader title={title}>
         <></>
       </CardHeader>
-      <DataTable
-        rows={pushedRows}
-        headers={[
-          { key: 'day', header: t('day', 'Day') },
-          { key: 'datasetType', header: t('datasetType', 'Dataset type') },
-          { key: 'recordCount', header: t('recordCount', 'Records') },
-          { key: 'datasets', header: t('datasets', 'Datasets') },
-        ]}>
+      <DataTable rows={pushedRows} headers={headers}>
         {({ rows, headers, getHeaderProps, getRowProps, getTableProps }) => (
           <Table {...getTableProps()} size="sm">
             <TableHead>

@@ -22,6 +22,20 @@ type FailedDatasetProps = {
 };
 const FailedDataset: React.FC<FailedDatasetProps> = ({ pipeline }) => {
   const { t } = useTranslation();
+  const headers = [
+    { key: 'queueId', header: t('queueId', 'Queue ID') },
+    { key: 'extractedAt', header: t('extractedAt', 'Extracted at') },
+    { key: 'fetchDate', header: t('fetchDate', 'Fetch Date') },
+    { key: 'lastAttemptTime', header: t('lastAttemptTime', 'Last attempt time') },
+    { key: 'datasetType', header: t('datasetType', 'Dataset type') },
+    { key: 'lastError', header: t('lastError', 'Last error') },
+    { key: 'nextAttemptTime', header: t('nextAttempt', 'Next attempt') },
+    { key: 'recordCount', header: t('recordCount', 'Records') },
+    { key: 'retryCount', header: t('retryCount', 'Retry count') },
+    { key: 'status', header: t('status', 'Status') },
+    { key: 'actions', header: t('actions', 'Actions') },
+  ];
+  const title = t('failedDataSet', 'Failed Dataset');
   const { failedDatasets, error, isLoading } = usePipelineFailedDataset(pipeline.slug);
   const handleViewPaylod = useCallback(
     (failedDataset: FailedDataset) => {
@@ -62,38 +76,19 @@ const FailedDataset: React.FC<FailedDatasetProps> = ({ pipeline }) => {
     return <DataTableSkeleton />;
   }
   if (error) {
-    return <ErrorState error={error} headerTitle={t('failedDataSet', 'Failed Dataset')} />;
+    return <ErrorState error={error} headerTitle={title} />;
   }
 
   if (failedDatasets.length === 0) {
-    return (
-      <EmptyState
-        headerTitle={t('failedDataSet', 'Failed Dataset')}
-        displayText={t('failedDataSet', 'Failed Dataset')}
-      />
-    );
+    return <EmptyState headerTitle={title} displayText={title} />;
   }
 
   return (
     <TableContainer>
-      <CardHeader title={t('failedDataSet', 'Failed Dataset')}>
+      <CardHeader title={title}>
         <></>
       </CardHeader>
-      <DataTable
-        rows={failedRows}
-        headers={[
-          { key: 'queueId', header: t('queueId', 'Queue ID') },
-          { key: 'extractedAt', header: t('extractedAt', 'Extracted at') },
-          { key: 'fetchDate', header: t('fetchDate', 'Fetch Date') },
-          { key: 'lastAttemptTime', header: t('lastAttemptTime', 'Last attempt time') },
-          { key: 'datasetType', header: t('datasetType', 'Dataset type') },
-          { key: 'lastError', header: t('lastError', 'Last error') },
-          { key: 'nextAttemptTime', header: t('nextAttempt', 'Next attempt') },
-          { key: 'recordCount', header: t('recordCount', 'Records') },
-          { key: 'retryCount', header: t('retryCount', 'Retry count') },
-          { key: 'status', header: t('status', 'Status') },
-          { key: 'actions', header: t('actions', 'Actions') },
-        ]}>
+      <DataTable rows={failedRows} headers={headers}>
         {({ rows, headers, getHeaderProps, getRowProps, getTableProps }) => (
           <Table {...getTableProps()} size="sm">
             <TableHead>

@@ -12,8 +12,9 @@ import {
 import React, { useMemo } from 'react';
 import { usePipelineExtractedDataset } from './transmission.resources';
 import { TransmissionPipeline } from './transmission.type';
-import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { CardHeader, ErrorState } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
+import { EmptyState } from '@openmrs/esm-patient-common-lib';
 type ExtractedDatasetProps = {
   pipeline: TransmissionPipeline;
 };
@@ -21,6 +22,13 @@ type ExtractedDatasetProps = {
 const ExtractedDataset: React.FC<ExtractedDatasetProps> = ({ pipeline }) => {
   const { t } = useTranslation();
   const { extractedDatasets, error, isLoading } = usePipelineExtractedDataset(pipeline.slug);
+  const headers = [
+    { key: 'day', header: t('day', 'Day') },
+    { key: 'datasetType', header: t('datasetType', 'Dataset type') },
+    { key: 'recordCount', header: t('recordCount', 'Records') },
+    { key: 'datasets', header: t('datasets', 'Datasets') },
+  ];
+  const title = t('extractedDataSet', 'Extracted Dataset');
   const extractedRows = useMemo(() => {
     return extractedDatasets.map((ds, i) => ({
       id: `${i}`,
@@ -34,30 +42,18 @@ const ExtractedDataset: React.FC<ExtractedDatasetProps> = ({ pipeline }) => {
     return <DataTableSkeleton />;
   }
   if (error) {
-    return <ErrorState error={error} headerTitle={t('extractedDataSet', 'Extracted Dataset')} />;
+    return <ErrorState error={error} headerTitle={title} />;
   }
 
   if (extractedDatasets.length === 0) {
-    return (
-      <EmptyState
-        headerTitle={t('extractedDataSet', 'Extracted Dataset')}
-        displayText={t('extractedDataSet', 'Extracted Dataset')}
-      />
-    );
+    return <EmptyState headerTitle={title} displayText={title} />;
   }
   return (
     <TableContainer>
       <CardHeader title={t('extractedDataSet', 'Extracted Dataset')}>
         <></>
       </CardHeader>
-      <DataTable
-        rows={extractedRows}
-        headers={[
-          { key: 'day', header: t('day', 'Day') },
-          { key: 'datasetType', header: t('datasetType', 'Dataset type') },
-          { key: 'recordCount', header: t('recordCount', 'Records') },
-          { key: 'datasets', header: t('datasets', 'Datasets') },
-        ]}>
+      <DataTable rows={extractedRows} headers={headers}>
         {({ rows, headers, getHeaderProps, getRowProps, getTableProps }) => (
           <Table {...getTableProps()} size="sm">
             <TableHead>
