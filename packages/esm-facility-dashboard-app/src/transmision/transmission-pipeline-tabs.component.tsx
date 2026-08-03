@@ -1,6 +1,6 @@
 import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs, TabsSkeleton } from '@carbon/react';
 import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import PipelineTabPannel from './pipeline-tab-pannel.component';
 import { getPipelineName, useDataPipelines } from './transmission.resources';
@@ -12,21 +12,22 @@ type TransmissionPipelineTabsProps = {
 const TransmissionPipelineTabs: React.FC<TransmissionPipelineTabsProps> = ({ onActivePipelineChange }) => {
   const { error, isLoading, mutate, pipelines } = useDataPipelines();
   const { t } = useTranslation();
+  const title = t('dataTransmission', 'Data Transmission');
+  useEffect(() => {
+    if (pipelines.length > 0) {
+      onActivePipelineChange(pipelines[0]);
+    }
+  }, [onActivePipelineChange, pipelines]);
 
   if (isLoading) {
     return <TabsSkeleton />;
   }
   if (error) {
-    return <ErrorState headerTitle={t('dataTransmissionPipelines', 'Data transmission pipeline')} error={error} />;
+    return <ErrorState headerTitle={title} error={error} />;
   }
 
   if (pipelines.length === 0) {
-    return (
-      <EmptyState
-        headerTitle={t('dataTransmissionPipelines', 'Data transmission pipeline')}
-        displayText={t('dataTransmissionPipelines', 'Data transmission pipeline')}
-      />
-    );
+    return <EmptyState headerTitle={title} displayText={title} />;
   }
   return (
     <Layer>

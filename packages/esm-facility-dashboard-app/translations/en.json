@@ -11,7 +11,6 @@
   "datasets": "Datasets",
   "datasetType": "Dataset type",
   "dataTransmission": "Data Transmission",
-  "dataTransmissionPipelines": "Data transmission pipeline",
   "day": "Day",
   "delayedEAC": "Delayed enhanced adherence counselling",
   "delayedVLTesting": "Number of client on ART that visited, were eligible for VL sampling and no VL was done",
