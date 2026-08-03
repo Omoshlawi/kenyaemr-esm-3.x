@@ -57,11 +57,11 @@ jobs:
         env:
           YARN_ENABLE_IMMUTABLE_INSTALLS: false
 
-      - name: Run lint, type checks & tests
-        run: yarn verify
+      - name: Run lint & type checks
+        run: yarn turbo run lint typescript --concurrency=5
 
-      - name: Generate coverage report
-        run: yarn test:coverage
+      - name: Run tests with coverage
+        run: yarn coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
