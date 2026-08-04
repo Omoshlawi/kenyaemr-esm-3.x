@@ -288,7 +288,7 @@
     },
     {
       "name": "patient-visit-summary",
-      "slot": "ewf-patient-chart-patient-summary-tabs-extension-slot",
+      "slots": ["ewf-patient-chart-patient-summary-tabs-extension-slot","patient-case-summary-slot"],
       "component": "visitSummary",
       "meta": {
         "title": "caseSummary"
