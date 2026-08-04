@@ -37,7 +37,7 @@ const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
 
 describe('Root', () => {
-  const user = userEvent.setup();
+  const user = userEvent.setup({ delay: null });
 
   beforeEach(() => {
     vi.clearAllMocks();

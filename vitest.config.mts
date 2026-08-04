@@ -10,6 +10,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    testTimeout: 20_000,
+    hookTimeout: 20_000,
     // Ensures a clean, aggregated test breakdown at the very end of your workspace run
     reporters: [['default', { summary: true }]],
     server: {

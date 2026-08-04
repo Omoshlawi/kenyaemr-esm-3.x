@@ -41,6 +41,11 @@
       "component": "reportsHistoryDashboardLink",
       "name": "reports-history-dashboard-link",
       "slot": "reports-left-panel-slot"
+    },
+    {
+      "component": "reportBuilderDashboardLink",
+      "name": "report-builder-dashboard-link",
+      "slot": "reports-left-panel-slot"
     }
   ],
   "modals": [

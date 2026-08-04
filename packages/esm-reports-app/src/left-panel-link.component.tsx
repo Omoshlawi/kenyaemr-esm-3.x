@@ -9,16 +9,17 @@ export interface LinkConfig {
   name: string;
   title: string;
   icon?: IconId;
+  useBaseReportsPath?: boolean;
 }
 
 function LinkExtension({ config }: Readonly<{ config: LinkConfig }>) {
   const { t } = useTranslation();
   const location = useLocation();
-  const { name, title, icon } = config;
-  const reportsPath = `${window.getOpenmrsSpaBase()}reporting`;
+  const { name, title, icon, useBaseReportsPath = true } = config;
+  const reportsPath = useBaseReportsPath ? `${window.getOpenmrsSpaBase()}reporting` : `${window.getOpenmrsSpaBase()}`;
   const isBaseReports = !name || name === 'reports';
   const reportPathSegment = isBaseReports ? '' : `/${name}`;
-  const targetPath = `${reportsPath}${reportPathSegment}`;
+  const targetPath = `${reportsPath}${reportPathSegment}`.replace(/([^:]\/)\/+/g, '$1');
   const isActive = useMemo(() => {
     if (location.pathname === targetPath) {
       return true;

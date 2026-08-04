@@ -14,6 +14,16 @@ const loadReportsLeftPanelLink = (): Promise<{ default: ComponentType<unknown> }
     default: m.createLeftPanelLink({ title: 'Reports', name: 'reports', icon: 'omrs-icon-report' }),
   }));
 
+const loadReportBuilderDashboard = (): Promise<{ default: ComponentType<unknown> }> =>
+  import('./left-panel-link.component').then((m) => ({
+    default: m.createLeftPanelLink({
+      title: 'Builder',
+      name: 'report-builder',
+      icon: 'omrs-icon-settings',
+      useBaseReportsPath: false,
+    }),
+  }));
+
 const loadReportHistoryDashboard = (): Promise<{ default: ComponentType<unknown> }> =>
   import('./left-panel-link.component').then((m) => ({
     default: m.createLeftPanelLink({
@@ -38,6 +48,9 @@ export const reportsHistoryDashboard = getAsyncLifecycle(
   () => import('./components/report-history/report-history-dashboard.component'),
   options,
 );
+
+// t('Builder', 'Builder')
+export const reportBuilderDashboardLink = getAsyncLifecycle(loadReportBuilderDashboard, options);
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);

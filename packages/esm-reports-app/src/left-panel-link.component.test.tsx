@@ -42,4 +42,48 @@ describe('createLeftPanelLink', () => {
     expect(link).toHaveAttribute('href', '/openmrs/spa/reporting/reports-history');
     expect(link).toHaveClass('active-left-nav-link');
   });
+
+  it('links to the spa root instead of the reporting root when useBaseReportsPath is false', () => {
+    renderAt('/', {
+      name: 'report-builder',
+      title: 'Builder',
+      useBaseReportsPath: false,
+    });
+
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/openmrs/spa/report-builder');
+  });
+
+  it('normalizes duplicate slashes in the target path', () => {
+    renderAt('/', {
+      name: 'report-builder',
+      title: 'Builder',
+      useBaseReportsPath: false,
+    });
+
+    // With useBaseReportsPath false the base ends in a slash and the name adds
+    // another, so the collapsed href must not contain "//".
+    expect(screen.getByRole('link').getAttribute('href')).not.toMatch(/[^:]\/\//);
+  });
+
+  it('marks a non-reporting item active on its own nested route', () => {
+    renderAt('/openmrs/spa/report-builder/new', {
+      name: 'report-builder',
+      title: 'Builder',
+      useBaseReportsPath: false,
+    });
+
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', '/openmrs/spa/report-builder');
+    expect(link).toHaveClass('active-left-nav-link');
+  });
+
+  it('does not mark a non-reporting item active on an unrelated route', () => {
+    renderAt('/openmrs/spa/reporting', {
+      name: 'report-builder',
+      title: 'Builder',
+      useBaseReportsPath: false,
+    });
+
+    expect(screen.getByRole('link')).not.toHaveClass('active-left-nav-link');
+  });
 });
