@@ -242,7 +242,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
     <Workspace2 hasUnsavedChanges={hasUnsavedChanges} title={t('paymentWorkspace', 'Payment workspace')}>
       <FormProvider {...formMethods}>
         <PaymentProvider value={paymentContextValue}>
-          <form onSubmit={formMethods.handleSubmit(onSubmit)} className={styles.form}>
+          <form noValidate onSubmit={formMethods.handleSubmit(onSubmit)} className={styles.form}>
             <div className={styles.formContainer}>
               <InlineNotification
                 kind="info"

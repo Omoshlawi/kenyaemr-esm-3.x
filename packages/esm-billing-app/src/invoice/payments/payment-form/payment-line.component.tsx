@@ -116,6 +116,7 @@ const PaymentLine: React.FC<PaymentLineProps> = ({ index, fieldsLength, onRemove
                     label={`${lineItem.label} (${t('balance', 'Balance')}: ${formatCurrency(lineItem.balance)})`}
                     allowEmpty
                     min={0}
+                    step={0.01}
                     className={styles.paymentModeComboBox}
                     value={value ?? ''}
                     onChange={(e, { value: nextValue }) =>

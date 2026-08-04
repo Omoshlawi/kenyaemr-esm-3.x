@@ -464,6 +464,38 @@ describe('PaymentWorkspace', () => {
       );
     });
 
+    test('accepts decimal allocation amounts and submits the exact values without native step validation', async () => {
+      // Regression: the browser's native HTML5 `stepMismatch` validation rejected decimals such as
+      // 12.50 on submit. The form opts out of native validation (`noValidate`) and defers to RHF, and
+      // the inputs convert their string value with `Number()`, so decimals must flow through untouched.
+      enablePartialConfig();
+      const user = userEvent.setup();
+      const { container } = renderWithItems(multipleUnpaidItems);
+
+      expect(container.querySelector('form')).toHaveAttribute('novalidate');
+
+      await choosePaymentMode(user, 'Cash');
+      await setAllocation(user, /line-item-1/i, '12.50');
+      await setAllocation(user, /line-item-2/i, '7.25');
+
+      await waitFor(() => expect(saveButton()).toBeEnabled());
+      await user.click(saveButton());
+
+      await waitFor(() =>
+        expect(mockMakeAllocatedPayment).toHaveBeenCalledWith(
+          'bill-uuid',
+          expect.objectContaining({
+            amount: 19.75,
+            allocations: [
+              { lineItem: 'line-item-1', amount: 12.5 },
+              { lineItem: 'line-item-2', amount: 7.25 },
+            ],
+          }),
+        ),
+      );
+      expect(mockMakePayment).not.toHaveBeenCalled();
+    });
+
     test('excludes a line item with no allocation from the receipt', async () => {
       enablePartialConfig();
       const user = userEvent.setup();
