@@ -38,10 +38,24 @@ const normalizeObsValueForRest = (value: HaemodialysisObsInput['value']): Haemod
 };
 
 const prepareObsForPost = (obs: HaemodialysisObsInput[]): HaemodialysisObsInput[] =>
-  obs.map((item) => ({
-    ...item,
-    value: item.value !== undefined ? normalizeObsValueForRest(item.value) : undefined,
-  }));
+  obs.map((item) => {
+    const obsDatetime = item.obsDatetime ? formatDatetimeForOpenMrs(item.obsDatetime) : item.obsDatetime;
+    if (item.groupMembers?.length) {
+      return {
+        ...item,
+        obsDatetime,
+        groupMembers: item.groupMembers.map((member) => ({
+          ...member,
+          value: member.value !== undefined ? normalizeObsValueForRest(member.value) : undefined,
+        })),
+      };
+    }
+    return {
+      ...item,
+      obsDatetime,
+      value: item.value !== undefined ? normalizeObsValueForRest(item.value) : undefined,
+    };
+  });
 
 const formatObsFailure = (concept: string, message: string): string => {
   const label = getPostDialysisObsFieldLabel(concept);
@@ -76,6 +90,8 @@ const OPENMRS_ERROR_HINTS: Record<string, string> = {
     'A value is below the server minimum. Check Temperature (≥35 °C) and Oxygen Sat. (≥50%).',
   'error.value.outOfRange.high': 'A value is above the server maximum. Check Respiratory rate (≤60) and other vitals.',
 };
+
+const formatDatetimeForOpenMrs = (iso: string): string => iso.replace(/(\+|-)([0-9]{2})([0-9]{2})$/, '$1$2:$3');
 
 const buildEncounterProviders = (providerUuid?: string) => {
   if (!providerUuid) {
@@ -195,8 +211,8 @@ export async function createHaemodialysisEncounter(
   const payload: Record<string, unknown> = {
     patient: context.patientUuid,
     encounterType: HAEMODIALYSIS_ENCOUNTER_TYPE_UUID,
-    encounterDatetime: context.encounterDatetime || toOmrsIsoString(new Date()),
-    obs,
+    encounterDatetime: formatDatetimeForOpenMrs(context.encounterDatetime || toOmrsIsoString(new Date())),
+    obs: prepareObsForPost(obs),
   };
 
   if (INCLUDE_FORM_IN_ENCOUNTER_POST) {

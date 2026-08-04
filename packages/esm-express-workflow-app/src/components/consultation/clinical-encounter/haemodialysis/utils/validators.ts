@@ -105,6 +105,9 @@ export const validateInitialAssessment = (values: InitialAssessmentFormValues): 
     if (!isInitialObsFieldEnabled(key)) {
       return;
     }
+    if (key === 'bodyMassIndex') {
+      return;
+    }
     const message = validateFieldDef(def, values.preDialysis?.[key]);
     if (message) {
       errors[key] = message;

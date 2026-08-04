@@ -139,11 +139,11 @@ const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave }) => {
             value={values.diagnosis}
             config={{
               dataSourceUuid: icd11DataSourceUuid,
-              minChars: 2,
+              minChars: 3,
             }}
             placeholder={t(
-              'haemodialysisDiagnosisSearchPlaceholder',
-              'Type at least 2 characters to search ICD-11 diagnosis',
+              'selectOrSearchDiagnosis',
+              'Select from list or type at least 3 letters to search ICD-11 diagnosis',
             )}
             onChange={(diagnosis) => setValues((v) => ({ ...v, diagnosis }))}
             required
@@ -154,6 +154,7 @@ const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave }) => {
             id="haemo-session-date"
             type="date"
             labelText={t('date', 'Date')}
+            required
             value={values.sessionDate}
             invalid={Boolean(errors.sessionDate)}
             invalidText={errors.sessionDate}
@@ -169,6 +170,7 @@ const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave }) => {
             value={values.screening.bloodGroup ?? ''}
             options={BLOOD_GROUP_OPTIONS}
             error={errors['screening.bloodGroup']}
+            required={SCREENING_FIELDS.bloodGroup.required}
             chooseLabel={t('chooseOption', 'Choose an option')}
             onChange={(v) => updateScreening('bloodGroup', v)}
           />
@@ -178,6 +180,7 @@ const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave }) => {
             value={values.screening.hivStatus ?? ''}
             options={HIV_STATUS_OPTIONS}
             error={errors['screening.hivStatus']}
+            required={SCREENING_FIELDS.hivStatus.required}
             chooseLabel={t('chooseOption', 'Choose an option')}
             onChange={(v) => updateScreening('hivStatus', v)}
           />
@@ -187,6 +190,7 @@ const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave }) => {
             value={values.screening.hepatitisCStatus ?? ''}
             options={HEPATITIS_C_STATUS_OPTIONS}
             error={errors['screening.hepatitisCStatus']}
+            required={SCREENING_FIELDS.hepatitisCStatus.required}
             chooseLabel={t('chooseOption', 'Choose an option')}
             onChange={(v) => updateScreening('hepatitisCStatus', v)}
           />
@@ -196,6 +200,7 @@ const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave }) => {
             value={values.screening.hepatitisBStatus ?? ''}
             options={HEPATITIS_B_STATUS_OPTIONS}
             error={errors['screening.hepatitisBStatus']}
+            required={SCREENING_FIELDS.hepatitisBStatus.required}
             chooseLabel={t('chooseOption', 'Choose an option')}
             onChange={(v) => updateScreening('hepatitisBStatus', v)}
           />
@@ -205,6 +210,7 @@ const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave }) => {
             value={values.screening.syphilisStatus ?? ''}
             options={SYPHILIS_STATUS_OPTIONS}
             error={errors['screening.syphilisStatus']}
+            required={SCREENING_FIELDS.syphilisStatus.required}
             chooseLabel={t('chooseOption', 'Choose an option')}
             onChange={(v) => updateScreening('syphilisStatus', v)}
           />
@@ -302,6 +308,7 @@ const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave }) => {
             value={values.preDialysis.accessType ?? ''}
             options={ACCESS_TYPE_OPTIONS}
             error={errors.accessType}
+            required={INITIAL_PRE_DIALYSIS_FIELDS.accessType.required}
             chooseLabel={t('chooseOption', 'Choose an option')}
             onChange={(v) => updatePre('accessType', v)}
           />
@@ -336,6 +343,7 @@ const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave }) => {
             value={values.prescription.dialyzerType ?? ''}
             options={DIALYZER_TYPE_OPTIONS}
             error={errors['prescription.dialyzerType']}
+            required={INITIAL_PRESCRIPTION_FIELDS.dialyzerType.required}
             chooseLabel={t('chooseOption', 'Choose an option')}
             onChange={(v) => updateRx('dialyzerType', v)}
           />
@@ -345,6 +353,7 @@ const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave }) => {
             value={values.prescription.membraneType ?? ''}
             options={MEMBRANE_TYPE_OPTIONS}
             error={errors['prescription.membraneType']}
+            required={INITIAL_PRESCRIPTION_FIELDS.membraneType.required}
             chooseLabel={t('chooseOption', 'Choose an option')}
             onChange={(v) => updateRx('membraneType', v)}
           />
@@ -363,6 +372,7 @@ const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave }) => {
             value={values.prescription.fluxType ?? ''}
             options={FLUX_TYPE_OPTIONS}
             error={errors['prescription.fluxType']}
+            required={INITIAL_PRESCRIPTION_FIELDS.fluxType.required}
             chooseLabel={t('chooseOption', 'Choose an option')}
             onChange={(v) => updateRx('fluxType', v)}
           />
@@ -392,6 +402,7 @@ const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave }) => {
             options={DIALYSATE_COMPOSITION_OPTIONS}
             selected={dialysateValues}
             error={errors['prescription.dialysateComposition']}
+            required={INITIAL_PRESCRIPTION_FIELDS.dialysateComposition.required}
             onToggle={toggleDialysateComposition}
           />
           {dialysateValues.includes(DIALYSATE_ACID_CONCENTRATE_ANSWER) ? (

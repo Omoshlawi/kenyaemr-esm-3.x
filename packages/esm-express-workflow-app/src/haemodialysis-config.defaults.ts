@@ -7,7 +7,13 @@ export const defaultHaemodialysisConfig = {
   encounterTypeUuid: '465a92f2-baf8-42e9-9612-53064be868e8',
   /** Demo: 2 min between slot unlocks. Production: 60. */
   monitoringSlotIntervalMinutes: 2,
+  /** Default hourly slots through 4 hours (no extension). */
   monitoringSlotLabelsMinutes: [0, 60, 120, 180, 240],
+  monitoringBaseMaxMinutes: 240,
+  /** Hard cap: 12 hours from session start (4h default + up to 8h extension). */
+  monitoringAbsoluteMaxMinutes: 720,
+  monitoringMaxExtensionHours: 8,
+  monitoringExtensionHourOptions: [2, 5],
   visitDiagnosis: {
     construct: '159947AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     problem: '1284AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
@@ -90,6 +96,15 @@ export const defaultHaemodialysisConfig = {
       heparin: '',
       remarks: '',
     },
+    monitoringAction: {
+      /** Action obs group (Ampath: Action). */
+      actionGroup: '160433AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      /** Coded member for decision; set when metadata provides the concept UUID. */
+      decision: '',
+      terminateProgressAnswer: '737fa73a-509f-40d8-9e84-91dc71db7f4c',
+      extendHourlyAnswer: '1822AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      terminateReason: '1111fedc-77e3-4220-994f-3267b0651446',
+    },
     connection: {
       connectionTime: '9fdee776-981d-496f-891d-9752a3916058',
       startedConnectedBy: '0774726e-091b-4139-822e-a693869f93ac',
@@ -142,4 +157,5 @@ export const defaultHaemodialysisConfig = {
   },
 } as const;
 
+export type HaemodialysisConceptsConfig = typeof defaultHaemodialysisConfig.concepts;
 export type HaemodialysisConfig = typeof defaultHaemodialysisConfig;

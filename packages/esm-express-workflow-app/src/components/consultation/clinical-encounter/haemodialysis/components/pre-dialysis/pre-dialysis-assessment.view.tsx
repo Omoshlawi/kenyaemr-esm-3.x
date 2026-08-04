@@ -2,16 +2,15 @@ import React from 'react';
 import type { PreDialysisAssessment } from '../../types';
 import { preDialysisToFields } from '../../utils/formatters';
 import FieldGrid from '../shared/field-grid.component';
-import SectionCard from '../shared/section-card.component';
+import HistoricalSectionCard from '../shared/historical-section-card.component';
 import sharedStyles from '../shared/shared.scss';
 
 type Props = {
   data?: PreDialysisAssessment;
-  actions?: React.ReactNode;
 };
 
-const PreDialysisAssessmentView: React.FC<Props> = ({ data, actions }) => (
-  <SectionCard title="1. Pre-Dialysis Assessment" actions={actions}>
+const PreDialysisAssessmentView: React.FC<Props> = ({ data }) => (
+  <HistoricalSectionCard title="1. Pre-Dialysis Assessment">
     {data ? (
       <FieldGrid fields={preDialysisToFields(data)} />
     ) : (
@@ -19,7 +18,7 @@ const PreDialysisAssessmentView: React.FC<Props> = ({ data, actions }) => (
         No pre-dialysis assessment recorded yet. Use Add to capture diagnosis, date, pre-dialysis and prescription.
       </div>
     )}
-  </SectionCard>
+  </HistoricalSectionCard>
 );
 
 export default PreDialysisAssessmentView;

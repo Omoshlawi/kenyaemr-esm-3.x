@@ -41,3 +41,16 @@
   border: 1px solid #c6c6c6;
   border-radius: 2px;
 }
+
+.scheduledBadge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0 0.35rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #0043ce;
+  border: 1px solid #78a9ff;
+  border-radius: 2px;
+}

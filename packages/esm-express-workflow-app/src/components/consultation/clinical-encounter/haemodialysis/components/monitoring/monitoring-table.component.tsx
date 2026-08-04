@@ -32,6 +32,7 @@ const MonitoringTable: React.FC<Props> = ({ rows }) => (
             <td>
               {row.time}
               {row.skipped ? <span className={styles.skippedBadge}>Skipped</span> : null}
+              {row.scheduled ? <span className={styles.scheduledBadge}>Scheduled</span> : null}
             </td>
             <td>{row.bp}</td>
             <td>{row.pulse}</td>

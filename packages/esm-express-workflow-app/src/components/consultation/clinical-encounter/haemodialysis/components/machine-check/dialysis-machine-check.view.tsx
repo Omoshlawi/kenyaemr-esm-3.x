@@ -1,11 +1,9 @@
 import React from 'react';
-import { Button } from '@carbon/react';
-import { Add } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
 import type { DialysisMachineCheck } from '../../types';
 import { machineCheckToFields } from '../../utils/formatters';
 import FieldGrid from '../shared/field-grid.component';
-import SectionCard from '../shared/section-card.component';
+import HistoricalSectionCard from '../shared/historical-section-card.component';
 import sharedStyles from '../shared/shared.scss';
 
 type Props = {
@@ -19,15 +17,11 @@ const DialysisMachineCheckView: React.FC<Props> = ({ data, canAdd, hasInitial, o
   const { t } = useTranslation();
 
   return (
-    <SectionCard
+    <HistoricalSectionCard
       title="Dialysis Machine Check"
-      actions={
-        canAdd ? (
-          <Button kind="ghost" size="sm" renderIcon={Add} onClick={onAdd}>
-            {t('haemodialysisAddMachineCheck', 'Add machine check')}
-          </Button>
-        ) : null
-      }>
+      showAdd={canAdd}
+      onAddClick={onAdd}
+      addLabel={t('haemodialysisAddMachineCheck', 'Add machine check')}>
       {data ? (
         <FieldGrid fields={machineCheckToFields(data)} />
       ) : (
@@ -40,7 +34,7 @@ const DialysisMachineCheckView: React.FC<Props> = ({ data, canAdd, hasInitial, o
             : t('haemodialysisMachineCheckWaiting', 'Complete the initial assessment first.')}
         </div>
       )}
-    </SectionCard>
+    </HistoricalSectionCard>
   );
 };
 

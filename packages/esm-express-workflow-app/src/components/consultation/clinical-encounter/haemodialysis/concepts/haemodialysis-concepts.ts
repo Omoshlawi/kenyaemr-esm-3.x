@@ -1,4 +1,8 @@
-import { defaultHaemodialysisConfig, type HaemodialysisConfig } from '../../../../../haemodialysis-config.defaults';
+import {
+  defaultHaemodialysisConfig,
+  type HaemodialysisConfig,
+  type HaemodialysisConceptsConfig,
+} from '../../../../../haemodialysis-config.defaults';
 
 export const buildHaemodialysisAnswers = (config: HaemodialysisConfig = defaultHaemodialysisConfig) => ({
   ...config.answers,
@@ -9,7 +13,18 @@ export const buildVisitDiagnosisConcepts = (config: HaemodialysisConfig = defaul
 });
 
 export const buildHaemodialysisConcepts = (config: HaemodialysisConfig = defaultHaemodialysisConfig) => {
-  const { concepts } = config;
+  const concepts: HaemodialysisConceptsConfig = {
+    ...defaultHaemodialysisConfig.concepts,
+    ...(config.concepts as Partial<HaemodialysisConceptsConfig>),
+    monitoring: {
+      ...defaultHaemodialysisConfig.concepts.monitoring,
+      ...config.concepts.monitoring,
+    },
+    monitoringAction: {
+      ...defaultHaemodialysisConfig.concepts.monitoringAction,
+      ...(config.concepts as Partial<HaemodialysisConceptsConfig>).monitoringAction,
+    },
+  };
 
   return {
     biodata: {
@@ -29,6 +44,7 @@ export const buildHaemodialysisConcepts = (config: HaemodialysisConfig = default
     },
     machineChecks: { ...concepts.machineChecks },
     monitoring: { ...concepts.monitoring },
+    monitoringAction: { ...concepts.monitoringAction },
     connection: { ...concepts.connection },
     postDialysis: { ...concepts.postDialysis },
     nurseAssessment: { ...concepts.nurseAssessment },

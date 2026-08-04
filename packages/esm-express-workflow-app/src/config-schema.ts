@@ -1,7 +1,11 @@
 import { Type } from '@openmrs/esm-framework';
 import { defaultHaemodialysisConfig, type HaemodialysisConfig } from './haemodialysis-config.defaults';
 
-export { defaultHaemodialysisConfig, type HaemodialysisConfig };
+export {
+  defaultHaemodialysisConfig,
+  type HaemodialysisConfig,
+  type HaemodialysisConceptsConfig,
+} from './haemodialysis-config.defaults';
 
 export const configSchema = {
   identifierTypes: {

@@ -33,6 +33,7 @@ export const NumericFieldInput: React.FC<CommonProps & { def: NumericFieldDef }>
       id={id}
       type="number"
       labelText={def.label}
+      required={def.required}
       value={value}
       min={def.min}
       max={def.max}
@@ -60,6 +61,7 @@ export const TextFieldInput: React.FC<CommonProps & { def: TextFieldDef }> = ({ 
       id={id}
       type="text"
       labelText={def.label}
+      required={def.required}
       value={value}
       helperText={def.helperText}
       invalid={Boolean(error)}
@@ -86,12 +88,14 @@ export const CodedSelectField: React.FC<CodedSelectProps> = ({
   value,
   options,
   error,
+  required,
   chooseLabel,
   onChange,
 }) => (
   <Select
     id={id}
     labelText={label}
+    required={required}
     value={value}
     invalid={Boolean(error)}
     invalidText={error}
@@ -109,6 +113,7 @@ type CodedCheckboxGroupProps = {
   selected: string[];
   onToggle: (value: string, checked: boolean) => void;
   error?: string;
+  required?: boolean;
 };
 
 export const CodedCheckboxGroup: React.FC<CodedCheckboxGroupProps> = ({
@@ -117,9 +122,13 @@ export const CodedCheckboxGroup: React.FC<CodedCheckboxGroupProps> = ({
   selected,
   onToggle,
   error,
+  required,
 }) => (
   <div>
-    <p className={`cds--label${error ? ' cds--label--invalid' : ''}`}>{label}</p>
+    <p className={`cds--label${error ? ' cds--label--invalid' : ''}`}>
+      {label}
+      {required ? <span className="cds--label__required"> *</span> : null}
+    </p>
     {error ? <div className="cds--form-requirement">{error}</div> : null}
     <Stack gap={3}>
       {options.map((option) => (

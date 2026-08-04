@@ -58,7 +58,7 @@ export type DialysisMachineCheck = {
 
 export type MonitoringRow = {
   uuid?: string;
-  /** Slot label in minutes: 0, 60, 120, 180, 240 */
+  /** Slot label in minutes: 0, 60, 120, … up to 720 with extensions */
   slotMinute: number;
   /** Display label e.g. "0 min" or clock time */
   time: string;
@@ -69,6 +69,11 @@ export type MonitoringRow = {
   heparin: string;
   remarks: string;
 };
+
+export type MonitoringSessionAction =
+  | { type: 'none' }
+  | { type: 'terminated'; atSlotMinute: number; reason: string; recordedAt?: string }
+  | { type: 'extended'; additionalHours: number; recordedAt?: string };
 
 export type AdditionalMedicationRow = {
   uuid?: string;
@@ -142,6 +147,9 @@ export type HaemodialysisSession = {
   machineCheck?: DialysisMachineCheck;
   /** ISO datetime when the 0 min observation was recorded */
   monitoringStartedAt?: string;
+  /** Effective hourly slot labels (minutes); defaults to 0–240 unless extended */
+  monitoringSlotMinutes?: number[];
+  monitoringAction?: MonitoringSessionAction;
   monitoring: MonitoringRow[];
   postDialysis?: PostDialysisAssessment;
   summary?: DialysisSummary;

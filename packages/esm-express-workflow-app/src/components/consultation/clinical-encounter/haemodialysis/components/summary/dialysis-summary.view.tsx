@@ -2,7 +2,7 @@ import React from 'react';
 import type { DialysisSummary, SignatureBlock } from '../../types';
 import { displayValue, summaryToFields } from '../../utils/formatters';
 import FieldGrid from '../shared/field-grid.component';
-import SectionCard from '../shared/section-card.component';
+import HistoricalSectionCard from '../shared/historical-section-card.component';
 import sharedStyles from '../shared/shared.scss';
 import styles from './dialysis-summary.scss';
 
@@ -12,7 +12,7 @@ type Props = {
 };
 
 const DialysisSummaryView: React.FC<Props> = ({ data, signatures }) => (
-  <SectionCard title="5. Dialysis Summary">
+  <HistoricalSectionCard title="5. Dialysis Summary">
     {data ? (
       <>
         <FieldGrid fields={summaryToFields(data)} />
@@ -49,7 +49,7 @@ const DialysisSummaryView: React.FC<Props> = ({ data, signatures }) => (
     ) : (
       <div className={sharedStyles.emptyState}>No dialysis summary recorded yet.</div>
     )}
-  </SectionCard>
+  </HistoricalSectionCard>
 );
 
 export default DialysisSummaryView;

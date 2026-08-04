@@ -1,34 +1,46 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button } from '@carbon/react';
-import { Add } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
-import type { MonitoringRow } from '../../types';
-import { buildMonitoringDisplayRows } from '../../utils/monitoring-slots';
+import type { MonitoringRow, MonitoringSessionAction } from '../../types';
+import { buildMonitoringDisplayRows, type MonitoringSlotRuntime } from '../../utils/monitoring-slots';
 import { parseMonitoringDatetime } from '../../utils/monitoring-datetime';
-import SectionCard from '../shared/section-card.component';
+import { buildDefaultSlotMinutes } from '../../utils/monitoring-schedule';
+import HistoricalSectionCard from '../shared/historical-section-card.component';
 import sharedStyles from '../shared/shared.scss';
 import MonitoringTable from './monitoring-table.component';
+import MonitoringActions from './monitoring-actions.component';
 
 type Props = {
   rows: MonitoringRow[];
   monitoringStartedAt?: string;
+  monitoringSlotMinutes?: number[];
+  monitoringAction?: MonitoringSessionAction;
+  monitoringRuntime?: MonitoringSlotRuntime;
   monitoringComplete?: boolean;
   monitoringExpired?: boolean;
   canAdd: boolean;
+  canUseActions?: boolean;
   addLabel?: string;
   waitingForMachineCheck?: boolean;
   onAdd: () => void;
+  onTerminateMonitoring?: (reason: string) => Promise<boolean>;
+  onExtendMonitoring?: (hours: number) => Promise<boolean>;
 };
 
 const IntraDialyticMonitoringView: React.FC<Props> = ({
   rows,
   monitoringStartedAt,
+  monitoringSlotMinutes,
+  monitoringAction,
+  monitoringRuntime,
   monitoringComplete,
   monitoringExpired,
   canAdd,
+  canUseActions,
   addLabel,
   waitingForMachineCheck,
   onAdd,
+  onTerminateMonitoring,
+  onExtendMonitoring,
 }) => {
   const { t } = useTranslation();
   const [now, setNow] = useState(() => new Date());
@@ -46,11 +58,13 @@ const IntraDialyticMonitoringView: React.FC<Props> = ({
       return [];
     }
     const startedAt = parseMonitoringDatetime(monitoringStartedAt);
-    return buildMonitoringDisplayRows(rows, startedAt ?? undefined, now);
-  }, [rows, monitoringStartedAt, now]);
+    return buildMonitoringDisplayRows(rows, startedAt ?? undefined, now, monitoringRuntime);
+  }, [rows, monitoringStartedAt, now, monitoringRuntime]);
+
+  const slotMinutes = monitoringSlotMinutes ?? buildDefaultSlotMinutes();
 
   return (
-    <SectionCard
+    <HistoricalSectionCard
       title="3. Intra-Dialytic Monitoring"
       subtitle={
         monitoringComplete
@@ -59,13 +73,9 @@ const IntraDialyticMonitoringView: React.FC<Props> = ({
             : t('haemodialysisMonitoringComplete', 'Monitoring complete')
           : t('haemodialysisMonitoringSubtitle', 'Record Observations Every 60 Minutes')
       }
-      actions={
-        canAdd ? (
-          <Button kind="ghost" size="sm" renderIcon={Add} onClick={onAdd}>
-            {addLabel ?? t('haemodialysisAddMonitoring', 'Add observation')}
-          </Button>
-        ) : null
-      }>
+      showAdd={canAdd}
+      onAddClick={onAdd}
+      addLabel={addLabel ?? t('haemodialysisAddMonitoring', 'Add observation')}>
       {displayRows.length > 0 ? (
         <MonitoringTable rows={displayRows} />
       ) : (
@@ -78,7 +88,18 @@ const IntraDialyticMonitoringView: React.FC<Props> = ({
             : t('haemodialysisMonitoringEmpty', 'No monitoring observations yet.')}
         </div>
       )}
-    </SectionCard>
+      {onTerminateMonitoring && onExtendMonitoring ? (
+        <MonitoringActions
+          monitoringStartedAt={monitoringStartedAt}
+          slotMinutes={slotMinutes}
+          monitoringAction={monitoringAction}
+          monitoringComplete={Boolean(monitoringComplete)}
+          canInteract={Boolean(canUseActions)}
+          onTerminate={onTerminateMonitoring}
+          onExtend={onExtendMonitoring}
+        />
+      ) : null}
+    </HistoricalSectionCard>
   );
 };
 

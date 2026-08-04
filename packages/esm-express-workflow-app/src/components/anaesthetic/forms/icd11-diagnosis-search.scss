@@ -61,6 +61,18 @@
 
 .diagnosisText {
   flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.diagnosisCode {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.diagnosisName {
+  @include type.type-style('body-compact-01');
 }
 
 .selectedTag {

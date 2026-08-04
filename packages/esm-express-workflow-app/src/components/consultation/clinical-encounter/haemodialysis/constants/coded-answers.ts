@@ -82,7 +82,9 @@ export const SYPHILIS_STATUS_OPTIONS: CodedAnswerOption[] = [
   { label: 'Unknown', value: '1067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
 ];
 
-const ALL_OPTIONS = [
+import { AIR_DETECTOR_OPTIONS, BLOOD_LEAK_OPTIONS } from './machine-check-answers';
+
+const ALL_OPTIONS: CodedAnswerOption[] = [
   ...ACCESS_TYPE_OPTIONS,
   ...DIALYZER_TYPE_OPTIONS,
   ...MEMBRANE_TYPE_OPTIONS,
@@ -94,11 +96,31 @@ const ALL_OPTIONS = [
   ...HEPATITIS_C_STATUS_OPTIONS,
   ...HEPATITIS_B_STATUS_OPTIONS,
   ...SYPHILIS_STATUS_OPTIONS,
+  ...BLOOD_LEAK_OPTIONS,
+  ...AIR_DETECTOR_OPTIONS,
 ];
 
+const normalizeConceptUuid = (uuid: string): string => uuid.trim().toUpperCase().replace(/-/g, '');
+
+export const isLikelyConceptUuid = (value: string): boolean => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return false;
+  }
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)) {
+    return true;
+  }
+  const compact = normalizeConceptUuid(trimmed);
+  if (/^[0-9A-F]{32}$/.test(compact)) {
+    return true;
+  }
+  return /^[0-9]+A+$/i.test(trimmed);
+};
+
 export const getCodedAnswerLabel = (conceptUuid?: string): string => {
-  if (!conceptUuid) {
+  if (!conceptUuid?.trim()) {
     return '';
   }
-  return ALL_OPTIONS.find((option) => option.value === conceptUuid)?.label ?? conceptUuid;
+  const normalized = normalizeConceptUuid(conceptUuid);
+  return ALL_OPTIONS.find((option) => normalizeConceptUuid(option.value) === normalized)?.label ?? '';
 };

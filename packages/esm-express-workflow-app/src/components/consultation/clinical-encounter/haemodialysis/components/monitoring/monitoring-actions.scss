@@ -1,0 +1,24 @@
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--cds-border-subtle);
+}
+
+.formIntro {
+  margin: 0 0 1rem;
+  color: var(--cds-text-secondary);
+  font-size: 0.875rem;
+}
+
+.formField {
+  margin-top: 1rem;
+}
+
+.notice {
+  margin-top: 1rem;
+  color: var(--cds-text-secondary);
+  font-size: 0.875rem;
+}
+

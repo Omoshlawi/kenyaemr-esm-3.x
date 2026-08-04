@@ -1,5 +1,4 @@
 import { getConceptObsValueKind } from '../constants/concept-obs-kinds';
-import { getConceptServerRange } from '../constants/concept-server-ranges';
 import type { HaemodialysisObsGroupMember, HaemodialysisObsInput } from './encounter-mapper';
 import { isValidOpenmrsUuid } from './openmrs-uuid';
 
@@ -13,21 +12,6 @@ const isCodedObsValue = (value: unknown): value is { uuid: string } =>
 const isCodedPayloadValue = (value: unknown): boolean =>
   isCodedObsValue(value) || (typeof value === 'string' && isValidOpenmrsUuid(value));
 
-const validateNumericServerRange = (concept: string, value: number): string | null => {
-  const range = getConceptServerRange(concept);
-  if (!range) {
-    return null;
-  }
-  const units = range.units ? ` ${range.units}` : '';
-  if (value < range.min) {
-    return `${range.label} must be at least ${range.min}${units} (received ${value})`;
-  }
-  if (value > range.max) {
-    return `${range.label} must be at most ${range.max}${units} (received ${value})`;
-  }
-  return null;
-};
-
 const validateObsMember = (item: HaemodialysisObsGroupMember | HaemodialysisObsInput): string | null => {
   const kind = getConceptObsValueKind(item.concept);
   if (!kind) {
@@ -36,13 +20,6 @@ const validateObsMember = (item: HaemodialysisObsGroupMember | HaemodialysisObsI
 
   if (kind === 'numeric' && typeof item.value !== 'number') {
     return `Observation ${item.concept} expects a numeric value but received ${JSON.stringify(item.value)}`;
-  }
-
-  if (kind === 'numeric' && typeof item.value === 'number') {
-    const rangeError = validateNumericServerRange(item.concept, item.value);
-    if (rangeError) {
-      return rangeError;
-    }
   }
 
   if (kind === 'text' && typeof item.value !== 'string') {

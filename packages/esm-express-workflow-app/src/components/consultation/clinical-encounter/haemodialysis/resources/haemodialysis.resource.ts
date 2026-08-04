@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { age, getPatientName, showSnackbar, toOmrsIsoString, useSession, useVisit } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import {
@@ -7,6 +7,7 @@ import {
   type FacilityHeader,
   type HaemodialysisSession,
   type MonitoringRow,
+  type MonitoringSessionAction,
   type PatientBiodata,
   type PhysicianPrescription,
   type PostDialysisAssessment,
@@ -32,6 +33,14 @@ import { useHaemodialysisConfig } from '../concepts/use-haemodialysis-config';
 import type { VisitDiagnosisConceptMap } from '../concepts/haemodialysis-concepts';
 import { INCLUDE_ICD11_DIAGNOSIS_OBS } from '../constants/encounter-post-flags';
 import type { InitialAssessmentFormValues, MachineCheckFormValues } from '../utils/validators';
+import { parseMonitoringDatetime } from '../utils/monitoring-datetime';
+import {
+  buildDefaultSlotMinutes,
+  appendExtensionHours,
+  getExtensionHoursFromSchedule,
+} from '../utils/monitoring-schedule';
+import { getHighestFilledSlotMinute, getTimeActiveSlotIndex } from '../utils/monitoring-slots';
+import { isDialysisSessionComplete } from '../utils/dialysis-session-lifecycle';
 
 const buildFacility = (locationDisplay?: string): FacilityHeader => ({
   hospitalName: locationDisplay?.trim() || '—',
@@ -67,14 +76,17 @@ const buildBiodata = (patient?: fhir.Patient, patientUuid?: string): PatientBiod
   };
 };
 
+/** OpenMRS REST expects a colon in the timezone offset (e.g. +03:00). */
+const formatDatetimeForOpenMrs = (iso: string): string => iso.replace(/(\+|-)([0-9]{2})([0-9]{2})$/, '$1$2:$3');
+
 const toEncounterDatetime = (sessionDate: string): string => {
   const date = sessionDate?.trim() ? new Date(sessionDate) : new Date();
   if (Number.isNaN(date.getTime())) {
-    return toOmrsIsoString(new Date());
+    return formatDatetimeForOpenMrs(toOmrsIsoString(new Date()));
   }
   const now = new Date();
   date.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), 0);
-  return toOmrsIsoString(date);
+  return formatDatetimeForOpenMrs(toOmrsIsoString(date));
 };
 
 const showSaveError = (message: string) => {
@@ -165,27 +177,96 @@ export function useHaemodialysisSession(patientUuid?: string, patient?: fhir.Pat
     keepPreviousData: true,
   });
 
-  const persistedSession = useMemo((): HaemodialysisSession | null => {
+  const [sessionPatch, setSessionPatch] = useState<Partial<HaemodialysisSession>>({});
+  const [isNewDialysisDraft, setIsNewDialysisDraft] = useState(false);
+
+  const allEncounterSessions = useMemo((): HaemodialysisSession[] => {
     const encounters = data ?? [];
-    const latestEncounter = encounters.find((encounter) =>
-      hasEncounterInitialAssessment(encounter, concepts, visitDiagnosis),
-    );
-    if (!latestEncounter) {
-      return null;
-    }
-    return parseEncounterToSession(latestEncounter, patientUuid ?? '', biodataBase, facility, concepts, visitDiagnosis);
+    return encounters
+      .filter((encounter) => hasEncounterInitialAssessment(encounter, concepts, visitDiagnosis))
+      .sort(
+        (left, right) =>
+          new Date(right.encounterDatetime ?? 0).getTime() - new Date(left.encounterDatetime ?? 0).getTime(),
+      )
+      .map((encounter) =>
+        parseEncounterToSession(encounter, patientUuid ?? '', biodataBase, facility, concepts, visitDiagnosis),
+      );
   }, [data, patientUuid, biodataBase, facility, concepts, visitDiagnosis]);
 
+  const completedSessions = useMemo(
+    () => allEncounterSessions.filter((item) => isDialysisSessionComplete(item)),
+    [allEncounterSessions],
+  );
+
+  const activePersistedSession = useMemo((): HaemodialysisSession | null => {
+    if (isNewDialysisDraft) {
+      return null;
+    }
+    const inProgress = allEncounterSessions.find((item) => !isDialysisSessionComplete(item));
+    if (inProgress) {
+      return inProgress;
+    }
+    return allEncounterSessions[0] ?? null;
+  }, [allEncounterSessions, isNewDialysisDraft]);
+
+  const persistedSession = activePersistedSession;
+
+  useEffect(() => {
+    if (!sessionPatch.monitoringAction && !sessionPatch.monitoringSlotMinutes) {
+      return;
+    }
+    const persistedAction = persistedSession?.monitoringAction;
+    const patchAction = sessionPatch.monitoringAction;
+    const actionSynced =
+      !patchAction ||
+      (persistedAction?.type === patchAction.type &&
+        (patchAction.type !== 'terminated' || persistedAction?.type === 'terminated'));
+    const slotsSynced =
+      !sessionPatch.monitoringSlotMinutes ||
+      persistedSession?.monitoringSlotMinutes?.join(',') === sessionPatch.monitoringSlotMinutes.join(',') ||
+      getExtensionHoursFromSchedule(persistedSession?.monitoringSlotMinutes ?? buildDefaultSlotMinutes()) >=
+        getExtensionHoursFromSchedule(sessionPatch.monitoringSlotMinutes);
+    if (actionSynced && slotsSynced) {
+      setSessionPatch({});
+    }
+  }, [persistedSession, sessionPatch]);
+
   const current: HaemodialysisSession = useMemo(
-    () =>
-      persistedSession ?? {
+    () => ({
+      ...(persistedSession ?? {
         patientUuid: patientUuid ?? '',
         biodata: biodataBase,
         facility,
         monitoring: [],
-      },
-    [persistedSession, patientUuid, biodataBase, facility],
+      }),
+      ...sessionPatch,
+    }),
+    [persistedSession, patientUuid, biodataBase, facility, sessionPatch],
   );
+
+  /** Every saved session (including the active one) for section history tables, with live merges from the UI session. */
+  const tableSessions = useMemo((): HaemodialysisSession[] => {
+    const activeUuid = current.encounterUuid;
+    let sessions = allEncounterSessions.map((persisted) => {
+      if (activeUuid && persisted.encounterUuid === activeUuid) {
+        return { ...persisted, ...current, encounterUuid: activeUuid };
+      }
+      return persisted;
+    });
+
+    if (activeUuid && !sessions.some((item) => item.encounterUuid === activeUuid)) {
+      sessions = [current, ...sessions];
+    }
+
+    return sessions.sort((left, right) => {
+      const leftTime = left.biodata.date ? new Date(left.biodata.date).getTime() : 0;
+      const rightTime = right.biodata.date ? new Date(right.biodata.date).getTime() : 0;
+      if (leftTime !== rightTime) {
+        return rightTime - leftTime;
+      }
+      return (right.encounterUuid ?? '').localeCompare(left.encounterUuid ?? '');
+    });
+  }, [allEncounterSessions, current]);
 
   const encounterUuid = persistedSession?.encounterUuid;
   const providerUuid = session?.currentProvider?.uuid;
@@ -274,6 +355,8 @@ export function useHaemodialysisSession(patientUuid?: string, patient?: fhir.Pat
         },
         { revalidate: true },
       );
+      setIsNewDialysisDraft(false);
+      setSessionPatch({});
       showSaveSuccess('Initial haemodialysis assessment saved');
       return true;
     },
@@ -344,7 +427,16 @@ export function useHaemodialysisSession(patientUuid?: string, patient?: fhir.Pat
 
       const existingRows = current.monitoring.filter((existing) => existing.slotMinute !== row.slotMinute);
       const monitoring = [...existingRows, row].sort((a, b) => a.slotMinute - b.slotMinute);
-      const obs = buildMonitoringObs(monitoring, sessionStartIso, concepts);
+      const slotMinutes = current.monitoringSlotMinutes ?? buildDefaultSlotMinutes();
+      const obs = buildMonitoringObs(
+        {
+          rows: monitoring,
+          sessionStartIso,
+          slotMinutes,
+          action: current.monitoringAction?.type === 'terminated' ? current.monitoringAction : undefined,
+        },
+        concepts,
+      );
 
       if (obs.length === 0) {
         showSaveError(
@@ -373,7 +465,153 @@ export function useHaemodialysisSession(patientUuid?: string, patient?: fhir.Pat
       showSaveSuccess(result.message.includes('warnings') ? result.message : `Monitoring saved for ${row.time}`);
       return true;
     },
-    [patientUuid, encounterUuid, current.monitoring, persistedSession?.machineCheck, mutate, concepts],
+    [
+      patientUuid,
+      encounterUuid,
+      current.monitoring,
+      current.monitoringSlotMinutes,
+      current.monitoringAction,
+      persistedSession?.machineCheck,
+      mutate,
+      concepts,
+    ],
+  );
+
+  const persistMonitoringPayload = useCallback(
+    async (
+      rows: MonitoringRow[],
+      sessionStartIso: string,
+      slotMinutes: number[],
+      action?: MonitoringSessionAction,
+    ): Promise<boolean> => {
+      if (!encounterUuid || !patientUuid) {
+        showSaveError('Patient and encounter are required');
+        return false;
+      }
+
+      const obs = buildMonitoringObs({ rows, sessionStartIso, slotMinutes, action }, concepts);
+      if (obs.length === 0) {
+        showSaveError('No monitoring observations to save.');
+        return false;
+      }
+
+      const result = await appendHaemodialysisObservations(encounterUuid, obs, patientUuid, {
+        strategy: obs.some((item) => item.groupMembers?.length) ? 'encounter' : 'obs',
+        failOnPartial: true,
+      });
+
+      if (!result.success) {
+        showSaveError(result.message);
+        return false;
+      }
+
+      await mutate(
+        (existing = []) =>
+          existing.map((encounter) => {
+            if (encounter.uuid !== encounterUuid) {
+              return encounter;
+            }
+            return mergeObsIntoEncounterCache(encounter, obs);
+          }),
+        { revalidate: true },
+      );
+      return true;
+    },
+    [encounterUuid, patientUuid, mutate, concepts],
+  );
+
+  const saveMonitoringTerminate = useCallback(
+    async (reason: string): Promise<boolean> => {
+      if (!current.monitoringStartedAt) {
+        showSaveError('Start monitoring before terminating');
+        return false;
+      }
+
+      const trimmedReason = reason.trim();
+      if (!trimmedReason) {
+        showSaveError('A reason is required to terminate monitoring');
+        return false;
+      }
+
+      const slotMinutes = current.monitoringSlotMinutes ?? buildDefaultSlotMinutes();
+      const startedAt = parseMonitoringDatetime(current.monitoringStartedAt);
+      const runtime = { slotLabelsMinutes: slotMinutes };
+      const timeIndex = startedAt ? getTimeActiveSlotIndex(startedAt, new Date(), runtime) : 0;
+      const timeSlotMinute = slotMinutes[timeIndex] ?? slotMinutes[slotMinutes.length - 1];
+      const atSlotMinute = Math.max(getHighestFilledSlotMinute(current.monitoring) ?? 0, timeSlotMinute ?? 0);
+
+      const action: MonitoringSessionAction = {
+        type: 'terminated',
+        atSlotMinute,
+        reason: trimmedReason,
+        recordedAt: toOmrsIsoString(new Date()),
+      };
+
+      const saved = await persistMonitoringPayload(
+        current.monitoring,
+        current.monitoringStartedAt,
+        slotMinutes,
+        action,
+      );
+
+      if (saved) {
+        setSessionPatch({ monitoringAction: action });
+        showSaveSuccess(`Monitoring terminated at ${atSlotMinute} min`);
+      }
+      return saved;
+    },
+    [current.monitoring, current.monitoringSlotMinutes, current.monitoringStartedAt, persistMonitoringPayload],
+  );
+
+  const saveMonitoringExtension = useCallback(
+    async (hoursToAdd: number): Promise<boolean> => {
+      if (!current.monitoringStartedAt) {
+        showSaveError('Start monitoring before extending');
+        return false;
+      }
+
+      const hours = Number.parseInt(String(hoursToAdd), 10);
+      if (!Number.isFinite(hours) || hours <= 0) {
+        showSaveError('Enter a valid number of hours to add');
+        return false;
+      }
+
+      const currentSlots = current.monitoringSlotMinutes ?? buildDefaultSlotMinutes();
+      const nextSlots = appendExtensionHours(currentSlots, hours);
+      if (nextSlots.length === currentSlots.length) {
+        showSaveError('Cannot extend monitoring further (maximum 12 hours total, up to 8 hours extension).');
+        return false;
+      }
+
+      const action: MonitoringSessionAction = {
+        type: 'extended',
+        additionalHours: hours,
+        recordedAt: toOmrsIsoString(new Date()),
+      };
+
+      setSessionPatch((previous) => ({
+        ...previous,
+        monitoringSlotMinutes: nextSlots,
+        monitoringAction: action,
+      }));
+
+      const saved = await persistMonitoringPayload(current.monitoring, current.monitoringStartedAt, nextSlots, action);
+
+      if (saved) {
+        showSaveSuccess(
+          `Monitoring extended by ${hours} hour(s) — ${nextSlots.length - currentSlots.length} row(s) added`,
+        );
+      } else {
+        setSessionPatch((previous) => {
+          const reverted = { ...previous };
+          delete reverted.monitoringSlotMinutes;
+          delete reverted.monitoringAction;
+          return reverted;
+        });
+      }
+      return saved;
+    },
+    [current.monitoring, current.monitoringSlotMinutes, current.monitoringStartedAt, persistMonitoringPayload],
   );
 
   const savePostDialysisAndSummary = useCallback(
@@ -420,16 +658,31 @@ export function useHaemodialysisSession(patientUuid?: string, patient?: fhir.Pat
     [encounterUuid, patientUuid, persistedSession?.postHdNurseNotes, mutate, concepts],
   );
 
+  const startNewDialysis = useCallback(() => {
+    setIsNewDialysisDraft(true);
+    setSessionPatch({});
+  }, []);
+
+  const isCurrentSessionComplete = isDialysisSessionComplete(persistedSession);
+  const canStartNewDialysis = Boolean(persistedSession && isCurrentSessionComplete && !isNewDialysisDraft);
+
   return {
     session: current,
     isLoading: Boolean(patientUuid) && isLoading && !data,
     error,
-    hasInitial: hasInitialAssessment(persistedSession),
-    hasMachineCheck: Boolean(persistedSession?.machineCheck),
+    hasInitial: !isNewDialysisDraft && hasInitialAssessment(persistedSession),
+    hasMachineCheck: !isNewDialysisDraft && Boolean(persistedSession?.machineCheck),
     hasMonitoring: Boolean(persistedSession?.monitoring?.length),
+    isNewDialysisDraft,
+    isCurrentSessionComplete,
+    canStartNewDialysis,
+    tableSessions,
+    startNewDialysis,
     saveInitialAssessment,
     saveMachineCheck,
     saveMonitoringSlot,
+    saveMonitoringTerminate,
+    saveMonitoringExtension,
     savePostDialysisAndSummary,
     refresh: mutate,
   };

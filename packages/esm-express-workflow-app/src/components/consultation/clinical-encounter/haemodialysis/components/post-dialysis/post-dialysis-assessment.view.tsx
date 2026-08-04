@@ -1,11 +1,9 @@
 import React from 'react';
-import { Button } from '@carbon/react';
-import { Add } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
 import type { PostDialysisAssessment } from '../../types';
 import { postDialysisToFields } from '../../utils/formatters';
 import FieldGrid from '../shared/field-grid.component';
-import SectionCard from '../shared/section-card.component';
+import HistoricalSectionCard from '../shared/historical-section-card.component';
 import sharedStyles from '../shared/shared.scss';
 
 type Props = {
@@ -19,15 +17,11 @@ const PostDialysisAssessmentView: React.FC<Props> = ({ data, canAdd, monitoringC
   const { t } = useTranslation();
 
   return (
-    <SectionCard
+    <HistoricalSectionCard
       title="4. Post-Dialysis Assessment"
-      actions={
-        canAdd ? (
-          <Button kind="ghost" size="sm" renderIcon={Add} onClick={onAdd}>
-            {t('haemodialysisAddPostDialysis', 'Add post-dialysis')}
-          </Button>
-        ) : null
-      }>
+      showAdd={canAdd}
+      onAddClick={onAdd}
+      addLabel={t('haemodialysisAddPostDialysis', 'Add post-dialysis')}>
       {data ? (
         <FieldGrid fields={postDialysisToFields(data)} />
       ) : (
@@ -43,7 +37,7 @@ const PostDialysisAssessmentView: React.FC<Props> = ({ data, canAdd, monitoringC
               )}
         </div>
       )}
-    </SectionCard>
+    </HistoricalSectionCard>
   );
 };
 

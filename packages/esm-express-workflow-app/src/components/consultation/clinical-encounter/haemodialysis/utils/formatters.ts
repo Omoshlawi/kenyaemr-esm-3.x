@@ -8,7 +8,7 @@ import type {
   PreDialysisAssessment,
   ScreeningStatus,
 } from '../types';
-import { getCodedAnswerLabel } from '../constants/coded-answers';
+import { getCodedAnswerLabel, isLikelyConceptUuid } from '../constants/coded-answers';
 import { AIR_DETECTOR_OPTIONS, BLOOD_LEAK_OPTIONS } from '../constants/machine-check-answers';
 
 export const displayValue = (value?: string | number | null): string => {
@@ -23,7 +23,18 @@ const displayCodedValue = (value?: string | string[]): string => {
     return '—';
   }
   const values = Array.isArray(value) ? value : [value];
-  const labels = values.map((item) => getCodedAnswerLabel(item) || item).filter(Boolean);
+  const labels = values
+    .map((item) => {
+      const label = getCodedAnswerLabel(item);
+      if (label) {
+        return label;
+      }
+      if (isLikelyConceptUuid(item)) {
+        return '';
+      }
+      return item;
+    })
+    .filter(Boolean);
   return labels.length > 0 ? labels.join(', ') : '—';
 };
 

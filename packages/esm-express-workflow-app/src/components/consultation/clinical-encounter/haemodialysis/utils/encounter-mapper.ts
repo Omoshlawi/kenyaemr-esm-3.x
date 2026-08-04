@@ -5,6 +5,7 @@ import type {
   FacilityHeader,
   HaemodialysisSession,
   MonitoringRow,
+  MonitoringSessionAction,
   PatientBiodata,
   PhysicianPrescription,
   PostDialysisAssessment,
@@ -38,6 +39,12 @@ import {
   YES_NO_OPTIONS,
 } from '../constants/coded-answers';
 import { formatSlotClockTime, formatSlotLabel } from './monitoring-slots';
+import {
+  buildDefaultSlotMinutes,
+  appendExtensionHours,
+  getExtensionHoursFromSchedule,
+  BASE_MONITORING_MAX_MINUTES,
+} from './monitoring-schedule';
 import { parseMonitoringDatetime, parseToOpenMrsObsDatetimeValue, toMonitoringIsoString } from './monitoring-datetime';
 import { toOmrsIsoString } from '@openmrs/esm-framework';
 import { isValidOpenmrsUuid } from './openmrs-uuid';
@@ -596,7 +603,44 @@ const encodeMonitoringField = (value?: string): string => (value ?? '').replace(
 
 const decodeMonitoringField = (value?: string): string => (value ?? '').replace(/\\\|/g, '|');
 
-const encodeMonitoringNotes = (startedAt: string, rows: MonitoringRow[]): string => {
+export type ParsedMonitoringNotes = {
+  startedAt?: string;
+  rows: MonitoringRow[];
+  slotMinutes?: number[];
+  action?: MonitoringSessionAction;
+};
+
+export type MonitoringPersistInput = {
+  rows: MonitoringRow[];
+  sessionStartIso: string;
+  slotMinutes?: number[];
+  action?: MonitoringSessionAction;
+};
+
+const encodeMonitoringNotes = ({
+  startedAt,
+  rows,
+  slotMinutes,
+  action,
+}: {
+  startedAt: string;
+  rows: MonitoringRow[];
+  slotMinutes?: number[];
+  action?: MonitoringSessionAction;
+}): string => {
+  const metaLines: string[] = [`startedAt:${startedAt}`];
+  if (slotMinutes?.length) {
+    metaLines.push(`slotSchedule:${slotMinutes.join(',')}`);
+  }
+  if (action?.type === 'terminated') {
+    metaLines.push('action:terminated');
+    metaLines.push(`terminatedAt:${action.atSlotMinute}`);
+    metaLines.push(`terminateReason:${encodeMonitoringField(action.reason)}`);
+  } else if (action?.type === 'extended') {
+    metaLines.push('action:extended');
+    metaLines.push(`extensionHours:${action.additionalHours}`);
+  }
+
   const lines = rows
     .slice()
     .sort((a, b) => a.slotMinute - b.slotMinute)
@@ -611,10 +655,10 @@ const encodeMonitoringNotes = (startedAt: string, rows: MonitoringRow[]): string
         encodeMonitoringField(row.remarks),
       ].join('|'),
     );
-  return [MONITORING_NOTES_PREFIX, `startedAt:${startedAt}`, ...lines, MONITORING_NOTES_SUFFIX].join('\n');
+  return [MONITORING_NOTES_PREFIX, ...metaLines, ...lines, MONITORING_NOTES_SUFFIX].join('\n');
 };
 
-export const parseMonitoringNotes = (notes?: string): { startedAt?: string; rows: MonitoringRow[] } => {
+export const parseMonitoringNotes = (notes?: string): ParsedMonitoringNotes => {
   if (!notes?.includes(MONITORING_NOTES_PREFIX)) {
     return { rows: [] };
   }
@@ -626,6 +670,8 @@ export const parseMonitoringNotes = (notes?: string): { startedAt?: string; rows
     .filter(Boolean);
 
   let startedAt: string | undefined;
+  let slotMinutes: number[] | undefined;
+  let action: MonitoringSessionAction | undefined;
   const rows: MonitoringRow[] = [];
 
   lines.forEach((line) => {
@@ -633,6 +679,41 @@ export const parseMonitoringNotes = (notes?: string): { startedAt?: string; rows
       startedAt = line.replace('startedAt:', '').trim();
       return;
     }
+    if (line.startsWith('slotSchedule:')) {
+      slotMinutes = line
+        .replace('slotSchedule:', '')
+        .split(',')
+        .map((value) => Number(value.trim()))
+        .filter((minute) => Number.isFinite(minute));
+      return;
+    }
+    if (line === 'action:terminated') {
+      action = { type: 'terminated', atSlotMinute: 0, reason: '' };
+      return;
+    }
+    if (line.startsWith('terminatedAt:') && action?.type === 'terminated') {
+      action = { ...action, atSlotMinute: Number(line.replace('terminatedAt:', '').trim()) || 0 };
+      return;
+    }
+    if (line.startsWith('terminateReason:') && action?.type === 'terminated') {
+      action = { ...action, reason: decodeMonitoringField(line.replace('terminateReason:', '').trim()) };
+      return;
+    }
+    if (line === 'action:extended') {
+      action = { type: 'extended', additionalHours: action?.type === 'extended' ? action.additionalHours : 0 };
+      return;
+    }
+    if (line.startsWith('extensionHours:')) {
+      const hours = Number(line.replace('extensionHours:', '').trim());
+      if (Number.isFinite(hours) && hours > 0) {
+        action = { type: 'extended', additionalHours: hours };
+      }
+      return;
+    }
+    if (line.startsWith('action:')) {
+      return;
+    }
+
     const [slotMinute, bp, pulse, temp, ufRemoved, heparin, ...remarksParts] = line.split('|');
     const minute = Number(slotMinute);
     if (!Number.isFinite(minute)) {
@@ -652,7 +733,231 @@ export const parseMonitoringNotes = (notes?: string): { startedAt?: string; rows
     });
   });
 
-  return { startedAt, rows };
+  let resolvedSlots = slotMinutes?.length ? [...slotMinutes].sort((a, b) => a - b) : buildDefaultSlotMinutes();
+
+  if (action?.type === 'extended' && action.additionalHours > 0) {
+    const extensionOnSchedule = resolvedSlots.filter((minute) => minute > BASE_MONITORING_MAX_MINUTES).length;
+    if (extensionOnSchedule < action.additionalHours) {
+      const baseSlots = resolvedSlots.filter((minute) => minute <= BASE_MONITORING_MAX_MINUTES);
+      const base = baseSlots.length ? baseSlots : buildDefaultSlotMinutes();
+      resolvedSlots = appendExtensionHours(base, action.additionalHours - extensionOnSchedule);
+    }
+  }
+
+  return { startedAt, rows, slotMinutes: resolvedSlots, action };
+};
+
+const parseMonitoringSessionActionFromObs = (
+  observations: HaemodialysisEncounterObs[],
+  concepts: HaemodialysisConceptMap,
+  sessionStartIso?: string,
+): MonitoringSessionAction | undefined => {
+  const A = concepts.monitoringAction;
+  if (!A?.actionGroup?.trim()) {
+    return undefined;
+  }
+
+  const groups = sortObsByDatetimeAsc(observations, A.actionGroup);
+  for (let index = groups.length - 1; index >= 0; index -= 1) {
+    const group = groups[index];
+    const terminateReason = A.terminateReason?.trim() ? getGroupMemberValue(group, A.terminateReason).trim() : '';
+    const decision = A.decision?.trim() ? getGroupMemberValue(group, A.decision).trim() : '';
+
+    const startedAt = sessionStartIso ? parseMonitoringDatetime(sessionStartIso) : null;
+    const obsTime = group.obsDatetime ? new Date(group.obsDatetime) : null;
+    const atSlotMinute =
+      startedAt && obsTime && !Number.isNaN(obsTime.getTime())
+        ? Math.max(0, Math.round((obsTime.getTime() - startedAt.getTime()) / 60_000))
+        : 0;
+
+    if (terminateReason) {
+      return {
+        type: 'terminated',
+        atSlotMinute,
+        reason: terminateReason,
+        recordedAt: group.obsDatetime,
+      };
+    }
+
+    if (decision === A.terminateProgressAnswer?.trim()) {
+      return {
+        type: 'terminated',
+        atSlotMinute,
+        reason: terminateReason,
+        recordedAt: group.obsDatetime,
+      };
+    }
+
+    if (decision === A.extendHourlyAnswer?.trim()) {
+      return { type: 'extended', additionalHours: 0, recordedAt: group.obsDatetime };
+    }
+  }
+
+  return undefined;
+};
+
+const resolveMonitoringSessionAction = (
+  fromNotes?: MonitoringSessionAction,
+  fromObs?: MonitoringSessionAction,
+): MonitoringSessionAction | undefined => {
+  if (fromNotes?.type === 'terminated') {
+    return fromNotes;
+  }
+  if (fromObs?.type === 'terminated') {
+    return fromObs;
+  }
+  if (fromNotes?.type === 'extended' && fromNotes.additionalHours > 0) {
+    return fromNotes;
+  }
+  if (fromNotes?.type === 'extended' && fromObs?.type === 'extended') {
+    return {
+      type: 'extended',
+      additionalHours: Math.max(fromNotes.additionalHours, fromObs.additionalHours ?? 0),
+      recordedAt: fromObs.recordedAt ?? fromNotes.recordedAt,
+    };
+  }
+  return fromNotes ?? fromObs;
+};
+
+/** Prefer the nurse-notes block with the richest extension schedule (fixes 1h extend when an older note is "latest" by datetime). */
+const pickBestMonitoringNotesParse = (
+  observations: HaemodialysisEncounterObs[],
+  conceptUuid: string,
+): ParsedMonitoringNotes => {
+  const matches = sortObsByDatetimeAsc(observations, conceptUuid);
+  let best: ParsedMonitoringNotes = { rows: [] };
+  let bestScore = -1;
+
+  for (const obs of matches) {
+    const notes = normalizeValue(obs.value);
+    if (!notes.includes(MONITORING_NOTES_PREFIX)) {
+      continue;
+    }
+    const parsed = parseMonitoringNotes(notes);
+    const slots = parsed.slotMinutes ?? buildDefaultSlotMinutes();
+    const extensionSlots = getExtensionHoursFromSchedule(slots);
+    const score = extensionSlots * 1000 + slots.length * 10 + parsed.rows.length;
+    if (score > bestScore) {
+      bestScore = score;
+      best = parsed;
+    }
+  }
+
+  if (bestScore < 0) {
+    const fallback = getLatestObsValue(observations, conceptUuid);
+    return parseMonitoringNotes(fallback);
+  }
+
+  return best;
+};
+
+export const buildMonitoringActionObs = (
+  action: MonitoringSessionAction,
+  encounterDatetime: string,
+  concepts: HaemodialysisConceptMap = HAEMODIALYSIS_CONCEPTS,
+): HaemodialysisObsInput | null => {
+  const A = concepts.monitoringAction;
+  if (!A?.actionGroup?.trim()) {
+    return null;
+  }
+
+  const groupMembers: HaemodialysisObsGroupMember[] = [];
+
+  if (A.decision?.trim()) {
+    if (action.type === 'terminated') {
+      groupMembers.push({ concept: A.decision, value: A.terminateProgressAnswer });
+    } else if (action.type === 'extended') {
+      groupMembers.push({ concept: A.decision, value: A.extendHourlyAnswer });
+    }
+  }
+
+  if (action.type === 'terminated' && A.terminateReason?.trim() && action.reason?.trim()) {
+    groupMembers.push({ concept: A.terminateReason, value: action.reason.trim() });
+  }
+
+  if (groupMembers.length === 0) {
+    return null;
+  }
+
+  return {
+    concept: A.actionGroup,
+    obsDatetime: encounterDatetime,
+    groupMembers,
+  };
+};
+
+export const buildMonitoringObs = (
+  input: MonitoringPersistInput,
+  concepts: HaemodialysisConceptMap = HAEMODIALYSIS_CONCEPTS,
+): HaemodialysisObsInput[] => {
+  const { rows, sessionStartIso, slotMinutes, action } = input;
+  const C = concepts;
+  if (rows.length === 0 && action?.type !== 'terminated' && action?.type !== 'extended') {
+    return [];
+  }
+
+  const sortedRows = rows.slice().sort((a, b) => a.slotMinute - b.slotMinute);
+  const latestRow = sortedRows[sortedRows.length - 1];
+  const sessionStart = parseMonitoringDatetime(sessionStartIso) ?? new Date();
+  const slotMinuteForDatetime = latestRow?.slotMinute ?? (action?.type === 'terminated' ? action.atSlotMinute : 0);
+  const slotDatetime = new Date(sessionStart.getTime() + slotMinuteForDatetime * 60 * 1000);
+  let slotIso = toMonitoringIsoString(action?.type === 'extended' ? new Date() : slotDatetime);
+  const normalizedSessionStartIso = toMonitoringIsoString(sessionStart);
+  const effectiveSlotMinutes = slotMinutes?.length ? slotMinutes : buildDefaultSlotMinutes();
+
+  const obs: HaemodialysisObsInput[] = [];
+
+  if (INCLUDE_STRUCTURED_MONITORING_NOTES) {
+    const monitoringNotes = encodeMonitoringNotes({
+      startedAt: normalizedSessionStartIso,
+      rows: sortedRows,
+      slotMinutes: effectiveSlotMinutes,
+      action,
+    });
+    const nurseNotesObs = buildTextObs(C.postDialysis.postHdNurseNotes, monitoringNotes, slotIso);
+    if (nurseNotesObs) {
+      obs.push(nurseNotesObs);
+    }
+  }
+
+  if (sortedRows.length === 1 && INCLUDE_CONNECTION_TIME_ON_FIRST_SLOT) {
+    const connectionTimeObs = buildTextObs(
+      C.connection.connectionTime,
+      normalizedSessionStartIso,
+      normalizedSessionStartIso,
+    );
+    if (connectionTimeObs) {
+      obs.push(connectionTimeObs);
+    }
+  }
+
+  if (
+    INCLUDE_DEDICATED_MONITORING_CONCEPTS &&
+    latestRow &&
+    C.monitoring.bp &&
+    C.monitoring.pulse &&
+    C.monitoring.temp
+  ) {
+    obs.push(
+      ...collectObs([
+        buildTextObs(C.monitoring.bp, latestRow.bp, slotIso),
+        buildNumericObs(C.monitoring.pulse, latestRow.pulse, slotIso),
+        buildNumericObs(C.monitoring.temp, latestRow.temp, slotIso),
+        buildNumericObs(C.monitoring.ufRemoved, latestRow.ufRemoved, slotIso),
+        buildNumericObs(C.monitoring.heparin, latestRow.heparin, slotIso),
+        buildTextObs(C.monitoring.remarks, latestRow.remarks, slotIso),
+      ]),
+    );
+  }
+
+  if (action && (action.type === 'terminated' || action.type === 'extended')) {
+    const actionObs = buildMonitoringActionObs(action, slotIso, concepts);
+    if (actionObs) {
+      obs.push(actionObs);
+    }
+  }
+
+  return obs;
 };
 
 const getGroupMemberValue = (obs: HaemodialysisEncounterObs, conceptUuid: string): string => {
@@ -722,66 +1027,6 @@ const parseAdditionalMedications = (
       adverseEvent: getGroupMemberValue(obs, C.postDialysis.medicationAdverseEvent),
     }))
     .filter(hasMedicationRowContent);
-};
-
-export const buildMonitoringObs = (
-  rows: MonitoringRow[],
-  sessionStartIso: string,
-  concepts: HaemodialysisConceptMap = HAEMODIALYSIS_CONCEPTS,
-): HaemodialysisObsInput[] => {
-  const C = concepts;
-  if (rows.length === 0) {
-    return [];
-  }
-
-  const sortedRows = rows.slice().sort((a, b) => a.slotMinute - b.slotMinute);
-  const latestRow = sortedRows[sortedRows.length - 1];
-  const sessionStart = parseMonitoringDatetime(sessionStartIso) ?? new Date();
-  const slotDatetime = new Date(sessionStart.getTime() + latestRow.slotMinute * 60 * 1000);
-  const slotIso = toMonitoringIsoString(slotDatetime);
-  const normalizedSessionStartIso = toMonitoringIsoString(sessionStart);
-
-  const obs: HaemodialysisObsInput[] = [];
-
-  if (INCLUDE_STRUCTURED_MONITORING_NOTES) {
-    const monitoringNotes = encodeMonitoringNotes(normalizedSessionStartIso, sortedRows);
-    const nurseNotesObs = buildTextObs(C.postDialysis.postHdNurseNotes, monitoringNotes, slotIso);
-    if (nurseNotesObs) {
-      obs.push(nurseNotesObs);
-    }
-  }
-
-  if (sortedRows.length === 1 && INCLUDE_CONNECTION_TIME_ON_FIRST_SLOT) {
-    const connectionTimeObs = buildTextObs(
-      C.connection.connectionTime,
-      normalizedSessionStartIso,
-      normalizedSessionStartIso,
-    );
-    if (connectionTimeObs) {
-      obs.push(connectionTimeObs);
-    }
-  }
-
-  if (
-    INCLUDE_DEDICATED_MONITORING_CONCEPTS &&
-    latestRow &&
-    C.monitoring.bp &&
-    C.monitoring.pulse &&
-    C.monitoring.temp
-  ) {
-    obs.push(
-      ...collectObs([
-        buildTextObs(C.monitoring.bp, latestRow.bp, slotIso),
-        buildNumericObs(C.monitoring.pulse, latestRow.pulse, slotIso),
-        buildNumericObs(C.monitoring.temp, latestRow.temp, slotIso),
-        buildNumericObs(C.monitoring.ufRemoved, latestRow.ufRemoved, slotIso),
-        buildNumericObs(C.monitoring.heparin, latestRow.heparin, slotIso),
-        buildTextObs(C.monitoring.remarks, latestRow.remarks, slotIso),
-      ]),
-    );
-  }
-
-  return obs;
 };
 
 export const buildPostDialysisObs = (
@@ -1170,11 +1415,15 @@ export const parseEncounterToSession = (
   const C = concepts;
   const observations = encounter.obs ?? [];
   const nurseNotes = getLatestObsValue(observations, C.postDialysis.postHdNurseNotes);
-  const monitoringFromNotes = parseMonitoringNotes(nurseNotes);
+  const monitoringFromNotes = pickBestMonitoringNotesParse(observations, C.postDialysis.postHdNurseNotes);
   const connectionTime = getLatestObsValue(observations, C.connection.connectionTime);
   const rawMonitoringStart = monitoringFromNotes.startedAt ?? connectionTime;
   const parsedMonitoringStart = parseMonitoringDatetime(rawMonitoringStart);
   const monitoringStartedAt = parsedMonitoringStart ? toMonitoringIsoString(parsedMonitoringStart) : undefined;
+  const monitoringAction = resolveMonitoringSessionAction(
+    monitoringFromNotes.action,
+    parseMonitoringSessionActionFromObs(observations, C, monitoringStartedAt),
+  );
   const monitoringCutoff = getMonitoringCutoffIso(monitoringStartedAt, connectionTime);
   const hasPostDialysis = hasPostDialysisAssessment(observations, monitoringStartedAt, connectionTime, concepts);
   const preBloodPressure = getPreBloodPressure(observations, concepts);
@@ -1267,6 +1516,8 @@ export const parseEncounterToSession = (
         }
       : undefined,
     monitoringStartedAt,
+    monitoringSlotMinutes: monitoringFromNotes.slotMinutes,
+    monitoringAction,
     monitoring: monitoringFromNotes.rows,
     postDialysis: hasPostDialysis
       ? {

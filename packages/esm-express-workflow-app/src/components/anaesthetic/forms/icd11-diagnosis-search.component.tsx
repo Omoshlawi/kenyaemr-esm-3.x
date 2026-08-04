@@ -6,12 +6,14 @@ import { useDebounce } from '@openmrs/esm-framework';
 import styles from './icd11-diagnosis-search.scss';
 import { useDiagnosis, type DiagnosisOption } from '../resources/anaesthetic-form.resource';
 
+export const formatDiagnosisOptionLabel = (diagnosis: DiagnosisOption): string =>
+  diagnosis.icdCode?.trim() ? `${diagnosis.icdCode} — ${diagnosis.display}` : diagnosis.display;
+
 export interface DiagnosisSearchConfig {
   dataSourceUuid: string;
   debounceMs?: number;
   minChars?: number;
   resultLimit?: number;
-  baseResultLimit?: number;
 }
 
 export interface DiagnosisSearchProps {
@@ -77,7 +79,16 @@ const DiagnosisSearchResults: React.FC<DiagnosisSearchResultsProps> = ({
                     onSelect(diagnosis);
                   }
                 }}>
-                <span className={styles.diagnosisText}>{diagnosis.display}</span>
+                <span className={styles.diagnosisText}>
+                  {diagnosis.icdCode ? (
+                    <>
+                      <span className={styles.diagnosisCode}>{diagnosis.icdCode}</span>
+                      <span className={styles.diagnosisName}>{diagnosis.display}</span>
+                    </>
+                  ) : (
+                    diagnosis.display
+                  )}
+                </span>
                 {isSelected && <Tag type="green" size="sm" className={styles.selectedTag}></Tag>}
               </div>
             );
@@ -106,20 +117,14 @@ const DiagnosisSearch: React.FC<DiagnosisSearchProps> = ({
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
-  const { debounceMs = 300, minChars = 3, resultLimit = 20, baseResultLimit = 4, dataSourceUuid } = config;
+  const { debounceMs = 300, minChars = 3, resultLimit = 20, dataSourceUuid } = config;
   const debouncedSearchQuery = useDebounce(searchQuery, debounceMs);
 
-  const { diagnoses, isLoading } = useDiagnosis(
-    debouncedSearchQuery,
-    dataSourceUuid,
-    resultLimit,
-    baseResultLimit,
-    minChars,
-  );
+  const { diagnoses, isLoading } = useDiagnosis(debouncedSearchQuery, dataSourceUuid, resultLimit, minChars);
 
   useEffect(() => {
-    setSearchQuery(value?.display ?? '');
-  }, [value?.uuid, value?.display]);
+    setSearchQuery(value ? formatDiagnosisOptionLabel(value) : '');
+  }, [value?.uuid, value?.display, value?.icdCode]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -131,8 +136,8 @@ const DiagnosisSearch: React.FC<DiagnosisSearchProps> = ({
       return;
     }
 
-    // Clear selection when the user edits away from the picked result
-    if (value?.uuid && query.trim() !== value.display.trim()) {
+    const selectedLabel = value ? formatDiagnosisOptionLabel(value) : '';
+    if (value?.uuid && query.trim() !== selectedLabel.trim()) {
       onChange(null);
     }
   };
@@ -140,7 +145,7 @@ const DiagnosisSearch: React.FC<DiagnosisSearchProps> = ({
   const handleSelectDiagnosis = (diagnosis: DiagnosisOption) => {
     onChange(diagnosis);
     setShowResults(false);
-    setSearchQuery(diagnosis.display);
+    setSearchQuery(formatDiagnosisOptionLabel(diagnosis));
   };
 
   return (

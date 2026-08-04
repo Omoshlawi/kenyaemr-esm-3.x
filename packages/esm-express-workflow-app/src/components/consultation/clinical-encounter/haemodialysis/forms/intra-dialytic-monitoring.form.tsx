@@ -10,6 +10,7 @@ import {
   getNextActiveSlotIndex,
   getProgressSlotStatus,
   isMonitoringComplete,
+  type MonitoringSlotRuntime,
 } from '../utils/monitoring-slots';
 import styles from './intra-dialytic-monitoring.form.scss';
 
@@ -26,6 +27,8 @@ type Props = {
   open: boolean;
   onClose: () => void;
   monitoringStartedAt?: string;
+  slotLabelsMinutes?: number[];
+  monitoringRuntime?: MonitoringSlotRuntime;
   rows: MonitoringRow[];
   onSaveSlot: (row: MonitoringRow, sessionStartIso: string) => boolean | Promise<boolean>;
 };
@@ -42,8 +45,32 @@ const emptySlot = (): MonitoringSlotFormValues => ({
 const formatLiveClock = (date: Date): string =>
   date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 
-const IntraDialyticMonitoringForm: React.FC<Props> = ({ open, onClose, monitoringStartedAt, rows, onSaveSlot }) => {
+const IntraDialyticMonitoringForm: React.FC<Props> = ({
+  open,
+  onClose,
+  monitoringStartedAt,
+  slotLabelsMinutes,
+  monitoringRuntime,
+  rows,
+  onSaveSlot,
+}) => {
   const { t } = useTranslation();
+  const slotLabels = useMemo(
+    () => (slotLabelsMinutes?.length ? slotLabelsMinutes : MONITORING_SLOT_LABELS_MINUTES),
+    [slotLabelsMinutes],
+  );
+  const slotLabelsKey = useMemo(() => slotLabels.join(','), [slotLabels]);
+  const persistedRowsKey = useMemo(
+    () =>
+      rows
+        .map((row) => [row.slotMinute, row.bp, row.pulse, row.temp, row.ufRemoved, row.heparin, row.remarks].join(':'))
+        .join('|'),
+    [rows],
+  );
+  const runtime: MonitoringSlotRuntime = useMemo(
+    () => monitoringRuntime ?? { slotLabelsMinutes: slotLabels },
+    [monitoringRuntime, slotLabels],
+  );
   const [now, setNow] = useState(() => new Date());
   const [slotValues, setSlotValues] = useState<Record<number, MonitoringSlotFormValues>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -60,8 +87,8 @@ const IntraDialyticMonitoringForm: React.FC<Props> = ({ open, onClose, monitorin
     return now;
   }, [monitoringStartedAt, now]);
 
-  const activeIndex = getNextActiveSlotIndex(rows, startedAt, now);
-  const allSlotsComplete = isMonitoringComplete(rows, startedAt, now);
+  const activeIndex = getNextActiveSlotIndex(rows, startedAt, now, runtime);
+  const allSlotsComplete = isMonitoringComplete(rows, startedAt, now, runtime);
   const waitingForNextSlot = sessionStarted && activeIndex < 0 && !allSlotsComplete;
 
   useEffect(() => {
@@ -83,7 +110,7 @@ const IntraDialyticMonitoringForm: React.FC<Props> = ({ open, onClose, monitorin
       return;
     }
     const next: Record<number, MonitoringSlotFormValues> = {};
-    MONITORING_SLOT_LABELS_MINUTES.forEach((slotMinute, index) => {
+    slotLabels.forEach((slotMinute, index) => {
       const existing = rows.find((r) => r.slotMinute === slotMinute);
       if (existing) {
         next[index] = {
@@ -101,12 +128,12 @@ const IntraDialyticMonitoringForm: React.FC<Props> = ({ open, onClose, monitorin
     setSlotValues(next);
     setErrors({});
     setSaveError(null);
-  }, [open, rows, monitoringStartedAt]);
+  }, [open, persistedRowsKey, monitoringStartedAt, slotLabelsKey]);
 
   const updateSlotField = (index: number, field: keyof MonitoringSlotFormValues, value: string) => {
     setSlotValues((prev) => ({
       ...prev,
-      [index]: { ...prev[index], [field]: value },
+      [index]: { ...(prev[index] ?? emptySlot()), [field]: value },
     }));
   };
 
@@ -115,7 +142,7 @@ const IntraDialyticMonitoringForm: React.FC<Props> = ({ open, onClose, monitorin
       return;
     }
 
-    const slotMinute = MONITORING_SLOT_LABELS_MINUTES[activeIndex];
+    const slotMinute = slotLabels[activeIndex];
     const values = slotValues[activeIndex] ?? emptySlot();
     const nextErrors: Record<string, string> = {};
 
@@ -216,8 +243,8 @@ const IntraDialyticMonitoringForm: React.FC<Props> = ({ open, onClose, monitorin
           </p>
         ) : null}
 
-        {MONITORING_SLOT_LABELS_MINUTES.map((slotMinute, index) => {
-          const status = getProgressSlotStatus(index, rows, startedAt, now);
+        {slotLabels.map((slotMinute, index) => {
+          const status = getProgressSlotStatus(index, rows, startedAt, now, runtime);
           const values = slotValues[index] ?? emptySlot();
           const clock = formatSlotClockTime(startedAt, slotMinute);
           const readOnly = status !== 'active';

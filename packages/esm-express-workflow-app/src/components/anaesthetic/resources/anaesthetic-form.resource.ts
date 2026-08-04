@@ -1,5 +1,6 @@
 import { openmrsFetch, restBaseUrl, toOmrsIsoString, useConfig, type FetchResponse } from '@openmrs/esm-framework';
 import useSWR from 'swr';
+import type { ExpressWorkflowConfig } from '../../../config-schema';
 import { MCH_PARTOGRAPHY_ENCOUNTER_UUID, PARTOGRAPHY_CONCEPTS, SURGICAL_PROCEDURE_UUID } from '../types';
 
 const YES_CONCEPT_UUID = '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
@@ -99,16 +100,47 @@ export type ProcedureOption = {
 export type DiagnosisOption = {
   uuid: string;
   display: string;
+  icdCode?: string | null;
 };
 
-type DiagnosisResult = {
+type DiagnosisConceptMapping = {
+  display?: string;
+};
+
+type DiagnosisConceptResult = {
   uuid: string;
   display: string;
+  mappings?: DiagnosisConceptMapping[];
 };
 
 type DiagnosisResponse = {
-  results: Array<DiagnosisResult>;
+  results: Array<DiagnosisConceptResult>;
 };
+
+const DIAGNOSIS_CONCEPT_REP = 'custom:(uuid,display,mappings:(display,conceptMapType:(display)))';
+
+export const extractIcd11CodeFromConcept = (concept: DiagnosisConceptResult): string | null => {
+  if (!concept.mappings?.length) {
+    return null;
+  }
+  const match = concept.mappings.find(
+    (mapping) =>
+      mapping.display?.startsWith('ICD-11:') ||
+      mapping.display?.startsWith('ICD-10-WHO:') ||
+      mapping.display?.startsWith('ICD-10:'),
+  );
+  if (!match?.display) {
+    return null;
+  }
+  const parts = match.display.split(':');
+  return parts.length > 1 ? parts.slice(1).join(':').trim() : null;
+};
+
+const toDiagnosisOption = (concept: DiagnosisConceptResult): DiagnosisOption => ({
+  uuid: concept.uuid,
+  display: concept.display,
+  icdCode: extractIcd11CodeFromConcept(concept),
+});
 
 export type AnaestheticEncounterDefaults = {
   encounterDate: string;
@@ -193,48 +225,29 @@ export type AnaestheticRecordRow = {
 const ANAESTHETIC_RECORDS_CUSTOM_REP =
   'custom:(uuid,encounterDatetime,encounterProviders:(provider:(uuid,name,person:(uuid,display))),obs:(uuid,concept:(uuid,display),value))';
 
-export function useDiagnosis(
-  searchQuery: string,
-  dataSourceUuid?: string,
-  resultLimit = 20,
-  baseResultLimit = 4,
-  minChars = 3,
-) {
-  const customRepresentation = `custom:(uuid,display)`;
+export function useDiagnosis(searchQuery: string, dataSourceUuid?: string, resultLimit = 20, minChars = 3) {
   const config = useConfig();
-  const resolvedSourceUuid = dataSourceUuid || (config as any).icd11DataSourceUuid;
+  const resolvedSourceUuid = dataSourceUuid || (config as ExpressWorkflowConfig).icd11DataSourceUuid;
   const trimmedQuery = searchQuery.trim();
   const sourceParam = resolvedSourceUuid ? `&source=${resolvedSourceUuid}` : '';
-  const baseUrl = `${restBaseUrl}/concept?v=${customRepresentation}${sourceParam}&limit=${baseResultLimit}`;
   const searchUrl =
-    trimmedQuery.length >= minChars
-      ? `${restBaseUrl}/concept?v=${customRepresentation}&q=${encodeURIComponent(
+    trimmedQuery.length >= minChars && resolvedSourceUuid
+      ? `${restBaseUrl}/concept?v=${DIAGNOSIS_CONCEPT_REP}&q=${encodeURIComponent(
           trimmedQuery,
         )}${sourceParam}&limit=${resultLimit}`
       : null;
 
-  const {
-    isLoading: isLoadingBase,
-    error: baseError,
-    data: baseData,
-  } = useSWR<FetchResponse<DiagnosisResponse>>(baseUrl, openmrsFetch);
   const {
     isLoading: isLoadingSearch,
     error: searchError,
     data: searchData,
   } = useSWR<FetchResponse<DiagnosisResponse>>(searchUrl, openmrsFetch);
 
-  const baseDiagnoses = baseData?.data?.results ?? [];
-  const searchDiagnoses = searchData?.data?.results ?? [];
-  const diagnoses = Array.from(
-    new Map(
-      [...baseDiagnoses, ...searchDiagnoses].map((diagnosis) => [diagnosis.uuid || diagnosis.display, diagnosis]),
-    ).values(),
-  );
+  const diagnoses = (searchData?.data?.results ?? []).map(toDiagnosisOption);
 
   return {
-    isLoading: isLoadingBase || isLoadingSearch,
-    error: baseError || searchError,
+    isLoading: isLoadingSearch,
+    error: searchError,
     diagnoses,
   };
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import type { ScreeningStatus } from '../../types';
 import { screeningToFields } from '../../utils/formatters';
 import FieldGrid from '../shared/field-grid.component';
-import SectionCard from '../shared/section-card.component';
+import HistoricalSectionCard from '../shared/historical-section-card.component';
 import sharedStyles from '../shared/shared.scss';
 
 type Props = {
@@ -20,13 +20,13 @@ const hasScreeningData = (data?: ScreeningStatus): boolean =>
   );
 
 const ScreeningStatusView: React.FC<Props> = ({ data }) => (
-  <SectionCard title="Screening Status">
+  <HistoricalSectionCard title="Screening Status">
     {hasScreeningData(data) ? (
       <FieldGrid fields={screeningToFields(data)} />
     ) : (
       <div className={sharedStyles.emptyState}>No screening status recorded yet.</div>
     )}
-  </SectionCard>
+  </HistoricalSectionCard>
 );
 
 export default ScreeningStatusView;
