@@ -1328,7 +1328,7 @@ const PreauthQueueTable: React.FC = () => {
               )}
             </Tab>
             <Tab>
-              {t('completed', 'Completed')}
+              {t('approved', 'Approved')}
               {completedFiltered.length > 0 && (
                 <Tag type="green" size="sm" className={styles.tagStatus}>
                   {completedFiltered.length}
