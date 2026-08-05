@@ -5,6 +5,7 @@ import LeftPanel from './components/side-menu/left-pannel.component';
 import styles from './root.scss';
 import SurveillanceDashboard from './surveillance/surveillance-dashboard.component';
 import AboveSiteDashboard from './above-site/above-site-dashboard.component';
+import DataTransmissionDashboard from './transmision/transmission-dashboard.component';
 
 const Root: React.FC = () => {
   const spaBasePath = window.spaBase;
@@ -25,6 +26,7 @@ const Root: React.FC = () => {
         <Routes>
           <Route path="/" element={<SurveillanceDashboard />} />
           <Route path="/above-site" element={<AboveSiteDashboard />} />
+          <Route path="/transmission" element={<DataTransmissionDashboard />} />
         </Routes>
       </main>
     </BrowserRouter>

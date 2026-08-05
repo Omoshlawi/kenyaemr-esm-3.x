@@ -22,9 +22,23 @@
       "component": "reportsboardLink",
       "name": "reports-dashboard-link",
       "slot": "facility-dashboard-left-panel-slot"
+    },
+    {
+      "component": "transmissionDashboardLink",
+      "name": "data-transmission-dashboard-link",
+      "slot": "facility-dashboard-left-panel-slot"
+    },
+    {
+      "component": "dataTransmissionDashboard",
+      "name": "data-transmission-dashboard"
     }
   ],
-  "modals": [],
+  "modals": [
+    {
+      "component": "queuePayloadModal",
+      "name": "transmission-queue-payload-modal"
+    }
+  ],
   "pages": [
     {
       "component": "root",
