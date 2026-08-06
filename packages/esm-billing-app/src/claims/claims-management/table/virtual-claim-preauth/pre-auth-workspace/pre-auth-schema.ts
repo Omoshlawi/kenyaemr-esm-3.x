@@ -156,7 +156,12 @@ export function getSchemaForType(preauthType: PreauthType) {
 export function getDefaultValues(
   preauthType: PreauthType,
   isElective: boolean = false,
-  existingItem?: { requested_on?: string; responded_on?: string },
+  existingItem?: {
+    requested_on?: string;
+    responded_on?: string;
+    doctors?: Array<z.infer<typeof doctorSchema>>;
+    diagnoses?: Array<z.infer<typeof diagnosisSchema>>;
+  },
   defaultUnitPrice?: string,
 ): Partial<PreauthFormData> {
   const today = new Date();
@@ -191,15 +196,17 @@ export function getDefaultValues(
     clinical_indications: '',
     provider_notification_email: '',
     unit_price: defaultUnitPrice ?? '',
-    doctors: [
-      {
-        identification_number: '',
-        identification_type: 'registration_number',
-        regulation_body: 'KMPDC',
-        is_primary: true,
-      },
-    ],
-    diagnoses: [{ icd_code: '', display: '' }],
+    doctors: existingItem?.doctors?.length
+      ? existingItem.doctors
+      : [
+          {
+            identification_number: '',
+            identification_type: 'registration_number',
+            regulation_body: 'KMPDC',
+            is_primary: true,
+          },
+        ],
+    diagnoses: existingItem?.diagnoses?.length ? existingItem.diagnoses : [{ icd_code: '', display: '' }],
     attachments: [],
   };
 

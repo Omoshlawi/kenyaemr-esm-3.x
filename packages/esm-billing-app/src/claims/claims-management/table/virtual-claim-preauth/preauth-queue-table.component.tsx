@@ -25,7 +25,7 @@ import {
   Tabs,
   Tag,
 } from '@carbon/react';
-import { Add, Calendar, TrashCan } from '@carbon/react/icons';
+import { Add, Calendar, Renew, TrashCan } from '@carbon/react/icons';
 import { isDesktop, launchWorkspace2, useLayoutType } from '@openmrs/esm-framework';
 import { EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
 import { mutate } from 'swr';
@@ -410,8 +410,8 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
             {t('cancelPreauth', 'Cancel preauth')}
           </Button>
         )}
-        {tab === 'REJECTED' && (
-          <Button size="sm" kind="danger--tertiary" onClick={handleResubmit}>
+        {(tab === 'REJECTED' || tab === 'RESUBMIT') && (
+          <Button size="sm" kind="danger--tertiary" renderIcon={Renew} onClick={handleResubmit}>
             {t('resubmitPreauth', 'Resubmit preauth')}
           </Button>
         )}

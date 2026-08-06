@@ -38,6 +38,7 @@ import {
   submitOtpWhitelist,
   useBiometricAgentStatus,
   useBiometricConfig,
+  useHasSupplementaryPompsCoverage,
   useNonPomsfUtilization,
   useOtpWhitelistReasons,
   usePatientPhone,
@@ -147,12 +148,18 @@ const ElectivePreAuthForm: React.FC<Workspace2DefinitionProps<ElectivePreAuthFor
   const { subBenefits, isLoading: loadingSubBenefits } = useSHASubBenefits(crId ?? '');
   const { interventions, isLoading: loadingInterventions } = useSHAInterventions(crId ?? '', subBenefitCode ?? '');
 
+  const { hasSupplementaryCoverage, isLoading: loadingSupplementary } = useHasSupplementaryPompsCoverage(
+    patientUuid ?? '',
+  );
+  const shouldSkipUtilizationCheck = hasSupplementaryCoverage || loadingSupplementary;
+  const effectiveCrId = shouldSkipUtilizationCheck ? '' : crId ?? '';
+
   const {
     utilization,
     isLoading: loadingUtilization,
     error: utilizationError,
-  } = useNonPomsfUtilization(crId ?? '', interventionCode ?? '');
-  const isCoverageExhausted = Boolean(utilization && utilization.eligibility === false);
+  } = useNonPomsfUtilization(effectiveCrId, interventionCode ?? '');
+  const isCoverageExhausted = !shouldSkipUtilizationCheck && Boolean(utilization && utilization.eligibility === false);
 
   const [isAuthorizing, setIsAuthorizing] = useState(false);
   const [authorizeError, setAuthorizeError] = useState('');

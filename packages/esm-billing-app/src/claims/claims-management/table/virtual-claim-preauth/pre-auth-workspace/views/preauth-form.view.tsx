@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import classNames from 'classnames';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -10,6 +10,7 @@ import {
   type SupplementaryScheme,
 } from '../../../../../../billing-form/social-health-authority/type';
 import EffectiveCoverPicker from '../../../../../../billing-form/pomsf/effective-pomsf.component';
+import { useClaimDoctors } from '../../../../../claims-wrap/claim-workspaces/doctors/claim-doctors-resource';
 import { usePreauthDocuments } from '../hooks/use-preauth-documents';
 import { usePreauthSubmit } from '../hooks/use-preauth-submit';
 import { getDefaultValues, getSchemaForType, type PreauthFormData, type PreauthType } from '../pre-auth-schema';
@@ -46,12 +47,36 @@ const PreauthFormView: React.FC<PreauthFormViewProps> = ({
 
   const { requiredPreauthDocs } = usePreauthDocuments(item);
 
+  const { doctors: claimDoctors } = useClaimDoctors(isResubmit ? item?.authorization_code ?? null : null);
+
+  const existingDoctors = useMemo(() => {
+    const source = claimDoctors.length > 0 ? claimDoctors : item?.doctors ?? [];
+    return source.map((doctor, idx) => ({
+      identification_number: doctor.identification_number,
+      identification_type: doctor.identification_type || 'registration_number',
+      regulation_body: doctor.regulation_body,
+      is_primary: idx === 0,
+      person: doctor.doctor_name ? { display: doctor.doctor_name } : undefined,
+    }));
+  }, [claimDoctors, item?.doctors]);
+
+  const existingDiagnoses = useMemo(
+    () =>
+      (item?.diagnoses ?? []).map((diagnosis) => ({
+        icd_code: diagnosis.icd_code,
+        display: diagnosis.display ?? '',
+      })),
+    [item?.diagnoses],
+  );
+
   const schema = getSchemaForType(preauthType);
   const existingItemForDefaults =
     isResubmit && item
       ? {
           requested_on: item.requested_on ?? undefined,
           responded_on: item.responded_on ?? undefined,
+          doctors: existingDoctors,
+          diagnoses: existingDiagnoses,
         }
       : undefined;
   const methods = useForm<PreauthFormData>({
@@ -67,8 +92,18 @@ const PreauthFormView: React.FC<PreauthFormViewProps> = ({
   const {
     handleSubmit,
     watch,
+    setValue,
     formState: { isSubmitting },
   } = methods;
+
+  // claimDoctors is fetched async (separate endpoint keyed by authorization_code), so it
+  // typically isn't ready in time for the synchronous useForm defaultValues above — patch
+  // it in once it arrives instead.
+  useEffect(() => {
+    if (isResubmit && item && claimDoctors.length > 0) {
+      setValue('doctors', existingDoctors, { shouldValidate: false });
+    }
+  }, [isResubmit, item, claimDoctors, existingDoctors, setValue]);
 
   const requiredDoctorsCount = isElective && !isResubmit ? item?.number_of_doctors_required ?? 0 : 0;
   const doctorCount = watch('doctors')?.length ?? 0;
