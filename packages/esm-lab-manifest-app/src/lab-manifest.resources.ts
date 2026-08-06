@@ -3,6 +3,7 @@ import { mutate } from 'swr';
 import { z } from 'zod';
 import { LabManifest, ManifestMetricYearSummary, MappedLabManifest, TransformedData } from './types';
 import { useTranslation } from 'react-i18next';
+import { TFunction } from 'i18next';
 
 export const printableManifestStatus = ['Submitted', 'Complete results'];
 export const editableManifestStatus = ['Draft', 'On Hold', 'Ready to send'];
@@ -149,7 +150,7 @@ export const addOrderToManifest = async (data: z.infer<typeof labManifestOrderTo
 export const mutateManifestLinks = (
   manifestUuid?: string,
   manifestStatus?: string,
-  statusCurrent: string = undefined,
+  statusCurrent: string | undefined = undefined,
 ) => {
   const mutateLinks = [
     `/ws/rest/v1/labmanifest?v=full&status=${manifestStatus}`,
@@ -194,28 +195,60 @@ export const extractLabManifest = (manifest: LabManifest) =>
     samples: manifest.labManifestOrders ?? [],
   } as MappedLabManifest);
 
-const printFile = async (url: string) => {
-  const res = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/pdf',
-    },
-  });
-  const fileData = await res.arrayBuffer();
-  const blob = new Blob([fileData], { type: 'application/pdf' });
-  const blobUrl = URL.createObjectURL(blob);
-  window.open(blobUrl, '_blank');
-};
+const printFile = async (url: string, t: TFunction) => {
+  // 1. Open new tab synchronously
+  const newTab = window.open('about:blank', '_blank');
 
-export const printManifest = async (manifestUid: string, log?: boolean) => {
-  if (log) {
-    return await printFile(`/openmrs${restBaseUrl}/kemrorder/printmanifestlog?manifestUuid=${manifestUid}`);
+  // 2. Render temporary loading HTML inside the new tab
+  if (newTab) {
+    newTab.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${t('prepairingDocument', 'Preparing Document...')}</title>
+          <style>
+            body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: sans-serif; background: #f4f4f5; }
+            .loader { border: 4px solid #e4e4e7; border-top: 4px solid #2563eb; border-radius: 50%; width: 36px; height: 36px; animation: spin 1s linear infinite; }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          </style>
+        </head>
+        <body>
+          <div style="text-align: center;">
+            <div class="loader" style="margin: 0 auto 12px auto;"></div>
+            <p style="color: #52525b; font-size: 14px;">${t('loadingPdfPleaseWait', 'Loading PDF, please wait...')}</p>
+          </div>
+        </body>
+      </html>
+    `);
   }
-  return await printFile(`/openmrs${restBaseUrl}/kemrorder/printmanifest?manifestUuid=${manifestUid}`);
+
+  try {
+    const res = await fetch(url, { headers: { 'Content-Type': 'application/pdf' } });
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    // 3. Swap the location once ready
+    if (newTab) {
+      newTab.location.href = blobUrl;
+    }
+  } catch (error) {
+    console.error('Failed to load PDF:', error);
+    if (newTab) {
+      newTab.close();
+    }
+  }
 };
 
-export const printSpecimentLabel = async (manifestOrderUuid: string) => {
+export const printManifest = async (manifestUid: string, log: boolean = false, t: TFunction) => {
+  if (log) {
+    return await printFile(`/openmrs${restBaseUrl}/kemrorder/printmanifestlog?manifestUuid=${manifestUid}`, t);
+  }
+  return await printFile(`/openmrs${restBaseUrl}/kemrorder/printmanifest?manifestUuid=${manifestUid}`, t);
+};
+
+export const printSpecimentLabel = async (manifestOrderUuid: string, t: TFunction) => {
   const url = `/openmrs${restBaseUrl}/kemrorder/printspecimenlabel?manifestOrderUuid=${manifestOrderUuid}`;
-  return await printFile(url);
+  return await printFile(url, t);
 };
 
 export function transformManifestSummaryChartData(data: ManifestMetricYearSummary[]): TransformedData[] {

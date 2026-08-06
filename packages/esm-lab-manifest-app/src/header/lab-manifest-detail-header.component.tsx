@@ -33,7 +33,7 @@ const LabManifestDetailHeader: React.FC<LabManifestDetailHeaderProps> = ({ manif
 
   const handlePrintManifest = async (log: boolean = false) => {
     try {
-      await printManifest(manifest.uuid, log);
+      await printManifest(manifest.uuid, log, t);
     } catch (error) {
       showSnackbar({ title: 'Failure', subtitle: 'Error printing manifest', kind: 'error' });
     }

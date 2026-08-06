@@ -168,7 +168,7 @@ const LabManifestSamples: React.FC<LabManifestSamplesProps> = ({ manifestUuid })
 
   async function handlePrintSpecimenLabel(sample: LabManifestSample) {
     try {
-      await printSpecimentLabel(sample.uuid);
+      await printSpecimentLabel(sample.uuid, t);
     } catch (error) {
       showSnackbar({ title: 'Failure', subtitle: 'Error specimen label', kind: 'error' });
     }
