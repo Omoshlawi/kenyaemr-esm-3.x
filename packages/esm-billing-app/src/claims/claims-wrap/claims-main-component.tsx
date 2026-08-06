@@ -438,6 +438,7 @@ const ClaimsTable: React.FC<{
         const hasDiagnosisErrors = (claim.diagnoses ?? []).some(
           (dx) => !!dx.sha_error_message && dx.status !== 'ATTACHED' && !isDxEffectivelyResolved(dx),
         );
+        const isSubmissionReady = claim.provider_workflow_state === 'SUBMISSION_READY';
         const isResubmit = tab === 'resubmission';
         const claimId = row.id;
         const isSyncing = syncingClaimIds.has(claimId);
@@ -453,9 +454,13 @@ const ClaimsTable: React.FC<{
                 kind={isResubmit ? 'danger--tertiary' : 'primary'}
                 onClick={() => handleSubmitClaim(claim)}
                 renderIcon={isResubmit ? Renew : Upload}
-                disabled={hasDiagnosisErrors}
+                disabled={hasDiagnosisErrors || isSubmissionReady}
                 title={
-                  hasDiagnosisErrors ? t('fixDiagnosisErrors', 'Fix diagnosis errors before submitting') : undefined
+                  hasDiagnosisErrors
+                    ? t('fixDiagnosisErrors', 'Fix diagnosis errors before submitting')
+                    : isSubmissionReady
+                    ? t('claimSubmissionReady', 'Claim is being prepared for submission')
+                    : undefined
                 }>
                 {isResubmit ? t('resubmit', 'Resubmit') : t('submit', 'Submit')}
               </Button>
