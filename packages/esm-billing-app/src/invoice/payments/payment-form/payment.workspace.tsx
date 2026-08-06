@@ -139,7 +139,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
       if (intervention.isPerDiem) {
         cap = intervention.accruedAmount;
       } else if (intervention.preauthApproved) {
-        cap = intervention.preauthEstimatedAmount;
+        cap = intervention.tariff ?? null;
       }
       if (cap == null) {
         return;

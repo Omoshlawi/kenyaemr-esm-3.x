@@ -71,7 +71,7 @@ const InterventionSummary: React.FC<InterventionSummaryProps> = ({ intervention,
                     {t('preauthApprovedAmount', 'SHA approved')}
                   </span>
                   <span className={styles.interventionSummaryDetailValue}>
-                    {formatCurrency(intervention.preauthEstimatedAmount)}
+                    {formatCurrency(intervention.tariff ?? 0)}
                   </span>
                 </div>
                 {intervention.tariff != null &&
