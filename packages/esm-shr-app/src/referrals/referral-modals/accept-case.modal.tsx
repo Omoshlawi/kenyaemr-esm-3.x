@@ -12,7 +12,7 @@ type ReferraLDetailProps = {
   onClose?: () => void;
 };
 
-const OTP_LENGTH = 5;
+const OTP_LENGTH = 6;
 const AcceptCaseDetailModal: React.FC<ReferraLDetailProps> = ({ item: referralDetail, onClose }) => {
   const { t } = useTranslation();
   const [step, setStep] = useState<'provider' | 'otp'>('provider');

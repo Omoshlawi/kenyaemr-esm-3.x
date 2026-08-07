@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Button, Layer, ModalBody, ModalFooter, ModalHeader, Tag, Tile } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import styles from './referral-modals.scss';
 import { EmtCase } from '../../types';
-import { formatDatetime, parseDate } from '@openmrs/esm-framework';
+import { formatDatetime, parseDate, showModal } from '@openmrs/esm-framework';
 
 type ReferraLDetailProps = {
   item: EmtCase;
@@ -40,9 +40,14 @@ const EmtCaseDetailModal: React.FC<ReferraLDetailProps> = ({ item: referralDetai
     },
   ];
 
+  const handleAccept = useCallback((item: EmtCase) => {
+    onClose?.();
+    const dismiss = showModal('accept-emt-case-modal', { onClose: () => dismiss(), item });
+  }, []);
+
   return (
     <>
-      <ModalHeader title={t('referralDetail', 'Referral Detail')} closeModal={onClose} />
+      <ModalHeader title={t('emtCaseDetail', 'EMT Case Detail')} closeModal={onClose} />
       <ModalBody>
         <div className={styles.container}>
           <Layer>
@@ -81,6 +86,9 @@ const EmtCaseDetailModal: React.FC<ReferraLDetailProps> = ({ item: referralDetai
       <ModalFooter>
         <Button kind="secondary" onClick={onClose}>
           {t('close', 'Close')}
+        </Button>
+        <Button kind="primary" onClick={() => handleAccept(referralDetail)}>
+          {t('acceptCase', 'Accept Case')}
         </Button>
       </ModalFooter>
     </>

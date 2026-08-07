@@ -20,27 +20,63 @@ const ReferralTabs: React.FC = () => {
   const { trigger: pullReferrals, isMutating: isLoadingFacilityReferrals } = useSWRMutation(
     `${restBaseUrl}/kenyaemril/pullReferrals`,
     async () => {
-      await pullEmmegencyCases();
-      return await pullFacilityReferrals();
-    },
-    {
-      onSuccess: () => {
+      const [emtResult, facilityResult] = await Promise.allSettled([pullEmmegencyCases(), pullFacilityReferrals()]);
+
+      if (emtResult.status === 'fulfilled') {
         mutate((key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/kenyaemril/emt-cases`));
+      }
+
+      if (emtResult.status === 'fulfilled' && facilityResult.status === 'fulfilled') {
         showSnackbar({
           title: t('success', 'Success'),
           subtitle: t('referralsPulledSuccessfully', 'Referrals pulled successfully'),
           kind: 'success',
           isLowContrast: true,
         });
-      },
-      onError: (error) => {
+        return;
+      }
+
+      if (emtResult.status === 'rejected' && facilityResult.status === 'rejected') {
+        console.error('Failed to pull EMT cases and facility referrals', emtResult.reason, facilityResult.reason);
         showSnackbar({
-          title: t('errorPullingReferrals', 'Error pulling referrals'),
-          subtitle: error?.message || t('unknownError', 'An unknown error occurred'),
+          title: t('unableToPullReferrals', 'Unable to pull referrals'),
+          subtitle: t(
+            'errorPullingBothReferralsFriendly',
+            'We could not update EMT cases or facility referrals. Please try again in a moment.',
+          ),
           kind: 'error',
           isLowContrast: true,
         });
-      },
+        throw new Error('Both pull requests failed');
+      }
+
+      if (emtResult.status === 'rejected') {
+        console.error('Failed to pull EMT cases', emtResult.reason);
+        showSnackbar({
+          title: t('someReferralsUpdated', 'Some referrals updated'),
+          subtitle: t(
+            'emtCasesPullFailedFacilitySucceededFriendly',
+            'Facility referrals were updated, but EMT cases could not be pulled. Please try again.',
+          ),
+          kind: 'warning',
+          isLowContrast: true,
+        });
+        return;
+      }
+
+      console.error(
+        'Failed to pull facility referrals',
+        facilityResult.status === 'rejected' ? facilityResult.reason : 'Unknown reason',
+      );
+      showSnackbar({
+        title: t('someReferralsUpdated', 'Some referrals updated'),
+        subtitle: t(
+          'facilityReferralsPullFailedEmtSucceededFriendly',
+          'EMT cases were updated, but facility referrals could not be pulled. Please try again.',
+        ),
+        kind: 'warning',
+        isLowContrast: true,
+      });
     },
   );
 
