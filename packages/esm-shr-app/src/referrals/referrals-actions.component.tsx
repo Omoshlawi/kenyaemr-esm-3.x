@@ -109,11 +109,11 @@ const CommunityReferralActions: React.FC<ReferralReasonData> = ({ status, referr
 
   return (
     <>
-      <Button kind="primary" size="md" onClick={refearralReasonsHandleClick}>
+      <Button kind="primary" size="xs" onClick={refearralReasonsHandleClick}>
         {t('viewReasons', 'View reasons')}
       </Button>
       {status === 'completed' ? null : (
-        <Button kind="primary" size="md" onClick={handleInitiateAuthorization}>
+        <Button kind="primary" size="xs" onClick={handleInitiateAuthorization}>
           {t('serveClient', 'Serve client')}
         </Button>
       )}

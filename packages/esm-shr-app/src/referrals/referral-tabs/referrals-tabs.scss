@@ -7,6 +7,13 @@
   margin: 2rem 0;
 }
 
+.referralsList {
+  padding: 0 layout.$spacing-05;
+  gap: layout.$spacing-05;
+  display: flex;
+  flex-direction: column;
+}
+
 .emptyStateContainer,
 .loaderContainer {
   @extend .container;
@@ -188,22 +195,11 @@
 
 .actionBtn {
   display: flex;
-  gap: 0.5rem;
-  margin-right: layout.$spacing-05;
-
-  :global(.cds--inline-loading) {
-    min-height: spacing.$spacing-05;
-  }
+  gap: layout.$spacing-03;
+  justify-content: flex-end;
 }
 
 .mainSection {
   display: grid;
   grid-template-columns: 16rem 1fr;
-}
-
-.tabsContainer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 0 layout.$spacing-05;
 }

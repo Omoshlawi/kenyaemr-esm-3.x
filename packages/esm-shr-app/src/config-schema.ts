@@ -21,6 +21,11 @@ export const configSchema = {
     _description: 'Social Health Authority Unique Identification Number',
     _default: '24aedd37-b5be-4e08-8311-3721b8d5100d',
   },
+  providerPhoneNumberAttributeType: {
+    _type: Type.UUID,
+    _description: 'Provider phone number attribute type uuid',
+    _default: '37daed7f-1f4e-4e62-8e83-6048ade18a87',
+  },
 };
 
 export type ReferralConfigObject = {
@@ -28,4 +33,5 @@ export type ReferralConfigObject = {
   nationalIdIdentifierType: string;
   phoneNumberAttributeType: string;
   socialHealthAuthorityIdentifierType: string;
+  providerPhoneNumberAttributeType: string;
 };

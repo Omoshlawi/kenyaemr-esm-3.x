@@ -16,7 +16,18 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
 }));
 
 vi.mock('../refferals.resource', () => ({
+  pullEmmegencyCases: vi.fn(),
   pullFacilityReferrals: vi.fn(),
+  useEmtCases: vi.fn(() => ({
+    referrals: [],
+    error: null,
+    isLoading: false,
+    mutate: vi.fn(),
+  })),
+}));
+
+vi.mock('./emt-referrals.component', () => ({
+  default: vi.fn(() => <div data-testid="emt-referrals-panel">EMT Cases</div>),
 }));
 
 vi.mock('../referrals.component', () => {
@@ -32,12 +43,13 @@ describe('ReferralTabs', () => {
     vi.clearAllMocks();
   });
 
-  test('should render the referral tabs component with three tabs', () => {
+  test('should render the referral tabs component with four tabs', () => {
     render(<ReferralTabs />);
 
     expect(screen.getByText('From Community')).toBeInTheDocument();
     expect(screen.getByText('From Facility')).toBeInTheDocument();
     expect(screen.getByText('Completed')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'EMT Cases' })).toBeInTheDocument();
   });
 
   test('should render action buttons for pulling referrals and referring patients', () => {
@@ -166,6 +178,6 @@ describe('ReferralTabs', () => {
 
     // All tab panels are rendered in the DOM (Carbon tabs behavior)
     const tabPanels = screen.getAllByRole('tabpanel', { hidden: true });
-    expect(tabPanels).toHaveLength(3);
+    expect(tabPanels).toHaveLength(4);
   });
 });

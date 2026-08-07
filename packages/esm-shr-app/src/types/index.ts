@@ -327,3 +327,35 @@ export interface DashboardConfig {
   slot: string;
   title: string;
 }
+
+export type EmtCase = {
+  uuid: string;
+  submissionId: number;
+  caseNumber: string;
+  crId: string;
+  status: string;
+  ambulanceFrCode: string;
+  facilityFrCode: string;
+  evacuationScene: null;
+  referralReason: null;
+  referralCategory: null;
+  transportModality: null;
+  referralNotes: string;
+  bundleId: string;
+  interventions: string[];
+  requestedAt: string;
+  updatedAt: string;
+  consentRequestId: string | null;
+  consentChannel: string | null;
+  consentMaskedTarget: string | null;
+  consentExpiresAt: string | null;
+  consentRef: string | null;
+  ambulanceClaimRef: string | null;
+  acceptedAt: string | null;
+  practitionerUuid: string | null;
+  practitionerIdentifier: string | null;
+  practitionerRegulator: string | null;
+  accepted: boolean;
+  consentPending: boolean;
+  referralId: number | null;
+};

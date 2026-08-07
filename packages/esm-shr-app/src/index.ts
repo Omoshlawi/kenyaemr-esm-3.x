@@ -88,3 +88,11 @@ export const referralDetailModal = getAsyncLifecycle(
   () => import('./shrpatient-summary/referral-detail.modal.component'),
   options,
 );
+export const emtCaseDetailModal = getAsyncLifecycle(
+  () => import('./referrals/referral-modals/emt-case-detail.modal'),
+  options,
+);
+export const acceptCaseModal = getAsyncLifecycle(
+  () => import('./referrals/referral-modals/accept-case.modal'),
+  options,
+);

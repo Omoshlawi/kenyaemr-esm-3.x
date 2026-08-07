@@ -95,6 +95,14 @@
     {
       "name": "view-refferal-detail-modal",
       "component": "referralDetailModal"
+    },
+    {
+      "name": "accept-emt-case-modal",
+      "component": "acceptCaseModal"
+    },
+    {
+      "name": "emt-case-detail-modal",
+      "component": "emtCaseDetailModal"
     }
   ]
 }
