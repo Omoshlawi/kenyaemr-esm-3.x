@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Column, ComboBox, Form, Grid, Modal, Select, SelectItem, TextArea, TextInput } from '@carbon/react';
+import { Button, Column, Form, Grid, Modal, Select, SelectItem, TextArea, TextInput } from '@carbon/react';
 import { DocumentAdd, Table as TableIcon } from '@carbon/react/icons';
-import { showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import { showSnackbar, useConfig, useDebounce, useSession } from '@openmrs/esm-framework';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import styles from '../anaesthetic.scss';
 import DiagnosisSearch from './icd11-diagnosis-search.component';
+import SearchableSelect from './searchable-select.component';
 import TimePickerDropdown from './time-picker-dropdown.component';
 import {
   type AnaestheticFormValues,
@@ -17,10 +18,11 @@ import {
   saveAnaestheticRecord,
   useAnaestheticEncounterDefaults,
   useAnaestheticProcedureOptions,
-  useAnaestheticProviderOptions,
   useAnaestheticProviderSearch,
   useAnaestheticRecords,
 } from '../resources/anaesthetic-form.resource';
+
+const SEARCH_MIN_CHARS = 3;
 
 const SIDE_OPTIONS = [
   { value: '', label: 'Select side' },
@@ -80,15 +82,27 @@ const AnaestheticRecordForm: React.FC<AnaestheticRecordFormProps> = ({ patientUu
   const [selectedRecord, setSelectedRecord] = useState<AnaestheticRecordRow | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [operationSearchTerm, setOperationSearchTerm] = useState('');
-  const [selectedOperation, setSelectedOperation] = useState<ProcedureOption | null>(null);
   const [surgeonSearchTerm, setSurgeonSearchTerm] = useState('');
   const [scrubNurseSearchTerm, setScrubNurseSearchTerm] = useState('');
+  const [circulatingNurseSearchTerm, setCirculatingNurseSearchTerm] = useState('');
   const [selectedSurgeonProvider, setSelectedSurgeonProvider] = useState<ProviderOption | null>(null);
   const [selectedScrubNurseProvider, setSelectedScrubNurseProvider] = useState<ProviderOption | null>(null);
-  const { providers, isLoading: isLoadingProviders } = useAnaestheticProviderOptions();
-  const { providers: searchedSurgeons } = useAnaestheticProviderSearch(surgeonSearchTerm);
-  const { providers: searchedScrubNurses } = useAnaestheticProviderSearch(scrubNurseSearchTerm);
-  const { procedures, isLoading: isLoadingProcedures } = useAnaestheticProcedureOptions(operationSearchTerm);
+  const [selectedCirculatingNurseProvider, setSelectedCirculatingNurseProvider] = useState<ProviderOption | null>(null);
+  const debouncedOperationSearch = useDebounce(operationSearchTerm, 300);
+  const debouncedSurgeonSearch = useDebounce(surgeonSearchTerm, 300);
+  const debouncedScrubNurseSearch = useDebounce(scrubNurseSearchTerm, 300);
+  const debouncedCirculatingNurseSearch = useDebounce(circulatingNurseSearchTerm, 300);
+  const { providers: searchedSurgeons, isLoading: isLoadingSurgeons } =
+    useAnaestheticProviderSearch(debouncedSurgeonSearch);
+  const { providers: searchedScrubNurses, isLoading: isLoadingScrubNurses } =
+    useAnaestheticProviderSearch(debouncedScrubNurseSearch);
+  const { providers: searchedCirculatingNurses, isLoading: isLoadingCirculatingNurses } = useAnaestheticProviderSearch(
+    debouncedCirculatingNurseSearch,
+  );
+  const { procedures, isLoading: isLoadingProcedures } = useAnaestheticProcedureOptions(
+    debouncedOperationSearch,
+    SEARCH_MIN_CHARS,
+  );
   const { records: backendRecords, mutate: mutateBackendRecords } = useAnaestheticRecords(patientUuid);
   const { defaults, isLoading: isLoadingDefaults } = useAnaestheticEncounterDefaults(patientUuid, {
     uuid: session?.currentProvider?.uuid,
@@ -111,6 +125,7 @@ const AnaestheticRecordForm: React.FC<AnaestheticRecordFormProps> = ({ patientUu
       anaesthetistName: '',
       surgeonProviderUuid: '',
       scrubNurseProviderUuid: '',
+      circulatingNurseProviderUuid: '',
       typeOfPremedication: '',
       effect: '',
       timeGiven: '',
@@ -129,67 +144,14 @@ const AnaestheticRecordForm: React.FC<AnaestheticRecordFormProps> = ({ patientUu
     },
   });
 
-  const baseSelectableProviders = useMemo(() => {
-    if (providers.length > 0) {
-      return providers;
-    }
-
-    if (defaults.anaesthetistProviderUuid) {
-      return [
-        {
-          uuid: defaults.anaesthetistProviderUuid,
-          display: defaults.anaesthetistName || 'Current provider',
-        },
-      ];
-    }
-
-    return [];
-  }, [defaults.anaesthetistName, defaults.anaesthetistProviderUuid, providers]);
-
-  const operationOptions = useMemo(
-    () =>
-      Array.from(
-        new Map(
-          [...procedures, ...(selectedOperation ? [selectedOperation] : [])].map((procedure) => [
-            procedure.uuid || procedure.display,
-            procedure,
-          ]),
-        ).values(),
-      ),
-    [procedures, selectedOperation],
-  );
-
-  const surgeonOptions = useMemo(
-    () =>
-      Array.from(
-        new Map(
-          [
-            ...baseSelectableProviders,
-            ...searchedSurgeons,
-            ...(selectedSurgeonProvider ? [selectedSurgeonProvider] : []),
-          ].map((provider) => [provider.uuid, provider]),
-        ).values(),
-      ),
-    [baseSelectableProviders, searchedSurgeons, selectedSurgeonProvider],
-  );
-
-  const scrubNurseOptions = useMemo(
-    () =>
-      Array.from(
-        new Map(
-          [
-            ...baseSelectableProviders,
-            ...searchedScrubNurses,
-            ...(selectedScrubNurseProvider ? [selectedScrubNurseProvider] : []),
-          ].map((provider) => [provider.uuid, provider]),
-        ).values(),
-      ),
-    [baseSelectableProviders, searchedScrubNurses, selectedScrubNurseProvider],
-  );
-
   const providerLookup = useMemo(
-    () => new Map([...surgeonOptions, ...scrubNurseOptions].map((provider) => [provider.uuid, provider.display])),
-    [surgeonOptions, scrubNurseOptions],
+    () =>
+      new Map(
+        [selectedSurgeonProvider, selectedScrubNurseProvider, selectedCirculatingNurseProvider]
+          .filter((provider): provider is ProviderOption => provider != null)
+          .map((provider) => [provider.uuid, provider.display]),
+      ),
+    [selectedCirculatingNurseProvider, selectedScrubNurseProvider, selectedSurgeonProvider],
   );
 
   const existingTimeEntries = useMemo(
@@ -259,6 +221,7 @@ const AnaestheticRecordForm: React.FC<AnaestheticRecordFormProps> = ({ patientUu
       legSite: '',
       surgeonName: providerLookup.get(values.surgeonProviderUuid) || '',
       scrubNurseName: providerLookup.get(values.scrubNurseProviderUuid) || '',
+      circulatingNurseName: providerLookup.get(values.circulatingNurseProviderUuid) || '',
     } as unknown as AnaestheticFormValues;
 
     setIsSaving(true);
@@ -274,6 +237,13 @@ const AnaestheticRecordForm: React.FC<AnaestheticRecordFormProps> = ({ patientUu
       if (result.success) {
         await mutateBackendRecords();
         reset();
+        setOperationSearchTerm('');
+        setSurgeonSearchTerm('');
+        setScrubNurseSearchTerm('');
+        setCirculatingNurseSearchTerm('');
+        setSelectedSurgeonProvider(null);
+        setSelectedScrubNurseProvider(null);
+        setSelectedCirculatingNurseProvider(null);
         setActiveView('table');
         showSnackbar({
           title: t('anaestheticSaved', 'Anaesthetic form saved'),
@@ -379,43 +349,28 @@ const AnaestheticRecordForm: React.FC<AnaestheticRecordFormProps> = ({ patientUu
                 />
               </Column>
 
-              <Column lg={6} md={4} sm={4}>
+              <Column lg={4} md={4} sm={4}>
                 <Controller
                   name="operation"
                   control={control}
                   render={({ field }) => (
-                    <>
-                      <ComboBox
-                        id="anaesthetic-operation"
-                        titleText={t('operation', 'Operation')}
-                        items={operationOptions}
-                        itemToString={(item) => item?.display ?? ''}
-                        selectedItem={
-                          operationOptions.find((procedure) => procedure.display === field.value?.display) ||
-                          (selectedOperation?.display === field.value?.display ? selectedOperation : null)
-                        }
-                        placeholder={
-                          isLoadingProcedures
-                            ? t('loadingProcedures', 'Loading procedures...')
-                            : operationOptions.length > 0
-                            ? t('selectOrSearchOperation', 'Select from list or type to search more operations')
-                            : t('noProceduresFound', 'No procedures found')
-                        }
-                        onChange={({ selectedItem }) => {
-                          const selected = (selectedItem as ProcedureOption) || null;
-                          const withUuid = selected ? { ...selected, uuid: PROCEDURE_ORDER_TYPE_UUID } : null;
-                          field.onChange(withUuid);
-                          setSelectedOperation(withUuid);
-                        }}
-                        onInputChange={(value) => setOperationSearchTerm(value || '')}
-                        onBlur={field.onBlur}
-                        disabled={isLoadingProcedures}
-                      />
-                    </>
+                    <SearchableSelect
+                      id="anaesthetic-operation"
+                      labelText={t('operation', 'Operation')}
+                      value={field.value}
+                      items={procedures}
+                      isLoading={isLoadingProcedures}
+                      onSearchQueryChange={setOperationSearchTerm}
+                      minChars={SEARCH_MIN_CHARS}
+                      placeholder={t('searchOperationPlaceholder', 'Type at least 3 letters to search operations')}
+                      onChange={(selected) => {
+                        field.onChange(selected as ProcedureOption | null);
+                      }}
+                    />
                   )}
                 />
               </Column>
-              <Column lg={5} md={4} sm={4}>
+              <Column lg={4} md={4} sm={4}>
                 <Controller
                   name="anaesthetistName"
                   control={control}
@@ -429,66 +384,92 @@ const AnaestheticRecordForm: React.FC<AnaestheticRecordFormProps> = ({ patientUu
                   )}
                 />
               </Column>
-              <Column lg={5} md={4} sm={4}>
+              <Column lg={4} md={4} sm={4}>
                 <Controller
                   name="surgeonProviderUuid"
                   control={control}
                   render={({ field }) => (
-                    <ComboBox
+                    <SearchableSelect
                       id="anaesthetic-surgeon"
-                      titleText={t('surgeon', 'Surgeon')}
-                      items={surgeonOptions}
-                      itemToString={(item) => item?.display ?? ''}
-                      selectedItem={
-                        surgeonOptions.find((provider) => provider.uuid === field.value) ||
-                        (selectedSurgeonProvider?.uuid === field.value ? selectedSurgeonProvider : null)
+                      labelText={t('surgeon', 'Surgeon')}
+                      value={
+                        selectedSurgeonProvider?.uuid === field.value
+                          ? selectedSurgeonProvider
+                          : field.value
+                          ? { uuid: field.value, display: providerLookup.get(field.value) || '' }
+                          : null
                       }
-                      placeholder={
-                        isLoadingProviders
-                          ? t('loadingProviders', 'Loading providers...')
-                          : surgeonOptions.length > 0
-                          ? t('searchSelectSurgeon', 'Search and select surgeon')
-                          : t('searchProviderByName', 'Type at least 3 letters to search provider')
-                      }
-                      onChange={({ selectedItem }) => {
-                        field.onChange(selectedItem?.uuid ?? '');
-                        setSelectedSurgeonProvider((selectedItem as ProviderOption) || null);
+                      items={searchedSurgeons}
+                      isLoading={isLoadingSurgeons}
+                      onSearchQueryChange={setSurgeonSearchTerm}
+                      minChars={SEARCH_MIN_CHARS}
+                      placeholder={t('searchSurgeonPlaceholder', 'Type at least 3 letters to search surgeon')}
+                      onChange={(selected) => {
+                        const provider = selected as ProviderOption | null;
+                        field.onChange(provider?.uuid ?? '');
+                        setSelectedSurgeonProvider(provider);
                       }}
-                      onInputChange={(value) => setSurgeonSearchTerm(value || '')}
-                      onBlur={field.onBlur}
-                      disabled={isLoadingProviders && surgeonOptions.length === 0}
                     />
                   )}
                 />
               </Column>
-              <Column lg={5} md={4} sm={4}>
+              <Column lg={4} md={4} sm={4}>
                 <Controller
                   name="scrubNurseProviderUuid"
                   control={control}
                   render={({ field }) => (
-                    <ComboBox
+                    <SearchableSelect
                       id="anaesthetic-scrub-nurse"
-                      titleText={t('scrubNurse', 'Scrub Nurse')}
-                      items={scrubNurseOptions}
-                      itemToString={(item) => item?.display ?? ''}
-                      selectedItem={
-                        scrubNurseOptions.find((provider) => provider.uuid === field.value) ||
-                        (selectedScrubNurseProvider?.uuid === field.value ? selectedScrubNurseProvider : null)
+                      labelText={t('scrubNurse', 'Scrub Nurse')}
+                      value={
+                        selectedScrubNurseProvider?.uuid === field.value
+                          ? selectedScrubNurseProvider
+                          : field.value
+                          ? { uuid: field.value, display: providerLookup.get(field.value) || '' }
+                          : null
                       }
-                      placeholder={
-                        isLoadingProviders
-                          ? t('loadingProviders', 'Loading providers...')
-                          : scrubNurseOptions.length > 0
-                          ? t('searchSelectScrubNurse', 'Search and select scrub nurse')
-                          : t('searchProviderByName', 'Type at least 3 letters to search provider')
-                      }
-                      onChange={({ selectedItem }) => {
-                        field.onChange(selectedItem?.uuid ?? '');
-                        setSelectedScrubNurseProvider((selectedItem as ProviderOption) || null);
+                      items={searchedScrubNurses}
+                      isLoading={isLoadingScrubNurses}
+                      onSearchQueryChange={setScrubNurseSearchTerm}
+                      minChars={SEARCH_MIN_CHARS}
+                      placeholder={t('searchScrubNursePlaceholder', 'Type at least 3 letters to search scrub nurse')}
+                      onChange={(selected) => {
+                        const provider = selected as ProviderOption | null;
+                        field.onChange(provider?.uuid ?? '');
+                        setSelectedScrubNurseProvider(provider);
                       }}
-                      onInputChange={(value) => setScrubNurseSearchTerm(value || '')}
-                      onBlur={field.onBlur}
-                      disabled={isLoadingProviders && scrubNurseOptions.length === 0}
+                    />
+                  )}
+                />
+              </Column>
+              <Column lg={4} md={4} sm={4}>
+                <Controller
+                  name="circulatingNurseProviderUuid"
+                  control={control}
+                  render={({ field }) => (
+                    <SearchableSelect
+                      id="anaesthetic-circulating-nurse"
+                      labelText={t('circulatingNurse', 'Circulating Nurse')}
+                      value={
+                        selectedCirculatingNurseProvider?.uuid === field.value
+                          ? selectedCirculatingNurseProvider
+                          : field.value
+                          ? { uuid: field.value, display: providerLookup.get(field.value) || '' }
+                          : null
+                      }
+                      items={searchedCirculatingNurses}
+                      isLoading={isLoadingCirculatingNurses}
+                      onSearchQueryChange={setCirculatingNurseSearchTerm}
+                      minChars={SEARCH_MIN_CHARS}
+                      placeholder={t(
+                        'searchCirculatingNursePlaceholder',
+                        'Type at least 3 letters to search circulating nurse',
+                      )}
+                      onChange={(selected) => {
+                        const provider = selected as ProviderOption | null;
+                        field.onChange(provider?.uuid ?? '');
+                        setSelectedCirculatingNurseProvider(provider);
+                      }}
                     />
                   )}
                 />
@@ -599,8 +580,7 @@ const AnaestheticRecordForm: React.FC<AnaestheticRecordFormProps> = ({ patientUu
 
             <div className={styles.anaestheticFormActions}>
               <p className={styles.anaestheticFormHint}>
-                {(isLoadingDefaults || isLoadingProviders || isLoadingProcedures) &&
-                  t('anaestheticLoadingDefaults', 'Loading encounter context, providers and procedures...')}
+                {isLoadingDefaults && t('anaestheticLoadingDefaults', 'Loading encounter context...')}
               </p>
               <Button type="submit" kind="primary" disabled={isSaving || isSubmitting}>
                 {isSaving ? t('saving', 'Saving...') : t('saveAnaestheticRecord', 'Save anaesthetic record')}
@@ -674,6 +654,7 @@ const AnaestheticRecordForm: React.FC<AnaestheticRecordFormProps> = ({ patientUu
               <DetailItem label={t('anaesthetist', 'Anaesthetist')} value={selectedRecord.anaesthetist} />
               <DetailItem label={t('surgeon', 'Surgeon')} value={selectedRecord.surgeon} />
               <DetailItem label={t('scrubNurse', 'Scrub Nurse')} value={selectedRecord.scrubNurse} />
+              <DetailItem label={t('circulatingNurse', 'Circulating Nurse')} value={selectedRecord.circulatingNurse} />
               <DetailItem
                 label={t('typeOfPremedication', 'Type of premedication')}
                 value={selectedRecord.typeOfPremedication}

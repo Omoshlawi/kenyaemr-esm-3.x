@@ -12,6 +12,7 @@ function formatDateForOpenMRS(date: Date): string {
   // toOmrsIsoString may produce +0300; OpenMRS needs +03:00
   return isoStr.replace(/(\+|-)([0-9]{2})([0-9]{2})$/, '$1$2:$3');
 }
+export const CIRCULATING_NURSE_CONCEPT_UUID = '166691AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const ANAESTHETIC_RECORD_ENCOUNTER_UUID = 'd14dde5b-95dc-40a1-8ff0-acad34fb58b2';
 const DEFAULT_ENCOUNTER_PROVIDER_ROLE = 'a0b03050-c99b-11e0-9572-0800200c9a66';
 const EVENT_DESCRIPTION_CONCEPT = PARTOGRAPHY_CONCEPTS['event-description'];
@@ -30,6 +31,7 @@ const RECORD_METADATA_PREFIXES = {
   anaesthetist: 'Anaesthetist:',
   surgeon: 'Surgeon:',
   scrubNurse: 'Scrub Nurse:',
+  circulatingNurse: 'Circulating Nurse:',
   typeOfPremedication: 'Type of Premedication:',
   effect: 'Effect:',
   timeGiven: 'Time Given:',
@@ -159,6 +161,8 @@ export type AnaestheticFormValues = {
   surgeonName?: string;
   scrubNurseProviderUuid: string;
   scrubNurseName?: string;
+  circulatingNurseProviderUuid: string;
+  circulatingNurseName?: string;
   typeOfPremedication: string;
   effect: string;
   timeGiven: string;
@@ -213,6 +217,7 @@ export type AnaestheticRecordRow = {
   anaesthetist: string;
   surgeon: string;
   scrubNurse: string;
+  circulatingNurse: string;
   typeOfPremedication: string;
   effect: string;
   timeGiven: string;
@@ -290,34 +295,22 @@ export function useAnaestheticProviderSearch(searchTerm: string) {
   };
 }
 
-export function useAnaestheticProcedureOptions(searchQuery = '') {
+export function useAnaestheticProcedureOptions(searchQuery = '', minChars = 3) {
   const customRep = 'custom:(uuid,display)';
   const config = useConfig() as any;
   const proceduresConceptClassUuid = config?.proceduresConceptClassUuid ?? '8d490bf4-c2cc-11de-8d13-0010c6dffd0f';
   const trimmedQuery = searchQuery.trim();
-  const baseClassUrl = `${restBaseUrl}/concept?v=${customRep}&class=${proceduresConceptClassUuid}&limit=4`;
-  const baseFallbackUrl = `${restBaseUrl}/concept?v=${customRep}&limit=4`;
   const searchClassUrl =
-    trimmedQuery.length >= 2
+    trimmedQuery.length >= minChars
       ? `${restBaseUrl}/concept?v=${customRep}&class=${proceduresConceptClassUuid}&q=${encodeURIComponent(
           trimmedQuery,
         )}&limit=20`
       : null;
   const searchFallbackUrl =
-    trimmedQuery.length >= 2
+    trimmedQuery.length >= minChars
       ? `${restBaseUrl}/concept?v=${customRep}&q=${encodeURIComponent(trimmedQuery)}&limit=20`
       : null;
 
-  const {
-    data: baseClassData,
-    error: baseClassError,
-    isLoading: isLoadingBaseClassResults,
-  } = useSWR<FetchResponse<{ results?: ProcedureConceptResource[] }>>(baseClassUrl, openmrsFetch);
-  const {
-    data: baseFallbackData,
-    error: baseFallbackError,
-    isLoading: isLoadingBaseFallbackResults,
-  } = useSWR<FetchResponse<{ results?: ProcedureConceptResource[] }>>(baseFallbackUrl, openmrsFetch);
   const {
     data: searchClassData,
     error: searchClassError,
@@ -329,28 +322,22 @@ export function useAnaestheticProcedureOptions(searchQuery = '') {
     isLoading: isLoadingSearchFallbackResults,
   } = useSWR<FetchResponse<{ results?: ProcedureConceptResource[] }>>(searchFallbackUrl, openmrsFetch);
 
-  const baseClassResults = baseClassData?.data?.results ?? [];
-  const baseFallbackResults = baseFallbackData?.data?.results ?? [];
   const searchClassResults = searchClassData?.data?.results ?? [];
   const searchFallbackResults = searchFallbackData?.data?.results ?? [];
+  const sourceResults = searchClassResults.length > 0 ? searchClassResults : searchFallbackResults;
 
-  const baseSourceResults = baseClassResults.length > 0 ? baseClassResults : baseFallbackResults;
-  const searchSourceResults = searchClassResults.length > 0 ? searchClassResults : searchFallbackResults;
-  const sourceResults = trimmedQuery.length >= 2 ? searchSourceResults : baseSourceResults;
-
-  const procedures: ProcedureOption[] = sourceResults.map((procedure) => ({
-    uuid: procedure.uuid,
-    display: procedure.display,
-  }));
+  const procedures: ProcedureOption[] =
+    trimmedQuery.length >= minChars
+      ? sourceResults.map((procedure) => ({
+          uuid: procedure.uuid,
+          display: procedure.display,
+        }))
+      : [];
 
   return {
     procedures,
-    isLoading:
-      isLoadingBaseClassResults ||
-      isLoadingBaseFallbackResults ||
-      isLoadingSearchClassResults ||
-      isLoadingSearchFallbackResults,
-    error: baseClassError || baseFallbackError || searchClassError || searchFallbackError,
+    isLoading: isLoadingSearchClassResults || isLoadingSearchFallbackResults,
+    error: searchClassError || searchFallbackError,
   };
 }
 
@@ -445,6 +432,8 @@ function buildAnaestheticObservations(formData: AnaestheticFormValues) {
   pushMetadataObservation(observations, RECORD_METADATA_PREFIXES.anaesthetist, formData.anaesthetistName);
   pushMetadataObservation(observations, RECORD_METADATA_PREFIXES.surgeon, formData.surgeonName);
   pushMetadataObservation(observations, RECORD_METADATA_PREFIXES.scrubNurse, formData.scrubNurseName);
+  pushMetadataObservation(observations, RECORD_METADATA_PREFIXES.circulatingNurse, formData.circulatingNurseName);
+  pushTextObservation(observations, CIRCULATING_NURSE_CONCEPT_UUID, formData.circulatingNurseName);
   // Free-text concepts
   pushTextObservation(observations, 'e2d62825-9bf1-4deb-b467-025ac50b7029', formData.typeOfPremedication);
   pushTextObservation(observations, '164377AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', formData.effect);
@@ -476,6 +465,7 @@ function buildEncounterProviders(formData: AnaestheticFormValues, fallbackProvid
         formData.anaesthetistProviderUuid,
         formData.surgeonProviderUuid,
         formData.scrubNurseProviderUuid,
+        formData.circulatingNurseProviderUuid,
         fallbackProviderUuid,
       ].filter(Boolean),
     ),
@@ -627,6 +617,9 @@ function mapEncounterToAnaestheticRecord(encounter: AnaestheticEncounterResource
     anaesthetist: parseMetadataValue(observations, RECORD_METADATA_PREFIXES.anaesthetist),
     surgeon: parseMetadataValue(observations, RECORD_METADATA_PREFIXES.surgeon),
     scrubNurse: parseMetadataValue(observations, RECORD_METADATA_PREFIXES.scrubNurse),
+    circulatingNurse:
+      parseMetadataValue(observations, RECORD_METADATA_PREFIXES.circulatingNurse) ||
+      getObservationValue(observations, CIRCULATING_NURSE_CONCEPT_UUID),
     typeOfPremedication: getObservationValue(observations, 'e2d62825-9bf1-4deb-b467-025ac50b7029'),
     effect: getObservationValue(observations, '164377AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'),
     timeGiven: parseMetadataValue(observations, RECORD_METADATA_PREFIXES.timeGiven),
