@@ -1,20 +1,31 @@
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { SHRSummary } from '../types/index';
 
-export const useSHRSummary = (patientUuid: string) => {
-  const shrSummaryUrl = `/ws/rest/v1/kenyaemril/hie-patient-history?patientUuid=${patientUuid}`;
-  const { data, mutate, error, isLoading } = useSWR<{ data: SHRSummary }>(shrSummaryUrl, openmrsFetch);
+/**
+ * Loads the patient's SHR history from
+ * `/kenyaemril/hie-patient-history?patientUuid={uuid}&practitionerUuid={uuid}`.
+ */
+export const useSHRSummary = (patientUuid: string, practitionerUuid?: string | null) => {
+  const url =
+    patientUuid && practitionerUuid
+      ? `${restBaseUrl}/kenyaemril/hie-patient-history?patientUuid=${encodeURIComponent(
+          patientUuid,
+        )}&practitionerUuid=${encodeURIComponent(practitionerUuid)}`
+      : null;
+  const { data, mutate, error, isLoading, isValidating } = useSWR<{ data: SHRSummary }>(url, openmrsFetch);
 
   return {
-    data: data?.data ? { ...data?.data, medications: [] } : null,
+    data: data?.data ?? null,
     isError: error,
-    isLoading: isLoading,
+    isLoading,
+    isValidating,
+    mutate,
   };
 };
 
 export const useCommunityReferrals = (status: string) => {
-  const shrSummaryUrl = `/ws/rest/v1/kenyaemril/communityReferrals?status=${status}`;
+  const shrSummaryUrl = `${restBaseUrl}/kenyaemril/communityReferrals?status=${status}`;
   const { data, mutate, error, isLoading } = useSWR<{ data: SHRSummary }>(shrSummaryUrl, openmrsFetch);
 
   return {

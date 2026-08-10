@@ -1,0 +1,640 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '~@openmrs/esm-styleguide/src/vars' as *;
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.tile {
+  border: 1px solid colors.$gray-20;
+}
+
+.desktopHeading,
+.tabletHeading {
+  text-align: left;
+  text-transform: capitalize;
+
+  h4 {
+    @include type.type-style('heading-compact-02');
+    color: colors.$gray-70;
+
+    &:after {
+      content: '';
+      display: block;
+      width: layout.$layout-05;
+      padding-top: 3px;
+      border-bottom: 0.375rem solid;
+      @include brand-03(border-bottom-color);
+    }
+  }
+}
+
+.content {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-03;
+}
+
+.helper {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: layout.$spacing-03;
+  flex-wrap: wrap;
+}
+
+.consentCard {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+  background: colors.$white;
+  border: 1px solid $ui-03;
+}
+
+.consentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: layout.$spacing-04;
+  flex-wrap: wrap;
+  padding-bottom: layout.$spacing-04;
+  border-bottom: 1px solid $ui-03;
+}
+
+.consentTags {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  flex-wrap: wrap;
+}
+
+.consentTitle {
+  @include type.type-style('heading-compact-02');
+  color: colors.$gray-80;
+  margin: 0;
+}
+
+.consentGrid {
+  display: grid;
+  gap: layout.$spacing-04;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.consentItem {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.consentLabel {
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+.consentValue {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-100;
+  overflow-wrap: anywhere;
+}
+
+.consentActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+}
+
+.formStack {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.helperText {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
+  margin: 0;
+}
+
+.fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.legend {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-03;
+}
+
+.recordsSection {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.recordsAccordion {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  background: colors.$white;
+  border: 1px solid $ui-03;
+  padding: layout.$spacing-05;
+}
+
+.recordsHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: layout.$spacing-04;
+  flex-wrap: wrap;
+}
+
+.recordsTitle {
+  @include type.type-style('heading-compact-02');
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.recordsMeta {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-60;
+  margin: 0;
+  text-align: right;
+}
+
+.summaryTabs {
+  gap: 0;
+  overflow-x: auto;
+  border-bottom: 1px solid $ui-03;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.summaryTab {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: layout.$spacing-01;
+  min-width: 6.5rem;
+  width: 100%;
+  padding: layout.$spacing-03 layout.$spacing-04;
+  color: colors.$gray-70;
+  white-space: nowrap;
+
+  &:hover {
+    background: colors.$gray-10;
+    color: colors.$gray-100;
+  }
+
+  &:focus-visible {
+    outline: 2px solid colors.$blue-60;
+    outline-offset: -2px;
+  }
+}
+
+.summaryTabSelected {
+  border-bottom-color: colors.$blue-60;
+  color: colors.$gray-100;
+
+  .summaryTabLabel {
+    font-weight: 600;
+  }
+}
+
+.summaryTabLabel {
+  @include type.type-style('body-compact-01');
+}
+
+.summaryTabCount {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+}
+
+.summaryPanel {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.overviewGrid {
+  display: grid;
+  gap: layout.$spacing-04;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+
+.overviewCard {
+  appearance: none;
+  text-align: left;
+  background: colors.$gray-10;
+  border: 1px solid $ui-03;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  min-height: 7rem;
+  padding: layout.$spacing-05;
+
+  &:hover:not(:disabled) {
+    border-color: colors.$blue-60;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  &:focus-visible {
+    outline: 2px solid colors.$blue-60;
+    outline-offset: 1px;
+  }
+}
+
+.overviewCardTitle {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.overviewCardCount {
+  @include type.type-style('heading-03');
+  color: colors.$gray-100;
+}
+
+.overviewCardHint {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-60;
+}
+
+.sectionHeadingRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: layout.$spacing-04;
+  flex-wrap: wrap;
+}
+
+.sectionHeading {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.sectionSubheading {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-60;
+}
+
+.accordionTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.accordionCount {
+  margin-inline-start: layout.$spacing-02;
+}
+
+.emptySection {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
+  margin: layout.$spacing-03 0;
+}
+
+.episodesSection {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.incidentCards {
+  display: grid;
+  gap: layout.$spacing-04;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.incidentCard {
+  appearance: none;
+  background: colors.$gray-10;
+  border: 1px solid $ui-03;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  padding: layout.$spacing-04;
+  text-align: left;
+
+  &:hover {
+    border-color: colors.$gray-40;
+  }
+
+  &:focus-visible {
+    outline: 2px solid colors.$blue-60;
+    outline-offset: 1px;
+  }
+}
+
+.incidentCardSelected {
+  background: colors.$white;
+  border-color: colors.$blue-60;
+  border-top-color: colors.$blue-60;
+}
+
+.incidentCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+}
+
+.incidentCardId {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+}
+
+.incidentCardType {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.incidentCardMeta {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-60;
+  margin: 0;
+}
+
+.episodeDetail {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  border: 1px solid $ui-03;
+  background: colors.$white;
+  padding: layout.$spacing-05;
+}
+
+.episodeDetailHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: layout.$spacing-04;
+  flex-wrap: wrap;
+}
+
+.episodeDetailTitle {
+  @include type.type-style('heading-compact-02');
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.episodeDetailSeparator {
+  margin: 0 layout.$spacing-03;
+  color: colors.$gray-50;
+}
+
+.episodeDetailReference {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-60;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.metricsRow,
+.logisticsGrid {
+  display: grid;
+  gap: layout.$spacing-04;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  background: colors.$gray-10;
+  border: 1px solid $ui-03;
+  padding: layout.$spacing-04;
+}
+
+.metricItem {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.metricLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+  text-transform: none;
+}
+
+.metricValue {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-100;
+  overflow-wrap: anywhere;
+}
+
+.locationGrid {
+  display: grid;
+  gap: layout.$spacing-04;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  @media (max-width: 672px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.locationCard {
+  background: colors.$white;
+  border: 1px solid $ui-03;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  padding: layout.$spacing-05;
+}
+
+.locationEyebrow {
+  @include type.type-style('label-01');
+  color: colors.$blue-60;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.locationTitle {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.locationMeta {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-60;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.callerRow {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  border-top: 1px solid $ui-03;
+  padding-top: layout.$spacing-04;
+}
+
+.vitalsHighlightGrid {
+  display: grid;
+  gap: layout.$spacing-04;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.vitalHighlightCard {
+  background: colors.$gray-10;
+  border: 1px solid $ui-03;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  padding: layout.$spacing-05;
+}
+
+.vitalHighlightValue {
+  @include type.type-style('heading-03');
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.clinicalGrid {
+  display: grid;
+  gap: layout.$spacing-04;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-top: 1px solid $ui-03;
+  padding-top: layout.$spacing-05;
+
+  @media (max-width: 1056px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 672px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.clinicalColumn {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  min-width: 0;
+}
+
+.clinicalColumnHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+}
+
+.clinicalColumnTitle {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.clinicalColumnCount {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+}
+
+.clinicalEmpty {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-60;
+  margin: 0;
+}
+
+.clinicalList {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.clinicalListItem {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-01;
+}
+
+.clinicalPrimary {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-100;
+}
+
+.clinicalSecondary {
+  @include type.type-style('helper-text-01');
+  color: colors.$gray-60;
+  overflow-wrap: anywhere;
+}
+
+.footerSections {
+  display: grid;
+  gap: layout.$spacing-05;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid $ui-03;
+  padding-top: layout.$spacing-05;
+
+  @media (max-width: 672px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.footerSection {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.footerSectionTitle {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+  margin: 0;
+}
+
+.notification {
+  margin-bottom: layout.$spacing-05;
+}
+
+.otpInput {
+  border: 1px solid colors.$gray-50;
+  border-radius: layout.$spacing-03;
+  padding: layout.$spacing-03;
+  width: 2.75rem;
+  height: 2.75rem;
+  font-weight: 600;
+  text-align: center;
+  background: colors.$white;
+
+  &:focus {
+    outline: 2px solid colors.$blue-60;
+    outline-offset: 1px;
+  }
+}
+
+.otpSeparator {
+  color: colors.$gray-50;
+  font-weight: 600;
+}
+
+.emptyData {
+  min-height: layout.$layout-07;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}

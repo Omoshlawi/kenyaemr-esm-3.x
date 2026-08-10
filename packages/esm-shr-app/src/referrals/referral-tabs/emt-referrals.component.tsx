@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Button,
   DataTable,
   DataTableSkeleton,
+  Dropdown,
   InlineLoading,
   OverflowMenu,
   OverflowMenuItem,
@@ -24,6 +25,7 @@ import { Renew } from '@carbon/react/icons';
 import {
   ErrorState,
   formatDatetime,
+  navigate,
   parseDate,
   restBaseUrl,
   showModal,
@@ -35,11 +37,20 @@ import { EmptyDataIllustration, usePaginationInfo } from '@openmrs/esm-patient-c
 import { useTranslation } from 'react-i18next';
 import useSWRMutation from 'swr/mutation';
 import { EmtCase } from '../../types';
-import { pullEmmegencyCases, useEmtCases } from '../refferals.resource';
+import { pullEmmegencyCases, serveEmtClient, useEmtCases } from '../refferals.resource';
 import styles from './emt-referrals.scss';
 
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+const STATUS_FILTER_ALL = 'All';
+
+// Turns a raw status code such as `SUBMITTED_PROVIDER` into a readable label.
+const humanizeStatus = (status: string) =>
+  status
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 
 type EmtCaseRow = {
   id: string;
@@ -52,7 +63,11 @@ type EmtCaseRow = {
 
 const EmtReferrals = () => {
   const { t } = useTranslation();
-  const { error, isLoading, referrals, mutate } = useEmtCases();
+  const [statusFilter, setStatusFilter] = useState<string>(STATUS_FILTER_ALL);
+  const { error, isLoading, referrals, mutate } = useEmtCases(statusFilter);
+  // Accumulate every status we have seen so the filter options stay available
+  // even while the list is narrowed down to a single status server-side.
+  const [knownStatuses, setKnownStatuses] = useState<Array<string>>([]);
 
   const { trigger: refreshEmtCases, isMutating: isRefreshing } = useSWRMutation(
     `${restBaseUrl}/kenyaemril/pull-emt-cases`,
@@ -86,6 +101,20 @@ const EmtReferrals = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
+  useEffect(() => {
+    setKnownStatuses((prev) => {
+      const next = new Set(prev);
+      referrals.forEach((referral) => referral.status && next.add(referral.status));
+      return next.size === prev.length ? prev : Array.from(next).sort((a, b) => a.localeCompare(b));
+    });
+  }, [referrals]);
+
+  const statusFilterItems = useMemo(() => [STATUS_FILTER_ALL, ...knownStatuses], [knownStatuses]);
+
+  const handleStatusFilterChange = useCallback(({ selectedItem }: { selectedItem: string | null }) => {
+    setStatusFilter(selectedItem ?? STATUS_FILTER_ALL);
+  }, []);
+
   const headers: Array<DataTableHeader> = useMemo(
     () => [
       { key: 'crId', header: t('crId', 'CR ID') },
@@ -113,6 +142,12 @@ const EmtReferrals = () => {
   const isEmpty = filteredReferrals.length === 0;
   const { results, goTo, currentPage, paginated } = usePagination(filteredReferrals, pageSize);
   const { pageSizes } = usePaginationInfo(DEFAULT_PAGE_SIZE, filteredReferrals.length, currentPage, results.length);
+
+  // Reset to the first page whenever the status filter changes.
+  useEffect(() => {
+    goTo(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter]);
 
   const tableRows: Array<EmtCaseRow> = useMemo(
     () =>
@@ -155,6 +190,29 @@ const EmtReferrals = () => {
   const handleAccept = useCallback((item: EmtCase) => {
     const dismiss = showModal('accept-emt-case-modal', { onClose: () => dismiss(), item });
   }, []);
+
+  // Onboards the already-accepted case as a patient and opens their chart. The
+  // server reuses an existing patient for the case's CR ID, so this is safe to
+  // retry.
+  const handleServePatient = useCallback(
+    async (item: EmtCase) => {
+      try {
+        const { uuid } = await serveEmtClient(item.caseNumber);
+        navigate({ to: window.getOpenmrsSpaBase() + `patient/${uuid}/chart/Patient Summary` });
+      } catch (err) {
+        showSnackbar({
+          title: t('errorServingPatient', 'Error serving patient'),
+          subtitle:
+            (err as { responseBody?: { message?: string }; message?: string })?.responseBody?.message ??
+            (err as { message?: string })?.message ??
+            t('patientRegistrationFailed', 'The patient could not be served'),
+          kind: 'error',
+          isLowContrast: true,
+        });
+      }
+    },
+    [t],
+  );
 
   const getReferralByRowId = useCallback(
     (rowId: string) => filteredReferrals.find((referral) => referral.uuid === rowId),
@@ -203,14 +261,29 @@ const EmtReferrals = () => {
                     onChange={handleSearchChange}
                     placeholder={t('searchForEmtCases', 'Search for EMT cases')}
                   />
+                  <Dropdown
+                    hideLabel
+                    id="emt-status-filter"
+                    className={styles.statusFilter}
+                    size="sm"
+                    type="inline"
+                    titleText={t('status', 'Status')}
+                    label={t('filterByStatus', 'Filter by status')}
+                    items={statusFilterItems}
+                    selectedItem={statusFilter}
+                    itemToString={(item) => (item === STATUS_FILTER_ALL ? t('all', 'All') : humanizeStatus(item ?? ''))}
+                    onChange={handleStatusFilterChange}
+                  />
                   <div className={styles.refreshAction}>
-                    <InlineLoading
-                      className={styles.refreshStatus}
-                      description={t('refreshing', 'Refreshing...')}
-                      status={isRefreshing ? 'active' : 'inactive'}
-                      style={{ visibility: isRefreshing ? 'visible' : 'hidden' }}
-                      aria-hidden={!isRefreshing}
-                    />
+                    {isRefreshing && (
+                      <InlineLoading
+                        className={styles.refreshStatus}
+                        description={t('refreshing', 'Refreshing...')}
+                        status={isRefreshing ? 'active' : 'inactive'}
+                        style={{ visibility: isRefreshing ? 'visible' : 'hidden' }}
+                        aria-hidden={!isRefreshing}
+                      />
+                    )}
                     <Button
                       kind="ghost"
                       size="sm"
@@ -242,65 +315,92 @@ const EmtReferrals = () => {
                   </TableHead>
 
                   <TableBody>
-                    {rows.map((row) => (
-                      <React.Fragment key={row.id}>
-                        <TableRow {...getRowProps({ row })}>
-                          {row.cells.map((cell) => {
-                            if (cell.info.header === 'status') {
-                              return (
-                                <TableCell key={cell.id}>
-                                  <Tag size="sm">{cell.value}</Tag>
-                                </TableCell>
-                              );
-                            }
+                    {rows.map((row) => {
+                      const isSubmittedByProvider =
+                        row.cells.find((cell) => cell.info.header === 'status')?.value === 'SUBMITTED_PROVIDER';
+                      // A case can be accepted (consent verified) or still pending acceptance.
+                      // "Accept" only applies while pending; "Serve Patient" only once accepted.
+                      const isAccepted = getReferralByRowId(row.id)?.accepted ?? false;
 
-                            return <TableCell key={cell.id}>{cell.value}</TableCell>;
-                          })}
-                          <TableCell className="cds--table-column-menu">
-                            <OverflowMenu flipped size="sm" aria-label={t('rowActions', 'Row actions')}>
-                              <OverflowMenuItem
-                                itemText={t('viewDetails', 'Case Details')}
-                                onClick={() => {
-                                  const referral = getReferralByRowId(row.id);
-                                  if (referral) {
-                                    handleView(referral);
-                                  }
-                                }}
-                              />
-                              <OverflowMenuItem
-                                itemText={t('accept', 'Accept')}
-                                onClick={() => {
-                                  const referral = getReferralByRowId(row.id);
-                                  if (referral) {
-                                    handleAccept(referral);
-                                  }
-                                }}
-                              />
-                              <OverflowMenuItem
-                                itemText={t('reject', 'Reject')}
-                                hasDivider={true}
-                                isDelete={true}
-                                onClick={() => {
-                                  const referral = getReferralByRowId(row.id);
-                                  if (referral) {
-                                    showSnackbar({
-                                      title: t('underDevelopment', 'Under development'),
-                                      subtitle: t(
-                                        'thisFeatureIsNotAvailableYet',
-                                        'This feature is not available yet, coming soon.',
-                                      ),
-                                      kind: 'info',
-                                      isLowContrast: true,
-                                      timeoutInMs: 5000,
-                                    });
-                                  }
-                                }}
-                              />
-                            </OverflowMenu>
-                          </TableCell>
-                        </TableRow>
-                      </React.Fragment>
-                    ))}
+                      return (
+                        <React.Fragment key={row.id}>
+                          <TableRow {...getRowProps({ row })}>
+                            {row.cells.map((cell) => {
+                              if (cell.info.header === 'status') {
+                                return (
+                                  <TableCell key={cell.id}>
+                                    <Tag size="sm" type={isSubmittedByProvider ? 'green' : 'gray'}>
+                                      {cell.value}
+                                    </Tag>
+                                  </TableCell>
+                                );
+                              }
+
+                              return <TableCell key={cell.id}>{cell.value}</TableCell>;
+                            })}
+                            <TableCell className="cds--table-column-menu">
+                              <OverflowMenu flipped size="sm" aria-label={t('rowActions', 'Row actions')}>
+                                {!isAccepted && (
+                                  <OverflowMenuItem
+                                    itemText={t('viewDetails', 'Case Details')}
+                                    onClick={() => {
+                                      const referral = getReferralByRowId(row.id);
+                                      if (referral) {
+                                        handleView(referral);
+                                      }
+                                    }}
+                                  />
+                                )}
+                                {!isAccepted && (
+                                  <OverflowMenuItem
+                                    itemText={t('accept', 'Accept')}
+                                    onClick={() => {
+                                      const referral = getReferralByRowId(row.id);
+                                      if (referral) {
+                                        handleAccept(referral);
+                                      }
+                                    }}
+                                  />
+                                )}
+                                {isAccepted && (
+                                  <OverflowMenuItem
+                                    itemText={t('servePatient', 'Serve Patient')}
+                                    onClick={() => {
+                                      const referral = getReferralByRowId(row.id);
+                                      if (referral) {
+                                        handleServePatient(referral);
+                                      }
+                                    }}
+                                  />
+                                )}
+                                {!isAccepted && (
+                                  <OverflowMenuItem
+                                    itemText={t('reject', 'Reject')}
+                                    hasDivider={true}
+                                    isDelete={true}
+                                    onClick={() => {
+                                      const referral = getReferralByRowId(row.id);
+                                      if (referral) {
+                                        showSnackbar({
+                                          title: t('underDevelopment', 'Under development'),
+                                          subtitle: t(
+                                            'thisFeatureIsNotAvailableYet',
+                                            'This feature is not available yet, coming soon.',
+                                          ),
+                                          kind: 'info',
+                                          isLowContrast: true,
+                                          timeoutInMs: 5000,
+                                        });
+                                      }
+                                    }}
+                                  />
+                                )}
+                              </OverflowMenu>
+                            </TableCell>
+                          </TableRow>
+                        </React.Fragment>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}

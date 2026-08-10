@@ -26,6 +26,12 @@ export const configSchema = {
     _description: 'Provider phone number attribute type uuid',
     _default: '37daed7f-1f4e-4e62-8e83-6048ade18a87',
   },
+  registerPatientOnEmtCaseAcceptance: {
+    _type: Type.Boolean,
+    _description:
+      'Whether to automatically register (or reuse) a patient and navigate to their chart once an EMT case has been accepted.',
+    _default: false,
+  },
 };
 
 export type ReferralConfigObject = {
@@ -34,4 +40,5 @@ export type ReferralConfigObject = {
   phoneNumberAttributeType: string;
   socialHealthAuthorityIdentifierType: string;
   providerPhoneNumberAttributeType: string;
+  registerPatientOnEmtCaseAcceptance: boolean;
 };

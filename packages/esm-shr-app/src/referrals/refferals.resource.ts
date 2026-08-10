@@ -65,8 +65,8 @@ export const useCommunityReferral = (nupi: string) => {
   };
 };
 
-export const useEmtCases = () => {
-  const shrSummaryUrl = `${restBaseUrl}/kenyaemril/emt-cases`;
+export const useEmtCases = (status: string = 'All') => {
+  const shrSummaryUrl = `${restBaseUrl}/kenyaemril/emt-cases?status=${encodeURIComponent(status || 'All')}`;
   const { data, mutate, error, isLoading, isValidating } = useSWR<{ data: Array<EmtCase> }>(
     shrSummaryUrl,
     openmrsFetch,
@@ -76,6 +76,7 @@ export const useEmtCases = () => {
     referrals: data?.data ?? [],
     error,
     isLoading,
+    isValidating,
     mutate,
   };
 };
@@ -125,4 +126,28 @@ export const submitHandoverConcent = (caseNumber: string, otp: string) => {
       'Content-Type': 'application/json',
     },
   });
+};
+
+export type ResolvedPatient = {
+  uuid: string;
+  givenName?: string;
+  familyName?: string;
+};
+
+/**
+ * Onboards an accepted EMT case as an OpenMRS patient and returns the resolved
+ * patient. The server registers a placeholder patient (with demographics for
+ * registration to correct) for an unidentified arrival, and reuses an existing
+ * patient when one already holds the case's CR ID, so calling this twice for a
+ * case is safe.
+ */
+export const serveEmtClient = async (caseNumber: string): Promise<ResolvedPatient> => {
+  const { data } = await openmrsFetch<ResolvedPatient>(`${restBaseUrl}/kenyaemril/serve-emt-client`, {
+    method: 'POST',
+    body: { caseNumber },
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  return data;
 };

@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { Button, Layer, ModalBody, ModalFooter, ModalHeader, Tag, Tile } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import styles from './referral-modals.scss';
@@ -12,6 +12,7 @@ type ReferraLDetailProps = {
 
 const EmtCaseDetailModal: React.FC<ReferraLDetailProps> = ({ item: referralDetail, onClose }) => {
   const { t } = useTranslation();
+  const isOpeningAcceptModal = useRef(false);
 
   const detailItems: Array<{ label: string; value: string }> = [
     {
@@ -40,10 +41,22 @@ const EmtCaseDetailModal: React.FC<ReferraLDetailProps> = ({ item: referralDetai
     },
   ];
 
-  const handleAccept = useCallback((item: EmtCase) => {
+  const handleAccept = useCallback(() => {
+    if (isOpeningAcceptModal.current) {
+      return;
+    }
+
+    isOpeningAcceptModal.current = true;
     onClose?.();
-    const dismiss = showModal('accept-emt-case-modal', { onClose: () => dismiss(), item });
-  }, []);
+
+    // Defer so the detail modal fully closes before opening accept.
+    window.setTimeout(() => {
+      const dismiss = showModal('accept-emt-case-modal', {
+        onClose: () => dismiss(),
+        item: referralDetail,
+      });
+    }, 0);
+  }, [onClose, referralDetail]);
 
   return (
     <>
@@ -87,7 +100,7 @@ const EmtCaseDetailModal: React.FC<ReferraLDetailProps> = ({ item: referralDetai
         <Button kind="secondary" onClick={onClose}>
           {t('close', 'Close')}
         </Button>
-        <Button kind="primary" onClick={() => handleAccept(referralDetail)}>
+        <Button kind="primary" onClick={handleAccept}>
           {t('acceptCase', 'Accept Case')}
         </Button>
       </ModalFooter>

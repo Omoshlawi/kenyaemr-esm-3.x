@@ -150,6 +150,129 @@ export type SHRSummary = {
   conditions: Array<itemDetails>;
   medications: Array<itemDetails>;
   referrals: Array<itemDetails>;
+  emergencyEpisodes?: Array<EmergencyEpisode>;
+};
+
+export type FhirReference = {
+  name?: string | null;
+  reference?: string | null;
+  display?: string | null;
+};
+
+export type EmergencyEpisodeCaller = {
+  individual?: string | null;
+  relationship?: string | null;
+  isPatient?: boolean;
+};
+
+export type EmergencyEpisodeParticipant = {
+  role?: string | null;
+  reference?: string | null;
+  display?: string | null;
+};
+
+export type EmergencyEpisodeVital = {
+  uuid: string;
+  name?: string | null;
+  code?: string | null;
+  value?: string | number | null;
+  unit?: string | null;
+  effectiveDateTime?: string | null;
+};
+
+export type EmergencyEpisodeSecondarySurvey = {
+  uuid: string;
+  region?: string | null;
+  bodySiteCode?: string | null;
+  noFindings?: boolean;
+  finding?: string | null;
+  effectiveDateTime?: string | null;
+};
+
+export type EmergencyEpisodeInvestigation = {
+  uuid: string;
+  name?: string | null;
+  code?: string | null;
+  notPerformed?: boolean;
+  effectiveDateTime?: string | null;
+};
+
+export type EmergencyEpisodeProcedure = {
+  uuid: string;
+  name?: string | null;
+  code?: string | null;
+  status?: string | null;
+  performedDateTime?: string | null;
+  performer?: string | null;
+  note?: string | null;
+};
+
+export type EmergencyEpisodeMedication = {
+  uuid: string;
+  drug?: string | null;
+  code?: string | null;
+  dose?: string | number | null;
+  doseUnit?: string | null;
+  route?: string | null;
+  routeText?: string | null;
+  status?: string | null;
+  effectiveDateTime?: string | null;
+};
+
+export type EmergencyEpisodeAllergy = {
+  uuid: string;
+  allergen?: string | null;
+  category?: string | null;
+  manifestation?: string | null;
+  severity?: string | null;
+  recordedDate?: string | null;
+};
+
+export type EmergencyEpisodeDiagnoses = {
+  chiefComplaint?: Array<Record<string, unknown>>;
+  working?: Array<Record<string, unknown>>;
+  discharge?: Array<Record<string, unknown>>;
+};
+
+export type EmergencyEpisodeEvacuation = {
+  type?: string | null;
+  typeText?: string | null;
+  reason?: string | null;
+  reasonText?: string | null;
+  priority?: string | null;
+  transport?: string | null;
+  transportModality?: string | null;
+  occurredDateTime?: string | null;
+  occurred?: string | null;
+  requester?: FhirReference | string | null;
+  serviceProvider?: FhirReference | string | null;
+};
+
+export type EmergencyEpisode = {
+  episodeId?: string | null;
+  incidentId?: string | null;
+  dispatchId?: string | null;
+  encounterId?: string | null;
+  status?: string | null;
+  incidentClass?: string | null;
+  incidentType?: string | null;
+  incidentTypeText?: string | null;
+  dispatchPriority?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  sceneLocation?: FhirReference | null;
+  destinationFacility?: FhirReference | null;
+  serviceProvider?: FhirReference | null;
+  caller?: EmergencyEpisodeCaller | null;
+  participants?: Array<EmergencyEpisodeParticipant>;
+  vitals?: Array<EmergencyEpisodeVital>;
+  secondarySurvey?: Array<EmergencyEpisodeSecondarySurvey>;
+  investigations?: Array<EmergencyEpisodeInvestigation>;
+  procedures?: Array<EmergencyEpisodeProcedure>;
+  medications?: Array<EmergencyEpisodeMedication>;
+  allergies?: Array<EmergencyEpisodeAllergy>;
+  evacuation?: EmergencyEpisodeEvacuation | Record<string, unknown> | null;
+  diagnoses?: EmergencyEpisodeDiagnoses | null;
 };
 
 export type itemDetails = {

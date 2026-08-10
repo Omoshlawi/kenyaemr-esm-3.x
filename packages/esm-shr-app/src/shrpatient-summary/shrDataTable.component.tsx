@@ -52,7 +52,7 @@ const SHRDataTable: React.FC<SHRDataTableProps> = ({ data, tableHeaders }) => {
         onPageNumberChange={({ page }) => goTo(page)}
         pageNumber={currentPage}
         pageSize={pagesize}
-        totalItems={data.length}
+        totalItems={data?.length ?? 0}
       />
     </div>
   );

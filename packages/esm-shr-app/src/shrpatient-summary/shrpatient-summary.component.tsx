@@ -9,17 +9,31 @@ import PrintComponent from '../print-layout/print.component';
 import SHRDataTable from './shrDataTable.component';
 import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import ReferralSummaryAction from './referral-summary-actions.component';
+import type { SHRSummary } from '../types';
 
 interface SHRSummaryProps {
   patientUuid: string;
+  practitionerUuid?: string | null;
+  /** When provided, skips fetching and renders this payload instead. */
+  data?: SHRSummary | null;
 }
 
-const SharedHealthRecordsSummary: React.FC<SHRSummaryProps> = ({ patientUuid }) => {
-  const { data, isError, isLoading } = useSHRSummary(patientUuid);
-  const currentUserSession = useSession();
+const SharedHealthRecordsSummary: React.FC<SHRSummaryProps> = ({
+  patientUuid,
+  practitionerUuid,
+  data: providedData,
+}) => {
+  const session = useSession();
+  const resolvedPractitionerUuid = practitionerUuid ?? session?.currentProvider?.uuid;
+  const shouldFetch = providedData === undefined;
+  const {
+    data: fetchedData,
+    isError,
+    isLoading,
+  } = useSHRSummary(shouldFetch ? patientUuid : '', shouldFetch ? resolvedPractitionerUuid : null);
+  const data = providedData !== undefined ? providedData : fetchedData;
   const componentRef = useRef(null);
   const [printMode, setPrintMode] = useState(false);
-  const layout = useLayoutType();
   const { t } = useTranslation();
   const isTablet = useLayoutType() == 'tablet';
 
@@ -69,18 +83,18 @@ const SharedHealthRecordsSummary: React.FC<SHRSummaryProps> = ({ patientUuid }) 
   }, []);
 
   // If still loading
-  if (isLoading) {
+  if (shouldFetch && isLoading) {
     return <StructuredListSkeleton />;
   }
 
   // If there is an error
-  if (isError) {
+  if (shouldFetch && isError) {
     return <ErrorState error={isError} headerTitle={t('shrRecordSummary', 'SHR Records Summary')} />;
   }
 
   // If there is no data
-  if (Object.keys(data)?.length === 0) {
-    return;
+  if (!data || Object.keys(data).length === 0) {
+    return <EmptyState displayText={t('shrRecords', 'SHR Records')} headerTitle={t('shrRecords', 'SHR Records')} />;
   }
 
   const vitalsHeaders = [
@@ -245,7 +259,7 @@ const SharedHealthRecordsSummary: React.FC<SHRSummaryProps> = ({ patientUuid }) 
         <div className={styles.card}>
           <div className={isTablet ? styles.tabletHeading : styles.desktopHeading}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h4 className={styles.title}> {t('shrPatientSHRSummary', 'Patient SHR Summary')}</h4>
+              <h4 className={styles.title}> {t('shrPatientSHRSummary', 'PATIENT SHR SUMMARY')}</h4>
               <Button
                 kind="ghost"
                 renderIcon={Printer}
@@ -283,7 +297,7 @@ const SharedHealthRecordsSummary: React.FC<SHRSummaryProps> = ({ patientUuid }) 
                 <Tab className={styles.tab} id="conditions-tab" disabled={data?.conditions.length <= 0}>
                   {t('conditions', 'Conditions')}
                 </Tab>
-                <Tab className={styles.tab} id="medications-tab" disabled={data?.medications.length <= 0}>
+                <Tab className={styles.tab} id="medications-tab" disabled={data?.medications?.length <= 0}>
                   {t('medications', 'Medications')}
                 </Tab>
                 <Tab className={styles.tab} id="referrals-tab" disabled={data?.referrals.length <= 0}>

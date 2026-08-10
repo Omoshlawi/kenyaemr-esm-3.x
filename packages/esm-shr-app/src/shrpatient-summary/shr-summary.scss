@@ -51,6 +51,14 @@
   padding: spacing.$spacing-04;
 }
 
+.widgetCard {
+  border: 1px solid $ui-03;
+
+  :global(.cds--data-table-content) {
+    overflow-x: auto;
+  }
+}
+
 .value {
   @include type.type-style('productive-heading-03');
   color: colors.$gray-100;

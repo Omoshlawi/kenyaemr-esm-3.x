@@ -96,3 +96,11 @@ export const acceptCaseModal = getAsyncLifecycle(
   () => import('./referrals/referral-modals/accept-case.modal'),
   options,
 );
+export const startShrVisitModal = getAsyncLifecycle(
+  () => import('./shr-summary/hie-shr-dashboard/start-shr-visit.modal'),
+  options,
+);
+export const shrVisitCloseConfirmationModal = getAsyncLifecycle(
+  () => import('./shr-summary/hie-shr-dashboard/close-shr-visit.modal'),
+  options,
+);

@@ -15,6 +15,13 @@
   }
 }
 
+.statusFilter {
+  display: flex;
+  align-items: center;
+  min-width: 12rem;
+  border-bottom: none;
+}
+
 .refreshAction {
   display: flex;
   align-items: center;

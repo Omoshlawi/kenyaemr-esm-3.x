@@ -13,11 +13,13 @@
     {
       "name": "patient-chart-shr-summary-dashboard-link",
       "component": "shrSummaryDashboardLink",
+      "slot":"patient-chart-dashboard-slot",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
         "slot": "patient-chart-shr-summary-dashboard-slot",
-        "path": "SHR Portal"
+        "path": "SHR Portal",
+        "layoutMode": "anchored"
       },
       "featureFlag": "healthInformationExchange"
     },
@@ -26,7 +28,9 @@
       "slot": "patient-chart-shr-summary-dashboard-slot",
       "component": "patientSHRSummary",
       "meta": {
-        "columnSpan": 4
+        "columns": 1,
+        "columnSpan": 1,
+        "layoutMode": "anchored"
       }
     },
     {
@@ -103,6 +107,14 @@
     {
       "name": "emt-case-detail-modal",
       "component": "emtCaseDetailModal"
+    },
+    {
+      "name": "start-shr-visit-modal",
+      "component": "startShrVisitModal"
+    },
+    {
+      "name": "shr-visit-close-confirmation-modal",
+      "component": "shrVisitCloseConfirmationModal"
     }
   ]
 }
