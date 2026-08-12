@@ -123,6 +123,19 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     error: shaPreviewError,
   } = usePreviewClaim(isCancelMode ? undefined : consentToken);
 
+  // The launch-time `interventions`/`totalAmount` props reflect the claim as it stood when the
+  // claim-submit action fired, which can be stale or incomplete (e.g. PHC claims are resolved
+  // server-side after submission). Prefer the live SHA preview — the same source backing the
+  // "Review before submitting" panel below — so the summary card can't drift out of sync with it.
+  const previewInterventionsCount = shaPreview?.sha?.interventions?.length;
+  const summaryInterventionsCount = previewInterventionsCount ?? interventions.length;
+
+  const previewTotalAmount = shaPreview?.sha?.invoices?.reduce(
+    (sum, invoice) => sum + (Number(invoice.total_amount ?? invoice.net_amount ?? 0) || 0),
+    0,
+  );
+  const summaryTotalAmount = previewTotalAmount ?? totalAmount;
+
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const isInpatient = serviceType === 'INPATIENT';
@@ -612,12 +625,12 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
               </div>
               <div className={styles.summaryRow}>
                 <span className={styles.summaryLabel}>{t('interventions', 'Interventions')}</span>
-                <span className={styles.summaryValue}>{interventions.length}</span>
+                <span className={styles.summaryValue}>{summaryInterventionsCount}</span>
               </div>
-              {totalAmount !== undefined && (
+              {summaryTotalAmount !== undefined && (
                 <div className={styles.summaryRow}>
                   <span className={styles.summaryLabel}>{t('totalAmount', 'Total amount')}</span>
-                  <span className={styles.summaryValue}>KES {totalAmount.toFixed(2)}</span>
+                  <span className={styles.summaryValue}>KES {summaryTotalAmount.toFixed(2)}</span>
                 </div>
               )}
             </div>

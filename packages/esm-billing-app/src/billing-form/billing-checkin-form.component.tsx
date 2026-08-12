@@ -59,6 +59,14 @@ import { formatCurrency } from '../helpers/currency';
 import { useSHAEligibility } from './hie.resource';
 import ElectiveItem from './elective-item.component';
 import PomsfSchemeBalancePicker from './social-health-authority/pomsf-scheme-balance-picker.component';
+import { useFacilityRegistry } from '../hooks/useFacilityRegistry';
+
+// KEPH Level 2 facilities are outpatient-only dispensaries. For outpatient visits at a Level 2
+// facility, the checkin form is simplified: the elective-visit toggle and intervention/package
+// picker are hidden, and the claim is submitted with a fixed general-consultation intervention
+// under capitation, since there's nothing else for the user to choose.
+const LEVEL_2_DEFAULT_INTERVENTION_CODE = 'SHA-12-001';
+const LEVEL_2_DEFAULT_PAYMENT_MECHANISM = 'CAPITATION';
 
 export interface VisitFormCallbacks {
   onVisitCreatedOrUpdated: (visit: Visit) => Promise<any>;
@@ -124,14 +132,21 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   const effectiveWhitelistedForOTP = isPatientWhiteListed || isMinorOtpEligible;
   const effectiveBiometricsEnforced = facilityBiometricsEnforced && !isMinorOtpEligible;
 
+  const { facilityLevel } = useFacilityRegistry();
+  const isLevel2Facility = facilityLevel === '2';
+  const isInpatientVisit = visitTypeUuid === inPatientVisitTypeUuid;
+  // Level 2 facilities only do outpatient work — for an outpatient visit there, skip the
+  // elective-visit question and the intervention/package picker entirely (see constants above).
+  const isSimplifiedOutpatientFlow = isLevel2Facility && !isInpatientVisit;
+
   const { currentProvider } = useSession();
   const { providerNationalid } = useProviderNationalId(currentProvider?.uuid ?? '');
   const { agentUrl } = useBiometricConfig();
   const { workstationId } = useBiometricAgentStatus(agentUrl);
   const deviceOs = detectAuthorizingDeviceOS();
 
+  const { lineItems, consultationService, isLoading: isLoadingLineItems, error: lineError } = useBillableItems();
   const { cashPoints, isLoading: isLoadingCashPoints, error: cashError } = useCashPoint();
-  const { lineItems, isLoading: isLoadingLineItems, error: lineError } = useBillableItems();
 
   const [attributes, setAttributes] = useState<Array<{ attributeType: string; value: string }>>([]);
   const [selectedBillingServices, setSelectedBillingServices] = useState<Array<any>>([]);
@@ -199,6 +214,10 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   const handleUtilizationStatusChange = useCallback((isExhausted: boolean) => {
     setIsCoverageExhausted(isExhausted);
   }, []);
+
+  useEffect(() => {
+    setSelectedBillingServices(isSimplifiedOutpatientFlow && consultationService ? [consultationService] : []);
+  }, [isSimplifiedOutpatientFlow, consultationService]);
 
   const resolvePaymentMechanism = useCallback((codes: string[]): string | undefined => {
     if (codes.length === 0) {
@@ -517,10 +536,16 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         return;
       }
 
-      const codes = selectedIntervention ? [selectedIntervention] : [''];
+      const codes = isSimplifiedOutpatientFlow
+        ? [LEVEL_2_DEFAULT_INTERVENTION_CODE]
+        : selectedIntervention
+        ? [selectedIntervention]
+        : [''];
       patientCRIdRef.current = patientCRId;
       interventionCodesRef.current = codes;
-      const paymentMechanism = resolvePaymentMechanism(codes);
+      const paymentMechanism = isSimplifiedOutpatientFlow
+        ? LEVEL_2_DEFAULT_PAYMENT_MECHANISM
+        : resolvePaymentMechanism(codes);
       paymentMechanismRef.current = paymentMechanism;
 
       buildModalConfig(patientCRId, codes, paymentMechanism);
@@ -544,6 +569,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     buildBiometricStarter,
     handleSubmitWhitelist,
     handleCheckWhitelistStatus,
+    isSimplifiedOutpatientFlow,
     t,
   ]);
 
@@ -715,29 +741,33 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
       {shaEnabled && isInsuranceSchemeSha && (
         <section className={styles.sectionContainer}>
           <PomsfSchemeBalancePicker patientUuid={patientUuid} patientCRId={patientCRId} />
-          <div className={styles.sectionTitle}>{t('electiveVisitQuestion', 'Is this an elective visit?')}</div>
-          <RadioButtonGroup
-            name="is-elective-visit"
-            valueSelected={isElectiveVisit}
-            onChange={(val: string) => {
-              setIsElectiveVisit(val as 'yes' | 'no');
-              setElectiveConsentToken('');
-            }}>
-            <RadioButton labelText={t('notElective', 'No')} value="no" id="elective-no" />
-            <RadioButton labelText={t('isElective', 'Yes')} value="yes" id="elective-yes" />
-          </RadioButtonGroup>
+          {!isSimplifiedOutpatientFlow && (
+            <>
+              <div className={styles.sectionTitle}>{t('electiveVisitQuestion', 'Is this an elective visit?')}</div>
+              <RadioButtonGroup
+                name="is-elective-visit"
+                valueSelected={isElectiveVisit}
+                onChange={(val: string) => {
+                  setIsElectiveVisit(val as 'yes' | 'no');
+                  setElectiveConsentToken('');
+                }}>
+                <RadioButton labelText={t('notElective', 'No')} value="no" id="elective-no" />
+                <RadioButton labelText={t('isElective', 'Yes')} value="yes" id="elective-yes" />
+              </RadioButtonGroup>
 
-          {isElectiveVisit === 'yes' && (
-            <ElectiveItem
-              patientId={patientUuid}
-              electiveConsentToken={electiveConsentToken}
-              onChangeElectiveConsentToken={setElectiveConsentToken}
-            />
+              {isElectiveVisit === 'yes' && (
+                <ElectiveItem
+                  patientId={patientUuid}
+                  electiveConsentToken={electiveConsentToken}
+                  onChangeElectiveConsentToken={setElectiveConsentToken}
+                />
+              )}
+            </>
           )}
         </section>
       )}
 
-      {shaEnabled && isInsuranceSchemeSha && isElectiveVisit === 'no' && (
+      {shaEnabled && isInsuranceSchemeSha && isElectiveVisit === 'no' && !isSimplifiedOutpatientFlow && (
         <SHABenefitPackagesAndInterventions
           patientUuid={patientUuid}
           visitTypeUuid={visitTypeUuid}
@@ -749,7 +779,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         />
       )}
 
-      {paymentMethod && (
+      {paymentMethod && !isSimplifiedOutpatientFlow && (
         <section className={styles.sectionContainer}>
           <div className={styles.sectionTitle}>{t('chargeableService', 'Chargeable service')}</div>
           <div className={styles.sectionField}>

@@ -1,5 +1,5 @@
-import { Button, Popover, PopoverContent } from '@carbon/react';
-import { Close, Printer, Wallet, FolderOpen, BaggageClaim } from '@carbon/react/icons';
+import { Button, InlineLoading, Popover, PopoverContent } from '@carbon/react';
+import { Close, Printer, Wallet, FolderOpen, BaggageClaim, Send } from '@carbon/react/icons';
 import {
   restBaseUrl,
   showModal,
@@ -12,8 +12,10 @@ import {
   showToast,
   updateVisit,
   useConfig,
+  usePatient,
+  launchWorkspace2,
 } from '@openmrs/esm-framework';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { mutate } from 'swr';
@@ -26,6 +28,10 @@ import { useCurrencyFormatting } from '../helpers/currency';
 import { useVisitAttribute } from '../bill-administration/patient-billing/workspaces/create-bill/create-bill.resource';
 import { BillingConfig } from '../config-schema';
 import { useVisit } from '../claims/patient-dashboard/form/claims-form.resource';
+import { processPhcClaim } from '../billing.resource';
+import { extractFetchError, extractUpstreamError } from '../claims/claims-management/table/virtual-claim-preauth/utils';
+import { useFacilityRegistry } from '../hooks/useFacilityRegistry';
+import { getPatientCRNumber } from '../billing-form/social-health-authority/helper';
 
 interface InvoiceActionsProps {
   readonly bill: MappedBill;
@@ -45,11 +51,21 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
 
   const {
     visitAttributeTypes: { insuranceScheme },
+    crIdentificationNumberUUID,
   } = useConfig<BillingConfig>();
 
   const visitUuid = activeVisit?.uuid;
 
   const { isSHA: isSHAVisit } = useVisitAttribute(visitUuid ?? '', insuranceScheme);
+
+  const { facilityLevel } = useFacilityRegistry();
+  const isLevel2Facility = facilityLevel === '2';
+
+  const { patient: fhirPatient } = usePatient(patientUuid);
+  const patientCRId = useMemo(
+    () => (fhirPatient ? getPatientCRNumber(fhirPatient as fhir.Patient, crIdentificationNumberUUID) : null),
+    [fhirPatient, crIdentificationNumberUUID],
+  );
 
   const launchBillCloseOrReopenModal = (action: 'close' | 'reopen') => {
     const dispose = showModal('bill-action-modal', {
@@ -90,8 +106,58 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
     navigate({ to: `${spaBasePath}/accounting/patient/${patientUuid}/${billUuid}/claims` });
   };
 
+  const [isSubmittingPhcClaim, setIsSubmittingPhcClaim] = useState(false);
+
+  const handleSubmitPhcClaim = async () => {
+    if (!visitUuid || !billUuid) {
+      return;
+    }
+    setIsSubmittingPhcClaim(true);
+    showSnackbar({
+      title: t('processingPhcClaim', 'Processing PHC claim'),
+      subtitle: t('processingPhcClaimSubtitle', 'This can take a moment — please wait…'),
+      kind: 'info',
+      timeoutInMs: 8000,
+    });
+    try {
+      const response = await processPhcClaim(visitUuid, billUuid);
+      if (response?.success === false) {
+        throw new Error(extractUpstreamError(response, t('phcClaimFailed', 'Failed to submit PHC claim')));
+      }
+      showSnackbar({
+        title: t('phcClaimSubmitted', 'PHC claim submitted'),
+        subtitle: response?.message ?? t('phcClaimSubmittedSubtitle', 'The PHC claim was processed successfully.'),
+        kind: 'success',
+      });
+      navigate({ to: `${spaBasePath}/accounting/patient/${patientUuid}/${billUuid}/claims` });
+      launchWorkspace2(
+        'claim-submission-workspace',
+        {
+          workspaceTitle: t('submitClaim', 'Submit claim'),
+          consentToken: response?.consentToken ?? '',
+          invoiceNumber: response?.invoiceNumber ?? '',
+          serviceType: response?.service_type ?? '',
+          patientUuid: patientUuid ?? '',
+          patientCRId: patientCRId ?? '',
+          interventions: response?.interventions ?? [],
+          mutate: mutateClaimForm,
+        },
+        {},
+        {},
+      );
+    } catch (error: any) {
+      showSnackbar({
+        title: t('phcClaimFailed', 'Failed to submit PHC claim'),
+        subtitle: extractFetchError(error, t('unknownError', 'Unknown error occurred')),
+        kind: 'error',
+      });
+    } finally {
+      setIsSubmittingPhcClaim(false);
+    }
+  };
+
   return (
-    <div className="invoiceSummaryActions">
+    <div className={styles.invoiceSummaryActions}>
       <Popover isTabTip align="bottom-right" onKeyDown={() => {}} onRequestClose={() => setIsOpen(false)} open={isOpen}>
         <button
           className={styles.printButton}
@@ -184,7 +250,7 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
         </Button>
       )}
 
-      {bill?.closed && isSHAVisit && (
+      {bill?.closed && isSHAVisit && !isLevel2Facility && (
         <Button
           onClick={handleViewClaims}
           kind="secondary"
@@ -193,6 +259,23 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
           iconDescription={t('submitClaim', 'Submit claim')}
           tooltipPosition="bottom">
           {t('submitClaim', 'Submit claim')}
+        </Button>
+      )}
+
+      {isSHAVisit && visitUuid && isLevel2Facility && (
+        <Button
+          onClick={handleSubmitPhcClaim}
+          disabled={isSubmittingPhcClaim}
+          kind="secondary"
+          size="sm"
+          renderIcon={isSubmittingPhcClaim ? undefined : Send}
+          iconDescription={t('processPhcClaim', 'Process PHC claim')}
+          tooltipPosition="bottom">
+          {isSubmittingPhcClaim ? (
+            <InlineLoading description={t('processingPhcClaim', 'Processing PHC claim') + '...'} />
+          ) : (
+            t('submitPhcClaim', 'Submit PHC claim')
+          )}
         </Button>
       )}
     </div>

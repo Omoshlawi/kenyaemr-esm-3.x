@@ -42,7 +42,15 @@ export const usePreviewClaim = (consentToken?: string) => {
   const { data, error, isLoading, isValidating, mutate } = useSWR<FetchResponse<ClaimPreviewResponse>>(
     url,
     openmrsFetch,
-    { revalidateOnFocus: false, shouldRetryOnError: false },
+    {
+      revalidateOnFocus: false,
+      // The claim can still be processing server-side right after creation, so a preview fetched
+      // immediately afterwards may come back incomplete (or briefly error). Retry transient errors,
+      // and keep polling — using the backend's own readiness flag — until ready_to_dispatch is true.
+      errorRetryCount: 5,
+      errorRetryInterval: 2000,
+      refreshInterval: (latestData) => (latestData && !latestData.data?.ready_to_dispatch ? 2000 : 0),
+    },
   );
   return {
     preview: data?.data ?? null,

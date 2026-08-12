@@ -57,6 +57,7 @@ import styles from './create-bill.style.scss';
 import { InterventionItem, PackageItem } from './type';
 import { extractFetchError } from '../../../../claims/claims-management/table/virtual-claim-preauth/utils';
 import { PREAUTH_TYPE_COLORS } from '../../../../claims/claims-management/table/virtual-claim-preauth/constants';
+import { useFacilityRegistry } from '../../../../hooks/useFacilityRegistry';
 
 type CreateBillWorkspaceProps = {
   patientUuid: string;
@@ -885,6 +886,11 @@ const CreateBillWorkspace: React.FC<Workspace2DefinitionProps<CreateBillWorkspac
   const { activeVisit } = useVisit(patientUuid);
   const visitUuid = activeVisit?.uuid;
 
+  const { facilityLevel } = useFacilityRegistry();
+  // Level 2 facilities are outpatient-only dispensaries — their SHA intervention is fixed at
+  // check-in (see billing-checkin-form.component.tsx), so there's nothing to add/switch/restore here.
+  const isLevel2Facility = facilityLevel === '2';
+
   const { patient: fhirPatient } = usePatient(patientUuid);
   const patientCRId = useMemo(() => {
     if (!fhirPatient?.identifier) {
@@ -969,7 +975,7 @@ const CreateBillWorkspace: React.FC<Workspace2DefinitionProps<CreateBillWorkspac
   const restoreInterventionCode = watch('restoreInterventionCode') ?? null;
   const retireInterventionCode = watch('retireInterventionCode') ?? null;
 
-  const shaStepActive = isSHAVisit && needsShaAction;
+  const shaStepActive = isSHAVisit && needsShaAction && !isLevel2Facility;
 
   const [isCoverageExhausted, setIsCoverageExhausted] = useState(false);
 
@@ -987,6 +993,12 @@ const CreateBillWorkspace: React.FC<Workspace2DefinitionProps<CreateBillWorkspac
       setShaError(null);
     }
   }, [needsShaAction]);
+
+  useEffect(() => {
+    if (isLevel2Facility) {
+      setValue('needsShaAction', false);
+    }
+  }, [isLevel2Facility, setValue]);
 
   const calculateTotal = () => {
     const price = parseFloat(watch('unitPrice')) || 0;
@@ -1359,7 +1371,7 @@ const CreateBillWorkspace: React.FC<Workspace2DefinitionProps<CreateBillWorkspac
                 )}
               </section>
 
-              {isSHAVisit && (
+              {isSHAVisit && !isLevel2Facility && (
                 <section className={styles.shaActionPrompt}>
                   <Section level={5}>
                     <Heading>{t('shaActionPrompt', 'SHA Action')}</Heading>

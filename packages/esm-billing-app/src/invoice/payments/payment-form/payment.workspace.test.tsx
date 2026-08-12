@@ -12,6 +12,7 @@ import {
   useVisitAttribute,
 } from '../../../bill-administration/patient-billing/workspaces/create-bill/create-bill.resource';
 import { dispatchClaimLinesToSha } from '../../../billing-form/social-health-authority/sha-virtual-claim.resource';
+import { useFacilityRegistry } from '../../../hooks/useFacilityRegistry';
 import PaymentWorkspace from './payment.workspace';
 
 vi.mock('@openmrs/esm-framework', () => ({
@@ -60,6 +61,10 @@ vi.mock('../../../billing-form/social-health-authority/sha-virtual-claim.resourc
   lockCover: vi.fn(),
 }));
 
+vi.mock('../../../hooks/useFacilityRegistry', () => ({
+  useFacilityRegistry: vi.fn(),
+}));
+
 const mockUsePaymentModes = vi.mocked(usePaymentModes);
 const mockMakePayment = vi.mocked(makePayment);
 const mockMakeAllocatedPayment = vi.mocked(makeAllocatedPayment);
@@ -70,6 +75,7 @@ const mockUseClaimForVisit = vi.mocked(useClaimForVisit);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockShowModal = vi.mocked(showModal);
 const mockDispatchClaimLinesToSha = vi.mocked(dispatchClaimLinesToSha);
+const mockUseFacilityRegistry = vi.mocked(useFacilityRegistry);
 
 const cash = { uuid: 'cash-uuid', name: 'Cash', attributeTypes: [] };
 const mobileMoney = {
@@ -170,6 +176,14 @@ describe('PaymentWorkspace', () => {
     mockMakePayment.mockResolvedValue({ ok: true, data: { uuid: 'payment-uuid' } } as any);
     mockMakeAllocatedPayment.mockResolvedValue({ ok: true, data: { uuid: 'payment-uuid' } } as any);
     mockDispatchClaimLinesToSha.mockResolvedValue({ ok: true } as any);
+    mockUseFacilityRegistry.mockReturnValue({
+      facility: undefined,
+      facilityLevel: '',
+      isLoading: false,
+      error: null,
+      notYetSynced: false,
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof useFacilityRegistry>);
   });
 
   test('shows a loading state while payment modes are loading', () => {

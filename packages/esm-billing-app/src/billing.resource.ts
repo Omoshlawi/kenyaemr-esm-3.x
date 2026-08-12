@@ -376,6 +376,28 @@ export const processBillPayment = (payload, billUuid: string) => {
   });
 };
 
+export type ProcessPhcClaimResponse = {
+  success?: boolean;
+  service_type?: string;
+  consentToken?: string;
+  invoiceNumber?: string | null;
+  interventions?: string[];
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
+};
+
+export const processPhcClaim = async (visitUuid: string, billUuid: string): Promise<ProcessPhcClaimResponse> => {
+  const url = `${restBaseUrl}/insuranceclaims/phc/processVisit?visitUuid=${visitUuid}&billUuid=${billUuid}`;
+  const response = await openmrsFetch<ProcessPhcClaimResponse>(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  return response.data;
+};
+
 export function useDefaultFacility() {
   const { authenticated } = useSession();
   const url = '${restBaseUrl}/kenyaemr/default-facility';
@@ -441,12 +463,26 @@ export const useBillableItems = () => {
   const url = `${restBaseUrl}/cashier/billableService?v=custom:(uuid,name,shortName,serviceStatus,serviceType:(display),servicePrices:(uuid,name,price,paymentMode))`;
   const { data, isLoading, error } = useSWR<{ data: { results: Array<OpenmrsResource> } }>(url, openmrsFetch);
   const [searchTerm, setSearchTerm] = useState('');
+  const allItems = useMemo(() => data?.data?.results ?? [], [data]);
   const filteredItems = useMemo(
-    () => data?.data?.results?.filter((item) => item.name.toLowerCase().includes(searchTerm.toLowerCase())) ?? [],
-    [data, searchTerm],
+    () => allItems.filter((item) => item.name.toLowerCase().includes(searchTerm.toLowerCase())),
+    [allItems, searchTerm],
   );
+  // Level 2 facilities bill a single, fixed service for outpatient visits — found by service type
+  // rather than uuid so it keeps working if the billable service is re-created. The name varies by
+  // facility ("Clinical Consultation", "Adult Consultation", "Consultation", ...), so only the
+  // service type (a coded concept, not free text) is matched exactly.
+  const consultationService = useMemo(() => {
+    const match = allItems.find(
+      (item: any) =>
+        (item?.serviceType?.display ?? '').toLowerCase() === 'clinical consultation' &&
+        (item?.name ?? '').toLowerCase().includes('consultation'),
+    );
+    return match ?? null;
+  }, [allItems]);
   return {
     lineItems: filteredItems,
+    consultationService,
     isLoading,
     error,
     searchTerm,

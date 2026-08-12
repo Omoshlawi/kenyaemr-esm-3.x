@@ -18,6 +18,7 @@ import {
 } from '../../../bill-administration/patient-billing/workspaces/create-bill/create-bill.resource';
 import { type SupplementaryScheme } from '../../../billing-form/social-health-authority/type';
 import EffectiveCoverPicker from '../../../billing-form/pomsf/effective-pomsf.component';
+import { useFacilityRegistry } from '../../../hooks/useFacilityRegistry';
 
 import { paymentFormSchema } from './payment.schema';
 import { type PaymentModeFormData, type PaymentWorkspaceProps } from './payment.types';
@@ -64,6 +65,9 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
 
   const { isSHA: isSHAVisit } = useVisitAttribute(visitUuid ?? '', insuranceScheme);
   const claimForVisit = useClaimForVisit(visitUuid ?? '');
+
+  const { facilityLevel } = useFacilityRegistry();
+  const isLevel2Facility = facilityLevel === '2';
 
   const manualAllocation = allowPartial && unPaidLineItems.length > 1;
   const allocationSignature = unPaidLineItems.map((item) => `${item.uuid}:${getOutstandingBalance(item)}`).join('|');
@@ -275,7 +279,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
                 )}
               </div>
 
-              {isSHAVisit && authorizationCode && (
+              {isSHAVisit && authorizationCode && !isLevel2Facility && (
                 <EffectiveCoverPicker
                   patientUuid={patientUuid ?? ''}
                   patientCRId={beneficiaryCrId}
