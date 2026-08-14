@@ -154,10 +154,8 @@ describe('BillingCheckInForm', () => {
       visitAttributeTypes: { isPatientExempted: 'exempted-attr-uuid', claimScheme: 'claim-scheme-uuid' },
       inPatientVisitTypeUuid: INPATIENT_VISIT_TYPE_UUID,
       crIdentificationNumberUUID: 'cr-id-uuid',
-      enableSHAVerification: true,
       minorOtpAgeThreshold: 18,
     } as any);
-    // shaEnabled = hieFeatureFlags && enableSHAVerification — keeping the SHA flow off lets these
     // tests focus purely on the billing-service picker without needing to mock the SHA UI.
     mockUseFeatureFlag.mockReturnValue(false);
     mockUsePatient.mockReturnValue({ patient: undefined } as any);

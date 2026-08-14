@@ -49,7 +49,6 @@ export interface BillingConfig {
     formUuid: string;
   };
   detailedViewPageSize: number;
-  enableSHAVerification: boolean;
   enablePartialBillPayment: boolean;
   supplementarySchemePrefixes: Array<string>;
   minorOtpAgeThreshold: number;
@@ -298,12 +297,6 @@ export const configSchema: ConfigSchema = {
       encounterTypeUuid: '465a92f2-baf8-42e9-9612-53064be868e8',
       formUuid: 'e958f902-64df-4819-afd4-7fb061f59308',
     },
-  },
-  enableSHAVerification: {
-    _type: Type.Boolean,
-    _description:
-      'Whether to enable SHA verification (OTP/biometrics) during check-in. When disabled, SHA fields, OTP and biometric flows are hidden even if the HIE feature flag is on.',
-    _default: false,
   },
   enablePartialBillPayment: {
     _type: Type.Boolean,
