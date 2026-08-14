@@ -2,10 +2,15 @@ import { type TFunction } from 'i18next';
 
 import { type LineItem } from '../../../types';
 import {
+  addEmergencyProtocol,
   dispatchClaimLinesToSha,
   lockCover,
 } from '../../../billing-form/social-health-authority/sha-virtual-claim.resource';
 import { type SupplementaryScheme } from '../../../billing-form/social-health-authority/type';
+import {
+  extractFetchError,
+  extractUpstreamError,
+} from '../../../claims/claims-management/table/virtual-claim-preauth/utils';
 import { type InterventionItem, type PaymentLine } from './payment.types';
 
 export function hasShaInsuranceLine(payments: Array<PaymentLine>, insurancePaymentMethod: string): boolean {
@@ -96,4 +101,51 @@ export async function dispatchShaLine({
     return { ok: false, reason: 'dispatch-failed', error: dispatch.error };
   }
   return { ok: true };
+}
+
+export async function dispatchEmergencyProtocol({
+  line,
+  interventionItems,
+  authorizationCode,
+  unPaidLineItems,
+  t,
+}: {
+  line: PaymentLine;
+  interventionItems: Array<InterventionItem>;
+  authorizationCode: string | null;
+  unPaidLineItems: Array<LineItem>;
+  t: TFunction;
+}): Promise<ShaLineResult> {
+  const intervention = interventionItems.find((iv) => iv.code === line.interventionCode);
+  if (!intervention) {
+    return { ok: false, reason: 'intervention-not-found', code: line.interventionCode! };
+  }
+  if (!line.protocolCode) {
+    return {
+      ok: false,
+      reason: 'dispatch-failed',
+      error: t('protocolRequired', 'Select a protocol for the emergency line'),
+    };
+  }
+
+  try {
+    const response = await addEmergencyProtocol({
+      consentToken: authorizationCode ?? '',
+      protocolCode: line.protocolCode,
+      interventionCode: intervention.code,
+      unitPrice: line.amount!,
+      quantity: 1,
+      openmrsLineItemUuid: unPaidLineItems[0]?.uuid,
+    });
+    if (!response?.success) {
+      return {
+        ok: false,
+        reason: 'dispatch-failed',
+        error: extractUpstreamError(response, t('protocolAddFailedShort', 'Failed to add protocol')),
+      };
+    }
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, reason: 'dispatch-failed', error: extractFetchError(error) };
+  }
 }

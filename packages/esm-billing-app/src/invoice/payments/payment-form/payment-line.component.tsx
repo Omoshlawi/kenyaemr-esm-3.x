@@ -8,6 +8,10 @@ import { ResponsiveWrapper } from '@openmrs/esm-framework';
 import InterventionSummary from './intervention-summary.component';
 import { type InterventionItem, type PaymentModeFormData } from './payment.types';
 import { usePaymentContext } from './payment.context';
+import {
+  useEmergencyProtocols,
+  type EmergencyProtocolEntry,
+} from '../../../billing-form/social-health-authority/sha-virtual-claim.resource';
 import { sumAllocationAmount } from './payment-submission.utils';
 import styles from './payment.workspace.scss';
 
@@ -30,6 +34,7 @@ const PaymentLine: React.FC<PaymentLineProps> = ({ index, fieldsLength, onRemove
     interventionItems,
     insurancePaymentMethod,
     requiresShaIntervention,
+    isEmergencyClaim,
     overAmountLineIndices,
     formatCurrency,
     manualAllocation,
@@ -72,6 +77,14 @@ const PaymentLine: React.FC<PaymentLineProps> = ({ index, fieldsLength, onRemove
   const selectedInterventionCode = watchedPayments?.[index]?.interventionCode;
   const selectedIntervention = interventionItems.find((iv) => iv.code === selectedInterventionCode) ?? null;
   const isOverAmount = overAmountLineIndices.has(index);
+
+  const showProtocolPicker = isEmergencyClaim && showInterventionsPicker && Boolean(selectedInterventionCode);
+  const { protocols, isLoading: isLoadingProtocols } = useEmergencyProtocols(
+    showProtocolPicker ? selectedInterventionCode : undefined,
+  );
+  const selectedProtocolCode = watchedPayments?.[index]?.protocolCode;
+  const selectedProtocol = protocols.find((p) => p.protocolCode === selectedProtocolCode) ?? null;
+  const protocolToString = (p: EmergencyProtocolEntry | null) => (p ? `${p.protocolCode} — ${p.name}` : '');
 
   return (
     <div className={styles.paymentLine}>
@@ -226,6 +239,29 @@ const PaymentLine: React.FC<PaymentLineProps> = ({ index, fieldsLength, onRemove
               intervention={selectedIntervention}
               isOverAmount={isOverAmount}
               formatCurrency={formatCurrency}
+            />
+          )}
+
+          {showProtocolPicker && (
+            <Controller
+              name={`payments.${index}.protocolCode`}
+              control={control}
+              render={({ field: { onChange } }) => (
+                <ComboBox
+                  id={`protocol-${index}`}
+                  titleText={t('emergencyProtocol', 'Emergency protocol')}
+                  placeholder={isLoadingProtocols ? t('loading', 'Loading...') : t('selectProtocol', 'Select protocol')}
+                  items={protocols}
+                  itemToString={protocolToString}
+                  selectedItem={selectedProtocol}
+                  className={styles.paymentModeComboBox}
+                  onChange={({ selectedItem }) =>
+                    onChange(selectedItem ? (selectedItem as EmergencyProtocolEntry).protocolCode : undefined)
+                  }
+                  invalid={!!errors.payments?.[index]?.protocolCode}
+                  invalidText={errors.payments?.[index]?.protocolCode?.message}
+                />
+              )}
             />
           )}
         </ResponsiveWrapper>

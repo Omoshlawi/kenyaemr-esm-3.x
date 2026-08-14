@@ -8,6 +8,7 @@ export type PaymentContextValue = {
   interventionItems: Array<InterventionItem>;
   insurancePaymentMethod: string;
   requiresShaIntervention: boolean;
+  isEmergencyClaim: boolean;
   overAmountLineIndices: Set<number>;
   formatCurrency: (amount: number) => string;
   manualAllocation: boolean;

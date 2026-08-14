@@ -26,6 +26,7 @@ export type PaymentLine = {
   amount?: number;
   referenceCode?: string;
   interventionCode?: string;
+  protocolCode?: string;
   allocations?: Array<PaymentLineAllocation>;
 };
 

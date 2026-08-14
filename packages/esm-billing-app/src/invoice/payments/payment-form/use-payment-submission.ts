@@ -18,7 +18,13 @@ import {
   revalidateBillCaches,
 } from './payment-submission.utils';
 import { createPaymentNotifications } from './payment-notifications';
-import { dispatchShaLine, hasShaInsuranceLine, isShaInsuranceLine, lockShaCover } from './sha-payment-submission';
+import {
+  dispatchEmergencyProtocol,
+  dispatchShaLine,
+  hasShaInsuranceLine,
+  isShaInsuranceLine,
+  lockShaCover,
+} from './sha-payment-submission';
 
 type UsePaymentSubmissionArgs = {
   bill: MappedBill;
@@ -29,6 +35,7 @@ type UsePaymentSubmissionArgs = {
   selectedScheme: SupplementaryScheme | null;
   insurancePaymentMethod: string;
   interventionItems: Array<InterventionItem>;
+  isEmergencyClaim: boolean;
   allowPartial: boolean;
   manualAllocation: boolean;
   closeWorkspace: Workspace2DefinitionProps['closeWorkspace'];
@@ -44,6 +51,7 @@ export function usePaymentSubmission({
   selectedScheme,
   insurancePaymentMethod,
   interventionItems,
+  isEmergencyClaim,
   allowPartial,
   manualAllocation,
   closeWorkspace,
@@ -94,7 +102,9 @@ export function usePaymentSubmission({
         const line = data.payments[i];
 
         if (isShaInsuranceLine(line, isSHAVisit, insurancePaymentMethod)) {
-          const shaResult = await dispatchShaLine({ line, interventionItems, authorizationCode, unPaidLineItems, t });
+          const shaResult = isEmergencyClaim
+            ? await dispatchEmergencyProtocol({ line, interventionItems, authorizationCode, unPaidLineItems, t })
+            : await dispatchShaLine({ line, interventionItems, authorizationCode, unPaidLineItems, t });
           if (!shaResult.ok) {
             if (shaResult.reason === 'intervention-not-found') {
               notify.interventionLookupFailed(shaResult.code);
@@ -161,6 +171,7 @@ export function usePaymentSubmission({
       selectedScheme,
       insurancePaymentMethod,
       interventionItems,
+      isEmergencyClaim,
       allowPartial,
       manualAllocation,
       closeWorkspace,

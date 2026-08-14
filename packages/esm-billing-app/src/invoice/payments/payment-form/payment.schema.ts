@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import { type TFunction } from 'i18next';
 
-export const paymentLineSchema = (t: TFunction, insurancePaymentModeUuid: string, requireIntervention: boolean) =>
+export const paymentLineSchema = (
+  t: TFunction,
+  insurancePaymentModeUuid: string,
+  requireIntervention: boolean,
+  isEmergency = false,
+) =>
   z
     .object({
       paymentMode: z
@@ -24,6 +29,7 @@ export const paymentLineSchema = (t: TFunction, insurancePaymentModeUuid: string
       amount: z.number().optional(),
       referenceCode: z.string().optional(),
       interventionCode: z.string().optional(),
+      protocolCode: z.string().optional(),
       allocations: z
         .array(
           z.object({
@@ -67,6 +73,14 @@ export const paymentLineSchema = (t: TFunction, insurancePaymentModeUuid: string
           message: t('selectShaIntervention', 'Select the SHA intervention this payment is recorded against'),
         });
       }
+
+      if (isEmergency && isInsurance && !line.protocolCode?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['protocolCode'],
+          message: t('selectEmergencyProtocol', 'Select the emergency protocol for this line'),
+        });
+      }
     });
 
 export const paymentFormSchema = (
@@ -75,11 +89,12 @@ export const paymentFormSchema = (
   insurancePaymentModeUuid: string,
   requireIntervention: boolean,
   allowPartial = false,
+  isEmergency = false,
 ) =>
   z
     .object({
       payments: z
-        .array(paymentLineSchema(t, insurancePaymentModeUuid, requireIntervention))
+        .array(paymentLineSchema(t, insurancePaymentModeUuid, requireIntervention, isEmergency))
         .min(1, t('atLeastOnePayment', 'Add at least one payment')),
     })
     .superRefine((data, ctx) => {

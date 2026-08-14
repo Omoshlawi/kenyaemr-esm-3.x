@@ -83,9 +83,19 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
   const beneficiaryCrId = ((claimForVisit as any)?.beneficiary_cr_id as string | undefined) ?? '';
   const requiresShaIntervention = isSHAVisit && interventionItems.length > 0;
 
+  const isEmergencyClaim = claimForVisit.serviceType?.toUpperCase() === 'EMERGENCY';
+
   const resolverSchema = useMemo(
-    () => paymentFormSchema(totalAmount, t, insurancePaymentMethod, requiresShaIntervention, allowPartial),
-    [totalAmount, t, insurancePaymentMethod, requiresShaIntervention, allowPartial],
+    () =>
+      paymentFormSchema(
+        totalAmount,
+        t,
+        insurancePaymentMethod,
+        requiresShaIntervention,
+        allowPartial,
+        isEmergencyClaim,
+      ),
+    [totalAmount, t, insurancePaymentMethod, requiresShaIntervention, allowPartial, isEmergencyClaim],
   );
 
   const formMethods = useForm<PaymentModeFormData>({
@@ -192,6 +202,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
       interventionItems,
       insurancePaymentMethod,
       requiresShaIntervention,
+      isEmergencyClaim,
       overAmountLineIndices,
       formatCurrency,
       manualAllocation,
@@ -203,6 +214,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
       interventionItems,
       insurancePaymentMethod,
       requiresShaIntervention,
+      isEmergencyClaim,
       overAmountLineIndices,
       formatCurrency,
       manualAllocation,
@@ -232,6 +244,7 @@ const PaymentWorkspace: React.FC<Workspace2DefinitionProps<PaymentWorkspaceProps
     selectedScheme,
     insurancePaymentMethod,
     interventionItems,
+    isEmergencyClaim,
     allowPartial,
     manualAllocation,
     closeWorkspace,

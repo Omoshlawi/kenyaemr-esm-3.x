@@ -205,6 +205,65 @@ export const useEmergencyInterventions = () => {
   return { interventions, isLoading, error };
 };
 
+export interface EmergencyProtocolEntry {
+  protocolCode: string;
+  name: string;
+  unitPrice?: string;
+  raw: Record<string, any>;
+}
+
+export const useEmergencyProtocols = (interventionCode?: string, active: boolean = true) => {
+  const params = new URLSearchParams();
+  if (interventionCode) {
+    params.set('intervention_code', interventionCode);
+  }
+  if (active) {
+    params.set('active', 'true');
+  }
+  const url = interventionCode ? `${virtualClaimBaseUrl}/emergency/protocols?${params.toString()}` : null;
+  const { data, error, isLoading, mutate } = useSWR<FetchResponse<any>>(url, openmrsFetch);
+  const rows: Array<Record<string, any>> = data?.data?.results ?? (Array.isArray(data?.data) ? data?.data : []);
+  const protocols: Array<EmergencyProtocolEntry> = rows.map((r) => ({
+    protocolCode: r.protocol_code ?? r.code ?? r.protocolCode,
+    name: r.name ?? r.protocol_name ?? r.description ?? r.protocol_code ?? r.code,
+    unitPrice: r.unit_price ?? r.unitPrice ?? r.tariff ?? r.amount,
+    raw: r,
+  }));
+  return { protocols, isLoading, error, mutate };
+};
+
+export interface AddEmergencyProtocolArgs {
+  consentToken: string;
+  protocolCode: string;
+  interventionCode: string;
+  unitPrice?: number | string;
+  quantity?: number;
+  openmrsLineItemUuid?: string;
+}
+
+export async function addEmergencyProtocol(args: AddEmergencyProtocolArgs): Promise<Record<string, any>> {
+  const body: Record<string, any> = {
+    consent_token: args.consentToken,
+    protocol_code: args.protocolCode,
+    intervention_code: args.interventionCode,
+  };
+  if (args.unitPrice !== undefined && args.unitPrice !== '') {
+    body.unit_price = Number(args.unitPrice);
+  }
+  if (args.quantity !== undefined) {
+    body.quantity = args.quantity;
+  }
+  if (args.openmrsLineItemUuid) {
+    body.openmrs_line_item_uuid = args.openmrsLineItemUuid;
+  }
+  const response = await openmrsFetch(`${virtualClaimBaseUrl}/emergency/protocols`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  });
+  return response.data;
+}
+
 export const useEmergencyCatalog = (kind: EmergencyCatalogKind) => {
   const url = `${virtualClaimBaseUrl}/emergency/catalog/${kind}`;
   const { data, error, isLoading } = useSWR<FetchResponse<Array<EmergencyCatalogEntry>>>(url, openmrsFetch);
