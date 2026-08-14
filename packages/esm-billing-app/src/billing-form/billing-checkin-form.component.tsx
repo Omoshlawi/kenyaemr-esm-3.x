@@ -15,6 +15,7 @@ import {
   useFeatureFlag,
   usePatient,
   useSession,
+  useVisit,
   type Visit,
 } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -29,9 +30,13 @@ import { hasPatientBeenExempted } from './helper';
 import SHANumberValidity from './social-health-authority/sha-number-validity.component';
 import VisitAttributesForm from './visit-attributes/visit-attributes-form.component';
 import SHABenefitPackagesAndInterventions from '../benefits-package/forms/packages-and-interventions-form.component';
+import EmergencyClaimSection, {
+  type EmergencyClaimData,
+} from '../benefits-package/forms/emergency-claim-section.component';
 import {
   addVisitAttribute,
   checkBiometricAuthorizationStatus,
+  createEmergencyClaim,
   createSHABiometricAuthorize,
   createSHAVirtualClaim,
   detectAuthorizingDeviceOS,
@@ -100,6 +105,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
   const {
     visitAttributeTypes: { isPatientExempted, claimScheme },
     inPatientVisitTypeUuid,
+    casualtyEmergencyVisitTypeUuid,
     crIdentificationNumberUUID,
     minorOtpAgeThreshold,
   } = useConfig<BillingConfig>();
@@ -111,6 +117,16 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     () => getPatientCRNumber(patient as fhir.Patient, crIdentificationNumberUUID),
     [patient, crIdentificationNumberUUID],
   );
+
+  const { activeVisit } = useVisit(patientUuid);
+  const isEmergencyVisit =
+    visitTypeUuid === casualtyEmergencyVisitTypeUuid || activeVisit?.visitType?.uuid === casualtyEmergencyVisitTypeUuid;
+  const isUnidentifiedEmergency = isEmergencyVisit && !patientCRId;
+
+  const emergencyDataRef = useRef<EmergencyClaimData | null>(null);
+  const handleEmergencyDataChange = useCallback((data: EmergencyClaimData | null) => {
+    emergencyDataRef.current = data;
+  }, []);
 
   const { isPatientWhiteListed, facilityBiometricsEnforced, eligibilityData } = useSHAEligibility(patientUuid);
   const { reasons: whitelistReasons } = useOtpWhitelistReasons();
@@ -376,7 +392,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         return;
       }
 
-      if (!patientCRId) {
+      if (!patientCRId && !isEmergencyVisit) {
         showSnackbar({
           title: t('shaVirtualClaim', 'SHA Virtual Claim'),
           subtitle: t('noCRNumber', 'Patient has no SHA CR number. Proceeding without virtual claim.'),
@@ -391,6 +407,29 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
       const buildModalConfig = (crIdToUse: string, codes: string[], paymentMechanism: string | undefined): void => {
         let settled = false;
         const runVirtualClaim = async (authParams: { otp: string } | { authGuid: string }) => {
+          if (isEmergencyVisit) {
+            const data = emergencyDataRef.current!;
+            const emergencyResponse = await createEmergencyClaim({
+              patientUuid,
+              visitUuid: activeVisit?.uuid,
+              interventionCode: data.interventionCode,
+              identificationNumber: data.identificationNumber,
+              identificationType: data.identificationType,
+              regulationBody: data.regulationBody,
+              modeOfArrival: data.modeOfArrival,
+              broughtBy: data.broughtBy,
+              notes: data.notes,
+              beneficiaryCrId: patientCRIdRef.current || undefined,
+              otp: 'otp' in authParams ? authParams.otp : undefined,
+            });
+            if (!emergencyResponse?.success) {
+              throw new Error(
+                extractUpstreamError(emergencyResponse as any, t('emergencyClaimFailed', 'Emergency claim failed.')),
+              );
+            }
+            shaClaimResponseRef.current = emergencyResponse as any;
+            return emergencyResponse as any;
+          }
           const isInpatient = serviceTypeRef.current === 'INPATIENT';
           const claimResponse = await createSHAVirtualClaim(
             patientCRIdRef.current!,
@@ -494,6 +533,61 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         });
       };
 
+      if (isEmergencyVisit) {
+        const data = emergencyDataRef.current;
+        if (!data) {
+          showSnackbar({
+            title: t('emergencyClaim', 'Emergency claim'),
+            subtitle: t('emergencyDetailsIncomplete', 'Complete the emergency claim details before saving.'),
+            kind: 'warning',
+          });
+          resolve(false);
+          return;
+        }
+
+        if (patientCRId) {
+          patientCRIdRef.current = patientCRId;
+          interventionCodesRef.current = [data.interventionCode];
+          buildModalConfig(patientCRId, [data.interventionCode], undefined);
+          return;
+        }
+
+        (async () => {
+          try {
+            const emergencyResponse = await createEmergencyClaim({
+              patientUuid,
+              visitUuid: activeVisit?.uuid,
+              interventionCode: data.interventionCode,
+              identificationNumber: data.identificationNumber,
+              identificationType: data.identificationType,
+              regulationBody: data.regulationBody,
+              modeOfArrival: data.modeOfArrival,
+              broughtBy: data.broughtBy,
+              notes: data.notes,
+            });
+            if (!emergencyResponse?.success) {
+              throw new Error(
+                extractUpstreamError(emergencyResponse as any, t('emergencyClaimFailed', 'Emergency claim failed.')),
+              );
+            }
+            showSnackbar({
+              title: t('emergencyClaim', 'Emergency claim'),
+              subtitle: t('emergencyClaimCreated', 'Emergency claim created'),
+              kind: 'success',
+            });
+            resolve(true);
+          } catch (err) {
+            showSnackbar({
+              title: t('emergencyClaim', 'Emergency claim'),
+              subtitle: extractUpstreamError(err as any, t('emergencyClaimFailed', 'Emergency claim failed.')),
+              kind: 'error',
+            });
+            resolve(false);
+          }
+        })();
+        return;
+      }
+
       if (isElectiveVisit === 'yes') {
         if (!electiveRecord) {
           showSnackbar({
@@ -568,6 +662,8 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     handleSubmitWhitelist,
     handleCheckWhitelistStatus,
     isSimplifiedOutpatientFlow,
+    isEmergencyVisit,
+    activeVisit,
     t,
   ]);
 
@@ -739,7 +835,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
       {hieFeatureFlags && isInsuranceSchemeSha && (
         <section className={styles.sectionContainer}>
           <PomsfSchemeBalancePicker patientUuid={patientUuid} patientCRId={patientCRId} />
-          {!isSimplifiedOutpatientFlow && (
+          {!isSimplifiedOutpatientFlow && !isUnidentifiedEmergency && (
             <>
               <div className={styles.sectionTitle}>{t('electiveVisitQuestion', 'Is this an elective visit?')}</div>
               <RadioButtonGroup
@@ -765,16 +861,24 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
         </section>
       )}
 
-      {hieFeatureFlags && isInsuranceSchemeSha && isElectiveVisit === 'no' && !isSimplifiedOutpatientFlow && (
-        <SHABenefitPackagesAndInterventions
-          patientUuid={patientUuid}
-          visitTypeUuid={visitTypeUuid}
-          onInterventionsCached={(cache) => {
-            interventionCacheRef.current = { ...interventionCacheRef.current, ...cache };
-          }}
-          onUtilizationStatusChange={handleUtilizationStatusChange}
-          allowElectiveInterventions={false}
-        />
+      {hieFeatureFlags &&
+        isInsuranceSchemeSha &&
+        isElectiveVisit === 'no' &&
+        !isSimplifiedOutpatientFlow &&
+        !isUnidentifiedEmergency && (
+          <SHABenefitPackagesAndInterventions
+            patientUuid={patientUuid}
+            visitTypeUuid={visitTypeUuid}
+            onInterventionsCached={(cache) => {
+              interventionCacheRef.current = { ...interventionCacheRef.current, ...cache };
+            }}
+            onUtilizationStatusChange={handleUtilizationStatusChange}
+            allowElectiveInterventions={false}
+          />
+        )}
+
+      {hieFeatureFlags && isInsuranceSchemeSha && isEmergencyVisit && (
+        <EmergencyClaimSection patientCRId={patientCRId || undefined} onChange={handleEmergencyDataChange} />
       )}
 
       {paymentMethod && !isSimplifiedOutpatientFlow && (

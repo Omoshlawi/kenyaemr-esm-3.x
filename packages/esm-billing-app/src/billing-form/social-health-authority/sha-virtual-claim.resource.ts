@@ -177,6 +177,84 @@ export async function createSHAVirtualClaim(
   return response.data;
 }
 
+export type EmergencyCatalogKind = 'mode-of-arrival' | 'brought-by' | 'identification-type' | 'regulation-body';
+
+export interface EmergencyCatalogEntry {
+  value: string;
+  label: string;
+}
+
+export interface EmergencyInterventionEntry {
+  value: string;
+  label: string;
+  tariff?: string;
+  fund?: string;
+}
+
+export const useEmergencyInterventions = () => {
+  const url = `${restBaseUrl}/insuranceclaims/emergency/interventions`;
+  const { data, error, isLoading } = useSWR<
+    FetchResponse<{ count: number; results: Array<{ code: string; name: string; tariff?: string; fund?: string }> }>
+  >(url, openmrsFetch);
+  const interventions: Array<EmergencyInterventionEntry> = (data?.data?.results ?? []).map((item) => ({
+    value: item.code,
+    label: item.name,
+    tariff: item.tariff,
+    fund: item.fund,
+  }));
+  return { interventions, isLoading, error };
+};
+
+export const useEmergencyCatalog = (kind: EmergencyCatalogKind) => {
+  const url = `${virtualClaimBaseUrl}/emergency/catalog/${kind}`;
+  const { data, error, isLoading } = useSWR<FetchResponse<Array<EmergencyCatalogEntry>>>(url, openmrsFetch);
+  return { entries: data?.data ?? [], isLoading, error };
+};
+
+export interface CreateEmergencyClaimArgs {
+  patientUuid: string;
+  visitUuid?: string;
+  interventionCode: string;
+  identificationNumber: string;
+  identificationType: string;
+  regulationBody: string;
+  modeOfArrival: string;
+  broughtBy: string;
+  notes?: string;
+  beneficiaryCrId?: string;
+  otp?: string;
+}
+
+export async function createEmergencyClaim(args: CreateEmergencyClaimArgs): Promise<Record<string, any>> {
+  const body: Record<string, any> = {
+    patient_uuid: args.patientUuid,
+    interventions: [args.interventionCode],
+    identification_number: args.identificationNumber,
+    identification_type: args.identificationType,
+    regulation_body: args.regulationBody,
+    mode_of_arrival: args.modeOfArrival,
+    brought_by: args.broughtBy,
+  };
+
+  if (args.visitUuid) {
+    body.visit_uuid = args.visitUuid;
+  }
+  if (args.notes) {
+    body.notes = args.notes;
+  }
+  if (args.beneficiaryCrId) {
+    body.beneficiary_cr_id = args.beneficiaryCrId;
+    body.otp = args.otp;
+  }
+
+  const response = await openmrsFetch(`${virtualClaimBaseUrl}/emergency`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  });
+  return response.data;
+}
+
 export const usePatientPhone = (patientUuid: string) => {
   const { data } = useSWR<{
     data: { person: { attributes: Array<{ attributeType: { display: string }; value: string }> } };

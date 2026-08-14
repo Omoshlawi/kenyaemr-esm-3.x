@@ -14,6 +14,7 @@ export interface ProviderSearchProps {
   onSelect: (provider: ProviderResult) => void;
   onLicenseNumberChange: (value: string) => void;
   onRegulationBodyChange: (value: string) => void;
+  editable?: boolean;
   invalid?: boolean;
   invalidText?: string;
 }
@@ -27,6 +28,7 @@ const ProviderSearch: React.FC<ProviderSearchProps> = ({
   onSelect,
   onLicenseNumberChange,
   onRegulationBodyChange,
+  editable = false,
   invalid,
   invalidText,
 }) => {
@@ -117,8 +119,8 @@ const ProviderSearch: React.FC<ProviderSearchProps> = ({
               id={`license-number-${idx}`}
               labelText={identifierLabel ? `${identifierLabel} *` : t('licenseNumber', 'License number *')}
               value={selectedLicenseNumber}
-              readOnly={!!selectedLicenseNumber}
-              onChange={(e) => !selectedLicenseNumber && onLicenseNumberChange(e.target.value)}
+              readOnly={!editable && !!selectedLicenseNumber}
+              onChange={(e) => (editable || !selectedLicenseNumber) && onLicenseNumberChange(e.target.value)}
               size="sm"
               invalid={!selectedLicenseNumber}
               invalidText={!selectedLicenseNumber ? t('enterLicenseNumber', 'Enter license number') : undefined}
@@ -127,8 +129,8 @@ const ProviderSearch: React.FC<ProviderSearchProps> = ({
               id={`regulation-body-${idx}`}
               labelText={t('regulationBody', 'Regulation body *')}
               value={selectedRegulationBody}
-              readOnly={!!selectedRegulationBody}
-              onChange={(e) => !selectedRegulationBody && onRegulationBodyChange(e.target.value)}
+              readOnly={!editable && !!selectedRegulationBody}
+              onChange={(e) => (editable || !selectedRegulationBody) && onRegulationBodyChange(e.target.value)}
               size="sm"
               invalid={!selectedRegulationBody}
               invalidText={!selectedRegulationBody ? t('enterRegulationBody', 'Enter regulation body') : undefined}

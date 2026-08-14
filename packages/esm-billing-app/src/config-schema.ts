@@ -13,6 +13,7 @@ export interface BillingConfig {
   };
   insurancePaymentMethod: string;
   inPatientVisitTypeUuid: string;
+  casualtyEmergencyVisitTypeUuid: string;
   patientExemptionCategories: Array<{ value: string; label: string }>;
   excludedPaymentMode: Array<{ uuid: string; label: string }>;
   enforceBillPayment: boolean;
@@ -96,6 +97,11 @@ export const configSchema: ConfigSchema = {
     _type: Type.String,
     _description: 'The visit type uuid for in-patient',
     _default: 'a73e2ac6-263b-47fc-99fc-e0f2c09fc914',
+  },
+  casualtyEmergencyVisitTypeUuid: {
+    _type: Type.String,
+    _description: 'The visit type uuid for the Casualty/Emergency visit that drives the ECCIF emergency claim flow',
+    _default: '0419d15f-67ad-4fd0-97a1-9b5246b2d0d7',
   },
   mpesaAPIBaseUrl: {
     _type: Type.String,
@@ -282,8 +288,8 @@ export const configSchema: ConfigSchema = {
   },
   licenseNumberUuid: {
     _type: Type.String,
-    _description: 'The provider attribute type uuid for license number',
-    _default: 'bbdf67e8-c020-40ff-8ad6-74ba34893882',
+    _description: 'The provider attribute type uuid for the practising license number',
+    _default: 'bcaaa67b-cc72-4662-90c2-e1e992ceda66',
   },
   licenseBodyUuid: {
     _type: Type.String,

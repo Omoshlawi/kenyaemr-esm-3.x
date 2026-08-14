@@ -1,7 +1,7 @@
 import React from 'react';
 import { screen, render, waitFor } from '@testing-library/react';
 import { useFormContext } from 'react-hook-form';
-import { useConfig, useFeatureFlag, usePatient, useSession } from '@openmrs/esm-framework';
+import { useConfig, useFeatureFlag, usePatient, useSession, useVisit } from '@openmrs/esm-framework';
 import BillingCheckInForm, { type VisitFormCallbacks } from './billing-checkin-form.component';
 import { createPatientBill, useBillableItems, useCashPoint } from '../billing.resource';
 import { useFacilityRegistry } from '../hooks/useFacilityRegistry';
@@ -22,6 +22,7 @@ vi.mock('@openmrs/esm-framework', () => ({
   useFeatureFlag: vi.fn(),
   usePatient: vi.fn(),
   useSession: vi.fn(),
+  useVisit: vi.fn(() => ({ activeVisit: null })),
 }));
 
 vi.mock('../billing.resource', () => ({
@@ -42,8 +43,11 @@ vi.mock('./hie.resource', () => ({
 vi.mock('./social-health-authority/sha-virtual-claim.resource', () => ({
   addVisitAttribute: vi.fn(),
   checkBiometricAuthorizationStatus: vi.fn(),
+  createEmergencyClaim: vi.fn(),
   createSHABiometricAuthorize: vi.fn(),
   createSHAVirtualClaim: vi.fn(),
+  useEmergencyCatalog: vi.fn(() => ({ entries: [], isLoading: false })),
+  useEmergencyInterventions: vi.fn(() => ({ interventions: [], isLoading: false })),
   detectAuthorizingDeviceOS: vi.fn(() => 'web'),
   fetchWhitelistStatus: vi.fn(),
   linkVisitToClaim: vi.fn(),
@@ -92,6 +96,7 @@ const mockUseConfig = useConfig as vi.MockedFunction<typeof useConfig>;
 const mockUseFeatureFlag = useFeatureFlag as vi.MockedFunction<typeof useFeatureFlag>;
 const mockUsePatient = usePatient as vi.MockedFunction<typeof usePatient>;
 const mockUseSession = useSession as vi.MockedFunction<typeof useSession>;
+const mockUseVisit = useVisit as vi.MockedFunction<typeof useVisit>;
 const mockUseBillableItems = useBillableItems as vi.MockedFunction<typeof useBillableItems>;
 const mockUseCashPoint = useCashPoint as vi.MockedFunction<typeof useCashPoint>;
 const mockCreatePatientBill = createPatientBill as vi.MockedFunction<typeof createPatientBill>;
@@ -160,6 +165,7 @@ describe('BillingCheckInForm', () => {
     mockUseFeatureFlag.mockReturnValue(false);
     mockUsePatient.mockReturnValue({ patient: undefined } as any);
     mockUseSession.mockReturnValue({ currentProvider: { uuid: 'provider-uuid' } } as any);
+    mockUseVisit.mockReturnValue({ activeVisit: null } as any);
     mockUseSHAEligibility.mockReturnValue({
       isPatientWhiteListed: false,
       facilityBiometricsEnforced: false,
