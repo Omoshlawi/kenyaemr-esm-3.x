@@ -69,7 +69,7 @@ const RequestDoctorApprovalView: React.FC<RequestDoctorApprovalViewProps> = ({
             {isRequestingDoctor ? (
               <InlineLoading description={t('requesting', 'Requesting...')} role="progressbar" />
             ) : (
-              t('requestDoctorApproval', 'Request approval')
+              t('rerequest', 'Re-request')
             )}
           </Button>
         </ButtonSet>
