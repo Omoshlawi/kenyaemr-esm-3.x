@@ -581,7 +581,7 @@ export interface ClaimResponse {
   workflowState?: string | null;
   authorizationCode?: string | null;
   authorizationGuid?: string | null;
-  serviceType?: 'OUTPATIENT' | 'INPATIENT' | 'CAPITATION' | null;
+  serviceType?: 'OUTPATIENT' | 'INPATIENT' | 'CAPITATION' | 'EMERGENCY' | null;
   claimAuthStatus?: string | null;
   totalClaimAmount?: number | null;
   totalClaimNetAmount?: number | null;

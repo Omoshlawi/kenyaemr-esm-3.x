@@ -27,11 +27,15 @@ export function useRequestDoctorApproval({ item, doctor, mutate, onSuccess }: Us
     setIsRequestingDoctor(true);
 
     try {
+      const requestType =
+        item.service_type === 'EMERGENCY'
+          ? 'EMERGENCY_CLAIM_DOCTOR_APPROVAL_REQUEST'
+          : 'PREAUTH_DOCTOR_APPROVAL_REQUEST';
       const result = await sendDoctorPreauthRequest(
         item.authorization_code,
         item.intervention_code,
         doctor.identification_number,
-        'REQUEST',
+        requestType,
       );
 
       if ((result as any)?.success === false) {

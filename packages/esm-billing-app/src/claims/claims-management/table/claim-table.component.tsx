@@ -25,7 +25,14 @@ import {
   Tag,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { formatDate, showModal, useLayoutType, usePagination, navigate } from '@openmrs/esm-framework';
+import {
+  formatDate,
+  showModal,
+  launchWorkspace2,
+  useLayoutType,
+  usePagination,
+  navigate,
+} from '@openmrs/esm-framework';
 import { EmptyState, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -37,6 +44,8 @@ import usePatientDiagnosis from '../../../hooks/usePatientDiagnosis';
 import { getClaimPayerPreview } from './claim-summary-modal/claim.resource';
 import { parseExternalApiErrors } from '../../../utils';
 import { spaBasePath } from '../../../constants';
+import { useClaimDoctors } from '../../claims-wrap/claim-workspaces/doctors/claim-doctors-resource';
+import { type PreauthQueueItem } from '../../../billing-form/social-health-authority/type';
 
 const WORKFLOW_STATE_CONFIG: Record<string, { label: string; type: string }> = {
   DRAFT: { label: 'Draft', type: 'gray' },
@@ -86,6 +95,30 @@ const ShifExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
   } = usePatientDiagnosis(claim.patient?.uuid ?? '');
   const isTablet = useLayoutType() === 'tablet';
   const controlSize = isTablet ? 'md' : 'sm';
+  const isEmergency = claim.serviceType === 'EMERGENCY';
+  const {
+    doctors,
+    isLoading: isLoadingDoctors,
+    error: doctorsError,
+    mutate: mutateDoctors,
+  } = useClaimDoctors(isEmergency ? claim.authorizationCode ?? null : null);
+
+  const claimItemShim = {
+    authorization_code: claim.authorizationCode ?? '',
+    intervention_code: claim.interventions?.[0] ?? claim.interventionDetails?.[0]?.intervention_code ?? '',
+    intervention_name: claim.interventionDetails?.[0]?.intervention_name ?? '',
+    service_type: claim.serviceType ?? '',
+    patient: { uuid: claim.patient?.uuid ?? '', display: claim.patient?.display ?? '' },
+  } as PreauthQueueItem;
+
+  const handleRequestDoctorApproval = (doctor: { uuid: string; doctor_name: string; identification_number: string }) =>
+    launchWorkspace2('preauth-form-workspace', {
+      workspaceTitle: t('requestDoctorApproval', 'Request Doctor Approval'),
+      item: claimItemShim,
+      doctor,
+      isRequestDoctorApproval: true,
+      mutate: mutateDoctors,
+    });
 
   const [payerData, setPayerData] = useState<any>(null);
   const [payerLoading, setPayerLoading] = useState(false);
@@ -229,6 +262,54 @@ const ShifExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
           <p className={styles.noInterventions}>{t('noInterventions', 'No interventions added yet.')}</p>
         )}
       </div>
+
+      {isEmergency && (
+        <div className={styles.interventionsSection}>
+          <div className={styles.interventionsSectionHeader}>
+            <p className={styles.interventionsSectionTitle}>{t('doctors', 'Doctors')}</p>
+          </div>
+          {doctorsError ? (
+            <p className={styles.errorText}>
+              {doctorsError instanceof Error ? doctorsError.message : t('doctorsLoadErrorGeneric', 'Request failed')}
+            </p>
+          ) : isLoadingDoctors ? (
+            <span>{t('loadingDoctors', 'Loading doctors…')}</span>
+          ) : doctors.length > 0 ? (
+            <StructuredListWrapper>
+              <StructuredListHead>
+                <StructuredListRow head>
+                  <StructuredListCell head>{t('doctor', 'Doctor')}</StructuredListCell>
+                  <StructuredListCell head>{t('doctorId', 'Doctor ID')}</StructuredListCell>
+                  <StructuredListCell head>{t('actions', 'Actions')}</StructuredListCell>
+                </StructuredListRow>
+              </StructuredListHead>
+              <StructuredListBody>
+                {doctors.map((doctor) => (
+                  <StructuredListRow key={doctor.uuid}>
+                    <StructuredListCell>{doctor.doctor_name}</StructuredListCell>
+                    <StructuredListCell>
+                      <code>{doctor.identification_number}</code>
+                    </StructuredListCell>
+                    <StructuredListCell>
+                      <div className={styles.rowActions}>
+                        <Button
+                          size={controlSize}
+                          kind="secondary"
+                          onClick={() => handleRequestDoctorApproval(doctor)}
+                          iconDescription={t('requestDoctorApproval', 'Request doctor approval')}>
+                          {t('rerequest', 'Re-request')}
+                        </Button>
+                      </div>
+                    </StructuredListCell>
+                  </StructuredListRow>
+                ))}
+              </StructuredListBody>
+            </StructuredListWrapper>
+          ) : (
+            <p className={styles.noInterventions}>{t('noDoctorsAdded', 'No doctors added yet.')}</p>
+          )}
+        </div>
+      )}
 
       {showExternalErrors && (
         <Accordion className={styles.externalErrorsSection}>

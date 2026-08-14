@@ -288,9 +288,10 @@ export const SERVICE_TYPE_TAG: Record<string, string> = {
   INPATIENT: 'blue',
   OUTPATIENT: 'teal',
   CAPITATION: 'purple',
+  EMERGENCY: 'red',
 };
 
-export const SERVICE_TYPES = ['Outpatient', 'Inpatient', 'Capitation'];
+export const SERVICE_TYPES = ['Outpatient', 'Inpatient', 'Capitation', 'Emergency'];
 
 export type StatusFilterKey = '' | 'DRAFT' | 'CLOSED' | 'AT_PAYER' | 'SENT_BACK' | 'APPROVED' | 'PAID';
 

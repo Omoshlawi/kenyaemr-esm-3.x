@@ -55,6 +55,7 @@ import {
 } from './claim-workspaces/attachements/claim-attachments-resource';
 import { useClaimDoctors } from './claim-workspaces/doctors/claim-doctors-resource';
 import { PREAUTH_TYPE_COLORS } from '../claims-management/table/virtual-claim-preauth/constants';
+import { type PreauthQueueItem } from '../../billing-form/social-health-authority/type';
 
 interface ClaimsMainProps {
   bill: MappedBill;
@@ -601,6 +602,36 @@ const ClaimDetailsPanel: React.FC<{
     claim.authorization_code,
   );
   const { doctors, mutate: mutateDoctors } = useClaimDoctors(claim.authorization_code);
+
+  const claimItemShim = useMemo(
+    () =>
+      ({
+        authorization_code: claim.authorization_code,
+        intervention_code: claim.interventions?.[0]?.intervention_code ?? '',
+        intervention_name: claim.interventions?.[0]?.intervention_name ?? '',
+        service_type: claim.service_type ?? '',
+        patient: { uuid: patientUuid, display: bill.patientName ?? '' },
+      } as PreauthQueueItem),
+    [claim.authorization_code, claim.interventions, claim.service_type, patientUuid, bill.patientName],
+  );
+
+  const handleRequestDoctorApproval = useCallback(
+    (doctor: { uuid: string; doctor_name: string; identification_number: string }) =>
+      launchWorkspace2(
+        'preauth-form-workspace',
+        {
+          workspaceTitle: t('requestDoctorApproval', 'Request Doctor Approval'),
+          item: claimItemShim,
+          doctor,
+          isRequestDoctorApproval: true,
+          mutate: mutateDoctors,
+        },
+        {},
+        {},
+      ),
+    [claimItemShim, mutateDoctors, t],
+  );
+
   const attachmentsByCode = useMemo(() => {
     const map = new Map<string, (typeof attachmentInterventions)[number]>();
     for (const iv of attachmentInterventions) {
@@ -1290,7 +1321,12 @@ const ClaimDetailsPanel: React.FC<{
             <ul className={styles.billLineList}>
               {doctors.map((d) => (
                 <li key={d.uuid} className={styles.billLineItem}>
-                  <span className={styles.muted}>{d.doctor_name}</span>
+                  <div className={styles.billLineRow}>
+                    <span className={styles.muted}>{d.doctor_name}</span>
+                    <Button size="sm" kind="ghost" onClick={() => handleRequestDoctorApproval(d)}>
+                      {t('rerequest', 'Re-request')}
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>
