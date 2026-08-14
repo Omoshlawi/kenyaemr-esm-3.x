@@ -48,7 +48,7 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
   isEligibilityLoading = false,
 }) => {
   const { t } = useTranslation();
-  const { enableDemographicSync } = useConfig<ExpressWorkflowConfig>();
+  const { enableDemographicSync, nationalIdUUID } = useConfig<ExpressWorkflowConfig>();
   const [verifiedPatients, setVerifiedPatients] = useState<Set<string>>(new Set());
   const [otpRequestedFor, setOtpRequestedFor] = useState<Set<string>>(new Set());
   const [syncedPatientUuids, setSyncedPatientUuids] = useState<Set<string>>(new Set());
@@ -81,7 +81,7 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
       }
 
       const fhirPatient = convertLocalPatientToFHIR(localPatient);
-      const localNationalId = getNationalIdFromPatient(fhirPatient);
+      const localNationalId = getNationalIdFromPatient(fhirPatient, nationalIdUUID);
 
       if (!localNationalId) {
         return null;
@@ -90,7 +90,7 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
       for (const bundle of hieSearchResults) {
         if (bundle.entry) {
           for (const entry of bundle.entry) {
-            const hieNationalId = getNationalIdFromPatient(entry.resource);
+            const hieNationalId = getNationalIdFromPatient(entry.resource, nationalIdUUID);
             if (hieNationalId === localNationalId) {
               return entry.resource;
             }
@@ -99,7 +99,7 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
       }
       return null;
     },
-    [hieSearchResults],
+    [hieSearchResults, nationalIdUUID],
   );
 
   const toggleDependentsVisibility = useCallback((patientUuid: string) => {
@@ -254,10 +254,10 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
         const hiePatientData: any = findHIEPatientData(localPatient);
         const patientHasDependents: boolean = hiePatientData ? hasDependents(hiePatientData) : false;
         const showDependents: boolean = showDependentsForPatient.has(patientUuid);
-        const demographicMismatch: boolean =
-          hiePatientData && !syncedPatientUuids.has(patientUuid)
-            ? hasDemographicMismatch(fhirPatient, hiePatientData)
-            : false;
+        const canCompareWithHie: boolean = Boolean(hiePatientData) && !syncedPatientUuids.has(patientUuid);
+        const demographicMismatch: boolean = canCompareWithHie
+          ? hasDemographicMismatch(fhirPatient, hiePatientData)
+          : false;
 
         const patientPhoneNumber = getPatientPhoneNumber(localPatient);
         const { onRequestOtp, onVerify, cleanup } = createDynamicOTPHandlers(
@@ -289,12 +289,14 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
 
               <div className={styles.buttonCol}>
                 <div className={styles.actionButtons}>
-                  {enableDemographicSync && hiePatientData && demographicMismatch && (
+                  {enableDemographicSync && canCompareWithHie && (
                     <Button
                       kind="secondary"
                       size="sm"
                       onClick={() => handleCompareAndSync(localPatient, fhirPatient, hiePatientData, patientUuid)}>
-                      {t('compareAndSync', 'Compare & sync')}
+                      {demographicMismatch
+                        ? t('reviewAndSync', 'Review & sync')
+                        : t('compareAndSync', 'Compare & sync')}
                     </Button>
                   )}
                   {!isVerified && !otpRequested && (

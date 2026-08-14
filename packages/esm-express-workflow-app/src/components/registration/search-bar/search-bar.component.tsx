@@ -16,7 +16,7 @@ const SearchBar: React.FC = () => {
   const { t } = useTranslation();
   const addPatient = React.useCallback(() => navigate({ to: '${openmrsSpaBase}/patient-registration' }), []);
 
-  const { identifierTypes, otpExpirationDurationInminutes } = useConfig<ExpressWorkflowConfig>();
+  const { identifierTypes, otpExpirationDurationInminutes, nationalIdUUID } = useConfig<ExpressWorkflowConfig>();
 
   const identifierTypeItems: Array<IdentifierTypeItem> = identifierTypes.map((item) => ({
     id: item.identifierValue,
@@ -78,7 +78,7 @@ const SearchBar: React.FC = () => {
 
     results.forEach((patient) => {
       const fhirPatient = convertLocalPatientToFHIR(patient);
-      const nationalId = getNationalIdFromPatient(fhirPatient);
+      const nationalId = getNationalIdFromPatient(fhirPatient, nationalIdUUID);
       if (nationalId) {
         nationalIds.add(nationalId);
       }
@@ -104,7 +104,7 @@ const SearchBar: React.FC = () => {
       .map((bundle) => {
         const filteredEntries =
           bundle.entry?.filter((entry) => {
-            const nationalId = getNationalIdFromPatient(entry.resource);
+            const nationalId = getNationalIdFromPatient(entry.resource, nationalIdUUID);
             return nationalId ? !localNationalIds.has(nationalId) : true;
           }) || [];
 
@@ -254,7 +254,7 @@ const SearchBar: React.FC = () => {
 
         const firstPatient = normalizedHieResults[0]?.entry?.[0]?.resource;
         if (firstPatient) {
-          const nationalId = getNationalIdFromPatient(firstPatient);
+          const nationalId = getNationalIdFromPatient(firstPatient, nationalIdUUID);
           if (nationalId) {
             setSearchedNationalId(nationalId);
           }

@@ -123,12 +123,25 @@ export const getEligibilityStatus = (eligibilityData?: EligibilityResponse) => {
  * @param {fhir.Patient} patient - The patient resource.
  * @returns {string | null} The National ID, if found, or null.
  */
-export const getNationalIdFromPatient = (patient: fhir.Patient): string | null => {
-  const nationalIdIdentifier = patient.identifier?.find(
-    (identifier) =>
-      identifier.type?.coding?.[0]?.code === 'national-id' || identifier.type?.coding?.[0]?.display === 'National ID',
-  );
-  return nationalIdIdentifier?.value || null;
+export const getNationalIdFromPatient = (
+  patient: fhir.Patient,
+  nationalIdIdentifierTypeUuid?: string,
+): string | null => {
+  const nationalIdIdentifier = patient.identifier?.find((identifier) => {
+    const coding = identifier.type?.coding?.[0];
+    if (!coding) {
+      return false;
+    }
+    const code = coding.code?.trim();
+    const display = coding.display?.trim().toLowerCase();
+
+    return (
+      code === 'national-id' ||
+      display === 'national id' ||
+      (!!nationalIdIdentifierTypeUuid && code === nationalIdIdentifierTypeUuid)
+    );
+  });
+  return nationalIdIdentifier?.value?.trim() || null;
 };
 
 /**
@@ -576,6 +589,19 @@ export const hasDependents = (patient: fhir.Patient): boolean => {
   return patient?.contact && Array.isArray(patient.contact) && patient.contact.length > 0;
 };
 
+const PHONE_ATTRIBUTE_DISPLAY_PATTERN = /phone|mobile|telephone/i;
+
+export const getLocalPatientPhone = (localPatient: any): string | undefined => {
+  const phoneAttribute = localPatient?.attributes?.find((attribute: any) =>
+    PHONE_ATTRIBUTE_DISPLAY_PATTERN.test(attribute?.attributeType?.display || ''),
+  );
+  return phoneAttribute?.value?.trim() || undefined;
+};
+
+export const getPhoneFromFhirPatient = (patient?: fhir.Patient): string | undefined =>
+  patient?.telecom?.find((contact) => contact.system === 'phone' || contact.use === 'mobile')?.value?.trim() ||
+  undefined;
+
 /**
  * Converts a local patient object to a FHIR Patient resource.
  *
@@ -583,6 +609,7 @@ export const hasDependents = (patient: fhir.Patient): boolean => {
  * @returns {fhir.Patient} The equivalent FHIR Patient resource
  */
 export const convertLocalPatientToFHIR = (localPatient: any): fhir.Patient => {
+  const phone = getLocalPatientPhone(localPatient);
   return {
     resourceType: 'Patient',
     id: localPatient.uuid,
@@ -607,6 +634,7 @@ export const convertLocalPatientToFHIR = (localPatient: any): fhir.Patient => {
         family: localPatient.person?.personName?.familyName || '',
       },
     ],
+    telecom: phone ? [{ system: 'phone', value: phone }] : undefined,
     gender: localPatient.person?.gender?.toLowerCase() as 'male' | 'female' | 'other' | 'unknown',
     birthDate: localPatient.person?.birthdate ? localPatient.person.birthdate.split('T')[0] : undefined,
   };
@@ -638,6 +666,11 @@ const tokenizeName = (value?: string): string[] => normalizeForComparison(value)
 
 const normalizeGender = (value?: string): string => normalizeForComparison(value).charAt(0);
 
+const normalizePhone = (value?: string): string => {
+  const digits = (value || '').replace(/\D/g, '');
+  return digits.length > 9 ? digits.slice(-9) : digits;
+};
+
 /**
  * Checks whether a local patient's demographics (name, gender, birth date) differ from
  * the corresponding HIE patient record for the same national ID. Used to flag cases where
@@ -652,10 +685,53 @@ export const hasDemographicMismatch = (localPatient: fhir.Patient, hiePatient: f
   getDemographicDifferences(localPatient, hiePatient).length > 0;
 
 export interface DemographicDifference {
-  field: 'name' | 'gender' | 'birthDate';
+  field: 'name' | 'gender' | 'birthDate' | 'phone' | 'identifier';
   localValue: string;
   hieValue: string;
+  label?: string;
 }
+
+export interface SyncableIdentifierType {
+  code: string;
+  typeUuid: string;
+  label: string;
+}
+
+const normalizeIdentifierValue = (value?: string): string => (value || '').trim().toUpperCase();
+
+export const getHieIdentifierValue = (patient: fhir.Patient, code: string): string | undefined =>
+  patient.identifier
+    ?.find((identifier) => identifier.type?.coding?.some((coding) => coding.code === code))
+    ?.value?.trim() || undefined;
+
+export const getLocalIdentifierValue = (localPatient: any, typeUuid: string): string | undefined =>
+  localPatient?.identifiers
+    ?.find((identifier: any) => identifier?.identifierType?.uuid === typeUuid)
+    ?.identifier?.trim() || undefined;
+
+export const getIdentifierDifferences = (
+  localPatient: any,
+  hiePatient: fhir.Patient,
+  identifierTypes: Array<SyncableIdentifierType>,
+): Array<DemographicDifference> => {
+  const differences: Array<DemographicDifference> = [];
+
+  for (const { code, typeUuid, label } of identifierTypes) {
+    if (!typeUuid) {
+      continue;
+    }
+    const hieValue = getHieIdentifierValue(hiePatient, code);
+    if (!hieValue) {
+      continue;
+    }
+    const localValue = getLocalIdentifierValue(localPatient, typeUuid);
+    if (normalizeIdentifierValue(localValue) !== normalizeIdentifierValue(hieValue)) {
+      differences.push({ field: 'identifier', label, localValue: localValue || '', hieValue });
+    }
+  }
+
+  return differences;
+};
 
 export const formatPatientName = (patient?: fhir.Patient): string => {
   const name = patient?.name?.[0];
@@ -701,6 +777,12 @@ export const getDemographicDifferences = (
   const hieBirthDate = normalizeDate(hiePatient.birthDate);
   if (localBirthDate && hieBirthDate && localBirthDate !== hieBirthDate) {
     differences.push({ field: 'birthDate', localValue: localBirthDate, hieValue: hieBirthDate });
+  }
+
+  const localPhone = getPhoneFromFhirPatient(localPatient);
+  const hiePhone = getPhoneFromFhirPatient(hiePatient);
+  if (localPhone && hiePhone && normalizePhone(localPhone) !== normalizePhone(hiePhone)) {
+    differences.push({ field: 'phone', localValue: localPhone, hieValue: hiePhone });
   }
 
   return differences;

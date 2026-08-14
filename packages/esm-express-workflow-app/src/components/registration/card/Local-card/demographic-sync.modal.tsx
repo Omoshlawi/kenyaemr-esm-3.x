@@ -13,9 +13,15 @@ import {
   StructuredListRow,
   StructuredListWrapper,
 } from '@carbon/react';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { showSnackbar, useConfig } from '@openmrs/esm-framework';
 
-import { type DemographicDifference, getDemographicDifferences } from '../../helper';
+import { type ExpressWorkflowConfig } from '../../../../config-schema';
+import {
+  type DemographicDifference,
+  type SyncableIdentifierType,
+  getDemographicDifferences,
+  getIdentifierDifferences,
+} from '../../helper';
 import { type LocalPatient } from '../../type';
 import { syncLocalPatientFromHIE } from './demographic-sync.resource';
 import styles from './demographic-sync.scss';
@@ -36,25 +42,51 @@ const DemographicSyncModal: React.FC<DemographicSyncModalProps> = ({
   onSynced,
 }) => {
   const { t } = useTranslation();
+  const {
+    phoneAttributeTypeUUID,
+    nationalIdUUID,
+    shaNumberUUID,
+    crIdentificationNumberUUID,
+    passportUUID,
+    birthCertificateUUID,
+  } = useConfig<ExpressWorkflowConfig>();
+
+  const identifierTypes = useMemo<Array<SyncableIdentifierType>>(
+    () => [
+      { code: 'national-id', typeUuid: nationalIdUUID, label: t('nationalId', 'National ID') },
+      { code: 'sha-number', typeUuid: shaNumberUUID, label: t('shaNumber', 'SHA number') },
+      { code: 'sha-id-number', typeUuid: crIdentificationNumberUUID, label: t('crNumber', 'CR number') },
+      { code: 'passport-number', typeUuid: passportUUID, label: t('passportNumber', 'Passport number') },
+      { code: 'birth-certificate', typeUuid: birthCertificateUUID, label: t('birthCertificate', 'Birth certificate') },
+    ],
+    [nationalIdUUID, shaNumberUUID, crIdentificationNumberUUID, passportUUID, birthCertificateUUID, t],
+  );
 
   const differences = useMemo(
-    () => getDemographicDifferences(localFhirPatient, hiePatient),
-    [localFhirPatient, hiePatient],
+    () => [
+      ...getDemographicDifferences(localFhirPatient, hiePatient),
+      ...getIdentifierDifferences(localPatient, hiePatient, identifierTypes),
+    ],
+    [localFhirPatient, hiePatient, localPatient, identifierTypes],
   );
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fieldLabel = (field: DemographicDifference['field']): string => {
-    switch (field) {
+  const fieldLabel = (difference: DemographicDifference): string => {
+    switch (difference.field) {
       case 'name':
         return t('name', 'Name');
       case 'gender':
         return t('sex', 'Sex');
       case 'birthDate':
         return t('dateOfBirth', 'Date of birth');
+      case 'phone':
+        return t('phoneNumber', 'Phone number');
+      case 'identifier':
+        return difference.label ?? t('identifier', 'Identifier');
       default:
-        return field;
+        return difference.field;
     }
   };
 
@@ -62,7 +94,7 @@ const DemographicSyncModal: React.FC<DemographicSyncModalProps> = ({
     setError(null);
     setIsSyncing(true);
     try {
-      await syncLocalPatientFromHIE(localPatient, hiePatient);
+      await syncLocalPatientFromHIE(localPatient, hiePatient, { phoneAttributeTypeUUID, identifierTypes });
       showSnackbar({
         title: t('demographicsSynced', 'Patient details updated'),
         subtitle: t('demographicsSyncedSubtitle', 'The local record now matches the HIE for the selected fields.'),
@@ -129,8 +161,8 @@ const DemographicSyncModal: React.FC<DemographicSyncModalProps> = ({
               </StructuredListHead>
               <StructuredListBody>
                 {differences.map((diff) => (
-                  <StructuredListRow key={diff.field}>
-                    <StructuredListCell>{fieldLabel(diff.field)}</StructuredListCell>
+                  <StructuredListRow key={`${diff.field}-${diff.label ?? ''}`}>
+                    <StructuredListCell>{fieldLabel(diff)}</StructuredListCell>
                     <StructuredListCell className={styles.localValue}>{diff.localValue || '—'}</StructuredListCell>
                     <StructuredListCell className={styles.hieValue}>{diff.hieValue || '—'}</StructuredListCell>
                   </StructuredListRow>

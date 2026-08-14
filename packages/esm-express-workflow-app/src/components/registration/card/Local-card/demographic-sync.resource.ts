@@ -1,4 +1,5 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { getHieIdentifierValue, type SyncableIdentifierType } from '../../helper';
 import { type LocalPatient } from '../../type';
 
 export const splitHieName = (
@@ -32,7 +33,66 @@ const toOpenmrsDate = (value?: string): string | undefined => {
   return match ? match[0] : undefined;
 };
 
-export const syncLocalPatientFromHIE = async (localPatient: LocalPatient, hiePatient: fhir.Patient): Promise<void> => {
+interface SyncLocalPatientOptions {
+  phoneAttributeTypeUUID?: string;
+  identifierTypes?: Array<SyncableIdentifierType>;
+}
+
+const getHiePhone = (hiePatient: fhir.Patient): string | undefined =>
+  hiePatient?.telecom?.find((contact) => contact.system === 'phone' || contact.use === 'mobile')?.value?.trim() ||
+  undefined;
+
+const normalizeIdentifier = (value?: string): string => (value || '').trim().toUpperCase();
+
+const syncIdentifiers = async (
+  personUuid: string,
+  localPatient: LocalPatient,
+  hiePatient: fhir.Patient,
+  identifierTypes: Array<SyncableIdentifierType>,
+): Promise<void> => {
+  const fallbackLocationUuid = localPatient.identifiers?.find((identifier) => identifier.location?.uuid)?.location
+    ?.uuid;
+
+  for (const { code, typeUuid } of identifierTypes) {
+    if (!typeUuid) {
+      continue;
+    }
+    const hieValue = getHieIdentifierValue(hiePatient, code);
+    if (!hieValue) {
+      continue;
+    }
+
+    const existing = localPatient.identifiers?.find((identifier) => identifier.identifierType?.uuid === typeUuid);
+
+    if (existing) {
+      if (normalizeIdentifier(existing.identifier) !== normalizeIdentifier(hieValue)) {
+        await openmrsFetch(`${restBaseUrl}/patient/${personUuid}/identifier/${existing.uuid}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: { identifier: hieValue },
+        });
+      }
+      continue;
+    }
+
+    await openmrsFetch(`${restBaseUrl}/patient/${personUuid}/identifier`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        identifier: hieValue,
+        identifierType: typeUuid,
+        location: fallbackLocationUuid,
+        preferred: false,
+      },
+    });
+  }
+};
+
+export const syncLocalPatientFromHIE = async (
+  localPatient: LocalPatient,
+  hiePatient: fhir.Patient,
+  options: SyncLocalPatientOptions = {},
+): Promise<void> => {
   const personUuid = localPatient?.uuid;
   if (!personUuid) {
     throw new Error('Local patient is missing a uuid');
@@ -63,5 +123,18 @@ export const syncLocalPatientFromHIE = async (localPatient: LocalPatient, hiePat
       headers: { 'Content-Type': 'application/json' },
       body: personPayload,
     });
+  }
+
+  const hiePhone = getHiePhone(hiePatient);
+  if (options.phoneAttributeTypeUUID && hiePhone) {
+    await openmrsFetch(`${restBaseUrl}/person/${personUuid}/attribute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { attributeType: options.phoneAttributeTypeUUID, value: hiePhone },
+    });
+  }
+
+  if (options.identifierTypes?.length) {
+    await syncIdentifiers(personUuid, localPatient, hiePatient, options.identifierTypes);
   }
 };
