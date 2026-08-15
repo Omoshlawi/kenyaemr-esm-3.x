@@ -264,10 +264,111 @@ export async function addEmergencyProtocol(args: AddEmergencyProtocolArgs): Prom
   return response.data;
 }
 
+export interface SHAPatientDemographics {
+  crNumber: string | null;
+  fullName: string | null;
+  gender: string | null;
+  dateOfBirth: string | null;
+  phone: string | null;
+}
+
+function parseSHAPatientBundle(bundle: any): SHAPatientDemographics | null {
+  const patient = bundle?.entry?.[0]?.resource;
+  if (!patient) {
+    return null;
+  }
+  const name = patient.name?.[0];
+  const given: Array<string> = name?.given ?? [];
+  const fullName = (name?.text ?? '').trim() || [...given, name?.family].filter(Boolean).join(' ') || null;
+  const phone = patient.telecom?.find((t: { system?: string; value?: string }) => t.system === 'phone')?.value ?? null;
+  return {
+    crNumber: patient.id ?? null,
+    fullName,
+    gender: patient.gender ?? null,
+    dateOfBirth: patient.birthDate ?? null,
+    phone,
+  };
+}
+
+const shaPatientUrl = (identificationNumber: string, identificationType: string) =>
+  `${restBaseUrl}/kenyaemr/getSHAPatient/${encodeURIComponent(identificationNumber)}/${encodeURIComponent(
+    identificationType,
+  )}`;
+
+export async function fetchSHAPatientDemographics(
+  identificationNumber: string,
+  identificationType: string,
+): Promise<SHAPatientDemographics | null> {
+  try {
+    const response = await openmrsFetch<any>(shaPatientUrl(identificationNumber, identificationType));
+    return parseSHAPatientBundle(response?.data);
+  } catch {
+    return null;
+  }
+}
+
+export const useSHAPatientSearch = (identificationNumber?: string, identificationType?: string) => {
+  const url =
+    identificationNumber && identificationType ? shaPatientUrl(identificationNumber, identificationType) : null;
+  const { data, error, isLoading } = useSWR<FetchResponse<any>>(url, openmrsFetch, {
+    revalidateOnFocus: false,
+    shouldRetryOnError: false,
+  });
+  const demographics = data?.data ? parseSHAPatientBundle(data.data) : null;
+  return {
+    demographics,
+    crNumber: demographics?.crNumber ?? null,
+    fullName: demographics?.fullName ?? null,
+    isLoading,
+    error,
+  };
+};
+
+export interface IdentifyEmergencyPatientArgs {
+  consentToken: string;
+  beneficiaryCrId: string;
+  otp: string;
+  identificationNumber?: string;
+  identificationType?: string;
+  demographics?: SHAPatientDemographics | null;
+}
+
+export async function identifyEmergencyPatient(args: IdentifyEmergencyPatientArgs): Promise<Record<string, any>> {
+  const response = await openmrsFetch(`${virtualClaimBaseUrl}/emergency/identify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: {
+      consent_token: args.consentToken,
+      beneficiary_cr_id: args.beneficiaryCrId,
+      otp: args.otp,
+      identification_number: args.identificationNumber,
+      identification_type: args.identificationType,
+      patient_full_name: args.demographics?.fullName ?? undefined,
+      patient_gender: args.demographics?.gender ?? undefined,
+      patient_date_of_birth: args.demographics?.dateOfBirth ?? undefined,
+      patient_phone: args.demographics?.phone ?? undefined,
+    },
+  });
+  return response.data;
+}
+
 export const useEmergencyCatalog = (kind: EmergencyCatalogKind) => {
   const url = `${virtualClaimBaseUrl}/emergency/catalog/${kind}`;
   const { data, error, isLoading } = useSWR<FetchResponse<Array<EmergencyCatalogEntry>>>(url, openmrsFetch);
   return { entries: data?.data ?? [], isLoading, error };
+};
+
+/**
+ * The identification types offered when searching the HIE / Client Registry,
+ * mirroring the registration search bar's `identifierTypes` config. `value` is
+ * the type string passed to getSHAPatient, `label` is the display text.
+ */
+export const useHieIdentificationTypes = (): { entries: Array<EmergencyCatalogEntry> } => {
+  const { identifierTypes } = useConfig<BillingConfig>();
+  const entries: Array<EmergencyCatalogEntry> = (identifierTypes ?? [])
+    .filter((item) => item?.identifierValue && item.identifierValue !== 'select-identifier-type')
+    .map((item) => ({ value: item.identifierValue, label: item.identifierType }));
+  return { entries };
 };
 
 export interface CreateEmergencyClaimArgs {

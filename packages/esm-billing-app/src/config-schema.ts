@@ -28,6 +28,7 @@ export interface BillingConfig {
   nationalIdUUID: string;
   birthCertificateUUID: string;
   eligibilityIdentifierFallbacks: Array<{ uuid: string; label: string }>;
+  identifierTypes: Array<{ identifierType: string; identifierValue: string }>;
   isPDSLFacility: boolean;
   mobileMoneyPaymentModeUUID: string;
   concepts: {
@@ -92,6 +93,24 @@ export const configSchema: ConfigSchema = {
     _description:
       'Additional patient identifier types (in priority order) used for SHA eligibility checks when the patient has neither a national ID nor, for minors, a birth certificate number. Leave uuid empty to disable a type.',
     _default: [{ uuid: '1c7d0e5b-2068-4816-a643-8de83ab65fbf', label: 'Alien ID' }],
+  },
+  identifierTypes: {
+    _type: Type.Array,
+    _elements: {
+      _type: Type.Object,
+      properties: { identifierType: { _type: Type.String }, identifierValue: { _type: Type.String } },
+    },
+    _description:
+      'Identification types offered when searching the HIE / Client Registry for a patient (e.g. to identify an unknown emergency patient). Mirrors the registration search bar: identifierType is the display label, identifierValue is the type passed to getSHAPatient.',
+    _default: [
+      { identifierType: 'National ID', identifierValue: 'National ID' },
+      { identifierType: 'Passport Number', identifierValue: 'Passport Number' },
+      { identifierType: 'Birth Certificate Number', identifierValue: 'Birth Certificate Number' },
+      { identifierType: 'Alien ID Number', identifierValue: 'Alien ID' },
+      { identifierType: 'Refugee ID Number', identifierValue: 'Refugee ID' },
+      { identifierType: 'Birth Notification Number', identifierValue: 'Birth Notification' },
+      { identifierType: 'Mandate Number', identifierValue: 'Mandate Number' },
+    ],
   },
   inPatientVisitTypeUuid: {
     _type: Type.String,

@@ -573,3 +573,10 @@
   background: var(--cds-layer-02, #ffffff);
   border-radius: 4px;
 }
+
+.serviceTypeCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-start;
+}

@@ -1,0 +1,112 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.container {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: layout.$spacing-05;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+  background-color: colors.$gray-10;
+  border-radius: layout.$spacing-02;
+}
+
+.resultRow {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.patientName {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+}
+
+.otpField {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.otpInputRow {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.otpLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.otpTimer {
+  @include type.type-style('label-01');
+  color: colors.$gray-60;
+}
+
+.otpBoxes {
+  display: flex;
+  gap: layout.$spacing-03;
+}
+
+.otpBox {
+  width: 2.5rem;
+  height: 3rem;
+  text-align: center;
+  @include type.type-style('heading-04');
+  color: colors.$gray-100;
+  background-color: colors.$white;
+  border: 1px solid colors.$gray-40;
+  border-bottom: 2px solid colors.$gray-70;
+  border-radius: 4px;
+}
+
+.otpBox:focus {
+  outline: 2px solid #0f62fe;
+  outline-offset: -2px;
+}
+
+.otpBox:disabled {
+  background-color: colors.$gray-10;
+  cursor: not-allowed;
+}
+
+.buttonSet {
+  display: flex;
+  gap: 0;
+  width: 100%;
+  margin-top: auto;
+}
+
+.button {
+  width: 50%;
+  min-width: 50%;
+  max-width: none;
+}
+
+@media (max-width: 42rem) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

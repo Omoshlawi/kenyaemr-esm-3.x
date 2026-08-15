@@ -43,6 +43,8 @@ export const useClaimForVisit = (visitUuid: string) => {
     virtualClaimUuid: claim?.virtual_claim_uuid ?? null,
     schemeCode: claim?.scheme_code ?? null,
     serviceType: claim?.service_type ?? null,
+    emergencyVisitExpiry: claim?.emergency_visit_expiry ?? null,
+    beneficiaryCrId: claim?.beneficiary_cr_id ?? null,
     interventions: claim?.interventions ?? [],
     hasNoClaim: isNotFound,
     isLoading,

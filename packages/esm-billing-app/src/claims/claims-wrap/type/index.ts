@@ -208,6 +208,7 @@ export interface PatientClaim {
   scheme_name: string | null;
   currency: string | null;
   service_type: 'INPATIENT' | 'OUTPATIENT' | 'CAPITATION' | string;
+  emergency_visit_expiry?: string | null;
   use_type: string | null;
   provider_workflow_state: string;
   provider_claim_auth_status: string | null;

@@ -59,6 +59,7 @@ vi.mock('../../../billing-form/pomsf/effective-pomsf.component', () => ({
 vi.mock('../../../billing-form/social-health-authority/sha-virtual-claim.resource', () => ({
   dispatchClaimLinesToSha: vi.fn(),
   lockCover: vi.fn(),
+  useEmergencyProtocols: vi.fn(() => ({ protocols: [], isLoading: false, error: null, mutate: vi.fn() })),
 }));
 
 vi.mock('../../../hooks/useFacilityRegistry', () => ({

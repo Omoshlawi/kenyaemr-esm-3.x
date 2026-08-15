@@ -5,6 +5,8 @@ export interface ClaimVisitResponse {
   virtual_claim_uuid: string;
   scheme_code: string;
   service_type: string;
+  emergency_visit_expiry?: string;
+  beneficiary_cr_id?: string;
   interventions: Array<{
     intervention_code: string;
     intervention_name: string;

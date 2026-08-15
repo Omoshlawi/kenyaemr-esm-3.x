@@ -467,6 +467,11 @@
       "window": "billing-workspace-window"
     },
     {
+      "name": "identify-emergency-patient-workspace",
+      "component": "identifyEmergencyPatientWorkspace",
+      "window": "billing-workspace-window"
+    },
+    {
       "name": "claim-attachments-workspace",
       "component": "claimAttachmentsWorkspace",
       "window": "billing-workspace-window"

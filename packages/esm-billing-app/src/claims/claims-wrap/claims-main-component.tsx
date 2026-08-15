@@ -28,12 +28,13 @@ import {
 
 import { useBill } from '../../billing.resource';
 import { MappedBill } from '../../types';
+import EmergencyClaimCountdown from '../../components/emergency-claim-countdown.component';
 import { partitionByTab, syncClaim, usePatientClaims } from './claims-main.resource';
 import styles from './claims-main.scss';
 import { ClaimTabKey, PatientClaim, PatientClaimDiagnosis, PatientClaimIntervention } from './type';
 import { getPatientUuidFromUrl } from '../../prompt-payment/prompt-payment-modal.component';
 import { CardHeader, EmptyState } from '@openmrs/esm-patient-common-lib';
-import { DocumentAdd, DocumentPdf, Renew, Upload, UserMultiple } from '@carbon/react/icons';
+import { DocumentAdd, DocumentPdf, Renew, Upload, UserFollow, UserMultiple } from '@carbon/react/icons';
 import {
   useLayoutType,
   isDesktop as isDesktopLayout,
@@ -417,7 +418,15 @@ const ClaimsTable: React.FC<{
           id: String(claim.id ?? `claim-${index}`),
           date_created: formatDate(new Date(claim.date_created), { mode: 'wide', time: true }),
           authorization_code: claim.authorization_code,
-          service_type: claim.service_type,
+          service_type:
+            claim.service_type?.toUpperCase() === 'EMERGENCY' ? (
+              <div className={styles.serviceTypeCell}>
+                <span>{claim.service_type}</span>
+                <EmergencyClaimCountdown expiry={claim.emergency_visit_expiry} />
+              </div>
+            ) : (
+              claim.service_type
+            ),
           invoice_number: claim.invoice_number,
           provider_workflow_state: <StatusTag stage={claim.provider_workflow_state} />,
           payer_workflow_state: renderPayerStatus(claim, tab, t),
@@ -970,27 +979,51 @@ const ClaimDetailsPanel: React.FC<{
         </section>
       )}
 
-      {canUploadAttachments && (
+      {(canUploadAttachments || (claim.service_type?.toUpperCase() === 'EMERGENCY' && !claim.beneficiary_cr_id)) && (
         <div className={styles.detailsToolbar}>
-          <Button
-            size="sm"
-            kind="ghost"
-            renderIcon={UserMultiple}
-            onClick={() =>
-              launchWorkspace2(
-                'claim-doctors-workspace',
-                {
-                  workspaceTitle: t('addDoctorsToClaim', 'Add doctors to claim'),
-                  consentToken: claim.authorization_code,
-                  claimAuthorizationCode: claim.authorization_code,
-                  mutate: combinedMutate,
-                },
-                {},
-                {},
-              )
-            }>
-            {t('addDoctors', 'Add doctors')}
-          </Button>
+          {canUploadAttachments && (
+            <Button
+              size="sm"
+              kind="ghost"
+              renderIcon={UserMultiple}
+              onClick={() =>
+                launchWorkspace2(
+                  'claim-doctors-workspace',
+                  {
+                    workspaceTitle: t('addDoctorsToClaim', 'Add doctors to claim'),
+                    consentToken: claim.authorization_code,
+                    claimAuthorizationCode: claim.authorization_code,
+                    mutate: combinedMutate,
+                  },
+                  {},
+                  {},
+                )
+              }>
+              {t('addDoctors', 'Add doctors')}
+            </Button>
+          )}
+          {claim.service_type?.toUpperCase() === 'EMERGENCY' && !claim.beneficiary_cr_id && (
+            <Button
+              size="sm"
+              kind="ghost"
+              renderIcon={UserFollow}
+              onClick={() =>
+                launchWorkspace2(
+                  'identify-emergency-patient-workspace',
+                  {
+                    workspaceTitle: t('identifyEmergencyPatient', 'Identify emergency patient'),
+                    consentToken: claim.authorization_code,
+                    interventionCode: claim.interventions?.[0]?.intervention_code,
+                    patientUuid,
+                    onIdentified: combinedMutate,
+                  },
+                  {},
+                  {},
+                )
+              }>
+              {t('identifyPatient', 'Identify patient')}
+            </Button>
+          )}
         </div>
       )}
 

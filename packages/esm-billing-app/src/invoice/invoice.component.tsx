@@ -21,6 +21,8 @@ import { InvoiceActions } from './invoice-actions.component';
 import { useCurrencyFormatting } from '../helpers/currency';
 import PaymentHistory from './payments/payment-history/payment-history.component';
 import { ArrowRight } from '@carbon/react/icons';
+import { useClaimForVisit } from '../bill-administration/patient-billing/workspaces/create-bill/create-bill.resource';
+import EmergencyClaimCountdown from '../components/emergency-claim-countdown.component';
 
 const Invoice: React.FC = () => {
   const { t } = useTranslation();
@@ -30,6 +32,8 @@ const Invoice: React.FC = () => {
   const { bill, isLoading: isLoadingBill, error: billingError } = useBill(billUuid);
   usePaymentsReconciler(billUuid);
   const { activeVisit, isLoading: isVisitLoading, error: visitError } = useVisit(patientUuid);
+  const claimForVisit = useClaimForVisit(activeVisit?.uuid ?? '');
+  const isEmergencyClaim = claimForVisit.serviceType?.toUpperCase() === 'EMERGENCY';
   const [selectedLineItems, setSelectedLineItems] = useState([]);
 
   const handleSelectItem = (lineItems: Array<LineItem>) => {
@@ -116,6 +120,7 @@ const Invoice: React.FC = () => {
               <span className={styles.summaryLabel}>{t('amountDue', 'Amount due')}</span>
               <span className={styles.summaryValue}>{formatCurrency(selectedLineItemsAmountDue ?? 0)}</span>
             </div>
+            {isEmergencyClaim && <EmergencyClaimCountdown expiry={claimForVisit.emergencyVisitExpiry} />}
             <Button
               disabled={unPaidLineItems?.length === 0 || bill.balance <= 0}
               className={styles.addPaymentButton}

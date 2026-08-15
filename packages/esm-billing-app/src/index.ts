@@ -26,6 +26,10 @@ export const billingForm = getAsyncLifecycle(
   options,
 );
 export const visitAttributesWorkspace = getAsyncLifecycle(() => import('./visits/visit-attributes.workspace'), options);
+export const identifyEmergencyPatientWorkspace = getAsyncLifecycle(
+  () => import('./claims/emergency/identify-emergency-patient.workspace'),
+  options,
+);
 export const billingDashboard = getAsyncLifecycle(
   () => import('./billing-dashboard/billing-dashboard.component'),
   options,
