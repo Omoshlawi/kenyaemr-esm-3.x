@@ -291,6 +291,12 @@ const ClaimsTable: React.FC<{
   const { t } = useTranslation();
   const { patientUuid, receiptNumber, mutate } = useClaimsContext();
   const showSubmitColumn = tab === 'pending' || tab === 'resubmission';
+  const emergencyExpiry = useMemo(
+    () =>
+      claims.find((c) => c.service_type?.toUpperCase() === 'EMERGENCY' && c.emergency_visit_expiry)
+        ?.emergency_visit_expiry ?? null,
+    [claims],
+  );
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => defaultPageSize || 10);
@@ -422,7 +428,6 @@ const ClaimsTable: React.FC<{
             claim.service_type?.toUpperCase() === 'EMERGENCY' ? (
               <div className={styles.serviceTypeCell}>
                 <span>{claim.service_type}</span>
-                <EmergencyClaimCountdown expiry={claim.emergency_visit_expiry} />
               </div>
             ) : (
               claim.service_type
@@ -514,7 +519,9 @@ const ClaimsTable: React.FC<{
 
   return (
     <>
-      <CardHeader title={t('claims', 'Claims')}>{null}</CardHeader>
+      <CardHeader title={t('claims', 'Claims')}>
+        <EmergencyClaimCountdown expiry={emergencyExpiry} />
+      </CardHeader>
       <DataTable
         headers={headers}
         rows={(tableRows ?? []) as any}
@@ -721,7 +728,9 @@ const ClaimDetailsPanel: React.FC<{
 
   const totalBilled = (claim.bill_lines ?? []).reduce((acc, bl) => acc + (Number(bl.line_total_amount) || 0), 0);
   const canUploadAttachments = tab === 'pending' || tab === 'resubmission' || tab === 'sent';
-  const canManageInterventions = tab === 'pending' || tab === 'resubmission';
+  const isEmergencyClaim = claim.service_type?.toUpperCase() === 'EMERGENCY';
+  // Emergency claims carry a single fixed intervention; adding/switching/restoring does not apply.
+  const canManageInterventions = (tab === 'pending' || tab === 'resubmission') && !isEmergencyClaim;
   const documentParams = useMemo<Record<string, string | undefined>>(
     () => ({
       patientUuid,

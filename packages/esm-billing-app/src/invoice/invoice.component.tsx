@@ -4,6 +4,7 @@ import {
   formatDatetime,
   launchWorkspace2,
   parseDate,
+  useConfig,
   usePatient,
   useVisit,
 } from '@openmrs/esm-framework';
@@ -21,8 +22,12 @@ import { InvoiceActions } from './invoice-actions.component';
 import { useCurrencyFormatting } from '../helpers/currency';
 import PaymentHistory from './payments/payment-history/payment-history.component';
 import { ArrowRight } from '@carbon/react/icons';
-import { useClaimForVisit } from '../bill-administration/patient-billing/workspaces/create-bill/create-bill.resource';
+import {
+  useClaimForVisit,
+  useVisitAttribute,
+} from '../bill-administration/patient-billing/workspaces/create-bill/create-bill.resource';
 import EmergencyClaimCountdown from '../components/emergency-claim-countdown.component';
+import { BillingConfig } from '../config-schema';
 
 const Invoice: React.FC = () => {
   const { t } = useTranslation();
@@ -143,8 +148,12 @@ export function InvoiceSummary({
 }) {
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
+  const {
+    visitAttributeTypes: { insuranceScheme },
+  } = useConfig<BillingConfig>();
   const claimForVisit = useClaimForVisit(activeVisit?.uuid ?? '');
-  const isEmergencyClaim = claimForVisit.serviceType?.toUpperCase() === 'EMERGENCY';
+  const { isSHA: isSHAVisit } = useVisitAttribute(activeVisit?.uuid ?? '', insuranceScheme);
+  const isEmergencyClaim = isSHAVisit && claimForVisit.serviceType?.toUpperCase() === 'EMERGENCY';
 
   return (
     <>
