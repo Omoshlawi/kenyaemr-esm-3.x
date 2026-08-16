@@ -187,9 +187,16 @@ code {
 
 .buttonSet {
   display: flex;
+  flex-direction: row;
   width: 100%;
   gap: 0;
   margin-top: auto;
+
+  // Carbon caps buttons at 20rem by default; override so the row fills the workspace.
+  :global(.cds--btn) {
+    flex: 1 1 50%;
+    max-width: none;
+  }
 }
 
 .button {

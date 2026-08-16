@@ -350,6 +350,7 @@ const ClaimsTable: React.FC<{
         serviceType: claim.service_type,
         patientUuid,
         patientCRId: claim.member_number ?? '',
+        isUnidentified: claim.service_type?.toUpperCase() === 'EMERGENCY' && !claim.beneficiary_cr_id,
         interventions: (claim.interventions ?? []).map((i) => i.intervention_code),
         paymentMechanism: claim.interventions?.[0]?.payment_mechanism,
         isResubmission: isResubmit,

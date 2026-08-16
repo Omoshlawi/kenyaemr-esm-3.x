@@ -16,6 +16,8 @@ export type ClaimPreviewSHAInvoice = {
   invoice_number?: string;
   total_amount?: string | number;
   net_amount?: string | number;
+  total_inv_amount?: string | number;
+  total_inv_net_amount?: string | number;
 };
 
 export type ClaimPreviewResponse = {

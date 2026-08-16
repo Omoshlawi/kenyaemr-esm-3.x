@@ -9,9 +9,11 @@ interface ClaimShaPreviewProps {
   preview: ClaimPreviewResponse | null;
   isLoading: boolean;
   error?: unknown;
+  /** intervention_code → tariff, used to price emergency interventions SHA's preview returns at 0. */
+  fallbackTariffs?: Record<string, number>;
 }
 
-const ClaimShaPreview: React.FC<ClaimShaPreviewProps> = ({ preview, isLoading, error }) => {
+const ClaimShaPreview: React.FC<ClaimShaPreviewProps> = ({ preview, isLoading, error, fallbackTariffs }) => {
   const { t } = useTranslation();
   const { formatSimple } = useCurrencyFormatting();
 
@@ -68,7 +70,15 @@ const ClaimShaPreview: React.FC<ClaimShaPreviewProps> = ({ preview, isLoading, e
           </span>
           <ul className={styles.previewList}>
             {interventions.map((iv, index) => {
-              const amount = iv.accrued_per_diem_amount ?? iv.keph_level_tarrif;
+              // SHA returns these as strings ("0", "2600"), so coerce and take the first positive.
+              const positive = (value: unknown): number | undefined => {
+                const n = Number(value);
+                return Number.isFinite(n) && n > 0 ? n : undefined;
+              };
+              const amount =
+                positive(iv.accrued_per_diem_amount) ??
+                positive(iv.keph_level_tarrif) ??
+                (iv.intervention_code ? positive(fallbackTariffs?.[iv.intervention_code]) : undefined);
               return (
                 <li key={iv.intervention_code ?? `sha-iv-${index}`} className={styles.previewItem}>
                   <code className={styles.previewCode}>{iv.intervention_code ?? '—'}</code>

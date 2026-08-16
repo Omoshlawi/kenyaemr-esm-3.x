@@ -37,6 +37,7 @@ import {
   useBiometricAgentStatus,
   useBiometricConfig,
   useEmergencyCatalog,
+  useEmergencyInterventions,
   useOtpWhitelistReasons,
   usePatientPhone,
   useProviderNationalId,
@@ -65,6 +66,7 @@ type ClaimSubmitWorkspaceProps = {
   serviceType: string;
   patientUuid: string;
   patientCRId: string;
+  isUnidentified?: boolean;
   interventions: Array<string>;
   paymentMechanism?: string;
   isResubmission?: boolean;
@@ -104,6 +106,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     serviceType,
     patientUuid,
     patientCRId,
+    isUnidentified,
     interventions,
     paymentMechanism,
     isResubmission = false,
@@ -131,17 +134,24 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
   const previewInterventionsCount = shaPreview?.sha?.interventions?.length;
   const summaryInterventionsCount = previewInterventionsCount ?? interventions.length;
 
-  const previewTotalAmount = shaPreview?.sha?.invoices?.reduce(
-    (sum, invoice) => sum + (Number(invoice.total_amount ?? invoice.net_amount ?? 0) || 0),
-    0,
-  );
-  const summaryTotalAmount = previewTotalAmount ?? totalAmount;
+  const toNumber = (value: unknown): number => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const previewTotalAmount =
+    toNumber((shaPreview?.sha as Record<string, unknown> | undefined)?.total_claim_amount) ||
+    (shaPreview?.sha?.invoices?.reduce(
+      (sum, invoice) => sum + toNumber(invoice.total_inv_amount ?? invoice.total_amount ?? invoice.net_amount),
+      0,
+    ) ??
+      0);
+  const summaryTotalAmount = previewTotalAmount || totalAmount;
 
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const isInpatient = serviceType === 'INPATIENT';
   const isEmergency = (serviceType ?? '').toUpperCase() === 'EMERGENCY';
-  const isUnidentifiedEmergency = isEmergency && !patientCRId;
+  const isUnidentifiedEmergency = isEmergency && (isUnidentified ?? !patientCRId);
   const RESUBMIT_FAILED_STATES = new Set(['FAILED_TO_SUBMIT', 'SUBMIT_FAILED_RETRY']);
   const isResubmitFailed = RESUBMIT_FAILED_STATES.has((providerWorkflowState ?? '').toUpperCase());
   const skipAuth = skipAuthorization || isResubmitFailed;
@@ -186,6 +196,17 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
   const [unknownPatientReason, setUnknownPatientReason] = useState('');
   const [unknownReasonError, setUnknownReasonError] = useState(false);
   const { entries: unknownPatientReasons } = useEmergencyCatalog('reason-for-unknown-patient');
+  const { interventions: emergencyInterventions } = useEmergencyInterventions();
+  const emergencyTariffs = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const iv of emergencyInterventions) {
+      const tariff = Number(iv.tariff);
+      if (iv.value && !Number.isNaN(tariff)) {
+        map[iv.value] = tariff;
+      }
+    }
+    return map;
+  }, [emergencyInterventions]);
 
   const handleCancelClaim = useCallback(async () => {
     if (!cancelReasonText.trim()) {
@@ -516,8 +537,9 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
 
   const shouldSkipOtp = skipAuth || isResubmission || isResubmitFailed || isEmergency;
 
-  // Emergency claims skip OTP/discharge-reason; an unidentified patient needs a reason instead.
-  const onContinueEmergency = (event: React.FormEvent) => {
+  // Emergency claims skip OTP/discharge-reason and submit directly (no resubmit confirm);
+  // an unidentified patient must supply a reason first.
+  const onContinueEmergency = async (event: React.FormEvent) => {
     event.preventDefault();
     if (isUnidentifiedEmergency && !unknownPatientReason) {
       setUnknownReasonError(true);
@@ -526,7 +548,24 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     unknownReasonRef.current = isUnidentifiedEmergency ? unknownPatientReason : '';
     dischargeReasonRef.current = '';
     dischargeDateIsoRef.current = '';
-    launchResubmitConfirm();
+    setSubmitError(null);
+    setIsSubmitting(true);
+    try {
+      await runSubmit({});
+      setSubmitSucceeded(true);
+      showSnackbar({
+        title: t('claimSubmitted', 'Claim submitted'),
+        subtitle: t('claimSubmittedDesc', 'Claim {{code}} sent to payer for review', { code: consentToken }),
+        kind: 'success',
+        isLowContrast: true,
+      });
+      mutate();
+      setTimeout(() => closeWorkspace({ discardUnsavedChanges: true }), 800);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const onContinue = (data: ClaimSubmitFormData) => {
@@ -663,7 +702,12 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
           </section>
 
           {!isCancelMode && (
-            <ClaimShaPreview preview={shaPreview} isLoading={isLoadingShaPreview} error={shaPreviewError} />
+            <ClaimShaPreview
+              preview={shaPreview}
+              isLoading={isLoadingShaPreview}
+              error={shaPreviewError}
+              fallbackTariffs={isEmergency ? emergencyTariffs : undefined}
+            />
           )}
 
           <ClaimReviewSection diagnoses={previewDiagnoses} billLines={previewBillLines} />
