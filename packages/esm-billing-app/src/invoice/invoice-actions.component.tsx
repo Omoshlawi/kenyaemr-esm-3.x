@@ -75,7 +75,7 @@ export function InvoiceActions({ bill, selectedLineItems = [], activeVisit }: In
     });
   };
 
-  const shouldCloseBill = bill.balance === 0 && !bill.closed;
+  const shouldCloseBill = (bill.balance ?? 0) <= 0 && !bill.closed;
 
   const handlePrint = (documentType: string, documentTitle: string) => {
     const dispose = showModal('print-preview-modal', {
