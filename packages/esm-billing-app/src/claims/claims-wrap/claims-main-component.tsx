@@ -979,8 +979,11 @@ const ClaimDetailsPanel: React.FC<{
         </section>
       )}
 
-      {(canUploadAttachments || (claim.service_type?.toUpperCase() === 'EMERGENCY' && !claim.beneficiary_cr_id)) && (
+      {(canUploadAttachments || claim.service_type?.toUpperCase() === 'EMERGENCY') && (
         <div className={styles.detailsToolbar}>
+          {claim.service_type?.toUpperCase() === 'EMERGENCY' && (
+            <EmergencyClaimCountdown expiry={claim.emergency_visit_expiry} />
+          )}
           {canUploadAttachments && (
             <Button
               size="sm"

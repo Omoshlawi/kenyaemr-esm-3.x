@@ -32,8 +32,6 @@ const Invoice: React.FC = () => {
   const { bill, isLoading: isLoadingBill, error: billingError } = useBill(billUuid);
   usePaymentsReconciler(billUuid);
   const { activeVisit, isLoading: isVisitLoading, error: visitError } = useVisit(patientUuid);
-  const claimForVisit = useClaimForVisit(activeVisit?.uuid ?? '');
-  const isEmergencyClaim = claimForVisit.serviceType?.toUpperCase() === 'EMERGENCY';
   const [selectedLineItems, setSelectedLineItems] = useState([]);
 
   const handleSelectItem = (lineItems: Array<LineItem>) => {
@@ -120,7 +118,6 @@ const Invoice: React.FC = () => {
               <span className={styles.summaryLabel}>{t('amountDue', 'Amount due')}</span>
               <span className={styles.summaryValue}>{formatCurrency(selectedLineItemsAmountDue ?? 0)}</span>
             </div>
-            {isEmergencyClaim && <EmergencyClaimCountdown expiry={claimForVisit.emergencyVisitExpiry} />}
             <Button
               disabled={unPaidLineItems?.length === 0 || bill.balance <= 0}
               className={styles.addPaymentButton}
@@ -146,12 +143,17 @@ export function InvoiceSummary({
 }) {
   const { t } = useTranslation();
   const { format: formatCurrency } = useCurrencyFormatting();
+  const claimForVisit = useClaimForVisit(activeVisit?.uuid ?? '');
+  const isEmergencyClaim = claimForVisit.serviceType?.toUpperCase() === 'EMERGENCY';
 
   return (
     <>
       <div className={styles.invoiceSummary}>
         <span className={styles.invoiceSummaryTitle}>{t('invoiceSummary', 'Invoice Summary')}</span>
-        <InvoiceActions bill={bill} selectedLineItems={selectedLineItems} activeVisit={activeVisit} />
+        <div className={styles.invoiceSummaryTrailing}>
+          {isEmergencyClaim && <EmergencyClaimCountdown expiry={claimForVisit.emergencyVisitExpiry} />}
+          <InvoiceActions bill={bill} selectedLineItems={selectedLineItems} activeVisit={activeVisit} />
+        </div>
       </div>
       <div className={styles.invoiceSummaryContainer}>
         <div className={styles.invoiceCard}>

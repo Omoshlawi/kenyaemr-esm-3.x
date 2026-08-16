@@ -1,0 +1,10 @@
+.countdownTag {
+  max-width: none;
+  white-space: nowrap;
+
+  :global(.cds--tag__label) {
+    max-width: none;
+    overflow: visible;
+    white-space: nowrap;
+  }
+}

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Tag } from '@carbon/react';
 import { Time } from '@carbon/react/icons';
 import { useTranslation } from 'react-i18next';
+import styles from './emergency-claim-countdown.scss';
 
 type EmergencyClaimCountdownProps = {
   expiry?: string | null;
@@ -32,7 +33,11 @@ const EmergencyClaimCountdown: React.FC<EmergencyClaimCountdownProps> = ({ expir
 
   if (remaining <= 0) {
     return (
-      <Tag type="red" size="sm" renderIcon={Time} className={className}>
+      <Tag
+        type="red"
+        size="lg"
+        renderIcon={Time}
+        className={`${styles.countdownTag}${className ? ` ${className}` : ''}`}>
         {t('emergencySubmitExpired', 'Submission window expired')}
       </Tag>
     );
@@ -43,12 +48,15 @@ const EmergencyClaimCountdown: React.FC<EmergencyClaimCountdownProps> = ({ expir
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
-  // Green > 6h left, warm < 6h, red < 1h.
   const tagType = hours < 1 ? 'red' : hours < 6 ? 'magenta' : 'green';
 
   return (
-    <Tag type={tagType} size="sm" renderIcon={Time} className={className}>
-      {t('emergencySubmitWithin', 'Submit within {{time}}', {
+    <Tag
+      type={tagType}
+      size="lg"
+      renderIcon={Time}
+      className={`${styles.countdownTag}${className ? ` ${className}` : ''}`}>
+      {t('emergencyClaimSubmitWithin', 'Submit your emergency claim within {{time}}', {
         time: `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`,
       })}
     </Tag>
