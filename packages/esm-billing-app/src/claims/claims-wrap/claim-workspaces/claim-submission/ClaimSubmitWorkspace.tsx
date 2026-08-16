@@ -36,6 +36,7 @@ import {
   submitOtpWhitelist,
   useBiometricAgentStatus,
   useBiometricConfig,
+  useEmergencyCatalog,
   useOtpWhitelistReasons,
   usePatientPhone,
   useProviderNationalId,
@@ -139,6 +140,8 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const isInpatient = serviceType === 'INPATIENT';
+  const isEmergency = (serviceType ?? '').toUpperCase() === 'EMERGENCY';
+  const isUnidentifiedEmergency = isEmergency && !patientCRId;
   const RESUBMIT_FAILED_STATES = new Set(['FAILED_TO_SUBMIT', 'SUBMIT_FAILED_RETRY']);
   const isResubmitFailed = RESUBMIT_FAILED_STATES.has((providerWorkflowState ?? '').toUpperCase());
   const skipAuth = skipAuthorization || isResubmitFailed;
@@ -180,6 +183,10 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
   const [cancelReasonText, setCancelReasonText] = useState('');
   const [cancelReasonType, setCancelReasonType] = useState('OTHER_REASONS');
 
+  const [unknownPatientReason, setUnknownPatientReason] = useState('');
+  const [unknownReasonError, setUnknownReasonError] = useState(false);
+  const { entries: unknownPatientReasons } = useEmergencyCatalog('reason-for-unknown-patient');
+
   const handleCancelClaim = useCallback(async () => {
     if (!cancelReasonText.trim()) {
       return;
@@ -203,6 +210,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
   }, [cancelReasonType, cancelReasonText, patientUuid, mutate, closeWorkspace, t]);
 
   const dischargeReasonRef = useRef<string>('');
+  const unknownReasonRef = useRef<string>('');
   const dischargeDateIsoRef = useRef<string>('');
 
   const buildDischargeDateIso = useCallback((): string => {
@@ -236,7 +244,9 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
         consentToken,
         invoiceNumber,
         dischargeReason: dischargeReasonRef.current,
-        skipAuthCheck: isAuthlessResubmit || skipAuth,
+        skipAuthCheck: isAuthlessResubmit || skipAuth || isEmergency,
+        isEmergency,
+        reasonForUnknownPatient: unknownReasonRef.current,
         ...('otp' in auth ? { otp: (auth as { otp: string }).otp } : {}),
         ...('dischargeAuthGuid' in auth
           ? { dischargeAuthGuid: (auth as { dischargeAuthGuid: string }).dischargeAuthGuid }
@@ -252,7 +262,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
       }
       return result;
     },
-    [consentToken, invoiceNumber, isInpatient, t],
+    [consentToken, invoiceNumber, isInpatient, isEmergency, skipAuth, t],
   );
 
   const buildBiometricStarter = useCallback(() => {
@@ -504,7 +514,21 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     return null;
   }
 
-  const shouldSkipOtp = skipAuth || isResubmission || isResubmitFailed;
+  const shouldSkipOtp = skipAuth || isResubmission || isResubmitFailed || isEmergency;
+
+  // Emergency claims skip OTP/discharge-reason; an unidentified patient needs a reason instead.
+  const onContinueEmergency = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (isUnidentifiedEmergency && !unknownPatientReason) {
+      setUnknownReasonError(true);
+      return;
+    }
+    unknownReasonRef.current = isUnidentifiedEmergency ? unknownPatientReason : '';
+    dischargeReasonRef.current = '';
+    dischargeDateIsoRef.current = '';
+    launchResubmitConfirm();
+  };
+
   const onContinue = (data: ClaimSubmitFormData) => {
     dischargeReasonRef.current = data.discharge_reason;
     dischargeDateIsoRef.current = isInpatient ? buildDischargeDateIso() : '';
@@ -601,7 +625,9 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
     <Workspace2 hasUnsavedChanges={isDirty && !submitSucceeded} title={workspaceTitle}>
       <form
         onSubmit={
-          isResubmitFailed
+          isEmergency
+            ? onContinueEmergency
+            : isResubmitFailed
             ? (e) => {
                 e.preventDefault();
                 onContinueResubmitFailed();
@@ -642,7 +668,41 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
 
           <ClaimReviewSection diagnoses={previewDiagnoses} billLines={previewBillLines} />
 
-          {isResubmitFailed ? (
+          {isEmergency ? (
+            isUnidentifiedEmergency ? (
+              <section className={styles.formSection}>
+                <Dropdown
+                  id="unknown-patient-reason"
+                  titleText={
+                    <RequiredLabel>{t('reasonForUnknownPatient', 'Reason patient is unidentified')}</RequiredLabel>
+                  }
+                  label={t('selectReason', 'Select a reason')}
+                  items={unknownPatientReasons}
+                  itemToString={(item) => item?.label ?? ''}
+                  selectedItem={unknownPatientReasons.find((r) => r.value === unknownPatientReason) ?? null}
+                  onChange={({ selectedItem }) => {
+                    setUnknownPatientReason(selectedItem?.value ?? '');
+                    setUnknownReasonError(false);
+                  }}
+                  disabled={isSubmitting}
+                  invalid={unknownReasonError}
+                  invalidText={t('reasonRequired', 'A reason is required')}
+                />
+              </section>
+            ) : (
+              <InlineNotification
+                kind="info"
+                lowContrast
+                hideCloseButton
+                title={t('emergencySubmitNote', 'Ready to submit')}
+                subtitle={t(
+                  'emergencySubmitNoteDesc',
+                  'Emergency claims are authorised by doctor consent, so no OTP or discharge reason is needed.',
+                )}
+                className={styles.errorBanner}
+              />
+            )
+          ) : isResubmitFailed ? (
             <InlineNotification
               kind="info"
               lowContrast
@@ -761,7 +821,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
           </Button>
           <Button
             className={styles.button}
-            disabled={isSubmitting || (!isResubmitFailed && isLoadingReasons) || submitSucceeded}
+            disabled={isSubmitting || (!isResubmitFailed && !isEmergency && isLoadingReasons) || submitSucceeded}
             kind={isResubmission ? 'danger' : 'primary'}
             type="submit"
             renderIcon={submitSucceeded ? CheckmarkFilled : undefined}>
@@ -769,7 +829,9 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
               <InlineLoading className={styles.spinner} description={t('verifying', 'Verifying…')} />
             ) : (
               <span>
-                {shouldSkipOtp
+                {isEmergency
+                  ? t('submit', 'Submit')
+                  : shouldSkipOtp
                   ? t('resubmitToSha', 'Resubmit to SHA')
                   : isResubmission
                   ? t('continueResubmit', 'Continue to resubmit')

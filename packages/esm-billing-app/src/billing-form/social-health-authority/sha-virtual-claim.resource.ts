@@ -177,7 +177,12 @@ export async function createSHAVirtualClaim(
   return response.data;
 }
 
-export type EmergencyCatalogKind = 'mode-of-arrival' | 'brought-by' | 'identification-type' | 'regulation-body';
+export type EmergencyCatalogKind =
+  | 'mode-of-arrival'
+  | 'brought-by'
+  | 'identification-type'
+  | 'regulation-body'
+  | 'reason-for-unknown-patient';
 
 export interface EmergencyCatalogEntry {
   value: string;

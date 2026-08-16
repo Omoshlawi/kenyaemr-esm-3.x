@@ -146,6 +146,8 @@ export type SubmitClaimParams = {
   dischargeAuthGuid?: string;
   dischargeReason: string;
   skipAuthCheck?: boolean;
+  isEmergency?: boolean;
+  reasonForUnknownPatient?: string;
 };
 
 export const submitClaim = async (
@@ -158,26 +160,34 @@ export const submitClaim = async (
   if (!params.invoiceNumber) {
     return { ok: false, error: t('noInvoiceNumber', 'No invoice number on claim') };
   }
-  if (!params.skipAuthCheck && !params.dischargeReason) {
-    return { ok: false, error: t('dischargeReasonRequired', 'Discharge reason is required') };
-  }
-  if (!params.skipAuthCheck && !params.otp && !params.dischargeAuthGuid) {
-    return {
-      ok: false,
-      error: t('authRequired', 'Either OTP or biometric authorization is required'),
-    };
-  }
-
   const body: Record<string, string> = {
     consent_token: params.consentToken,
     invoice_number: params.invoiceNumber,
-    discharge_reason: params.dischargeReason,
   };
-  if (params.otp) {
-    body.otp = params.otp;
-  }
-  if (params.dischargeAuthGuid) {
-    body.discharge_auth_guid = params.dischargeAuthGuid;
+
+  if (params.isEmergency) {
+    // Emergency claims are authorised by doctor consent, not OTP/biometrics, and carry no
+    // discharge reason. An unidentified patient must supply a reason for being unidentified.
+    if (params.reasonForUnknownPatient) {
+      body.reason_for_unknown_patient = params.reasonForUnknownPatient;
+    }
+  } else {
+    if (!params.skipAuthCheck && !params.dischargeReason) {
+      return { ok: false, error: t('dischargeReasonRequired', 'Discharge reason is required') };
+    }
+    if (!params.skipAuthCheck && !params.otp && !params.dischargeAuthGuid) {
+      return {
+        ok: false,
+        error: t('authRequired', 'Either OTP or biometric authorization is required'),
+      };
+    }
+    body.discharge_reason = params.dischargeReason;
+    if (params.otp) {
+      body.otp = params.otp;
+    }
+    if (params.dischargeAuthGuid) {
+      body.discharge_auth_guid = params.dischargeAuthGuid;
+    }
   }
 
   try {
