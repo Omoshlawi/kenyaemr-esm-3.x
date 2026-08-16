@@ -103,7 +103,15 @@ const IdentifyEmergencyPatientWorkspace: React.FC<
       });
       onIdentified?.();
       if (patientUuid) {
-        await mutate((key) => typeof key === 'string' && key.includes(patientUuid));
+        await mutate((key) => {
+          if (typeof key === 'string') {
+            return key.includes(patientUuid);
+          }
+          if (Array.isArray(key)) {
+            return key.some((part) => typeof part === 'string' && part.includes(patientUuid));
+          }
+          return false;
+        });
       }
       closeWorkspace({ discardUnsavedChanges: true });
     } catch (error) {
