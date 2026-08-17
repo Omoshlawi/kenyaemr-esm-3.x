@@ -1066,21 +1066,49 @@ export const lockCover = async ({
   }
 };
 
-export const sendDoctorPreauthRequest = async (
-  consentToken: string,
-  interventionCode: string,
-  practitionerRegistrationNumber: string,
-  requestType: string,
-): Promise<DoctorConsentResult> => {
-  const response = await openmrsFetch(`${virtualClaimBaseUrl}/preauth/doctor-consent`, {
+export type DoctorPreauthRequestParams =
+  | {
+      kind: 'preauth';
+      consentToken: string;
+      interventionCode: string;
+      practitionerRegistrationNumber: string;
+    }
+  | {
+      kind: 'emergency';
+      consentToken: string;
+      interventionCode: string;
+      identificationNumber: string;
+      identificationType: string;
+      regulationBody: string;
+      emergencyClaimId: string;
+    };
+
+// One merged endpoint serves both flows. The backend auto-detects the shape by whether
+// emergency_claim_id is present in the body — there's no explicit "mode" flag — so
+// emergency_claim_id must be omitted entirely for preauth requests, not just left blank.
+export const sendDoctorPreauthRequest = async (params: DoctorPreauthRequestParams): Promise<DoctorConsentResult> => {
+  const body =
+    params.kind === 'emergency'
+      ? {
+          consent_token: params.consentToken,
+          intervention_code: params.interventionCode,
+          request_type: 'EMERGENCY_CLAIM_DOCTOR_APPROVAL_REQUEST',
+          emergency_claim_id: params.emergencyClaimId,
+          identification_number: params.identificationNumber,
+          identification_type: params.identificationType,
+          regulation_body: params.regulationBody,
+        }
+      : {
+          consent_token: params.consentToken,
+          intervention_code: params.interventionCode,
+          request_type: 'PREAUTH_DOCTOR_APPROVAL_REQUEST',
+          practitioner_registration_number: params.practitionerRegistrationNumber,
+        };
+
+  const response = await openmrsFetch(`${virtualClaimBaseUrl}/doctor-consent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: {
-      practitioner_registration_number: practitionerRegistrationNumber,
-      request_type: requestType,
-      consent_token: consentToken,
-      intervention_code: interventionCode,
-    },
+    body,
   });
   return response.data;
 };

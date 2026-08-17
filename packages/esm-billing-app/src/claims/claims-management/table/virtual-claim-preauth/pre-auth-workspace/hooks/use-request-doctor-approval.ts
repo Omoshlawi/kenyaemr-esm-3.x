@@ -9,11 +9,20 @@ import { virtualClaimBaseUrl } from '../../constants';
 interface UseRequestDoctorApprovalParams {
   item?: PreauthQueueItem;
   doctor?: PreauthDoctor;
+  serviceType?: string;
+  emergencyClaimId?: string | null;
   mutate?: () => void;
   onSuccess: () => void;
 }
 
-export function useRequestDoctorApproval({ item, doctor, mutate, onSuccess }: UseRequestDoctorApprovalParams) {
+export function useRequestDoctorApproval({
+  item,
+  doctor,
+  serviceType,
+  emergencyClaimId,
+  mutate,
+  onSuccess,
+}: UseRequestDoctorApprovalParams) {
   const { t } = useTranslation();
   const [isRequestingDoctor, setIsRequestingDoctor] = useState(false);
   const [requestDoctorError, setRequestDoctorError] = useState<string | null>(null);
@@ -27,16 +36,34 @@ export function useRequestDoctorApproval({ item, doctor, mutate, onSuccess }: Us
     setIsRequestingDoctor(true);
 
     try {
-      const requestType =
-        item.service_type === 'EMERGENCY'
-          ? 'EMERGENCY_CLAIM_DOCTOR_APPROVAL_REQUEST'
-          : 'PREAUTH_DOCTOR_APPROVAL_REQUEST';
-      const result = await sendDoctorPreauthRequest(
-        item.authorization_code,
-        item.intervention_code,
-        doctor.identification_number,
-        requestType,
-      );
+      const isEmergency = (serviceType ?? item.service_type) === 'EMERGENCY';
+      const resolvedEmergencyClaimId = emergencyClaimId ?? item.emergency_claim_id;
+
+      if (isEmergency && !resolvedEmergencyClaimId) {
+        throw new Error(
+          t(
+            'missingEmergencyClaimId',
+            'Missing the emergency claim identifier for this claim — cannot request doctor approval.',
+          ),
+        );
+      }
+
+      const result = isEmergency
+        ? await sendDoctorPreauthRequest({
+            kind: 'emergency',
+            consentToken: item.authorization_code,
+            interventionCode: item.intervention_code,
+            identificationNumber: doctor.identification_number,
+            identificationType: doctor.identification_type,
+            regulationBody: doctor.regulation_body,
+            emergencyClaimId: resolvedEmergencyClaimId!,
+          })
+        : await sendDoctorPreauthRequest({
+            kind: 'preauth',
+            consentToken: item.authorization_code,
+            interventionCode: item.intervention_code,
+            practitionerRegistrationNumber: doctor.identification_number,
+          });
 
       if ((result as any)?.success === false) {
         throw new Error(

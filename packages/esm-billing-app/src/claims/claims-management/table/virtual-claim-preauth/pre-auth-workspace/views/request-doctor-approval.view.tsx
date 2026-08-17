@@ -28,6 +28,8 @@ const RequestDoctorApprovalView: React.FC<RequestDoctorApprovalViewProps> = ({
   const { handleRequestDoctorApproval, isRequestingDoctor, requestDoctorError } = useRequestDoctorApproval({
     item,
     doctor,
+    serviceType: item?.service_type,
+    emergencyClaimId: item?.emergency_claim_id,
     mutate,
     onSuccess: onClose,
   });

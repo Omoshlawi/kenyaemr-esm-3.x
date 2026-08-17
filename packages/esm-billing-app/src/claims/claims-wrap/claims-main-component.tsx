@@ -630,9 +630,17 @@ const ClaimDetailsPanel: React.FC<{
         intervention_code: claim.interventions?.[0]?.intervention_code ?? '',
         intervention_name: claim.interventions?.[0]?.intervention_name ?? '',
         service_type: claim.service_type ?? '',
+        emergency_claim_id: claim.upstream_claim_id,
         patient: { uuid: patientUuid, display: bill.patientName ?? '' },
       } as PreauthQueueItem),
-    [claim.authorization_code, claim.interventions, claim.service_type, patientUuid, bill.patientName],
+    [
+      claim.authorization_code,
+      claim.interventions,
+      claim.service_type,
+      claim.upstream_claim_id,
+      patientUuid,
+      bill.patientName,
+    ],
   );
 
   const handleRequestDoctorApproval = useCallback(

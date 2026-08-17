@@ -175,6 +175,7 @@ export interface PreauthQueueItem {
   not_submitted_count?: number;
   doctors?: Array<PreauthDoctor>;
   diagnoses?: Array<PreauthDiagnosis>;
+  emergency_claim_id?: string | null;
 }
 
 export const CANCELLABLE_PREAUTH_STATUSES: Array<string> = [
