@@ -84,7 +84,8 @@ const PaymentLine: React.FC<PaymentLineProps> = ({ index, fieldsLength, onRemove
   );
   const selectedProtocolCode = watchedPayments?.[index]?.protocolCode;
   const selectedProtocol = protocols.find((p) => p.protocolCode === selectedProtocolCode) ?? null;
-  const protocolToString = (p: EmergencyProtocolEntry | null) => (p ? `${p.protocolCode} — ${p.name}` : '');
+  const protocolToString = (p: EmergencyProtocolEntry | null) =>
+    p ? `${p.protocolCode} — ${p.name}${p.unitPrice != null ? ` (KES ${p.unitPrice})` : ''}` : '';
 
   return (
     <div className={styles.paymentLine}>
@@ -255,9 +256,16 @@ const PaymentLine: React.FC<PaymentLineProps> = ({ index, fieldsLength, onRemove
                   itemToString={protocolToString}
                   selectedItem={selectedProtocol}
                   className={styles.paymentModeComboBox}
-                  onChange={({ selectedItem }) =>
-                    onChange(selectedItem ? (selectedItem as EmergencyProtocolEntry).protocolCode : undefined)
-                  }
+                  onChange={({ selectedItem }) => {
+                    const protocol = selectedItem as EmergencyProtocolEntry | null;
+                    onChange(protocol ? protocol.protocolCode : undefined);
+                    if (protocol?.unitPrice != null && !Number.isNaN(Number(protocol.unitPrice))) {
+                      setValue(`payments.${index}.amount`, Number(protocol.unitPrice), {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
+                    }
+                  }}
                   invalid={!!errors.payments?.[index]?.protocolCode}
                   invalidText={errors.payments?.[index]?.protocolCode?.message}
                 />

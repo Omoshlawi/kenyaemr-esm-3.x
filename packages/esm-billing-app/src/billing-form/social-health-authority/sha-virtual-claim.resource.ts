@@ -231,7 +231,7 @@ export const useEmergencyProtocols = (interventionCode?: string, active: boolean
   const protocols: Array<EmergencyProtocolEntry> = rows.map((r) => ({
     protocolCode: r.protocol_code ?? r.code ?? r.protocolCode,
     name: r.name ?? r.protocol_name ?? r.description ?? r.protocol_code ?? r.code,
-    unitPrice: r.unit_price ?? r.unitPrice ?? r.tariff ?? r.amount,
+    unitPrice: r.applicable_tariff ?? r.applicableTariff ?? r.unit_price ?? r.unitPrice ?? r.tariff ?? r.amount,
     raw: r,
   }));
   return { protocols, isLoading, error, mutate };
