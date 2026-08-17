@@ -537,16 +537,15 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
 
   const shouldSkipOtp = skipAuth || isResubmission || isResubmitFailed || isEmergency;
 
-  // Emergency claims skip OTP/discharge-reason and submit directly (no resubmit confirm);
-  // an unidentified patient must supply a reason first.
-  const onContinueEmergency = async (event: React.FormEvent) => {
-    event.preventDefault();
+  // Emergency claims skip OTP and submit directly (no resubmit confirm) but still need a
+  // discharge reason (validated by the form); an unidentified patient also needs a reason.
+  const onContinueEmergency = async (data: ClaimSubmitFormData) => {
     if (isUnidentifiedEmergency && !unknownPatientReason) {
       setUnknownReasonError(true);
       return;
     }
+    dischargeReasonRef.current = data.discharge_reason;
     unknownReasonRef.current = isUnidentifiedEmergency ? unknownPatientReason : '';
-    dischargeReasonRef.current = '';
     dischargeDateIsoRef.current = '';
     setSubmitError(null);
     setIsSubmitting(true);
@@ -665,7 +664,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
       <form
         onSubmit={
           isEmergency
-            ? onContinueEmergency
+            ? handleSubmit(onContinueEmergency)
             : isResubmitFailed
             ? (e) => {
                 e.preventDefault();
@@ -712,41 +711,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
 
           <ClaimReviewSection diagnoses={previewDiagnoses} billLines={previewBillLines} />
 
-          {isEmergency ? (
-            isUnidentifiedEmergency ? (
-              <section className={styles.formSection}>
-                <Dropdown
-                  id="unknown-patient-reason"
-                  titleText={
-                    <RequiredLabel>{t('reasonForUnknownPatient', 'Reason patient is unidentified')}</RequiredLabel>
-                  }
-                  label={t('selectReason', 'Select a reason')}
-                  items={unknownPatientReasons}
-                  itemToString={(item) => item?.label ?? ''}
-                  selectedItem={unknownPatientReasons.find((r) => r.value === unknownPatientReason) ?? null}
-                  onChange={({ selectedItem }) => {
-                    setUnknownPatientReason(selectedItem?.value ?? '');
-                    setUnknownReasonError(false);
-                  }}
-                  disabled={isSubmitting}
-                  invalid={unknownReasonError}
-                  invalidText={t('reasonRequired', 'A reason is required')}
-                />
-              </section>
-            ) : (
-              <InlineNotification
-                kind="info"
-                lowContrast
-                hideCloseButton
-                title={t('emergencySubmitNote', 'Ready to submit')}
-                subtitle={t(
-                  'emergencySubmitNoteDesc',
-                  'Emergency claims are authorised by doctor consent, so no OTP or discharge reason is needed.',
-                )}
-                className={styles.errorBanner}
-              />
-            )
-          ) : isResubmitFailed ? (
+          {isResubmitFailed ? (
             <InlineNotification
               kind="info"
               lowContrast
@@ -787,6 +752,28 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
                   <p className={styles.reasonHint}>{selectedReasonItem.description}</p>
                 )}
               </section>
+
+              {isUnidentifiedEmergency && (
+                <section className={styles.formSection}>
+                  <Dropdown
+                    id="unknown-patient-reason"
+                    titleText={
+                      <RequiredLabel>{t('reasonForUnknownPatient', 'Reason patient is unidentified')}</RequiredLabel>
+                    }
+                    label={t('selectReason', 'Select a reason')}
+                    items={unknownPatientReasons}
+                    itemToString={(item) => item?.label ?? ''}
+                    selectedItem={unknownPatientReasons.find((r) => r.value === unknownPatientReason) ?? null}
+                    onChange={({ selectedItem }) => {
+                      setUnknownPatientReason(selectedItem?.value ?? '');
+                      setUnknownReasonError(false);
+                    }}
+                    disabled={isSubmitting}
+                    invalid={unknownReasonError}
+                    invalidText={t('reasonRequired', 'A reason is required')}
+                  />
+                </section>
+              )}
 
               {isInpatient && (
                 <section className={styles.formSection}>
@@ -865,7 +852,7 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
           </Button>
           <Button
             className={styles.button}
-            disabled={isSubmitting || (!isResubmitFailed && !isEmergency && isLoadingReasons) || submitSucceeded}
+            disabled={isSubmitting || (!isResubmitFailed && isLoadingReasons) || submitSucceeded}
             kind={isResubmission ? 'danger' : 'primary'}
             type="submit"
             renderIcon={submitSucceeded ? CheckmarkFilled : undefined}>

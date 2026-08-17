@@ -168,8 +168,12 @@ export const submitClaim = async (
   };
 
   if (params.isEmergency) {
-    // Emergency claims are authorised by doctor consent, not OTP/biometrics, and carry no
-    // discharge reason. An unidentified patient must supply a reason for being unidentified.
+    // Emergency claims are authorised by doctor consent, not OTP/biometrics, but SHA still
+    // requires a discharge reason. An unidentified patient additionally supplies a reason.
+    if (!params.dischargeReason) {
+      return { ok: false, error: t('dischargeReasonRequired', 'Discharge reason is required') };
+    }
+    body.discharge_reason = params.dischargeReason;
     if (params.reasonForUnknownPatient) {
       body.reason_for_unknown_patient = params.reasonForUnknownPatient;
     }

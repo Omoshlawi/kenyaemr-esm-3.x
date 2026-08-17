@@ -350,7 +350,10 @@ const ClaimsTable: React.FC<{
         serviceType: claim.service_type,
         patientUuid,
         patientCRId: claim.member_number ?? '',
-        isUnidentified: claim.service_type?.toUpperCase() === 'EMERGENCY' && !claim.beneficiary_cr_id,
+        // Identified only when a real Client Registry number is present (CR…); placeholders
+        // like "SHANULL"/empty mean the patient is still unidentified.
+        isUnidentified:
+          claim.service_type?.toUpperCase() === 'EMERGENCY' && !/^CR/i.test((claim.beneficiary_cr_id ?? '').trim()),
         interventions: (claim.interventions ?? []).map((i) => i.intervention_code),
         paymentMechanism: claim.interventions?.[0]?.payment_mechanism,
         isResubmission: isResubmit,
