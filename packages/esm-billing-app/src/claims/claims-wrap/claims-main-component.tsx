@@ -26,6 +26,7 @@ import {
   Tag,
 } from '@carbon/react';
 
+import { useSWRConfig } from 'swr';
 import { useBill } from '../../billing.resource';
 import { MappedBill } from '../../types';
 import EmergencyClaimCountdown from '../../components/emergency-claim-countdown.component';
@@ -33,7 +34,12 @@ import { partitionByTab, syncClaim, usePatientClaims } from './claims-main.resou
 import styles from './claims-main.scss';
 import { ClaimTabKey, PatientClaim, PatientClaimDiagnosis, PatientClaimIntervention } from './type';
 import { getPatientUuidFromUrl } from '../../prompt-payment/prompt-payment-modal.component';
-import { CardHeader, EmptyState } from '@openmrs/esm-patient-common-lib';
+import {
+  CardHeader,
+  EmptyState,
+  invalidateVisitAndEncounterData,
+  invalidateVisitByUuid,
+} from '@openmrs/esm-patient-common-lib';
 import { DocumentAdd, DocumentPdf, Renew, Upload, UserFollow, UserMultiple } from '@carbon/react/icons';
 import {
   useLayoutType,
@@ -350,8 +356,6 @@ const ClaimsTable: React.FC<{
         serviceType: claim.service_type,
         patientUuid,
         patientCRId: claim.member_number ?? '',
-        // Identified only when a real Client Registry number is present (CR…); placeholders
-        // like "SHANULL"/empty mean the patient is still unidentified.
         isUnidentified:
           claim.service_type?.toUpperCase() === 'EMERGENCY' && !/^CR/i.test((claim.beneficiary_cr_id ?? '').trim()),
         interventions: (claim.interventions ?? []).map((i) => i.intervention_code),
@@ -630,17 +634,9 @@ const ClaimDetailsPanel: React.FC<{
         intervention_code: claim.interventions?.[0]?.intervention_code ?? '',
         intervention_name: claim.interventions?.[0]?.intervention_name ?? '',
         service_type: claim.service_type ?? '',
-        emergency_claim_id: claim.upstream_claim_id,
         patient: { uuid: patientUuid, display: bill.patientName ?? '' },
       } as PreauthQueueItem),
-    [
-      claim.authorization_code,
-      claim.interventions,
-      claim.service_type,
-      claim.upstream_claim_id,
-      patientUuid,
-      bill.patientName,
-    ],
+    [claim.authorization_code, claim.interventions, claim.service_type, patientUuid, bill.patientName],
   );
 
   const handleRequestDoctorApproval = useCallback(
@@ -673,6 +669,18 @@ const ClaimDetailsPanel: React.FC<{
     mutateAttachments();
     mutateDoctors();
   }, [mutate, mutateAttachments, mutateDoctors]);
+
+  const { mutate: swrMutate } = useSWRConfig();
+  const handleIdentified = useCallback(() => {
+    combinedMutate();
+    if (patientUuid) {
+      invalidateVisitAndEncounterData(swrMutate, patientUuid);
+      if (visitUuid) {
+        invalidateVisitByUuid(swrMutate, visitUuid);
+      }
+      swrMutate(['patient', patientUuid]);
+    }
+  }, [combinedMutate, patientUuid, visitUuid, swrMutate]);
   const isEditable =
     claim.provider_workflow_state === 'DRAFT' ||
     claim.provider_workflow_state === 'DRAFT_RESUBMIT' ||
@@ -1039,7 +1047,7 @@ const ClaimDetailsPanel: React.FC<{
                     consentToken: claim.authorization_code,
                     interventionCode: claim.interventions?.[0]?.intervention_code,
                     patientUuid,
-                    onIdentified: combinedMutate,
+                    onIdentified: handleIdentified,
                   },
                   {},
                   {},

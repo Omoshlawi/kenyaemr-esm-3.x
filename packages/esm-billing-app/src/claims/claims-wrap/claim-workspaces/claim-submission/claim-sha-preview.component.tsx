@@ -70,7 +70,6 @@ const ClaimShaPreview: React.FC<ClaimShaPreviewProps> = ({ preview, isLoading, e
           </span>
           <ul className={styles.previewList}>
             {interventions.map((iv, index) => {
-              // SHA returns these as strings ("0", "2600"), so coerce and take the first positive.
               const positive = (value: unknown): number | undefined => {
                 const n = Number(value);
                 return Number.isFinite(n) && n > 0 ? n : undefined;

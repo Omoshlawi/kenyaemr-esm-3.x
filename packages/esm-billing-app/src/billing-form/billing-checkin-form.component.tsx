@@ -498,7 +498,7 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
             }
           },
 
-          authMode: 'multi',
+          authMode: isEmergencyVisit ? 'otp-only' : 'multi',
           whitelistedForOTP: effectiveWhitelistedForOTP,
           facilityBiometricsEnforced: effectiveBiometricsEnforced,
           isMinorOtpLeeway: isMinorOtpEligible,

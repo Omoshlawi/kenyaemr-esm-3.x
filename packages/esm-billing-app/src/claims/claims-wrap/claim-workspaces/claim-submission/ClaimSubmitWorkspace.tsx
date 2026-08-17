@@ -537,8 +537,6 @@ const ClaimSubmitWorkspace: React.FC<Workspace2DefinitionProps<ClaimSubmitWorksp
 
   const shouldSkipOtp = skipAuth || isResubmission || isResubmitFailed || isEmergency;
 
-  // Emergency claims skip OTP and submit directly (no resubmit confirm) but still need a
-  // discharge reason (validated by the form); an unidentified patient also needs a reason.
   const onContinueEmergency = async (data: ClaimSubmitFormData) => {
     if (isUnidentifiedEmergency && !unknownPatientReason) {
       setUnknownReasonError(true);

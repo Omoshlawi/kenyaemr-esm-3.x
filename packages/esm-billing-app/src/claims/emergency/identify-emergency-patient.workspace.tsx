@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button, ButtonSet, Dropdown, InlineLoading, InlineNotification, TextInput, Tag } from '@carbon/react';
 import { showSnackbar, Workspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
-import { mutate } from 'swr';
 import { useTranslation } from 'react-i18next';
 import { extractFetchError } from '../claims-management/table/virtual-claim-preauth/utils';
 import {
@@ -26,7 +25,7 @@ const IdentifyEmergencyPatientWorkspace: React.FC<
   Workspace2DefinitionProps<IdentifyEmergencyPatientWorkspaceProps, {}, {}>
 > = ({ workspaceProps, closeWorkspace }) => {
   const { t } = useTranslation();
-  const { consentToken, interventionCode, patientUuid, onIdentified } = workspaceProps;
+  const { consentToken, interventionCode, onIdentified } = workspaceProps;
 
   const { entries: idTypeEntries } = useHieIdentificationTypes();
 
@@ -102,17 +101,6 @@ const IdentifyEmergencyPatientWorkspace: React.FC<
         subtitle: t('patientIdentifiedSubtitle', 'The emergency claim was linked to the patient.'),
       });
       onIdentified?.();
-      if (patientUuid) {
-        await mutate((key) => {
-          if (typeof key === 'string') {
-            return key.includes(patientUuid);
-          }
-          if (Array.isArray(key)) {
-            return key.some((part) => typeof part === 'string' && part.includes(patientUuid));
-          }
-          return false;
-        });
-      }
       closeWorkspace({ discardUnsavedChanges: true });
     } catch (error) {
       showSnackbar({
