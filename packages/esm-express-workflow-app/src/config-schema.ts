@@ -251,7 +251,7 @@ export const configSchema = {
     _description:
       'Whether registrars can compare a local patient against the HIE record and overwrite the local ' +
       'demographics with the HIE values. Off by default because syncing rewrites the local record.',
-    _default: false,
+    _default: true,
   },
   visitAttributeTypes: {
     _type: Type.Array,
