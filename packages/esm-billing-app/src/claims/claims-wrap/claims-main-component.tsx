@@ -635,6 +635,7 @@ const ClaimDetailsPanel: React.FC<{
         intervention_name: claim.interventions?.[0]?.intervention_name ?? '',
         service_type: claim.service_type ?? '',
         patient: { uuid: patientUuid, display: bill.patientName ?? '' },
+        emergency_claim_id: claim.upstream_claim_id || '',
       } as PreauthQueueItem),
     [claim.authorization_code, claim.interventions, claim.service_type, patientUuid, bill.patientName],
   );
@@ -1388,9 +1389,11 @@ const ClaimDetailsPanel: React.FC<{
                 <li key={d.uuid} className={styles.billLineItem}>
                   <div className={styles.billLineRow}>
                     <span className={styles.muted}>{d.doctor_name}</span>
-                    <Button size="sm" kind="ghost" onClick={() => handleRequestDoctorApproval(d)}>
-                      {t('rerequest', 'Re-request')}
-                    </Button>
+                    {isEmergencyClaim && (
+                      <Button size="sm" kind="ghost" onClick={() => handleRequestDoctorApproval(d)}>
+                        {t('rerequest', 'Re-request')}
+                      </Button>
+                    )}
                   </div>
                 </li>
               ))}

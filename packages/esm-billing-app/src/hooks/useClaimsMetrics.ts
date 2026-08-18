@@ -21,6 +21,7 @@ export type VirtualClaim = {
   patient_uuid?: string;
   patient_name?: string;
   bill_uuid?: string;
+  mode_of_arrival?: string;
 };
 
 export type ClaimsFacilityOverview = {

@@ -109,6 +109,7 @@ const ShifExpandedRow: React.FC<{ claim: ClaimResponse }> = ({ claim }) => {
     intervention_name: claim.interventionDetails?.[0]?.intervention_name ?? '',
     service_type: claim.serviceType ?? '',
     patient: { uuid: claim.patient?.uuid ?? '', display: claim.patient?.display ?? '' },
+    emergency_claim_id: claim.externalId,
   } as PreauthQueueItem;
 
   const handleRequestDoctorApproval = (doctor: { uuid: string; doctor_name: string; identification_number: string }) =>

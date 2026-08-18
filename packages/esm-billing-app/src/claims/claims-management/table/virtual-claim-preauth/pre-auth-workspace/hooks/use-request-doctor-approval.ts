@@ -37,9 +37,8 @@ export function useRequestDoctorApproval({
 
     try {
       const isEmergency = (serviceType ?? item.service_type) === 'EMERGENCY';
-      const resolvedEmergencyClaimId = emergencyClaimId ?? item.emergency_claim_id;
 
-      if (isEmergency && !resolvedEmergencyClaimId) {
+      if (isEmergency && !item.emergency_claim_id) {
         throw new Error(
           t(
             'missingEmergencyClaimId',
@@ -56,7 +55,7 @@ export function useRequestDoctorApproval({
             identificationNumber: doctor.identification_number,
             identificationType: doctor.identification_type,
             regulationBody: doctor.regulation_body,
-            emergencyClaimId: resolvedEmergencyClaimId!,
+            emergencyClaimId: item.emergency_claim_id || '',
           })
         : await sendDoctorPreauthRequest({
             kind: 'preauth',
