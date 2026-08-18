@@ -251,13 +251,15 @@ export function buildPreauthFormData(data: PreauthFormData, item: PreauthQueueIt
     fd.append('diagnoses', JSON.stringify(diagnoses));
   }
 
-  const attachmentsMeta: Array<{ document_title: string; document_type: string }> = [];
-  (data.attachments ?? []).forEach((att) => {
+  const attachmentsMeta: Array<{ document_title: string; document_type: string; file_field_name: string }> = [];
+  (data.attachments ?? []).forEach((att, index) => {
+    const fileFieldName = `attachments_${index}_file_blob`;
     attachmentsMeta.push({
       document_title: att.document_title || att.file.name,
       document_type: att.document_type,
+      file_field_name: fileFieldName,
     });
-    fd.append('attachments_files', att.file, att.file.name);
+    fd.append(fileFieldName, att.file, att.file.name);
   });
   if (attachmentsMeta.length > 0) {
     fd.append('attachments', JSON.stringify(attachmentsMeta));

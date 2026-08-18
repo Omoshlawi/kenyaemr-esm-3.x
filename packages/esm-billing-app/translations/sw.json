@@ -666,6 +666,7 @@
   "missingClaim": "Hakuna uthibitisho wa madai uliorudishwa kwa uwasilishaji huu.",
   "missingContext": "muktadha wa",
   "missingContextDesc": "Haiwezi kutatua: {{params}}",
+  "missingEmergencyClaimId": "Missing the emergency claim identifier for this claim — cannot request doctor approval.",
   "missingParams": "muktadha wa",
   "missingParamsDesc": "Haiwezi kutatua: {{params}}",
   "missingRequiredDocs": "Nyaraka zinazohitajika (s): {{types}}SHA inahitaji kila moja ya hizi uploaded kabla ya preauth hii inaweza kuwasilishwa.",

@@ -666,6 +666,7 @@
   "missingClaim": "No claim preview was returned for this resubmission.",
   "missingContext": "Missing context",
   "missingContextDesc": "Cannot resolve: {{params}}",
+  "missingEmergencyClaimId": "Missing the emergency claim identifier for this claim — cannot request doctor approval.",
   "missingParams": "Missing context",
   "missingParamsDesc": "Cannot resolve: {{params}}",
   "missingRequiredDocs": "Missing required document(s): {{types}}. SHA needs each of these uploaded before this preauth can be submitted.",

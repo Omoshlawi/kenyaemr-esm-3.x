@@ -671,6 +671,7 @@
   "missingClaim": "Aucune prévision de réclamation n'a été retournée pour cette nouvelle présentation.",
   "missingContext": "Contexte manquant",
   "missingContextDesc": "Impossible de résoudre : {{params}}",
+  "missingEmergencyClaimId": "Missing the emergency claim identifier for this claim — cannot request doctor approval.",
   "missingParams": "Contexte manquant",
   "missingParamsDesc": "Impossible de résoudre : {{params}}",
   "missingRequiredDocs": "Documents manquants requis: {{types}}. SHA a besoin de chacun de ceux téléchargés avant que ce préauth puisse être soumis.",
