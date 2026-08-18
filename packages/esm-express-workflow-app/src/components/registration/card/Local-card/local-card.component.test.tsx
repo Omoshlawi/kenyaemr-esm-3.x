@@ -1,16 +1,23 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useConfig } from '@openmrs/esm-framework';
+import { SWRConfig } from 'swr';
+import { openmrsFetch, useConfig } from '@openmrs/esm-framework';
+import { launchOtpVerificationModal } from '../../../../shared/otp-verification';
 import LocalPatientCard from './local-card.component';
 import { type HIEBundleResponse, type LocalResponse } from '../../type';
 
 const NATIONAL_ID_TYPE_UUID = '49af6cdc-7968-4abb-bf46-de10d7f4859f';
 const NATIONAL_ID = '12345678';
 
+const LOCAL_PHONE = '0712345678';
+const HIE_PHONE = '0722999999';
+
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@openmrs/esm-framework')>()),
+  openmrsFetch: vi.fn(),
   useConfig: vi.fn(),
   useSession: vi.fn(() => ({ sessionLocation: { uuid: 'loc-uuid' } })),
   showModal: vi.fn(() => () => {}),
@@ -29,17 +36,15 @@ vi.mock('../../patient-banner/patient-banner.component', () => ({
 
 vi.mock('../../dependants/dependants.component', () => ({ default: () => null }));
 
-vi.mock('../../dependants/dependants.resource', () => ({
-  useMultipleActiveVisits: () => [{ activeVisit: null }],
-}));
-
-vi.mock('../HIE-card/hie-card.resource', () => ({
-  otpManager: { setOtpSource: vi.fn(), verifyOTP: vi.fn(), cleanupExpiredOTPs: vi.fn() },
-  useOtpSource: () => ({ otpSource: null, isLoading: false, error: null }),
-  cleanupAllOTPs: vi.fn(),
+// launchOtpVerificationModal is the boundary that receives the phone number the
+// OTP is sent to; mock it so we can assert which number the card chose.
+vi.mock('../../../../shared/otp-verification', () => ({
+  launchOtpVerificationModal: vi.fn(),
 }));
 
 const mockUseConfig = vi.mocked(useConfig);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockLaunchOtpVerificationModal = vi.mocked(launchOtpVerificationModal);
 
 const localPatient = {
   patientId: 1,
@@ -56,10 +61,10 @@ const localPatient = {
     birthdate: '1990-01-01',
     personName: { display: 'Jane Doe', givenName: 'Jane', familyName: 'Doe' },
   },
-  attributes: [{ value: '0712345678', attributeType: { uuid: 'attr', display: 'Telephone Number' } }],
+  attributes: [{ value: LOCAL_PHONE, attributeType: { uuid: 'attr', display: 'Telephone Number' } }],
 } as unknown as LocalResponse[number];
 
-const hieBundleFor = (nationalId: string | null): HIEBundleResponse =>
+const hieBundleFor = (nationalId: string | null, telecom?: fhir.ContactPoint[]): HIEBundleResponse =>
   ({
     total: nationalId ? 1 : 0,
     entry: nationalId
@@ -72,7 +77,7 @@ const hieBundleFor = (nationalId: string | null): HIEBundleResponse =>
               name: [{ given: ['Jane'], family: 'Doe' }],
               gender: 'female',
               birthDate: '1990-01-01',
-              telecom: [{ system: 'phone', value: '0722999999' }],
+              telecom: telecom ?? [{ system: 'phone', value: HIE_PHONE }],
             },
           },
         ]
@@ -81,18 +86,27 @@ const hieBundleFor = (nationalId: string | null): HIEBundleResponse =>
 
 const renderCard = (hieSearchResults: Array<HIEBundleResponse> | null) =>
   render(
-    <LocalPatientCard
-      localSearchResults={[localPatient]}
-      syncedPatients={new Set()}
-      searchedNationalId={NATIONAL_ID}
-      hieSearchResults={hieSearchResults}
-    />,
+    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+      <LocalPatientCard
+        localSearchResults={[localPatient]}
+        syncedPatients={new Set()}
+        searchedNationalId={NATIONAL_ID}
+        hieSearchResults={hieSearchResults}
+      />
+    </SWRConfig>,
   );
 
 describe('LocalPatientCard - compare & sync button', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseConfig.mockReturnValue({ enableDemographicSync: true, nationalIdUUID: NATIONAL_ID_TYPE_UUID } as any);
+    // Only the network boundary is stubbed; the real useOtpSource hook runs.
+    mockOpenmrsFetch.mockResolvedValue({ data: { otpSource: 'hie' } } as any);
+    // useMultipleActiveVisits uses raw fetch under the hood; keep it offline.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ results: [] }) })),
+    );
   });
 
   it('shows the sync action when a matching HIE record exists, even though the local identifier type display is non-standard', () => {
@@ -114,5 +128,54 @@ describe('LocalPatientCard - compare & sync button', () => {
   it('does not show the sync action when there are no HIE results at all', () => {
     renderCard(null);
     expect(screen.queryByRole('button', { name: /sync/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('LocalPatientCard - OTP phone number preference', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseConfig.mockReturnValue({ enableDemographicSync: true, nationalIdUUID: NATIONAL_ID_TYPE_UUID } as any);
+    mockOpenmrsFetch.mockResolvedValue({ data: { otpSource: 'hie' } } as any);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ results: [] }) })),
+    );
+  });
+
+  it('prefers the HIE phone number over the local copy when a matching HIE record has a phone', async () => {
+    const user = userEvent.setup();
+    renderCard([hieBundleFor(NATIONAL_ID, [{ system: 'phone', value: HIE_PHONE }])]);
+
+    // Wait for the real useOtpSource hook to resolve and enable the button.
+    const sendOtpButton = await screen.findByRole('button', { name: 'Send OTP' });
+    await waitFor(() => expect(sendOtpButton).toBeEnabled());
+
+    await user.click(sendOtpButton);
+
+    expect(mockLaunchOtpVerificationModal).toHaveBeenCalledWith(expect.objectContaining({ phoneNumber: HIE_PHONE }));
+  });
+
+  it('falls back to the local phone number when the matching HIE record has no phone', async () => {
+    const user = userEvent.setup();
+    renderCard([hieBundleFor(NATIONAL_ID, [])]);
+
+    const sendOtpButton = await screen.findByRole('button', { name: 'Send OTP' });
+    await waitFor(() => expect(sendOtpButton).toBeEnabled());
+
+    await user.click(sendOtpButton);
+
+    expect(mockLaunchOtpVerificationModal).toHaveBeenCalledWith(expect.objectContaining({ phoneNumber: LOCAL_PHONE }));
+  });
+
+  it('falls back to the local phone number when there is no matching HIE record', async () => {
+    const user = userEvent.setup();
+    renderCard([hieBundleFor('99999999')]);
+
+    const sendOtpButton = await screen.findByRole('button', { name: 'Send OTP' });
+    await waitFor(() => expect(sendOtpButton).toBeEnabled());
+
+    await user.click(sendOtpButton);
+
+    expect(mockLaunchOtpVerificationModal).toHaveBeenCalledWith(expect.objectContaining({ phoneNumber: LOCAL_PHONE }));
   });
 });

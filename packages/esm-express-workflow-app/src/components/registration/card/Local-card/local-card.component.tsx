@@ -114,7 +114,15 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
     });
   }, []);
 
-  const getPatientPhoneNumber = useCallback((localPatient: any): string => {
+  const getPatientPhoneNumber = useCallback((localPatient: any, hiePatient?: fhir.Patient | null): string => {
+    const hiePhoneContact = hiePatient?.telecom?.find(
+      (contact: any) => contact.system === 'phone' || contact.use === 'mobile',
+    );
+
+    if (hiePhoneContact?.value) {
+      return sanitizePhoneNumber(hiePhoneContact.value);
+    }
+
     const phoneAttribute = localPatient.attributes?.find(
       (attr: any) =>
         attr.attributeType?.display?.toLowerCase().includes('phone') ||
@@ -259,7 +267,7 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
           ? hasDemographicMismatch(fhirPatient, hiePatientData)
           : false;
 
-        const patientPhoneNumber = getPatientPhoneNumber(localPatient);
+        const patientPhoneNumber = getPatientPhoneNumber(localPatient, hiePatientData);
         const { onRequestOtp, onVerify, cleanup } = createDynamicOTPHandlers(
           patientUuid,
           patientName,
