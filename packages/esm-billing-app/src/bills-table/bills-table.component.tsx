@@ -1,4 +1,4 @@
-import React, { useCallback, useId, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useId, useRef, useState } from 'react';
 import classNames from 'classnames';
 import {
   DataTable,
@@ -18,10 +18,11 @@ import {
   Tile,
 } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
-import { useLayoutType, isDesktop, useConfig, ErrorState, ConfigurableLink } from '@openmrs/esm-framework';
+import { useLayoutType, isDesktop, useConfig, ErrorState, ConfigurableLink, useDebounce } from '@openmrs/esm-framework';
 import { EmptyDataIllustration, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
-import { usePaginatedBills } from '../billing.resource';
+import { paginatedBillRep, usePaginatedBills } from '../billing.resource';
 import styles from './bills-table.scss';
+import { type MappedBill } from '../types';
 
 type BillTableProps = {
   defaultBillPaymentStatus?: string;
@@ -42,14 +43,19 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '', i
   ];
   const [billPaymentStatus, setBillPaymentStatus] = useState(defaultBillPaymentStatus);
   const [pageSize, setPageSize] = useState(config?.bills?.pageSize ?? 10);
+
+  const [searchString, setSearchString] = useState('');
+  const debouncedSearchString = useDebounce(searchString, 300);
+
   const { bills, isLoading, isValidating, error, pagination } = usePaginatedBills(isOnActiveTab, {
     billStatus: billPaymentStatus,
     pageSize: pageSize,
+    q: debouncedSearchString,
+    rep: paginatedBillRep,
   });
   const { goTo, currentPage, totalCount } = pagination;
   const { pageSizes } = usePaginationInfo(pageSize, totalCount, currentPage, bills.length);
 
-  const [searchString, setSearchString] = useState('');
   const hasLoadedOnce = useRef(false);
   if (!isLoading) {
     hasLoadedOnce.current = true;
@@ -78,25 +84,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '', i
     },
   ];
 
-  const searchResults = useMemo(() => {
-    if (bills !== undefined && bills.length > 0) {
-      if (searchString && searchString.trim() !== '') {
-        const search = searchString.toLowerCase();
-        return bills?.filter((activeBillRow) =>
-          Object.entries(activeBillRow).some(([header, value]) => {
-            if (header === 'patientUuid') {
-              return false;
-            }
-            return `${value}`.toLowerCase().includes(search);
-          }),
-        );
-      }
-    }
-
-    return bills;
-  }, [searchString, bills]);
-
-  const setBilledItems = (bill) =>
+  const setBilledItems = (bill: MappedBill) =>
     bill?.lineItems?.reduce(
       (acc, item) => acc + (acc ? ' & ' : '') + (item?.billableService.split(':')[1] || item?.item.split(':')[1] || ''),
       '',
@@ -104,7 +92,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '', i
 
   const billingUrl = '${openmrsSpaBase}/home/accounting/patient/${patientUuid}/${uuid}';
 
-  const rowData = searchResults?.map((bill, index) => ({
+  const rowData = bills?.map((bill, index) => ({
     id: `${index}`,
     uuid: bill.uuid,
     patientName: (
@@ -126,14 +114,14 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '', i
   const handleSearch = useCallback(
     (e) => {
       goTo(1);
-      setSearchString(e.target.value);
+      setSearchString(e?.target?.value ?? '');
     },
     [goTo, setSearchString],
   );
 
   const handleFilterChange = ({ selectedItem }) => setBillPaymentStatus(selectedItem.id);
 
-  if (isLoading) {
+  if (isLoading && !hasLoadedOnce.current) {
     return (
       <div className={styles.loaderContainer}>
         <DataTableSkeleton
@@ -175,10 +163,11 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '', i
         />
       </div>
 
-      {bills?.length > 0 ? (
+      {bills?.length > 0 || debouncedSearchString ? (
         <div className={styles.billListContainer}>
           <FilterableTableHeader
             handleSearch={handleSearch}
+            searchString={searchString}
             isValidating={isValidating}
             layout={layout}
             responsiveSize={responsiveSize}
@@ -217,7 +206,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '', i
               </TableContainer>
             )}
           </DataTable>
-          {searchResults?.length === 0 && (
+          {bills?.length === 0 && (
             <div className={styles.filterEmptyState}>
               <Layer level={0}>
                 <Tile className={styles.filterEmptyStateTile}>
@@ -263,7 +252,7 @@ const BillsTable: React.FC<BillTableProps> = ({ defaultBillPaymentStatus = '', i
   );
 };
 
-function FilterableTableHeader({ layout, handleSearch, isValidating, responsiveSize, t }) {
+function FilterableTableHeader({ layout, handleSearch, searchString, isValidating, responsiveSize, t }) {
   return (
     <>
       <div className={styles.headerContainer}>
@@ -284,6 +273,8 @@ function FilterableTableHeader({ layout, handleSearch, isValidating, responsiveS
         labelText=""
         placeholder={t('filterTable', 'Filter table')}
         onChange={handleSearch}
+        onClear={handleSearch}
+        value={searchString}
         size={responsiveSize}
       />
     </>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { usePaginatedBills } from '../billing.resource';
 import BillsTable from './bills-table.component';
 import userEvent from '@testing-library/user-event';
@@ -12,6 +12,7 @@ const mockBillsData = [
 ];
 
 vi.mock('../billing.resource', () => ({
+  paginatedBillRep: 'custom:(uuid,dateCreated,lineItems,patient:(uuid,display),status)',
   usePaginatedBills: vi.fn(() => ({
     bills: mockBillsData,
     isLoading: false,
@@ -106,24 +107,23 @@ describe('BillsTable', () => {
     const searchInput = screen.getByRole('searchbox');
     await user.type(searchInput, 'John Doe');
 
-    expect(screen.getByText('John Doe')).toBeInTheDocument();
-    expect(screen.queryByText('Mary Smith')).not.toBeInTheDocument();
-
-    await user.clear(searchInput);
-    await user.type(searchInput, 'Mary Smith');
-
-    expect(screen.getByText('Mary Smith')).toBeInTheDocument();
-    expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
+    // Search is performed server-side, so the search term is forwarded to the query hook
+    await waitFor(() =>
+      expect(mockbills).toHaveBeenCalledWith(
+        true,
+        expect.objectContaining({ q: 'John Doe', billStatus: '', pageSize: 10 }),
+      ),
+    );
 
     // Should filter the table when bill payment status combobox is changed
     const billCategorySelect = screen.getAllByRole('combobox')[0];
     expect(billCategorySelect).toBeInTheDocument();
     await user.click(billCategorySelect, { name: 'All bills' });
-    expect(mockbills).toHaveBeenCalledWith(true, { billStatus: '', pageSize: 10 });
+    expect(mockbills).toHaveBeenCalledWith(true, expect.objectContaining({ billStatus: '', pageSize: 10 }));
 
     await user.click(screen.getByText('Pending bills'));
     expect(screen.getByText('Pending bills')).toBeInTheDocument();
-    expect(mockbills).toHaveBeenCalledWith(true, { billStatus: 'PENDING', pageSize: 10 });
+    expect(mockbills).toHaveBeenCalledWith(true, expect.objectContaining({ billStatus: 'PENDING', pageSize: 10 }));
   });
 
   test('should show the loading spinner while retrieving data', () => {

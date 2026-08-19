@@ -20,12 +20,13 @@ import { extractString } from './helpers';
 import { FacilityDetail, MappedBill, PatientInvoice, PaymentMethod, PaymentStatus } from './types';
 
 export const mapBillProperties = (bill: PatientInvoice): MappedBill => {
+  const [rawIdentifier, ...rawNameParts] = bill?.patient?.display?.split('-') ?? [];
   // create base object
   const mappedBill: MappedBill = {
     id: bill?.id,
     uuid: bill?.uuid,
-    patientName: bill?.patient?.display.split('-')?.[1],
-    identifier: bill?.patient?.display.split('-')?.[0],
+    patientName: rawNameParts.join('-').trim(),
+    identifier: rawIdentifier?.trim(),
     patientUuid: bill?.patient?.uuid,
     status: bill?.lineItems.some((item) => item?.paymentStatus === PaymentStatus.PENDING)
       ? PaymentStatus.PENDING
@@ -45,7 +46,7 @@ export const mapBillProperties = (bill: PatientInvoice): MappedBill => {
     display: bill?.display,
     totalAmount: bill?.lineItems?.map((item) => item?.price * item?.quantity).reduce((prev, curr) => prev + curr, 0),
     tenderedAmount: bill?.payments?.map((item) => item?.amountTendered).reduce((prev, curr) => prev + curr, 0),
-    referenceCodes: bill?.payments
+    referenceCodes: (bill?.payments ?? [])
       .map((payment) =>
         payment.attributes
           .filter((attr) => attr.attributeType.description === 'Reference Number')
@@ -107,6 +108,8 @@ export const useBills = (
 const BILLS_REP =
   'custom:(uuid,display,voided,voidReason,adjustedBy,cashPoint:(uuid,name),cashier:(uuid,display),dateCreated,lineItems,patient:(uuid,display))';
 
+export const paginatedBillRep = 'custom:(uuid,dateCreated,lineItems,patient:(uuid,display),status)';
+
 export const usePaginatedBills = (
   shouldFetchBills: boolean,
   options: {
@@ -118,6 +121,8 @@ export const usePaginatedBills = (
     cashierUuids?: Array<string>;
     paymentModeUuids?: Array<string>;
     serviceTypeUuids?: Array<string>;
+    q?: string;
+    rep?: string;
   } = {},
 ) => {
   const {
@@ -129,6 +134,8 @@ export const usePaginatedBills = (
     cashierUuids = [],
     paymentModeUuids = [],
     serviceTypeUuids = [],
+    q = '',
+    rep = BILLS_REP,
   } = options;
 
   const startingDateISO = startingDate.toISOString();
@@ -139,11 +146,12 @@ export const usePaginatedBills = (
     cashierUuids.length ? `cashierUuid=${cashierUuids.join(',')}` : '',
     paymentModeUuids.length ? `paymentModeUuid=${paymentModeUuids.join(',')}` : '',
     serviceTypeUuids.length ? `serviceTypeUuid=${serviceTypeUuids.join(',')}` : '',
+    q ? `q=${encodeURIComponent(q)}` : '',
   ]
     .filter(Boolean)
     .join('&');
 
-  const baseParams = `status=${billStatus}&v=${BILLS_REP}&createdOnOrAfter=${startingDateISO}&createdOnOrBefore=${endDateISO}`;
+  const baseParams = `status=${billStatus}&v=${rep}&createdOnOrAfter=${startingDateISO}&createdOnOrBefore=${endDateISO}`;
   const fullUrl = `${restBaseUrl}/cashier/bill?${baseParams}${optionalFilters ? `&${optionalFilters}` : ''}`;
 
   const {
