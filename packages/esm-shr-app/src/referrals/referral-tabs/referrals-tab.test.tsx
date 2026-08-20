@@ -49,7 +49,7 @@ describe('ReferralTabs', () => {
     expect(screen.getByText('From Community')).toBeInTheDocument();
     expect(screen.getByText('From Facility')).toBeInTheDocument();
     expect(screen.getByText('Completed')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'EMT Cases' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Ambulance (EMT Cases)' })).toBeInTheDocument();
   });
 
   test('should render action buttons for pulling referrals and referring patients', () => {

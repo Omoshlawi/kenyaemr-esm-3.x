@@ -122,7 +122,7 @@ const ReferralTabs: React.FC = () => {
             <Tab className={styles.tab}>{t('fromCommunity', 'From Community')}</Tab>
             <Tab className={styles.tab}>{t('fromFacility', 'From Facility')}</Tab>
             <Tab className={styles.tab}>{t('completed', 'Completed')}</Tab>
-            <Tab className={styles.tab}>{t('emtCases', 'EMT Cases')}</Tab>
+            <Tab className={styles.tab}>{t('ambulance', 'Ambulance (EMT Cases)')}</Tab>
           </TabList>
           <TabPanels>
             <TabPanel>
