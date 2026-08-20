@@ -42,7 +42,10 @@ const AllocationSummary: React.FC<AllocationSummaryProps> = ({
         kind="warning"
         lowContrast
         hideCloseButton
-        title={t('amountOverpaid', 'Amount overpaid')}
+        title={t(
+          'enterAmountEqualToInterventionOrProtocol',
+          'Please enter an amount equal to the selected intervention or protocol.',
+        )}
         subtitle={t('tenderedOfTotal', '{{tendered}} of {{total}} allocated {{remaining}} remaining', {
           tendered: formatCurrency(totalTendered),
           total: formatCurrency(totalAmount),

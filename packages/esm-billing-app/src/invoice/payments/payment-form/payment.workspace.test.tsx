@@ -424,7 +424,9 @@ describe('PaymentWorkspace', () => {
       await choosePaymentMode(user, 'Cash');
       await enterAmount(user, '200');
 
-      expect(await screen.findByText('Amount overpaid')).toBeInTheDocument();
+      expect(
+        await screen.findByText('Please enter an amount equal to the selected intervention or protocol.'),
+      ).toBeInTheDocument();
       expect(saveButton()).toBeDisabled();
       expect(mockMakePayment).not.toHaveBeenCalled();
     });
