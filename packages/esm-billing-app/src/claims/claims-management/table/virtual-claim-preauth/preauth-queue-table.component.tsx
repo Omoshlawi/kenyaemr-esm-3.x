@@ -423,6 +423,8 @@ const ExpandedPanel: React.FC<ExpandedPanelProps> = ({ item, tab, onAction }) =>
           </Button>
         )}
       </div>
+
+      <div className={styles.expandedActions}>{tab === 'RESUBMIT' && <p>{item.response_note_raw}</p>}</div>
     </div>
   );
 };

@@ -53,7 +53,7 @@ const PreauthFormView: React.FC<PreauthFormViewProps> = ({
     const source = claimDoctors.length > 0 ? claimDoctors : item?.doctors ?? [];
     return source.map((doctor, idx) => ({
       identification_number: doctor.identification_number,
-      identification_type: doctor.identification_type || 'registration_number',
+      identification_type: 'registration_number',
       regulation_body: doctor.regulation_body,
       is_primary: idx === 0,
       person: doctor.doctor_name ? { display: doctor.doctor_name } : undefined,
