@@ -21,16 +21,13 @@
   width: 100%;
   box-sizing: border-box;
   background: #fff;
-  color: #000;
+  color: #161616;
   padding: 1.25rem 1.5rem 2rem;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #d0e2ff;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 4px rgba(15, 98, 254, 0.08);
   font-family: Arial, Helvetica, sans-serif;
   font-size: 0.8125rem;
   line-height: 1.35;
-}
-
-.divider {
-  border: 0;
-  border-top: 1px solid #000;
-  margin: 0.75rem 0;
+  overflow: hidden;
 }

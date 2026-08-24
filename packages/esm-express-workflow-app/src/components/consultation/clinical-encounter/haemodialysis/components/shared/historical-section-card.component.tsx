@@ -1,4 +1,5 @@
 import React from 'react';
+import { Document } from '@carbon/react/icons';
 import type { HistoryTableColumn, HistoryTableRow } from '../../utils/dialysis-session-history';
 import sectionStyles from './shared.scss';
 import styles from './historical-section-card.scss';
@@ -11,6 +12,7 @@ type Props = {
   showAdd?: boolean;
   onAddClick?: () => void;
   addLabel?: string;
+  headerActions?: React.ReactNode;
   /** @deprecated Per-section history; prefer panel header table view. */
   showHistory?: boolean;
   historyColumns?: HistoryTableColumn[];
@@ -25,6 +27,7 @@ const HistoricalSectionCard: React.FC<Props> = ({
   showAdd = false,
   onAddClick,
   addLabel,
+  headerActions,
   showHistory = false,
   historyColumns = [],
   historyRows = [],
@@ -33,12 +36,16 @@ const HistoricalSectionCard: React.FC<Props> = ({
   <section className={sectionStyles.section}>
     <div className={sectionStyles.sectionHeader}>
       <div>
-        <h2 className={sectionStyles.sectionTitle}>{title}</h2>
+        <h2 className={sectionStyles.sectionTitle}>
+          <Document size={16} />
+          {title}
+        </h2>
         {subtitle ? <p className={sectionStyles.sectionSubtitle}>{subtitle}</p> : null}
       </div>
-      {showAdd && onAddClick ? (
+      {headerActions || (showAdd && onAddClick) ? (
         <div className={styles.headerRight}>
-          <FormAddButton onClick={onAddClick} addLabel={addLabel} />
+          {headerActions}
+          {!headerActions && showAdd && onAddClick ? <FormAddButton onClick={onAddClick} addLabel={addLabel} /> : null}
         </div>
       ) : null}
     </div>

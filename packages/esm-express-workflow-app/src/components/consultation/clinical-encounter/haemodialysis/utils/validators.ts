@@ -27,6 +27,13 @@ import {
 import { INCLUDE_ICD11_DIAGNOSIS_OBS } from '../constants/encounter-post-flags';
 import { isValidOpenmrsUuid } from './openmrs-uuid';
 import { validateFieldDef } from './field-validation';
+import {
+  hasCapturedBloodGroup,
+  shouldCaptureSerology,
+  SEROLOGY_KEYS,
+  type ScreeningRepeatFlags,
+  type SerologyKey,
+} from './screening-history';
 
 const getDialysateSelections = (value?: string | string[]): string[] => {
   if (!value) {
@@ -65,11 +72,17 @@ export type InitialAssessmentFormValues = {
   diagnosis: HaemodialysisDiagnosis | null;
   sessionDate: string;
   screening: ScreeningStatus;
+  screeningRepeats?: ScreeningRepeatFlags;
   preDialysis: PreDialysisAssessment;
   prescription: PhysicianPrescription;
 };
 
-export const validateInitialAssessment = (values: InitialAssessmentFormValues): Record<string, string> => {
+export type { ScreeningRepeatFlags };
+
+export const validateInitialAssessment = (
+  values: InitialAssessmentFormValues,
+  previousScreening?: ScreeningStatus,
+): Record<string, string> => {
   const errors: Record<string, string> = {};
 
   if (INCLUDE_ICD11_DIAGNOSIS_OBS) {
@@ -91,6 +104,38 @@ export const validateInitialAssessment = (values: InitialAssessmentFormValues): 
     if (!isScreeningObsFieldEnabled(key)) {
       return;
     }
+    if (key === 'bloodGroup' && hasCapturedBloodGroup(previousScreening)) {
+      return;
+    }
+    if (key === 'drugAllergy') {
+      const message = validateFieldDef(def, values.screening?.[key]);
+      if (message) {
+        errors[`screening.${key}`] = message;
+      }
+      return;
+    }
+    if (SEROLOGY_KEYS.includes(key as SerologyKey)) {
+      const serologyKey = key as SerologyKey;
+      if (!shouldCaptureSerology(serologyKey, previousScreening, values.screeningRepeats)) {
+        return;
+      }
+      const message = validateFieldDef(def, values.screening?.[key]);
+      if (message) {
+        errors[`screening.${key}`] = message;
+      }
+      const dateKey =
+        serologyKey === 'hivStatus'
+          ? 'hivTestDate'
+          : serologyKey === 'hepatitisCStatus'
+          ? 'hepatitisCTestDate'
+          : serologyKey === 'hepatitisBStatus'
+          ? 'hepatitisBTestDate'
+          : 'syphilisTestDate';
+      if (!values.screening?.[dateKey]?.trim()) {
+        errors[`screening.${dateKey}`] = `${def.label} test date is required`;
+      }
+      return;
+    }
     const message = validateFieldDef(def, values.screening?.[key]);
     if (message) {
       errors[`screening.${key}`] = message;
@@ -106,6 +151,10 @@ export const validateInitialAssessment = (values: InitialAssessmentFormValues): 
       return;
     }
     if (key === 'bodyMassIndex') {
+      const message = validateFieldDef(def, values.preDialysis?.[key]);
+      if (message) {
+        errors.bodyMassIndex = `${message}. Check weight and height.`;
+      }
       return;
     }
     const message = validateFieldDef(def, values.preDialysis?.[key]);

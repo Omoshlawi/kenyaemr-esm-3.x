@@ -7,8 +7,10 @@ import { parseMonitoringDatetime, resolveMonitoringSessionStartIso } from '../ut
 import {
   formatSlotClockTime,
   formatSlotLabel,
+  getLatestRowForSlot,
   getNextActiveSlotIndex,
   getProgressSlotStatus,
+  getRowsForSlot,
   isMonitoringComplete,
   type MonitoringSlotRuntime,
 } from '../utils/monitoring-slots';
@@ -111,15 +113,18 @@ const IntraDialyticMonitoringForm: React.FC<Props> = ({
     }
     const next: Record<number, MonitoringSlotFormValues> = {};
     slotLabels.forEach((slotMinute, index) => {
-      const existing = rows.find((r) => r.slotMinute === slotMinute);
-      if (existing) {
+      const status = getProgressSlotStatus(index, rows, startedAt, new Date(), runtime);
+      const latest = getLatestRowForSlot(rows, slotMinute);
+      if (status === 'active') {
+        next[index] = emptySlot();
+      } else if (latest) {
         next[index] = {
-          bp: existing.bp,
-          pulse: existing.pulse,
-          temp: existing.temp,
-          ufRemoved: existing.ufRemoved,
-          heparin: existing.heparin,
-          remarks: existing.remarks,
+          bp: latest.bp,
+          pulse: latest.pulse,
+          temp: latest.temp,
+          ufRemoved: latest.ufRemoved,
+          heparin: latest.heparin,
+          remarks: latest.remarks,
         };
       } else {
         next[index] = emptySlot();
@@ -230,7 +235,7 @@ const IntraDialyticMonitoringForm: React.FC<Props> = ({
           <p className={styles.hint}>
             {t(
               'haemodialysisSessionStartHint',
-              'Complete each slot in order. The next slot unlocks immediately after you save the previous one.',
+              'The current hour stays open for as many readings as needed. When the window ends, the next slot unlocks.',
             )}
           </p>
         ) : null}
@@ -238,7 +243,7 @@ const IntraDialyticMonitoringForm: React.FC<Props> = ({
           <p className={styles.hint}>
             {t(
               'haemodialysisSlotWaiting',
-              'Waiting for the next observation window. Upcoming slots are not skipped until their time has passed.',
+              'This hour is still open. Record as many observations as needed. The next slot unlocks when this window ends.',
             )}
           </p>
         ) : null}
@@ -248,6 +253,8 @@ const IntraDialyticMonitoringForm: React.FC<Props> = ({
           const values = slotValues[index] ?? emptySlot();
           const clock = formatSlotClockTime(startedAt, slotMinute);
           const readOnly = status !== 'active';
+          const readingCount = getRowsForSlot(rows, slotMinute).length;
+          const latest = getLatestRowForSlot(rows, slotMinute);
 
           return (
             <div
@@ -265,8 +272,19 @@ const IntraDialyticMonitoringForm: React.FC<Props> = ({
                     : status === 'active'
                     ? t('haemodialysisSlotActive', 'Active')
                     : t('haemodialysisSlotUpcoming', 'Upcoming')}
+                  {readingCount > 0
+                    ? ` · ${t('haemodialysisSlotReadingCount', '{{count}} recorded', { count: readingCount })}`
+                    : ''}
                 </span>
               </div>
+              {status === 'active' && latest ? (
+                <p className={styles.hint}>
+                  {t(
+                    'haemodialysisSlotLatestHint',
+                    'Latest reading is shown on the chart. Saving adds another observation for this hour.',
+                  )}
+                </p>
+              ) : null}
               <div className={styles.slotGrid}>
                 <TextInput
                   id={`bp-${slotMinute}`}

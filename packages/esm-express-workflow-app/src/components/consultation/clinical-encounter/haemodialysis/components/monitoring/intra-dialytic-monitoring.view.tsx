@@ -4,10 +4,17 @@ import type { MonitoringRow, MonitoringSessionAction } from '../../types';
 import { buildMonitoringDisplayRows, type MonitoringSlotRuntime } from '../../utils/monitoring-slots';
 import { parseMonitoringDatetime } from '../../utils/monitoring-datetime';
 import { buildDefaultSlotMinutes } from '../../utils/monitoring-schedule';
+import {
+  CURRENT_MONITORING_READING_COLUMNS,
+  buildCurrentMonitoringReadingRows,
+} from '../../utils/dialysis-session-history';
 import HistoricalSectionCard from '../shared/historical-section-card.component';
+import SessionHistoryDataTable from '../shared/session-history-data-table.component';
+import { SectionToolbar, type SectionViewMode } from '../shared/section-toolbar.component';
 import sharedStyles from '../shared/shared.scss';
 import MonitoringTable from './monitoring-table.component';
 import MonitoringActions from './monitoring-actions.component';
+import styles from './monitoring-table.scss';
 
 type Props = {
   rows: MonitoringRow[];
@@ -44,6 +51,7 @@ const IntraDialyticMonitoringView: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
   const [now, setNow] = useState(() => new Date());
+  const [viewMode, setViewMode] = useState<SectionViewMode>('graph');
 
   useEffect(() => {
     if (monitoringComplete) {
@@ -53,15 +61,25 @@ const IntraDialyticMonitoringView: React.FC<Props> = ({
     return () => window.clearInterval(id);
   }, [monitoringComplete]);
 
+  const startedAt = useMemo(() => parseMonitoringDatetime(monitoringStartedAt) ?? undefined, [monitoringStartedAt]);
+
   const displayRows = useMemo(() => {
-    if (!monitoringStartedAt && rows.length === 0) {
+    if (waitingForMachineCheck) {
       return [];
     }
-    const startedAt = parseMonitoringDatetime(monitoringStartedAt);
-    return buildMonitoringDisplayRows(rows, startedAt ?? undefined, now, monitoringRuntime);
-  }, [rows, monitoringStartedAt, now, monitoringRuntime]);
+    return buildMonitoringDisplayRows(rows, startedAt, now, monitoringRuntime);
+  }, [rows, startedAt, now, monitoringRuntime, waitingForMachineCheck]);
+
+  const readingRows = useMemo(() => buildCurrentMonitoringReadingRows(rows, startedAt), [rows, startedAt]);
+
+  const hasMultipleReadingsInSlot = useMemo(
+    () => displayRows.some((row) => (row.readingCount ?? 0) > 1),
+    [displayRows],
+  );
 
   const slotMinutes = monitoringSlotMinutes ?? buildDefaultSlotMinutes();
+  const showReadingsToggle = readingRows.length > 0;
+  const showChart = viewMode === 'graph' || !showReadingsToggle;
 
   return (
     <HistoricalSectionCard
@@ -71,13 +89,41 @@ const IntraDialyticMonitoringView: React.FC<Props> = ({
           ? monitoringExpired
             ? t('haemodialysisMonitoringExpired', 'Monitoring closed — 240 min window elapsed')
             : t('haemodialysisMonitoringComplete', 'Monitoring complete')
-          : t('haemodialysisMonitoringSubtitle', 'Record Observations Every 60 Minutes')
+          : t('haemodialysisMonitoringSubtitle', 'Monitoring (Checked every 60 min unless indicated)')
       }
-      showAdd={canAdd}
-      onAddClick={onAdd}
-      addLabel={addLabel ?? t('haemodialysisAddMonitoring', 'Add observation')}>
-      {displayRows.length > 0 ? (
-        <MonitoringTable rows={displayRows} />
+      headerActions={
+        showReadingsToggle || canAdd ? (
+          <SectionToolbar
+            showViewToggle={showReadingsToggle}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            onAddClick={canAdd ? onAdd : undefined}
+            addLabel={addLabel ?? t('haemodialysisContinueMonitoring', 'Continue monitoring')}
+          />
+        ) : null
+      }>
+      {displayRows.length > 0 || readingRows.length > 0 ? (
+        <>
+          {showChart ? (
+            <>
+              {hasMultipleReadingsInSlot ? (
+                <p className={styles.viewHint}>
+                  {t(
+                    'haemodialysisMonitoringChartHint',
+                    'Each time slot shows the latest reading. Switch to Table to see every saved observation.',
+                  )}
+                </p>
+              ) : null}
+              <MonitoringTable rows={displayRows} />
+            </>
+          ) : (
+            <SessionHistoryDataTable
+              columns={CURRENT_MONITORING_READING_COLUMNS}
+              rows={readingRows}
+              emptyMessage={t('haemodialysisMonitoringEmpty', 'No monitoring observations yet.')}
+            />
+          )}
+        </>
       ) : (
         <div className={sharedStyles.emptyState}>
           {waitingForMachineCheck
@@ -88,9 +134,8 @@ const IntraDialyticMonitoringView: React.FC<Props> = ({
             : t('haemodialysisMonitoringEmpty', 'No monitoring observations yet.')}
         </div>
       )}
-      {onTerminateMonitoring && onExtendMonitoring ? (
+      {displayRows.length > 0 && onTerminateMonitoring && onExtendMonitoring ? (
         <MonitoringActions
-          monitoringStartedAt={monitoringStartedAt}
           slotMinutes={slotMinutes}
           monitoringAction={monitoringAction}
           monitoringComplete={Boolean(monitoringComplete)}

@@ -5,10 +5,9 @@ import { MAX_MONITORING_EXTENSION_HOURS, getRemainingExtensionHours } from '../.
 import type { MonitoringSessionAction } from '../../types';
 import styles from './monitoring-actions.scss';
 
-type ActionKind = 'terminate' | 'extend';
+type ActionKind = 'continue' | 'emergency' | 'extend';
 
 type Props = {
-  monitoringStartedAt?: string;
   slotMinutes: number[];
   monitoringAction?: MonitoringSessionAction;
   monitoringComplete: boolean;
@@ -18,7 +17,6 @@ type Props = {
 };
 
 const MonitoringActions: React.FC<Props> = ({
-  monitoringStartedAt,
   slotMinutes,
   monitoringAction,
   monitoringComplete,
@@ -42,35 +40,15 @@ const MonitoringActions: React.FC<Props> = ({
     if (!formOpen) {
       return;
     }
-    setActionKind(undefined);
+    setActionKind('continue');
     setHoursToAdd('');
     setReason('');
     setReasonError('');
     setHoursError('');
   }, [formOpen, canExtend, remainingHours]);
 
-  if (!monitoringStartedAt) {
-    return null;
-  }
-
-  if (monitoringAction?.type === 'terminated') {
-    return (
-      <p className={styles.notice}>
-        {t('haemodialysisMonitoringTerminatedNotice', 'Monitoring terminated at {{minute}} min.', {
-          minute: monitoringAction.atSlotMinute,
-        })}
-        {monitoringAction.reason ? ` ${monitoringAction.reason}` : ''}
-      </p>
-    );
-  }
-
-  if (!canInteract) {
-    return null;
-  }
-
-  if (monitoringComplete && !canExtend) {
-    return null;
-  }
+  const showActionButton =
+    canInteract && monitoringAction?.type !== 'terminated' && !(monitoringComplete && remainingHours <= 0);
 
   const maxHoursInput = Math.min(MAX_MONITORING_EXTENSION_HOURS, remainingHours);
 
@@ -79,11 +57,12 @@ const MonitoringActions: React.FC<Props> = ({
   };
 
   const handleSubmit = async () => {
-    if (!actionKind) {
+    if (!actionKind || actionKind === 'continue') {
+      closeForm();
       return;
     }
 
-    if (actionKind === 'terminate') {
+    if (actionKind === 'emergency') {
       if (!reason.trim()) {
         setReasonError(t('fieldRequired', 'This field is required'));
         return;
@@ -125,88 +104,116 @@ const MonitoringActions: React.FC<Props> = ({
 
   return (
     <div className={styles.actions}>
-      <Button kind="tertiary" size="sm" onClick={() => setFormOpen(true)}>
-        {t('haemodialysisMonitoringAction', 'Action')}
-      </Button>
+      {monitoringAction?.type === 'terminated' || monitoringAction?.type === 'sessionTerminated' ? (
+        <div className={styles.banner}>
+          <span className={styles.bannerIcon} aria-hidden="true">
+            i
+          </span>
+          <p className={styles.bannerText}>
+            {t(
+              monitoringAction.type === 'sessionTerminated'
+                ? 'haemodialysisSessionEmergencyRecorded'
+                : 'haemodialysisEmergencyTerminatedNotice',
+              monitoringAction.type === 'sessionTerminated'
+                ? 'This dialysis session was stopped as an emergency.'
+                : 'Emergency termination at {{minute}} min.',
+              { minute: monitoringAction.atSlotMinute },
+            )}{' '}
+            <strong>
+              {t('haemodialysisEmergencyTerminateReasonLabel', 'Reason')}: {monitoringAction.reason || '—'}
+            </strong>
+          </p>
+        </div>
+      ) : showActionButton ? (
+        <Button kind="tertiary" size="sm" onClick={() => setFormOpen(true)}>
+          {t('haemodialysisAction', 'Action')}
+        </Button>
+      ) : null}
 
-      <Modal
-        open={formOpen}
-        modalHeading={t('haemodialysisMonitoringActionForm', 'Monitoring action')}
-        primaryButtonText={isSaving ? t('saving', 'Saving...') : t('confirm', 'Confirm')}
-        secondaryButtonText={t('cancel', 'Cancel')}
-        primaryButtonDisabled={isSaving || !actionKind}
-        onRequestClose={closeForm}
-        onRequestSubmit={handleSubmit}>
-        <p className={styles.formIntro}>
-          {t(
-            'haemodialysisMonitoringActionIntro',
-            'Default monitoring covers 4 hours (0–240 min). Terminate early with a reason, or add hourly slots (up to {{max}} extension hours remaining).',
-            { max: remainingHours },
-          )}
-        </p>
+      {showActionButton ? (
+        <Modal
+          open={formOpen}
+          modalHeading={t('haemodialysisAction', 'Action')}
+          primaryButtonText={isSaving ? t('saving', 'Saving...') : t('confirm', 'Confirm')}
+          secondaryButtonText={t('cancel', 'Cancel')}
+          primaryButtonDisabled={isSaving || !actionKind}
+          onRequestClose={closeForm}
+          onRequestSubmit={handleSubmit}>
+          <p className={styles.formIntro}>
+            {t(
+              'haemodialysisMonitoringActionIntro',
+              'Continue dialysis, add monitoring hours, or stop intra-dialytic monitoring with an emergency termination (reason required). This only ends monitoring and unlocks post-dialysis. Use Emergency termination at the bottom of the notes to stop the whole session.',
+            )}
+          </p>
 
-        <RadioButtonGroup
-          legendText={t('haemodialysisMonitoringActionType', 'Action type')}
-          name="monitoring-action-kind"
-          valueSelected={actionKind}
-          onChange={(value) => {
-            setActionKind(value as ActionKind);
-            setReasonError('');
-            setHoursError('');
-          }}>
-          <RadioButton
-            id="monitoring-action-terminate"
-            labelText={t('haemodialysisTerminateMonitoring', 'Terminate monitoring')}
-            value="terminate"
-          />
-          {canExtend ? (
+          <RadioButtonGroup
+            legendText={t('haemodialysisMonitoringActionType', 'Action')}
+            name="monitoring-action-kind"
+            valueSelected={actionKind}
+            onChange={(value) => {
+              setActionKind(value as ActionKind);
+              setReasonError('');
+              setHoursError('');
+            }}>
             <RadioButton
-              id="monitoring-action-extend"
-              labelText={t('haemodialysisAddMonitoringHours', 'Add monitoring hours')}
-              value="extend"
+              id="monitoring-action-continue"
+              labelText={t('haemodialysisContinueDialysis', 'Continue dialysis')}
+              value="continue"
             />
+            <RadioButton
+              id="monitoring-action-emergency"
+              labelText={t('haemodialysisMonitoringEmergencyTermination', 'Emergency termination of monitoring')}
+              value="emergency"
+            />
+            {canExtend ? (
+              <RadioButton
+                id="monitoring-action-extend"
+                labelText={t('haemodialysisAddMonitoringHours', 'Add monitoring hours')}
+                value="extend"
+              />
+            ) : null}
+          </RadioButtonGroup>
+
+          {actionKind === 'emergency' ? (
+            <div className={styles.formField}>
+              <TextArea
+                id="monitoring-terminate-reason"
+                labelText={t('haemodialysisMonitoringEmergencyReason', 'Reason for stopping intra-dialytic monitoring')}
+                value={reason}
+                invalid={Boolean(reasonError)}
+                invalidText={reasonError}
+                onChange={(event) => setReason(event.target.value)}
+                rows={4}
+              />
+            </div>
           ) : null}
-        </RadioButtonGroup>
 
-        {actionKind === 'terminate' ? (
-          <div className={styles.formField}>
-            <TextArea
-              id="monitoring-terminate-reason"
-              labelText={t('haemodialysisTerminateReason', 'Reason for terminating monitoring')}
-              value={reason}
-              invalid={Boolean(reasonError)}
-              invalidText={reasonError}
-              onChange={(event) => setReason(event.target.value)}
-              rows={4}
-            />
-          </div>
-        ) : null}
-
-        {actionKind === 'extend' && canExtend ? (
-          <div className={styles.formField}>
-            <TextInput
-              id="monitoring-extension-hours"
-              type="number"
-              labelText={t('haemodialysisHoursToAdd', 'Hours to add')}
-              helperText={t(
-                'haemodialysisHoursToAddHelper',
-                'Type how many hours to add — each hour adds one table row (e.g. 2 → two rows at 300 and 360 min). Up to {{max}} remaining.',
-                { max: maxHoursInput },
-              )}
-              min={1}
-              max={maxHoursInput}
-              step={1}
-              invalid={Boolean(hoursError)}
-              invalidText={hoursError}
-              value={hoursToAdd}
-              onChange={(event) => {
-                setHoursError('');
-                setHoursToAdd(event.target.value);
-              }}
-            />
-          </div>
-        ) : null}
-      </Modal>
+          {actionKind === 'extend' && canExtend ? (
+            <div className={styles.formField}>
+              <TextInput
+                id="monitoring-extension-hours"
+                type="number"
+                labelText={t('haemodialysisHoursToAdd', 'Hours to add')}
+                helperText={t(
+                  'haemodialysisHoursToAddHelper',
+                  'Type how many hours to add — each hour adds one table row (e.g. 2 → two rows at 300 and 360 min). Up to {{max}} remaining.',
+                  { max: maxHoursInput },
+                )}
+                min={1}
+                max={maxHoursInput}
+                step={1}
+                invalid={Boolean(hoursError)}
+                invalidText={hoursError}
+                value={hoursToAdd}
+                onChange={(event) => {
+                  setHoursError('');
+                  setHoursToAdd(event.target.value);
+                }}
+              />
+            </div>
+          ) : null}
+        </Modal>
+      ) : null}
     </div>
   );
 };

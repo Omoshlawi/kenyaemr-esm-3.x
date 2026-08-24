@@ -46,6 +46,7 @@ const prepareObsForPost = (obs: HaemodialysisObsInput[]): HaemodialysisObsInput[
         obsDatetime,
         groupMembers: item.groupMembers.map((member) => ({
           ...member,
+          obsDatetime: member.obsDatetime ? formatDatetimeForOpenMrs(member.obsDatetime) : obsDatetime,
           value: member.value !== undefined ? normalizeObsValueForRest(member.value) : undefined,
         })),
       };
@@ -178,7 +179,7 @@ export async function fetchHaemodialysisEncounters(patientUuid: string): Promise
   const url =
     `${restBaseUrl}/encounter?patient=${patientUuid}` +
     `&encounterType=${HAEMODIALYSIS_ENCOUNTER_TYPE_UUID}` +
-    `&v=${HAEMODIALYSIS_ENCOUNTER_REP}&limit=20&order=desc`;
+    `&v=${HAEMODIALYSIS_ENCOUNTER_REP}&limit=100&order=desc`;
 
   try {
     const response = await openmrsFetch(url);

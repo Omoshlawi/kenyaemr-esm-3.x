@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Modal, Stack, TextInput } from '@carbon/react';
+import React, { useEffect, useState } from 'react';
+import { Checkbox, Modal, Stack, TextInput } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { useConfig } from '@openmrs/esm-framework';
 import DiagnosisSearch from '../../../../anaesthetic/forms/icd11-diagnosis-search.component';
@@ -19,6 +19,7 @@ import {
   MEMBRANE_TYPE_OPTIONS,
   OTHERS_CONCEPT_ANSWER,
   SYPHILIS_STATUS_OPTIONS,
+  type CodedAnswerOption,
 } from '../constants/coded-answers';
 import {
   INITIAL_PRE_DIALYSIS_FIELDS,
@@ -34,33 +35,160 @@ import {
   TextAreaFieldInput,
   TextFieldInput,
 } from './typed-form-fields';
+import type { ScreeningStatus } from '../types';
+import { getSerologyDateKey, hasCapturedBloodGroup, type SerologyKey } from '../utils/screening-history';
 import styles from './forms.scss';
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onSave: (values: InitialAssessmentFormValues) => boolean | Promise<boolean>;
+  previousScreening?: ScreeningStatus;
 };
 
-const emptyValues: InitialAssessmentFormValues = {
+const todayDate = () => new Date().toISOString().slice(0, 10);
+
+const buildInitialValues = (previous?: ScreeningStatus): InitialAssessmentFormValues => ({
   diagnosis: null,
-  sessionDate: new Date().toISOString().slice(0, 10),
-  screening: {},
+  sessionDate: todayDate(),
+  screening: {
+    bloodGroup: previous?.bloodGroup ?? '',
+    hivStatus: previous?.hivStatus ?? '',
+    hivTestDate: previous?.hivTestDate?.slice(0, 10) || todayDate(),
+    hepatitisCStatus: previous?.hepatitisCStatus ?? '',
+    hepatitisCTestDate: previous?.hepatitisCTestDate?.slice(0, 10) || todayDate(),
+    hepatitisBStatus: previous?.hepatitisBStatus ?? '',
+    hepatitisBTestDate: previous?.hepatitisBTestDate?.slice(0, 10) || todayDate(),
+    syphilisStatus: previous?.syphilisStatus ?? '',
+    syphilisTestDate: previous?.syphilisTestDate?.slice(0, 10) || todayDate(),
+    drugAllergy: previous?.drugAllergy ?? '',
+  },
+  screeningRepeats: {},
   preDialysis: {},
   prescription: {},
+});
+
+type SerologyFieldProps = {
+  id: string;
+  label: string;
+  value: string;
+  testDate?: string;
+  options: CodedAnswerOption[];
+  previousValue?: string;
+  repeating: boolean;
+  required: boolean;
+  chooseLabel: string;
+  error?: string;
+  dateError?: string;
+  onRepeatChange: (repeating: boolean) => void;
+  onChange: (value: string) => void;
+  onDateChange: (value: string) => void;
 };
 
-const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave }) => {
+const SerologyStatusField: React.FC<SerologyFieldProps> = ({
+  id,
+  label,
+  value,
+  testDate,
+  options,
+  previousValue,
+  repeating,
+  required,
+  chooseLabel,
+  error,
+  dateError,
+  onRepeatChange,
+  onChange,
+  onDateChange,
+}) => {
+  const { t } = useTranslation();
+  const hasPrevious = Boolean(previousValue);
+  const showEditor = !hasPrevious || repeating;
+
+  return (
+    <div className={styles.serologyField}>
+      <CodedSelectField
+        id={id}
+        label={label}
+        value={value}
+        options={options}
+        error={error}
+        required={required && showEditor}
+        disabled={hasPrevious && !repeating}
+        helperText={
+          hasPrevious && !repeating
+            ? t('haemodialysisLatestResultHint', 'Latest recorded result. Select Repeat test to update.')
+            : hasPrevious
+            ? t('haemodialysisRepeatTestHint', 'Enter the new result and test date.')
+            : undefined
+        }
+        chooseLabel={chooseLabel}
+        onChange={onChange}
+      />
+      {hasPrevious ? (
+        <Checkbox
+          id={`${id}-repeat`}
+          className={styles.repeatCheckbox}
+          labelText={t('haemodialysisRepeatTest', 'Repeat test')}
+          checked={repeating}
+          onChange={(_, { checked }) => onRepeatChange(checked)}
+        />
+      ) : null}
+      <TextInput
+        id={`${id}-test-date`}
+        type="date"
+        labelText={t('haemodialysisTestDate', 'Test date')}
+        value={testDate ?? ''}
+        required={showEditor}
+        readOnly={!showEditor}
+        invalid={Boolean(dateError)}
+        invalidText={dateError}
+        onChange={(event) => onDateChange(event.target.value)}
+      />
+    </div>
+  );
+};
+
+const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave, previousScreening }) => {
   const { t } = useTranslation();
   const config = useConfig<ExpressWorkflowConfig>();
   const icd11DataSourceUuid = config?.icd11DataSourceUuid ?? '';
-  const [values, setValues] = useState<InitialAssessmentFormValues>(emptyValues);
+  const [values, setValues] = useState<InitialAssessmentFormValues>(() => buildInitialValues(previousScreening));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const bloodGroupLocked = hasCapturedBloodGroup(previousScreening);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    setValues(buildInitialValues(previousScreening));
+    setErrors({});
+  }, [open, previousScreening]);
 
   const updateScreening = (key: string, value: string) => {
     setValues((v) => ({ ...v, screening: { ...v.screening, [key]: value } }));
   };
+
+  const updateSerologyRepeat = (key: SerologyKey, repeating: boolean) => {
+    setValues((current) => {
+      const dateKey = getSerologyDateKey(key);
+      const screening = repeating
+        ? { ...current.screening, [dateKey]: todayDate() }
+        : {
+            ...current.screening,
+            [key]: previousScreening?.[key] ?? '',
+            [dateKey]: previousScreening?.[dateKey]?.slice(0, 10) || todayDate(),
+          };
+      return {
+        ...current,
+        screening,
+        screeningRepeats: { ...current.screeningRepeats, [key]: repeating },
+      };
+    });
+  };
+
+  const isRepeating = (key: SerologyKey) => Boolean(values.screeningRepeats?.[key]);
 
   const updatePre = (key: string, value: string) => {
     setValues((v) => {
@@ -94,7 +222,7 @@ const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave }) => {
   };
 
   const handleSubmit = async () => {
-    const nextErrors = validateInitialAssessment(values);
+    const nextErrors = validateInitialAssessment(values, previousScreening);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
       return;
@@ -105,7 +233,7 @@ const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave }) => {
       if (!saved) {
         return;
       }
-      setValues(emptyValues);
+      setValues(buildInitialValues(previousScreening));
       setErrors({});
       onClose();
     } finally {
@@ -170,53 +298,86 @@ const InitialAssessmentForm: React.FC<Props> = ({ open, onClose, onSave }) => {
             value={values.screening.bloodGroup ?? ''}
             options={BLOOD_GROUP_OPTIONS}
             error={errors['screening.bloodGroup']}
-            required={SCREENING_FIELDS.bloodGroup.required}
+            required={SCREENING_FIELDS.bloodGroup.required && !bloodGroupLocked}
+            disabled={bloodGroupLocked}
+            helperText={
+              bloodGroupLocked
+                ? t('haemodialysisBloodGroupReadOnly', 'Captured at initial registration and displayed as read-only.')
+                : undefined
+            }
             chooseLabel={t('chooseOption', 'Choose an option')}
             onChange={(v) => updateScreening('bloodGroup', v)}
           />
-          <CodedSelectField
+          <SerologyStatusField
             id="hivStatus"
             label={SCREENING_FIELDS.hivStatus.label}
             value={values.screening.hivStatus ?? ''}
+            testDate={values.screening.hivTestDate}
             options={HIV_STATUS_OPTIONS}
-            error={errors['screening.hivStatus']}
+            previousValue={previousScreening?.hivStatus}
+            repeating={isRepeating('hivStatus')}
             required={SCREENING_FIELDS.hivStatus.required}
             chooseLabel={t('chooseOption', 'Choose an option')}
+            error={errors['screening.hivStatus']}
+            dateError={errors['screening.hivTestDate']}
+            onRepeatChange={(repeating) => updateSerologyRepeat('hivStatus', repeating)}
             onChange={(v) => updateScreening('hivStatus', v)}
+            onDateChange={(v) => updateScreening('hivTestDate', v)}
           />
-          <CodedSelectField
+          <SerologyStatusField
             id="hepatitisCStatus"
             label={SCREENING_FIELDS.hepatitisCStatus.label}
             value={values.screening.hepatitisCStatus ?? ''}
+            testDate={values.screening.hepatitisCTestDate}
             options={HEPATITIS_C_STATUS_OPTIONS}
-            error={errors['screening.hepatitisCStatus']}
+            previousValue={previousScreening?.hepatitisCStatus}
+            repeating={isRepeating('hepatitisCStatus')}
             required={SCREENING_FIELDS.hepatitisCStatus.required}
             chooseLabel={t('chooseOption', 'Choose an option')}
+            error={errors['screening.hepatitisCStatus']}
+            dateError={errors['screening.hepatitisCTestDate']}
+            onRepeatChange={(repeating) => updateSerologyRepeat('hepatitisCStatus', repeating)}
             onChange={(v) => updateScreening('hepatitisCStatus', v)}
+            onDateChange={(v) => updateScreening('hepatitisCTestDate', v)}
           />
-          <CodedSelectField
+          <SerologyStatusField
             id="hepatitisBStatus"
             label={SCREENING_FIELDS.hepatitisBStatus.label}
             value={values.screening.hepatitisBStatus ?? ''}
+            testDate={values.screening.hepatitisBTestDate}
             options={HEPATITIS_B_STATUS_OPTIONS}
-            error={errors['screening.hepatitisBStatus']}
+            previousValue={previousScreening?.hepatitisBStatus}
+            repeating={isRepeating('hepatitisBStatus')}
             required={SCREENING_FIELDS.hepatitisBStatus.required}
             chooseLabel={t('chooseOption', 'Choose an option')}
+            error={errors['screening.hepatitisBStatus']}
+            dateError={errors['screening.hepatitisBTestDate']}
+            onRepeatChange={(repeating) => updateSerologyRepeat('hepatitisBStatus', repeating)}
             onChange={(v) => updateScreening('hepatitisBStatus', v)}
+            onDateChange={(v) => updateScreening('hepatitisBTestDate', v)}
           />
-          <CodedSelectField
+          <SerologyStatusField
             id="syphilisStatus"
             label={SCREENING_FIELDS.syphilisStatus.label}
             value={values.screening.syphilisStatus ?? ''}
+            testDate={values.screening.syphilisTestDate}
             options={SYPHILIS_STATUS_OPTIONS}
-            error={errors['screening.syphilisStatus']}
+            previousValue={previousScreening?.syphilisStatus}
+            repeating={isRepeating('syphilisStatus')}
             required={SCREENING_FIELDS.syphilisStatus.required}
             chooseLabel={t('chooseOption', 'Choose an option')}
+            error={errors['screening.syphilisStatus']}
+            dateError={errors['screening.syphilisTestDate']}
+            onRepeatChange={(repeating) => updateSerologyRepeat('syphilisStatus', repeating)}
             onChange={(v) => updateScreening('syphilisStatus', v)}
+            onDateChange={(v) => updateScreening('syphilisTestDate', v)}
           />
           <TextFieldInput
             id="drugAllergy"
-            def={SCREENING_FIELDS.drugAllergy}
+            def={{
+              ...SCREENING_FIELDS.drugAllergy,
+              helperText: t('haemodialysisDrugAllergyHint', 'Review and update drug allergy at every dialysis visit.'),
+            }}
             value={values.screening.drugAllergy ?? ''}
             error={errors['screening.drugAllergy']}
             onChange={(v) => updateScreening('drugAllergy', v)}

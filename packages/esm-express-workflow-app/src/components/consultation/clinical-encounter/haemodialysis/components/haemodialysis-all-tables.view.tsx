@@ -71,7 +71,7 @@ const HaemodialysisAllTablesView: React.FC<Props> = ({ sessions }) => {
       <p className={styles.intro}>
         {t(
           'haemodialysisAllTablesIntro',
-          'All dialysis sessions for this patient. Each row is one session (current and previous).',
+          'All dialysis sessions for this patient. Intra-dialytic monitoring lists every recorded observation.',
         )}
       </p>
       {blocks.map((block) => (

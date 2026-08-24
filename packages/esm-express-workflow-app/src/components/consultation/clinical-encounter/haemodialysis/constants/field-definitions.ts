@@ -102,8 +102,9 @@ export const INITIAL_PRE_DIALYSIS_FIELDS = {
     kind: 'numeric',
     label: 'Body Mass Index (BMI)',
     min: 0,
+    max: 100,
     step: 0.1,
-    helperText: 'Auto-calculated from weight before dialysis and height',
+    helperText: 'Auto-calculated from weight before dialysis and height (OpenMRS max 100)',
   },
   bloodPressure: {
     kind: 'text',
@@ -123,11 +124,11 @@ export const INITIAL_PRE_DIALYSIS_FIELDS = {
   temperature: {
     kind: 'numeric',
     label: 'Temperature before dialysis',
-    min: 25,
+    min: 35,
     max: 43,
     units: '°C',
     required: true,
-    helperText: 'Body temperature (25–43 °C)',
+    helperText: 'Body temperature (35–43 °C)',
   },
   respiratoryRate: {
     kind: 'numeric',
@@ -319,7 +320,7 @@ export const MACHINE_CHECK_FIELDS = {
   dialysisFluidTemperature: {
     kind: 'numeric',
     label: 'Temperature (C) of dialysis fluid',
-    min: 25,
+    min: 35,
     max: 43,
     units: '°C',
   },

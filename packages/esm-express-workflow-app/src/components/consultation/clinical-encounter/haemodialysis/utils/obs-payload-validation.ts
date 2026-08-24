@@ -1,4 +1,5 @@
 import { getConceptObsValueKind } from '../constants/concept-obs-kinds';
+import { getConceptServerRange } from '../constants/concept-server-ranges';
 import type { HaemodialysisObsGroupMember, HaemodialysisObsInput } from './encounter-mapper';
 import { isValidOpenmrsUuid } from './openmrs-uuid';
 
@@ -30,6 +31,14 @@ const validateObsMember = (item: HaemodialysisObsGroupMember | HaemodialysisObsI
     return `Observation ${item.concept} expects a coded value (uuid string or { uuid }) but received ${JSON.stringify(
       item.value,
     )}`;
+  }
+
+  if (typeof item.value === 'number') {
+    const range = getConceptServerRange(item.concept);
+    if (range && (item.value < range.min || item.value > range.max)) {
+      const units = range.units ? ` ${range.units}` : '';
+      return `${range.label} must be between ${range.min} and ${range.max}${units}. OpenMRS rejected ${item.value}.`;
+    }
   }
 
   return null;

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { PatientBiodata } from '../../types';
-import { displayValue } from '../../utils/formatters';
+import { displayValue, formatSessionDateTime } from '../../utils/formatters';
 import styles from './patient-biodata.scss';
 
 type Props = {
@@ -10,6 +10,7 @@ type Props = {
 const PatientBiodataView: React.FC<Props> = ({ biodata }) => (
   <section className={styles.grid}>
     <div>
+      <div className={styles.columnTitle}>Patient Details</div>
       <div className={styles.row}>
         <span className={styles.label}>Patient Name:</span>
         <span className={styles.value}>{displayValue(biodata.name)}</span>
@@ -32,13 +33,14 @@ const PatientBiodataView: React.FC<Props> = ({ biodata }) => (
       </div>
     </div>
     <div>
+      <div className={styles.columnTitle}>Encounter Details</div>
       <div className={styles.row}>
         <span className={styles.label}>OP No:</span>
         <span className={styles.value}>{displayValue(biodata.opNo)}</span>
       </div>
       <div className={styles.row}>
         <span className={styles.label}>Date:</span>
-        <span className={styles.value}>{displayValue(biodata.date)}</span>
+        <span className={styles.value}>{formatSessionDateTime(biodata.date)}</span>
       </div>
       <div className={styles.row}>
         <span className={styles.label}>Sex:</span>

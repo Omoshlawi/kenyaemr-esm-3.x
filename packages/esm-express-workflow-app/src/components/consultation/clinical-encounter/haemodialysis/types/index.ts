@@ -1,9 +1,14 @@
 export type ScreeningStatus = {
   bloodGroup?: string;
   hivStatus?: string;
+  /** YYYY-MM-DD (or ISO) of the latest HIV screening result. */
+  hivTestDate?: string;
   hepatitisCStatus?: string;
+  hepatitisCTestDate?: string;
   hepatitisBStatus?: string;
+  hepatitisBTestDate?: string;
   syphilisStatus?: string;
+  syphilisTestDate?: string;
   drugAllergy?: string;
 };
 
@@ -62,6 +67,8 @@ export type MonitoringRow = {
   slotMinute: number;
   /** Display label e.g. "0 min" or clock time */
   time: string;
+  /** ISO datetime when this reading was recorded (multiple readings per slot). */
+  recordedAt?: string;
   bp: string;
   pulse: string;
   temp: string;
@@ -73,6 +80,7 @@ export type MonitoringRow = {
 export type MonitoringSessionAction =
   | { type: 'none' }
   | { type: 'terminated'; atSlotMinute: number; reason: string; recordedAt?: string }
+  | { type: 'sessionTerminated'; atSlotMinute: number; reason: string; recordedAt?: string }
   | { type: 'extended'; additionalHours: number; recordedAt?: string };
 
 export type AdditionalMedicationRow = {

@@ -18,7 +18,7 @@ const DialysisMachineCheckView: React.FC<Props> = ({ data, canAdd, hasInitial, o
 
   return (
     <HistoricalSectionCard
-      title="Dialysis Machine Check"
+      title="3. Dialysis Machine Check"
       showAdd={canAdd}
       onAddClick={onAdd}
       addLabel={t('haemodialysisAddMachineCheck', 'Add machine check')}>

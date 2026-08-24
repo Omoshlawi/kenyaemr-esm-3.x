@@ -1,19 +1,33 @@
-.actions {
-  margin-top: 0.85rem;
-  display: flex;
-  justify-content: flex-end;
+.section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #d0e2ff;
+}
+
+.title {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #da1e28;
+}
+
+.intro {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  color: #525252;
 }
 
 .banner {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  width: 100%;
   padding: 0.7rem 0.9rem;
-  background: #edf5ff;
-  border: 1px solid #a6c8ff;
+  background: #fff1f1;
+  border: 1px solid #ffd7d9;
   border-radius: 0.5rem;
-  color: #0043ce;
+  color: #a2191f;
 }
 
 .bannerIcon {
@@ -24,7 +38,7 @@
   height: 1.25rem;
   flex-shrink: 0;
   border-radius: 50%;
-  background: #0f62fe;
+  background: #da1e28;
   color: #fff;
   font-size: 0.75rem;
   font-weight: 700;
@@ -42,8 +56,4 @@
   margin: 0 0 1rem;
   color: var(--cds-text-secondary);
   font-size: 0.875rem;
-}
-
-.formField {
-  margin-top: 1rem;
 }

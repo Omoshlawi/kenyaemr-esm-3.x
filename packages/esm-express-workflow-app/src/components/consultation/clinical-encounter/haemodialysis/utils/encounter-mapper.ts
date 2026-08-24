@@ -38,12 +38,13 @@ import {
   SYPHILIS_STATUS_OPTIONS,
   YES_NO_OPTIONS,
 } from '../constants/coded-answers';
-import { formatSlotClockTime, formatSlotLabel } from './monitoring-slots';
+import { formatSlotClockTime, formatSlotLabel, compareMonitoringRows } from './monitoring-slots';
 import {
   buildDefaultSlotMinutes,
   appendExtensionHours,
   getExtensionHoursFromSchedule,
   BASE_MONITORING_MAX_MINUTES,
+  isTerminationAction,
 } from './monitoring-schedule';
 import { parseMonitoringDatetime, parseToOpenMrsObsDatetimeValue, toMonitoringIsoString } from './monitoring-datetime';
 import { toOmrsIsoString } from '@openmrs/esm-framework';
@@ -53,6 +54,7 @@ import { isInitialObsFieldEnabled } from '../constants/initial-obs-flags';
 import { isMachineCheckObsFieldEnabled } from '../constants/machine-check-obs-flags';
 import { AIR_DETECTOR_OPTIONS, BLOOD_LEAK_OPTIONS } from '../constants/machine-check-answers';
 import { isScreeningObsFieldEnabled } from '../constants/screening-obs-flags';
+import { toScreeningDateOnly, toScreeningObsDatetime } from './screening-history';
 import { isPostDialysisObsFieldEnabled } from '../constants/post-dialysis-obs-flags';
 import {
   INCLUDE_CONNECTION_TIME_ON_FIRST_SLOT,
@@ -65,6 +67,7 @@ export type CodedObsValue = { uuid: string };
 export type HaemodialysisObsGroupMember = {
   concept: string;
   value: string | number | CodedObsValue;
+  obsDatetime?: string;
 };
 
 export type HaemodialysisObsInput = {
@@ -285,9 +288,9 @@ export const buildVisitDiagnosisObsGroup = (
     concept: D.construct,
     obsDatetime: encounterDatetime,
     groupMembers: [
-      { concept: D.problem, value: diagnosisUuid.trim() },
-      { concept: D.certainty, value: D.certaintyProvisional },
-      { concept: D.rank, value: D.rankPrimary },
+      { concept: D.problem, value: diagnosisUuid.trim(), obsDatetime: encounterDatetime },
+      { concept: D.certainty, value: D.certaintyProvisional, obsDatetime: encounterDatetime },
+      { concept: D.rank, value: D.rankPrimary, obsDatetime: encounterDatetime },
     ],
   };
 };
@@ -337,21 +340,43 @@ export const buildInitialAssessmentObs = (
     candidates.push(buildCodedObs(C.screening.bloodGroup, screening.bloodGroup, encounterDatetime, bloodGroupAnswers));
   }
   if (isScreeningObsFieldEnabled('hivStatus')) {
-    candidates.push(buildCodedObs(C.screening.hivStatus, screening.hivStatus, encounterDatetime, hivAnswers));
+    candidates.push(
+      buildCodedObs(
+        C.screening.hivStatus,
+        screening.hivStatus,
+        toScreeningObsDatetime(screening.hivTestDate, encounterDatetime),
+        hivAnswers,
+      ),
+    );
   }
   if (isScreeningObsFieldEnabled('hepatitisCStatus')) {
     candidates.push(
-      buildCodedObs(C.screening.hepatitisCStatus, screening.hepatitisCStatus, encounterDatetime, hepCAnswers),
+      buildCodedObs(
+        C.screening.hepatitisCStatus,
+        screening.hepatitisCStatus,
+        toScreeningObsDatetime(screening.hepatitisCTestDate, encounterDatetime),
+        hepCAnswers,
+      ),
     );
   }
   if (isScreeningObsFieldEnabled('hepatitisBStatus')) {
     candidates.push(
-      buildCodedObs(C.screening.hepatitisBStatus, screening.hepatitisBStatus, encounterDatetime, hepBAnswers),
+      buildCodedObs(
+        C.screening.hepatitisBStatus,
+        screening.hepatitisBStatus,
+        toScreeningObsDatetime(screening.hepatitisBTestDate, encounterDatetime),
+        hepBAnswers,
+      ),
     );
   }
   if (isScreeningObsFieldEnabled('syphilisStatus')) {
     candidates.push(
-      buildCodedObs(C.screening.syphilisStatus, screening.syphilisStatus, encounterDatetime, syphilisAnswers),
+      buildCodedObs(
+        C.screening.syphilisStatus,
+        screening.syphilisStatus,
+        toScreeningObsDatetime(screening.syphilisTestDate, encounterDatetime),
+        syphilisAnswers,
+      ),
     );
   }
   if (isScreeningObsFieldEnabled('drugAllergy')) {
@@ -612,7 +637,7 @@ export type ParsedMonitoringNotes = {
 
 export type MonitoringPersistInput = {
   rows: MonitoringRow[];
-  sessionStartIso: string;
+  sessionStartIso?: string;
   slotMinutes?: number[];
   action?: MonitoringSessionAction;
 };
@@ -623,17 +648,24 @@ const encodeMonitoringNotes = ({
   slotMinutes,
   action,
 }: {
-  startedAt: string;
+  startedAt?: string;
   rows: MonitoringRow[];
   slotMinutes?: number[];
   action?: MonitoringSessionAction;
 }): string => {
-  const metaLines: string[] = [`startedAt:${startedAt}`];
+  const metaLines: string[] = [];
+  if (startedAt?.trim()) {
+    metaLines.push(`startedAt:${startedAt}`);
+  }
   if (slotMinutes?.length) {
     metaLines.push(`slotSchedule:${slotMinutes.join(',')}`);
   }
   if (action?.type === 'terminated') {
     metaLines.push('action:terminated');
+    metaLines.push(`terminatedAt:${action.atSlotMinute}`);
+    metaLines.push(`terminateReason:${encodeMonitoringField(action.reason)}`);
+  } else if (action?.type === 'sessionTerminated') {
+    metaLines.push('action:sessionTerminated');
     metaLines.push(`terminatedAt:${action.atSlotMinute}`);
     metaLines.push(`terminateReason:${encodeMonitoringField(action.reason)}`);
   } else if (action?.type === 'extended') {
@@ -643,18 +675,22 @@ const encodeMonitoringNotes = ({
 
   const lines = rows
     .slice()
-    .sort((a, b) => a.slotMinute - b.slotMinute)
-    .map((row) =>
-      [
-        row.slotMinute,
+    .sort(compareMonitoringRows)
+    .map((row) => {
+      const fields = [
+        String(row.slotMinute),
         encodeMonitoringField(row.bp),
         encodeMonitoringField(row.pulse),
         encodeMonitoringField(row.temp),
         encodeMonitoringField(row.ufRemoved),
         encodeMonitoringField(row.heparin),
         encodeMonitoringField(row.remarks),
-      ].join('|'),
-    );
+      ];
+      if (row.recordedAt?.trim()) {
+        fields.push(encodeMonitoringField(row.recordedAt));
+      }
+      return fields.join('|');
+    });
   return [MONITORING_NOTES_PREFIX, ...metaLines, ...lines, MONITORING_NOTES_SUFFIX].join('\n');
 };
 
@@ -691,11 +727,15 @@ export const parseMonitoringNotes = (notes?: string): ParsedMonitoringNotes => {
       action = { type: 'terminated', atSlotMinute: 0, reason: '' };
       return;
     }
-    if (line.startsWith('terminatedAt:') && action?.type === 'terminated') {
+    if (line === 'action:sessionTerminated') {
+      action = { type: 'sessionTerminated', atSlotMinute: 0, reason: '' };
+      return;
+    }
+    if (line.startsWith('terminatedAt:') && isTerminationAction(action)) {
       action = { ...action, atSlotMinute: Number(line.replace('terminatedAt:', '').trim()) || 0 };
       return;
     }
-    if (line.startsWith('terminateReason:') && action?.type === 'terminated') {
+    if (line.startsWith('terminateReason:') && isTerminationAction(action)) {
       action = { ...action, reason: decodeMonitoringField(line.replace('terminateReason:', '').trim()) };
       return;
     }
@@ -714,16 +754,31 @@ export const parseMonitoringNotes = (notes?: string): ParsedMonitoringNotes => {
       return;
     }
 
-    const [slotMinute, bp, pulse, temp, ufRemoved, heparin, ...remarksParts] = line.split('|');
+    const parts = line.split('|');
+    let recordedAt: string | undefined;
+    const lastPart = decodeMonitoringField(parts[parts.length - 1]);
+    if (parts.length >= 8 && /^\d{4}-\d{2}-\d{2}T/.test(lastPart)) {
+      recordedAt = lastPart;
+      parts.pop();
+    }
+    const [slotMinute, bp, pulse, temp, ufRemoved, heparin, ...remarksParts] = parts;
     const minute = Number(slotMinute);
     if (!Number.isFinite(minute)) {
       return;
     }
     const startDate = startedAt ? parseMonitoringDatetime(startedAt) ?? new Date() : new Date();
-    const label = `${formatSlotLabel(minute)} (${formatSlotClockTime(startDate, minute)})`;
+    const recordedDate = recordedAt ? parseMonitoringDatetime(recordedAt) : null;
+    const label = recordedDate
+      ? `${formatSlotLabel(minute)} (${recordedDate.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })})`
+      : `${formatSlotLabel(minute)} (${formatSlotClockTime(startDate, minute)})`;
     rows.push({
       slotMinute: minute,
       time: label,
+      recordedAt,
       bp: decodeMonitoringField(bp),
       pulse: decodeMonitoringField(pulse),
       temp: decodeMonitoringField(temp),
@@ -800,6 +855,9 @@ const resolveMonitoringSessionAction = (
   fromNotes?: MonitoringSessionAction,
   fromObs?: MonitoringSessionAction,
 ): MonitoringSessionAction | undefined => {
+  if (fromNotes?.type === 'sessionTerminated') {
+    return fromNotes;
+  }
   if (fromNotes?.type === 'terminated') {
     return fromNotes;
   }
@@ -836,7 +894,9 @@ const pickBestMonitoringNotesParse = (
     const parsed = parseMonitoringNotes(notes);
     const slots = parsed.slotMinutes ?? buildDefaultSlotMinutes();
     const extensionSlots = getExtensionHoursFromSchedule(slots);
-    const score = extensionSlots * 1000 + slots.length * 10 + parsed.rows.length;
+    const actionBonus =
+      parsed.action?.type === 'sessionTerminated' ? 100 : parsed.action?.type === 'terminated' ? 50 : 0;
+    const score = extensionSlots * 1000 + slots.length * 10 + parsed.rows.length + actionBonus;
     if (score > bestScore) {
       bestScore = score;
       best = parsed;
@@ -864,14 +924,14 @@ export const buildMonitoringActionObs = (
   const groupMembers: HaemodialysisObsGroupMember[] = [];
 
   if (A.decision?.trim()) {
-    if (action.type === 'terminated') {
+    if (action.type === 'terminated' || action.type === 'sessionTerminated') {
       groupMembers.push({ concept: A.decision, value: A.terminateProgressAnswer });
     } else if (action.type === 'extended') {
       groupMembers.push({ concept: A.decision, value: A.extendHourlyAnswer });
     }
   }
 
-  if (action.type === 'terminated' && A.terminateReason?.trim() && action.reason?.trim()) {
+  if (isTerminationAction(action) && A.terminateReason?.trim() && action.reason?.trim()) {
     groupMembers.push({ concept: A.terminateReason, value: action.reason.trim() });
   }
 
@@ -892,16 +952,22 @@ export const buildMonitoringObs = (
 ): HaemodialysisObsInput[] => {
   const { rows, sessionStartIso, slotMinutes, action } = input;
   const C = concepts;
-  if (rows.length === 0 && action?.type !== 'terminated' && action?.type !== 'extended') {
+  if (
+    rows.length === 0 &&
+    action?.type !== 'terminated' &&
+    action?.type !== 'sessionTerminated' &&
+    action?.type !== 'extended'
+  ) {
     return [];
   }
 
-  const sortedRows = rows.slice().sort((a, b) => a.slotMinute - b.slotMinute);
+  const sortedRows = rows.slice().sort(compareMonitoringRows);
   const latestRow = sortedRows[sortedRows.length - 1];
+  const hasSessionStart = Boolean(parseMonitoringDatetime(sessionStartIso));
   const sessionStart = parseMonitoringDatetime(sessionStartIso) ?? new Date();
-  const slotMinuteForDatetime = latestRow?.slotMinute ?? (action?.type === 'terminated' ? action.atSlotMinute : 0);
+  const slotMinuteForDatetime = latestRow?.slotMinute ?? (isTerminationAction(action) ? action.atSlotMinute : 0);
   const slotDatetime = new Date(sessionStart.getTime() + slotMinuteForDatetime * 60 * 1000);
-  let slotIso = toMonitoringIsoString(action?.type === 'extended' ? new Date() : slotDatetime);
+  let slotIso = toMonitoringIsoString(action?.type === 'extended' || !hasSessionStart ? new Date() : slotDatetime);
   const normalizedSessionStartIso = toMonitoringIsoString(sessionStart);
   const effectiveSlotMinutes = slotMinutes?.length ? slotMinutes : buildDefaultSlotMinutes();
 
@@ -909,7 +975,7 @@ export const buildMonitoringObs = (
 
   if (INCLUDE_STRUCTURED_MONITORING_NOTES) {
     const monitoringNotes = encodeMonitoringNotes({
-      startedAt: normalizedSessionStartIso,
+      startedAt: hasSessionStart ? normalizedSessionStartIso : undefined,
       rows: sortedRows,
       slotMinutes: effectiveSlotMinutes,
       action,
@@ -950,7 +1016,7 @@ export const buildMonitoringObs = (
     );
   }
 
-  if (action && (action.type === 'terminated' || action.type === 'extended')) {
+  if (action && (action.type === 'terminated' || action.type === 'sessionTerminated' || action.type === 'extended')) {
     const actionObs = buildMonitoringActionObs(action, slotIso, concepts);
     if (actionObs) {
       obs.push(actionObs);
@@ -1131,6 +1197,30 @@ const sortObsByDatetimeAsc = (
   getObsByConcept(observations, conceptUuid).sort(
     (left, right) => new Date(left.obsDatetime ?? 0).getTime() - new Date(right.obsDatetime ?? 0).getTime(),
   );
+
+const extractCodedUuid = (raw: unknown): string => {
+  if (raw && typeof raw === 'object' && 'uuid' in raw) {
+    return String((raw as { uuid: string }).uuid);
+  }
+  if (typeof raw === 'string' && isValidOpenmrsUuid(raw)) {
+    return raw;
+  }
+  return '';
+};
+
+const getCodedObsRecord = (
+  observations: HaemodialysisEncounterObs[],
+  conceptUuid: string,
+  pick: 'first' | 'latest',
+): { value: string; obsDatetime?: string } => {
+  const matches = sortObsByDatetimeAsc(observations, conceptUuid);
+  const obs = pick === 'first' ? matches[0] : matches[matches.length - 1];
+  if (!obs) {
+    return { value: '' };
+  }
+  const value = extractCodedUuid(obs.value) || normalizeValue(obs.value);
+  return { value, obsDatetime: obs.obsDatetime };
+};
 
 const getLatestObsValue = (observations: HaemodialysisEncounterObs[], conceptUuid: string): string => {
   const matches = sortObsByDatetimeAsc(observations, conceptUuid);
@@ -1404,6 +1494,33 @@ const getDiagnosisDisplay = (
   return '';
 };
 
+const parseScreeningStatus = (
+  observations: HaemodialysisEncounterObs[],
+  concepts: HaemodialysisConceptMap,
+): ScreeningStatus => {
+  const C = concepts;
+  const bloodGroup = getCodedObsRecord(observations, C.screening.bloodGroup, 'first');
+  const hiv = getCodedObsRecord(observations, C.screening.hivStatus, 'latest');
+  const hepatitisC = getCodedObsRecord(observations, C.screening.hepatitisCStatus, 'latest');
+  const hepatitisB = getCodedObsRecord(observations, C.screening.hepatitisBStatus, 'latest');
+  const syphilis = getCodedObsRecord(observations, C.screening.syphilisStatus, 'latest');
+  const allergyMatches = sortObsByDatetimeAsc(observations, C.screening.drugAllergy);
+  const latestAllergy = allergyMatches[allergyMatches.length - 1];
+
+  return {
+    bloodGroup: bloodGroup.value,
+    hivStatus: hiv.value,
+    hivTestDate: toScreeningDateOnly(hiv.obsDatetime),
+    hepatitisCStatus: hepatitisC.value,
+    hepatitisCTestDate: toScreeningDateOnly(hepatitisC.obsDatetime),
+    hepatitisBStatus: hepatitisB.value,
+    hepatitisBTestDate: toScreeningDateOnly(hepatitisB.obsDatetime),
+    syphilisStatus: syphilis.value,
+    syphilisTestDate: toScreeningDateOnly(syphilis.obsDatetime),
+    drugAllergy: latestAllergy ? normalizeValue(latestAllergy.value) : '',
+  };
+};
+
 export const parseEncounterToSession = (
   encounter: HaemodialysisEncounterResource,
   patientUuid: string,
@@ -1457,16 +1574,9 @@ export const parseEncounterToSession = (
     biodata: {
       ...biodata,
       diagnosis: getDiagnosisDisplay(encounter, visitDiagnosis) || biodata.diagnosis,
-      date: encounter.encounterDatetime?.slice(0, 10),
+      date: encounter.encounterDatetime,
     },
-    screening: {
-      bloodGroup: getCodedObsValue(observations, C.screening.bloodGroup),
-      hivStatus: getCodedObsValue(observations, C.screening.hivStatus),
-      hepatitisCStatus: getCodedObsValue(observations, C.screening.hepatitisCStatus),
-      hepatitisBStatus: getCodedObsValue(observations, C.screening.hepatitisBStatus),
-      syphilisStatus: getCodedObsValue(observations, C.screening.syphilisStatus),
-      drugAllergy: getFirstObsValue(observations, C.screening.drugAllergy),
-    },
+    screening: parseScreeningStatus(observations, C),
     preDialysis: {
       weightBefore: getFirstObsValue(observations, C.preDialysis.weightBefore),
       targetDryWeight: getFirstObsValue(observations, C.preDialysis.targetDryWeight),

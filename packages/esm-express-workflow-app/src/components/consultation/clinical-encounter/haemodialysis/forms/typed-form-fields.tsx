@@ -47,13 +47,20 @@ export const NumericFieldInput: React.FC<CommonProps & { def: NumericFieldDef }>
   );
 };
 
-export const TextFieldInput: React.FC<CommonProps & { def: TextFieldDef }> = ({ id, def, value, error, onChange }) => {
+export const TextFieldInput: React.FC<CommonProps & { def: TextFieldDef }> = ({
+  id,
+  def,
+  value,
+  error,
+  readOnly,
+  onChange,
+}) => {
   const handleChange = (raw: string) => {
     if (def.pattern === 'bloodPressure') {
-      onChange(sanitizeBloodPressureInput(raw));
+      onChange?.(sanitizeBloodPressureInput(raw));
       return;
     }
-    onChange(raw);
+    onChange?.(raw);
   };
 
   return (
@@ -66,6 +73,7 @@ export const TextFieldInput: React.FC<CommonProps & { def: TextFieldDef }> = ({ 
       helperText={def.helperText}
       invalid={Boolean(error)}
       invalidText={error}
+      readOnly={readOnly}
       onChange={(e) => handleChange(e.target.value)}
     />
   );
@@ -78,6 +86,8 @@ type CodedSelectProps = {
   options: CodedAnswerOption[];
   error?: string;
   required?: boolean;
+  disabled?: boolean;
+  helperText?: string;
   chooseLabel: string;
   onChange: (value: string) => void;
 };
@@ -89,6 +99,8 @@ export const CodedSelectField: React.FC<CodedSelectProps> = ({
   options,
   error,
   required,
+  disabled,
+  helperText,
   chooseLabel,
   onChange,
 }) => (
@@ -97,6 +109,8 @@ export const CodedSelectField: React.FC<CodedSelectProps> = ({
     labelText={label}
     required={required}
     value={value}
+    disabled={disabled}
+    helperText={helperText}
     invalid={Boolean(error)}
     invalidText={error}
     onChange={(e) => onChange(e.target.value)}>

@@ -1,3 +1,15 @@
+.viewHint {
+  margin: 0 0 0.65rem;
+  font-size: 0.75rem;
+  color: #525252;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid #d0e2ff;
+  border-radius: 0.5rem;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -7,15 +19,20 @@
 
 .table th,
 .table td {
-  border: 1px solid #000;
-  padding: 0.35rem 0.4rem;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 0.55rem 0.6rem;
   text-align: left;
   vertical-align: middle;
 }
 
 .table th {
-  background: #e8e8e8;
+  background: #edf5ff;
+  color: #0043ce;
   font-weight: 700;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .empty {
@@ -24,33 +41,39 @@
   font-style: italic;
 }
 
+.activeRow {
+  background: #defbe6;
+}
+
 .skippedRow {
   background: #f4f4f4;
   color: #525252;
 }
 
-.skippedBadge {
+.timeCell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.skippedBadge,
+.readingCountBadge {
   display: inline-block;
-  margin-left: 0.35rem;
   padding: 0 0.35rem;
   font-size: 0.625rem;
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.02em;
-  color: #6f6f6f;
-  border: 1px solid #c6c6c6;
   border-radius: 2px;
 }
 
-.scheduledBadge {
-  display: inline-block;
-  margin-left: 0.35rem;
-  padding: 0 0.35rem;
-  font-size: 0.625rem;
-  font-weight: 600;
+.skippedBadge {
+  color: #6f6f6f;
+  border: 1px solid #c6c6c6;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
-  color: #0043ce;
-  border: 1px solid #78a9ff;
-  border-radius: 2px;
+}
+
+.readingCountBadge {
+  color: #0e6027;
+  border: 1px solid #42be65;
 }

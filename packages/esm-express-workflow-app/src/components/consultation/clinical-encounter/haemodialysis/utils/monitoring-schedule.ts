@@ -68,7 +68,18 @@ export function getFinalSlotMinute(slotMinutes: number[]): number {
 }
 
 export function isMonitoringTerminated(action?: MonitoringSessionAction): boolean {
-  return action?.type === 'terminated';
+  return action?.type === 'terminated' || action?.type === 'sessionTerminated';
+}
+
+/** Session-level abort: remaining capture including post-dialysis/summary is closed. */
+export function isSessionAborted(action?: MonitoringSessionAction): boolean {
+  return action?.type === 'sessionTerminated';
+}
+
+export function isTerminationAction(
+  action?: MonitoringSessionAction,
+): action is Extract<MonitoringSessionAction, { type: 'terminated' | 'sessionTerminated' }> {
+  return action?.type === 'terminated' || action?.type === 'sessionTerminated';
 }
 
 /** True when the default 4-hour (240 min) slot window is active or past — uses slot unlock timing in demo/production, with wall-clock fallback. */

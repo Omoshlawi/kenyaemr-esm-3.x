@@ -1,8 +1,10 @@
-import type { HaemodialysisSession } from '../types';
+import type { HaemodialysisSession, MonitoringRow } from '../types';
 import { displayValue, postDialysisToFields, preDialysisToFields } from './formatters';
 import { getCodedAnswerLabel, isLikelyConceptUuid } from '../constants/coded-answers';
 import { formatDialysisSessionDate } from './dialysis-session-lifecycle';
-import { isMonitoringTerminated } from './monitoring-schedule';
+import { formatScreeningTestDate } from './screening-history';
+import { compareMonitoringRows, formatClockTime, formatObservationTime, formatSlotLabel } from './monitoring-slots';
+import { parseMonitoringDatetime } from './monitoring-datetime';
 
 export type HistoryTableColumn = { key: string; header: string };
 
@@ -28,6 +30,15 @@ const coded = (value?: string): string => {
   return displayValue(value);
 };
 
+const formatScreeningHistoryResult = (value?: string, testDate?: string): string => {
+  const result = coded(value);
+  if (result === '—') {
+    return result;
+  }
+  const date = formatScreeningTestDate(testDate);
+  return date ? `${result} (${date})` : result;
+};
+
 const fieldSummary = (fields: { label: string; value: string }[], max = 3): string => {
   const parts = fields
     .filter((field) => field.value && field.value !== '—')
@@ -41,6 +52,8 @@ export const SCREENING_HISTORY_COLUMNS: HistoryTableColumn[] = [
   { key: 'bloodGroup', header: 'Blood group' },
   { key: 'hivStatus', header: 'HIV' },
   { key: 'hepatitisBStatus', header: 'Hep B' },
+  { key: 'hepatitisCStatus', header: 'Hep C' },
+  { key: 'syphilisStatus', header: 'Syphilis' },
   { key: 'drugAllergy', header: 'Drug allergy' },
 ];
 
@@ -48,8 +61,19 @@ export function buildScreeningHistoryRows(sessions: HaemodialysisSession[]): His
   return sessions.map((session) =>
     withSessionDate(session, {
       bloodGroup: coded(session.screening?.bloodGroup),
-      hivStatus: coded(session.screening?.hivStatus),
-      hepatitisBStatus: coded(session.screening?.hepatitisBStatus),
+      hivStatus: formatScreeningHistoryResult(session.screening?.hivStatus, session.screening?.hivTestDate),
+      hepatitisBStatus: formatScreeningHistoryResult(
+        session.screening?.hepatitisBStatus,
+        session.screening?.hepatitisBTestDate,
+      ),
+      hepatitisCStatus: formatScreeningHistoryResult(
+        session.screening?.hepatitisCStatus,
+        session.screening?.hepatitisCTestDate,
+      ),
+      syphilisStatus: formatScreeningHistoryResult(
+        session.screening?.syphilisStatus,
+        session.screening?.syphilisTestDate,
+      ),
       drugAllergy: displayValue(session.screening?.drugAllergy),
     }),
   );
@@ -114,27 +138,84 @@ export function buildMachineCheckHistoryRows(sessions: HaemodialysisSession[]): 
 
 export const MONITORING_HISTORY_COLUMNS: HistoryTableColumn[] = [
   { key: 'sessionDate', header: 'Session date' },
-  { key: 'observationCount', header: 'Observations' },
-  { key: 'lastSlot', header: 'Last slot (min)' },
-  { key: 'status', header: 'Status' },
+  { key: 'slot', header: 'Slot' },
+  { key: 'recordedAt', header: 'Recorded at' },
+  { key: 'bp', header: 'BP' },
+  { key: 'pulse', header: 'Pulse' },
+  { key: 'temp', header: 'Temp' },
+  { key: 'ufRemoved', header: 'UF removed' },
+  { key: 'heparin', header: 'Heparin' },
+  { key: 'remarks', header: 'Remarks' },
 ];
 
+export const CURRENT_MONITORING_READING_COLUMNS: HistoryTableColumn[] = [
+  { key: 'slot', header: 'Slot' },
+  { key: 'recordedAt', header: 'Recorded at' },
+  { key: 'bp', header: 'BP (mmHg)' },
+  { key: 'pulse', header: 'Pulse (bpm)' },
+  { key: 'temp', header: 'Temp (°C)' },
+  { key: 'ufRemoved', header: 'UF Removed (mL)' },
+  { key: 'heparin', header: 'Heparin (Units)' },
+  { key: 'remarks', header: 'Remarks' },
+];
+
+const formatReadingClockTime = (row: MonitoringRow, startedAt?: Date): string => {
+  const recorded = parseMonitoringDatetime(row.recordedAt);
+  if (recorded) {
+    return formatClockTime(recorded);
+  }
+  const observationTime = formatObservationTime(row, startedAt);
+  return observationTime || '—';
+};
+
+export function buildCurrentMonitoringReadingRows(rows: MonitoringRow[], startedAt?: Date): HistoryTableRow[] {
+  return [...rows].sort(compareMonitoringRows).map((row, index) => ({
+    id: row.uuid ?? `${row.slotMinute}-${row.recordedAt ?? index}-${index}`,
+    slot: formatSlotLabel(row.slotMinute),
+    recordedAt: formatReadingClockTime(row, startedAt),
+    bp: displayValue(row.bp),
+    pulse: displayValue(row.pulse),
+    temp: displayValue(row.temp),
+    ufRemoved: displayValue(row.ufRemoved),
+    heparin: displayValue(row.heparin),
+    remarks: displayValue(row.remarks),
+  }));
+}
+
 export function buildMonitoringHistoryRows(sessions: HaemodialysisSession[]): HistoryTableRow[] {
-  return sessions.map((session) => {
-    const rows = session.monitoring ?? [];
-    const lastSlot = rows.length > 0 ? String(Math.max(...rows.map((row) => row.slotMinute))) : '—';
-    const status = isMonitoringTerminated(session.monitoringAction)
-      ? `Terminated @ ${
-          session.monitoringAction?.type === 'terminated' ? session.monitoringAction.atSlotMinute : '—'
-        } min`
-      : rows.length > 0
-      ? 'Completed'
-      : '—';
-    return withSessionDate(session, {
-      observationCount: String(rows.length),
-      lastSlot,
-      status,
-    });
+  return sessions.flatMap((session) => {
+    const observations = [...(session.monitoring ?? [])].sort(compareMonitoringRows);
+    if (observations.length === 0) {
+      return [
+        {
+          id: `${session.encounterUuid ?? formatDialysisSessionDate(session)}-monitoring-empty`,
+          sessionDate: formatDialysisSessionDate(session),
+          slot: '—',
+          recordedAt: '—',
+          bp: '—',
+          pulse: '—',
+          temp: '—',
+          ufRemoved: '—',
+          heparin: '—',
+          remarks: '—',
+        },
+      ];
+    }
+
+    return observations.map((row, index) => ({
+      id: `${session.encounterUuid ?? formatDialysisSessionDate(session)}-${row.slotMinute}-${
+        row.recordedAt ?? index
+      }-${index}`,
+      sessionDate: formatDialysisSessionDate(session),
+      slot: formatSlotLabel(row.slotMinute),
+      recordedAt: formatObservationTime(row),
+      bp: displayValue(row.bp),
+      pulse: displayValue(row.pulse),
+      temp: displayValue(row.temp),
+      ufRemoved: displayValue(row.ufRemoved),
+      heparin: displayValue(row.heparin),
+      remarks: displayValue(row.remarks),
+    }));
   });
 }
 

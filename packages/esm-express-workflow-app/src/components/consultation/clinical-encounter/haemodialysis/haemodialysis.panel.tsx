@@ -14,6 +14,7 @@ import {
   buildDefaultSlotMinutes,
   canOfferMonitoringExtension,
   isMonitoringTerminated,
+  isSessionAborted,
 } from './utils/monitoring-schedule';
 import FacilityHeaderView from './components/header/facility-header.component';
 import PatientBiodataView from './components/biodata/patient-biodata.component';
@@ -24,6 +25,7 @@ import DialysisMachineCheckView from './components/machine-check/dialysis-machin
 import IntraDialyticMonitoringView from './components/monitoring/intra-dialytic-monitoring.view';
 import PostDialysisAssessmentView from './components/post-dialysis/post-dialysis-assessment.view';
 import DialysisSummaryView from './components/summary/dialysis-summary.view';
+import SessionEmergencyTermination from './components/emergency/session-emergency-termination.component';
 import HaemodialysisAllTablesView from './components/haemodialysis-all-tables.view';
 import InitialAssessmentForm from './forms/initial-assessment.form';
 import DialysisMachineCheckForm from './forms/dialysis-machine-check.form';
@@ -55,13 +57,16 @@ const HaemodialysisPanel: React.FC<Props> = ({ state }) => {
     hasMachineCheck,
     isLoading,
     isNewDialysisDraft,
+    isCurrentSessionComplete,
     canStartNewDialysis,
     tableSessions,
+    patientScreening,
     startNewDialysis,
     saveInitialAssessment,
     saveMachineCheck,
     saveMonitoringSlot,
     saveMonitoringTerminate,
+    saveSessionTerminate,
     saveMonitoringExtension,
     savePostDialysisAndSummary,
   } = useHaemodialysisSession(patientUuid, patient);
@@ -97,25 +102,22 @@ const HaemodialysisPanel: React.FC<Props> = ({ state }) => {
   }, [isNewDialysisDraft]);
 
   const monitoringTerminated = isMonitoringTerminated(session.monitoringAction);
+  const sessionAborted = isSessionAborted(session.monitoringAction);
   const monitoringComplete = isMonitoringComplete(session.monitoring, monitoringStartedAt, now, monitoringRuntime);
   const monitoringExpired = isMonitoringSessionExpired(monitoringStartedAt, now, monitoringRuntime);
   const canOfferExtension =
     !monitoringTerminated &&
     canOfferMonitoringExtension(monitoringStartedAt, monitoringSlotMinutes, session.monitoringAction);
-  const canAddMachineCheck = hasInitial && !hasMachineCheck;
+  const canAddMachineCheck = hasInitial && !hasMachineCheck && !monitoringTerminated;
   const canAddMonitoring = hasInitial && hasMachineCheck && !monitoringComplete && !monitoringTerminated;
   const canUseMonitoringActions =
-    hasInitial &&
-    hasMachineCheck &&
-    Boolean(session.monitoringStartedAt) &&
-    !monitoringTerminated &&
-    (!monitoringComplete || canOfferExtension);
-  const monitoringActionLabel = session.monitoring.length
-    ? t('haemodialysisContinueMonitoring', 'Continue monitoring')
-    : t('haemodialysisAddMonitoring', 'Add observation');
+    hasInitial && hasMachineCheck && !monitoringTerminated && (!monitoringComplete || canOfferExtension);
+  const monitoringActionLabel = t('haemodialysisContinueMonitoring', 'Continue monitoring');
   const hasPostDialysis = Boolean(session.postDialysis);
   const canAddPostDialysis =
-    hasInitial && (monitoringComplete || monitoringTerminated) && !hasPostDialysis && !canOfferExtension;
+    hasInitial && (monitoringComplete || monitoringTerminated) && !hasPostDialysis && !sessionAborted;
+
+  const canTerminateSession = hasInitial && !sessionAborted && !isCurrentSessionComplete;
 
   const handleTerminateMonitoring = async (reason: string) => {
     const ok = await saveMonitoringTerminate(reason);
@@ -125,8 +127,19 @@ const HaemodialysisPanel: React.FC<Props> = ({ state }) => {
     return ok;
   };
 
-  /** After initial save, when the patient has 2+ sessions, show graph/table controls in the header. */
-  const showMultiSessionControls = hasInitial && tableSessions.length >= 2;
+  const handleTerminateSession = async (reason: string) => {
+    const ok = await saveSessionTerminate(reason);
+    if (ok) {
+      setInitialFormOpen(false);
+      setMachineCheckFormOpen(false);
+      setMonitoringFormOpen(false);
+      setPostDialysisFormOpen(false);
+    }
+    return ok;
+  };
+
+  /** Chart/table toggle whenever previous sessions exist, including while opening a new same-day chart. */
+  const showMultiSessionControls = tableSessions.length >= 2 || (isNewDialysisDraft && tableSessions.length >= 1);
 
   const handleDownloadPdf = async () => {
     if (!reportRef.current) {
@@ -176,16 +189,14 @@ const HaemodialysisPanel: React.FC<Props> = ({ state }) => {
         <p className={styles.newSessionBanner}>
           {t(
             'haemodialysisNewSessionBanner',
-            'New dialysis session — previous sessions are kept. Use the table view in the header to review all sessions.',
+            'New dialysis session — previous sessions remain available. Use the table view in the header to review them.',
           )}
         </p>
       ) : null}
 
       <div className={styles.reportWrapper} ref={reportRef}>
         <FacilityHeaderView facility={session.facility} />
-        <hr className={styles.divider} />
         <PatientBiodataView biodata={session.biodata} />
-        <hr className={styles.divider} />
 
         {panelViewMode === 'table' && showMultiSessionControls ? (
           <HaemodialysisAllTablesView sessions={tableSessions} />
@@ -222,17 +233,27 @@ const HaemodialysisPanel: React.FC<Props> = ({ state }) => {
               data={session.postDialysis}
               canAdd={canAddPostDialysis}
               monitoringComplete={monitoringComplete || monitoringTerminated}
+              monitoringTerminated={monitoringTerminated && !sessionAborted}
+              sessionAborted={sessionAborted}
               onAdd={() => setPostDialysisFormOpen(true)}
             />
             <DialysisSummaryView data={session.summary} signatures={session.signatures} />
           </>
         )}
+        {hasInitial ? (
+          <SessionEmergencyTermination
+            canTerminate={canTerminateSession}
+            monitoringAction={session.monitoringAction}
+            onTerminate={handleTerminateSession}
+          />
+        ) : null}
       </div>
 
       <InitialAssessmentForm
         open={initialFormOpen}
         onClose={() => setInitialFormOpen(false)}
         onSave={saveInitialAssessment}
+        previousScreening={patientScreening}
       />
       <DialysisMachineCheckForm
         open={machineCheckFormOpen}

@@ -41,7 +41,7 @@ const DialysisSummaryView: React.FC<Props> = ({ data, signatures }) => (
           </div>
           <div className={styles.signatureBlock}>
             <div className={styles.signatureHeading}>Hospital Stamp</div>
-            <div className={styles.signatureLine} />
+            <div className={styles.stampBox} />
             <div className={styles.signatureCaption}>Official stamp</div>
           </div>
         </div>

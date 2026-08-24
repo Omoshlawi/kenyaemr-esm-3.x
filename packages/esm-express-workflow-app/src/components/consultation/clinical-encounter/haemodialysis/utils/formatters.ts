@@ -10,6 +10,7 @@ import type {
 } from '../types';
 import { getCodedAnswerLabel, isLikelyConceptUuid } from '../constants/coded-answers';
 import { AIR_DETECTOR_OPTIONS, BLOOD_LEAK_OPTIONS } from '../constants/machine-check-answers';
+import { formatScreeningTestDate } from './screening-history';
 
 export const displayValue = (value?: string | number | null): string => {
   if (value === undefined || value === null || value === '') {
@@ -38,12 +39,33 @@ const displayCodedValue = (value?: string | string[]): string => {
   return labels.length > 0 ? labels.join(', ') : '—';
 };
 
+export const formatSessionDateTime = (value?: string): string => {
+  if (!value?.trim()) {
+    return '—';
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+  const hasTime = /T\d{2}:/.test(value) || /\d{2}:\d{2}/.test(value);
+  return hasTime ? parsed.toLocaleString() : parsed.toLocaleDateString();
+};
+
+const displayCodedValueWithDate = (value?: string, testDate?: string): string => {
+  const result = displayCodedValue(value);
+  if (result === '—') {
+    return result;
+  }
+  const date = formatScreeningTestDate(testDate);
+  return date ? `${result} (${date})` : result;
+};
+
 export const screeningToFields = (data?: ScreeningStatus): FieldItem[] => [
   { label: 'Blood Group', value: displayCodedValue(data?.bloodGroup) },
-  { label: 'HIV Status', value: displayCodedValue(data?.hivStatus) },
-  { label: 'Hepatitis C Status', value: displayCodedValue(data?.hepatitisCStatus) },
-  { label: 'Hepatitis B Status', value: displayCodedValue(data?.hepatitisBStatus) },
-  { label: 'Syphilis Status', value: displayCodedValue(data?.syphilisStatus) },
+  { label: 'HIV Status', value: displayCodedValueWithDate(data?.hivStatus, data?.hivTestDate) },
+  { label: 'Hepatitis C Status', value: displayCodedValueWithDate(data?.hepatitisCStatus, data?.hepatitisCTestDate) },
+  { label: 'Hepatitis B Status', value: displayCodedValueWithDate(data?.hepatitisBStatus, data?.hepatitisBTestDate) },
+  { label: 'Syphilis Status', value: displayCodedValueWithDate(data?.syphilisStatus, data?.syphilisTestDate) },
   { label: 'Drug Allergy', value: displayValue(data?.drugAllergy), span: 2 },
 ];
 
