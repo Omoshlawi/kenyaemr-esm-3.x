@@ -36,3 +36,32 @@
     @include type.type-style('body-01');
   }
 }
+
+.riskFactorsList {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  margin-top: layout.$spacing-02;
+}
+
+.riskFactorRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-02 0;
+  border-bottom: 1px solid colors.$gray-20;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.riskFactorLabel {
+  color: colors.$gray-60;
+}
+
+.riskFactorValue {
+  font-weight: 600;
+  text-align: right;
+}

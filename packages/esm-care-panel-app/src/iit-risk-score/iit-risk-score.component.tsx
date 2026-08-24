@@ -3,6 +3,7 @@ import { ErrorState, formatDate, parseDate } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import usePatientIITScore from '../hooks/usePatientIITScore';
+import { parseRiskFactors } from './iit-risk-score.utils';
 import styles from './iit-risk-score.scss';
 import dayjs from 'dayjs';
 
@@ -46,6 +47,8 @@ const CarePanellIITRiskScore: React.FC<CarePanellIITRiskScoreProps> = ({ patient
       ? formatDate(parseDate(riskScore?.evaluationDate))
       : '--';
 
+  const riskFactorEntries = parseRiskFactors(riskScore?.riskFactors);
+
   if (error) {
     return <ErrorState error={error} headerTitle={t('iitRiscScore', 'IIT Risk Score')} />;
   }
@@ -69,7 +72,18 @@ const CarePanellIITRiskScore: React.FC<CarePanellIITRiskScoreProps> = ({ patient
         </Column>
         <Column lg={12} md={12} sm={12} className={styles.riskScoreCardItem}>
           <strong>{t('riskFactors', 'Risk Factors')}:</strong>
-          <p>{riskScore?.riskFactors}</p>
+          {riskFactorEntries ? (
+            <div className={styles.riskFactorsList}>
+              {riskFactorEntries.map((entry) => (
+                <div key={entry.key} className={styles.riskFactorRow}>
+                  <span className={styles.riskFactorLabel}>{entry.label}</span>
+                  <span className={styles.riskFactorValue}>{entry.value}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>{riskScore?.riskFactors}</p>
+          )}
         </Column>
       </Row>
     </div>
