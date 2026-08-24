@@ -736,14 +736,6 @@ export const usePatientNationalID = (patientUuid: string) => {
     error,
   };
 };
-const isSupplementaryScheme = (schemeName: string | null | undefined, prefixes: ReadonlyArray<string>): boolean => {
-  const upper = (schemeName ?? '').toUpperCase().trim();
-  if (!upper) {
-    return false;
-  }
-  return prefixes.some((prefix) => upper.startsWith(prefix.toUpperCase().trim()));
-};
-
 export const useHasSupplementaryPompsCoverage = (patientUuid: string) => {
   const { nationalId, nationalIdType, isLoading: isLoadingNationalId } = usePatientNationalID(patientUuid);
 
@@ -763,11 +755,9 @@ export const useHasSupplementaryPompsCoverage = (patientUuid: string) => {
     dedupingInterval: 5 * 60_000,
     shouldRetryOnError: false,
   });
-  const { supplementarySchemePrefixes } = useConfig<BillingConfig>();
 
-  const allSchemes = data?.data?.schemes ?? [];
-  const schemes = allSchemes.filter((s) => isSupplementaryScheme(s.schemeName, supplementarySchemePrefixes ?? []));
-  const hasSupplementaryCoverage = schemes.length > 0;
+  const schemes = data?.data?.schemes ?? [];
+  const hasSupplementaryCoverage = (data?.data?.count ?? schemes.length) > 0;
 
   return {
     hasSupplementaryCoverage,
