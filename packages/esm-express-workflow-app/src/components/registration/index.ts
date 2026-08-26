@@ -8,6 +8,7 @@ const options = {
 };
 
 export const registrationDashboard = getAsyncLifecycle(() => import('./registration.component'), options);
+export const pcsSearchResults = getAsyncLifecycle(() => import('./pcs/pcs-search.component'), options);
 // t('registration', 'Registration')
 export const registrationLeftPanelLink = getAsyncLifecycle(
   () =>

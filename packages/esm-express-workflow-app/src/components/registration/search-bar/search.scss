@@ -98,10 +98,17 @@
 
   .formSearch {
     flex: 1;
+    height: 2.5rem;
     :global(.cds--search-input) {
+      height: 2.5rem;
       border-top-right-radius: 0;
       border-bottom-right-radius: 0;
       border-right: none;
+    }
+
+    :global(.cds--search-close) {
+      height: 2.5rem;
+      width: 2.5rem;
     }
   }
 
@@ -186,27 +193,75 @@
   }
 }
 
+.layer {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: layout.$spacing-05;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 layout.$spacing-09 0 layout.$spacing-07;
+
+  :global(.omrs-breakpoint-lt-desktop) & {
+    flex-direction: column;
+    gap: layout.$spacing-04;
+    padding: 0 layout.$spacing-05;
+  }
+
+  :global(.omrs-breakpoint-lt-tablet) & {
+    gap: layout.$spacing-03;
+    padding: 0 layout.$spacing-03;
+  }
+}
+
+.pcsSlot {
+  flex: 1 1 42%;
+  min-width: 24rem;
+  max-width: 32rem;
+  display: flex;
+  flex-direction: column;
+
+  [data-extension-id] {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  [data-extension-id] > * {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+  }
+
+  :global(.omrs-breakpoint-lt-desktop) & {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
 .searchResultsContainer {
-  width: 90%;
-  margin: 0 auto;
+  flex: 1 1 58%;
+  min-width: 0;
   margin-top: layout.$spacing-05;
   display: flex;
   flex-direction: column;
   gap: layout.$spacing-04;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-start;
 
   :global(.omrs-breakpoint-lt-desktop) & {
-    width: 95%;
+    flex: 1 1 auto;
+    width: 100%;
     margin-top: layout.$spacing-04;
     gap: layout.$spacing-03;
   }
 
   :global(.omrs-breakpoint-lt-tablet) & {
-    width: 100%;
     margin-top: layout.$spacing-03;
     gap: layout.$spacing-02;
-    padding: 0 layout.$spacing-02;
   }
 }
 
@@ -266,7 +321,7 @@
 
 .hieResultsSection,
 .localResultsSection {
-  max-width: 90%;
+  max-width: 100%;
   background-color: colors.$white;
   border: 1px solid colors.$gray-20;
   border-radius: 4px;
@@ -277,14 +332,12 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
   :global(.omrs-breakpoint-lt-desktop) & {
-    max-width: 95%;
     padding: layout.$spacing-03;
     padding-bottom: 0;
     padding-right: 0;
   }
 
   :global(.omrs-breakpoint-lt-tablet) & {
-    max-width: 100%;
     margin-bottom: layout.$spacing-03;
     padding: layout.$spacing-02;
     padding-bottom: 0;

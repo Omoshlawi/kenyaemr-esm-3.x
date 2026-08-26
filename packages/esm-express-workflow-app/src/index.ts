@@ -29,6 +29,7 @@ export function startupApp() {
     'Procedure Queues',
     'Enable/Disable procedure queue in procedure pannel and procedure form',
   );
+  registerFeatureFlag('pcsSite', 'PCS Site', 'Enable/Disable PCS Site');
 }
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);

@@ -1,0 +1,161 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.pcsColumn {
+  width: 100%;
+  min-width: 0;
+  margin-top: layout.$spacing-05;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  background-color: colors.$white;
+  border: 1px solid colors.$gray-20;
+  border-radius: 4px;
+  padding: layout.$spacing-04;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  :global(.omrs-breakpoint-lt-desktop) & {
+    margin-top: layout.$spacing-04;
+    padding: layout.$spacing-03;
+  }
+
+  :global(.omrs-breakpoint-lt-tablet) & {
+    padding: layout.$spacing-02;
+    border-radius: 2px;
+  }
+}
+
+.pcsHeader {
+  padding-bottom: layout.$spacing-02;
+  border-bottom: 1px solid colors.$gray-20;
+}
+
+.pcsTitle {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+  display: block;
+}
+
+.pcsSubtitle {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  display: block;
+  margin-top: layout.$spacing-02;
+}
+
+.pcsSearch {
+  width: 100%;
+}
+
+.pcsResults {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.pcsResultsCount {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.pcsTile {
+  background-color: colors.$gray-10;
+  border: 1px solid colors.$gray-20;
+  border-left: 3px solid colors.$gray-40;
+  border-radius: 4px;
+  padding: layout.$spacing-03;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.pcsName {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+}
+
+.pcsRow {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-02;
+}
+
+.pcsTileActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: layout.$spacing-02;
+  padding-top: layout.$spacing-02;
+  border-top: 1px solid colors.$gray-20;
+}
+
+.pcsHousehold {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  padding-top: layout.$spacing-02;
+  border-top: 1px dashed colors.$gray-20;
+}
+
+.pcsFieldLabel {
+  color: colors.$gray-60;
+}
+
+.separator {
+  color: colors.$gray-40;
+}
+
+.genderIcon {
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+
+  svg {
+    fill: colors.$gray-70;
+  }
+}
+
+.matchTag {
+  margin: 0;
+}
+
+.pcsLoading {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}
+
+.pcsSkeletonTile {
+  border: 1px solid colors.$gray-20;
+  border-radius: 4px;
+  padding: layout.$spacing-03;
+}
+
+.pcsEmptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 12rem;
+  row-gap: layout.$spacing-02;
+  padding: layout.$spacing-04;
+
+  svg {
+    width: 140px;
+    height: 70px;
+  }
+
+  .pcsEmptyTitle {
+    @include type.type-style('heading-compact-01');
+    color: colors.$cool-gray-70;
+  }
+
+  .pcsEmptySubtitle {
+    @include type.type-style('label-01');
+    color: colors.$cool-gray-70;
+  }
+}

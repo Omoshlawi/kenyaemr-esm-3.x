@@ -542,6 +542,14 @@
       },
       "online": true,
       "offline": false
+    },
+    {
+      "name": "ewf-pcs-search-results",
+      "component": "pcsSearchResults",
+      "slot": "ewf-pcs-patient-extras-slot",
+      "featureFlag": "pcsSite",
+      "online": true,
+      "offline": false
     }
   ],
   "workspaces2": [

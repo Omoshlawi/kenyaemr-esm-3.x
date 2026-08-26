@@ -31,6 +31,9 @@ interface HIEDisplayCardProps {
   localSearchResults?: LocalResponse | null;
   eligibilityResponse?: EligibilityResponse;
   isEligibilityLoading?: boolean;
+  selectedPatientId?: string | null;
+  onSelectPatient?: (patient: fhir.Patient, source: 'hie') => void;
+  onPatientVerified?: (patient: fhir.Patient, source: 'hie') => void;
 }
 
 const HIEDisplayCard: React.FC<HIEDisplayCardProps> = ({
@@ -41,6 +44,9 @@ const HIEDisplayCard: React.FC<HIEDisplayCardProps> = ({
   localSearchResults = null,
   eligibilityResponse,
   isEligibilityLoading = false,
+  selectedPatientId = null,
+  onSelectPatient,
+  onPatientVerified,
 }) => {
   const { t } = useTranslation();
   const [showDependentsForPatient, setShowDependentsForPatient] = useState<Set<string>>(new Set());
@@ -171,13 +177,15 @@ const HIEDisplayCard: React.FC<HIEDisplayCardProps> = ({
     setOtpRequestedFor((prev) => new Set(prev).add(patientUuid));
   };
 
-  const handleOTPVerificationSuccess = (patientId: string) => {
+  const handleOTPVerificationSuccess = (patientId: string, patient: fhir.Patient) => {
     setVerifiedPatients((prev) => new Set(prev).add(patientId));
     setOtpRequestedFor((prev) => {
       const newSet = new Set(prev);
       newSet.delete(patientId);
       return newSet;
     });
+    // Authorization is what unlocks the PCS registry lookup for this patient.
+    onPatientVerified?.(patient, 'hie');
   };
 
   const handleQueuePatient = (activeVisit: any, patientUuid: string) => {
@@ -252,6 +260,8 @@ const HIEDisplayCard: React.FC<HIEDisplayCardProps> = ({
         const hasActiveVisit = !!activeVisit;
 
         const patientPhoneNumber = getPatientPhoneNumber(patient);
+        const isSelectable = Boolean(onSelectPatient) && isVerified;
+        const isSelected = isSelectable && selectedPatientId === patientUuid;
 
         const { onRequestOtp, onVerify, cleanup } = createDynamicOTPHandlers(
           patientUuid,
@@ -265,8 +275,38 @@ const HIEDisplayCard: React.FC<HIEDisplayCardProps> = ({
               className={classNames(styles.container, {
                 [styles.verifiedPatient]: isVerified,
                 [styles.activeVisitPatient]: hasActiveVisit,
+                [styles.selectableCard]: isSelectable,
+                [styles.selectedCard]: isSelected,
               })}
-              role="banner">
+              role={isSelectable ? 'button' : 'banner'}
+              tabIndex={isSelectable ? 0 : undefined}
+              aria-pressed={isSelectable ? isSelected : undefined}
+              onClick={
+                isSelectable
+                  ? (event) => {
+                      // Selection must not fire when an action button inside the card is pressed.
+                      if ((event.target as HTMLElement).closest('button')) {
+                        return;
+                      }
+                      onSelectPatient!(patient, 'hie');
+                    }
+                  : undefined
+              }
+              onKeyDown={
+                isSelectable
+                  ? (event) => {
+                      // Only the card itself toggles selection — let keystrokes on the
+                      // action buttons inside it activate those buttons instead.
+                      if (event.target !== event.currentTarget) {
+                        return;
+                      }
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onSelectPatient!(patient, 'hie');
+                      }
+                    }
+                  : undefined
+              }>
               <div className={styles.patientInfo}>
                 <div className={styles.patientAvatar} role="img">
                   <PatientPhoto patientUuid={patientUuid} patientName={patientName} />
@@ -298,7 +338,7 @@ const HIEDisplayCard: React.FC<HIEDisplayCardProps> = ({
                           expiryMinutes: otpExpiryMinutes,
                           onRequestOtp,
                           onVerify,
-                          onVerificationSuccess: () => handleOTPVerificationSuccess(patientUuid),
+                          onVerificationSuccess: () => handleOTPVerificationSuccess(patientUuid, patient),
                           onCleanup: cleanup,
                         });
                       }}>
@@ -322,7 +362,7 @@ const HIEDisplayCard: React.FC<HIEDisplayCardProps> = ({
                           expiryMinutes: otpExpiryMinutes,
                           onRequestOtp,
                           onVerify,
-                          onVerificationSuccess: () => handleOTPVerificationSuccess(patientUuid),
+                          onVerificationSuccess: () => handleOTPVerificationSuccess(patientUuid, patient),
                           onCleanup: cleanup,
                         });
                       }}>

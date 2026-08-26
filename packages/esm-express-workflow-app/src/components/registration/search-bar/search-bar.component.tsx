@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styles from './search.scss';
-import { navigate, showToast, useConfig } from '@openmrs/esm-framework';
+import { ExtensionSlot, navigate, showToast, useConfig, useFeatureFlag } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { Search as SearchIcon, Add, CloseLarge } from '@carbon/react/icons';
-import { Button, Column, ComboBox, InlineLoading, Search, Tile } from '@carbon/react';
+import { Button, Column, ComboBox, InlineLoading, Layer, Search, Tile } from '@carbon/react';
 import { type HIEBundleResponse, type IdentifierTypeItem, type LocalResponse } from '../type';
 import { getNationalIdFromPatient, convertLocalPatientToFHIR } from '../helper';
 import { searchPatientFromHIE, usePatient, useSHAEligibility } from './search-bar.resource';
@@ -11,6 +11,8 @@ import { EmptySvg } from '../empty-svg/empty-svg.component';
 import HIEDisplayCard from '../card/HIE-card/hie-card.component';
 import { ExpressWorkflowConfig } from '../../../config-schema';
 import LocalPatientCard from '../card/Local-card/local-card.component';
+import { toPcsSearchSubject } from '../pcs/pcs.resource';
+import { type PcsSearchSubject } from '../pcs/pcs.types';
 
 const SearchBar: React.FC = () => {
   const { t } = useTranslation();
@@ -38,7 +40,9 @@ const SearchBar: React.FC = () => {
   const [searchedNationalId, setSearchedNationalId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [syncedPatients, setSyncedPatients] = useState<Set<string>>(new Set());
-
+  const [selectedPatient, setSelectedPatient] = useState<PcsSearchSubject | null>(null);
+  const [verifiedPatients, setVerifiedPatients] = useState<Set<string>>(new Set());
+  const isPscSite = useFeatureFlag('pcsSite');
   const [selectedIdentifierItem, setSelectedIdentifierItem] = useState<IdentifierTypeItem | null>(
     defaultIdentifierType || null,
   );
@@ -58,6 +62,28 @@ const SearchBar: React.FC = () => {
       setLocalSearchResults(null);
     }
   }, [localPatientData, searchQuery, isLocalSearching]);
+
+  // A patient may only be looked up in the PCS registry once they have authorized by OTP,
+  // so verifying is what both unlocks the card and opens the pane on that patient.
+  const handlePatientVerified = useCallback(
+    (patient: fhir.Patient, source: PcsSearchSubject['source']) => {
+      setVerifiedPatients((previous) => new Set(previous).add(patient.id!));
+      setSelectedPatient(toPcsSearchSubject(patient, source, nationalIdUUID));
+    },
+    [nationalIdUUID],
+  );
+
+  // Clicking another verified card moves the pane to that patient. Re-clicking the selected
+  // card is a no-op — deselecting would hide the pane again, which reads as a bug.
+  const handleSelectPatient = useCallback(
+    (patient: fhir.Patient, source: PcsSearchSubject['source']) => {
+      if (!verifiedPatients.has(patient.id!)) {
+        return;
+      }
+      setSelectedPatient(toPcsSearchSubject(patient, source, nationalIdUUID));
+    },
+    [nationalIdUUID, verifiedPatients],
+  );
 
   const handleIdentifierTypeChange = (selectedItem: IdentifierTypeItem | null): void => {
     if (selectedItem) {
@@ -137,6 +163,8 @@ const SearchBar: React.FC = () => {
     setSearchedNationalId('');
     setShowDependentsForPatient(new Set());
     setSearchQuery('');
+    setSelectedPatient(null);
+    setVerifiedPatients(new Set());
     setSelectedIdentifierItem(defaultIdentifierType || null);
     setIdentifierType(defaultIdentifierType?.key || '');
   };
@@ -167,56 +195,71 @@ const SearchBar: React.FC = () => {
     }
 
     return (
-      <div className={styles.searchResultsContainer}>
-        {hasLocalResults && (
-          <div className={styles.localResultsSection}>
-            <div className={styles.resultsHeader}>
-              <span className={styles.identifierTypeHeader}>
-                {t('revisitPatientResults', 'Revisit patient(s) ({{count}})', {
-                  count: localSearchResults?.length || 0,
-                })}
-              </span>
-            </div>
-            <div>
-              <LocalPatientCard
-                localSearchResults={localSearchResults!}
-                syncedPatients={syncedPatients}
-                searchedNationalId={searchedNationalId}
-                otpExpiryMinutes={otpExpirationDurationInminutes}
-                hieSearchResults={searchResults}
-                eligibilityResponse={eligibilityResponse}
-                isEligibilityLoading={isEligibilityLoading}
-              />
-            </div>
-          </div>
-        )}
-
-        {hasHieResults && (
-          <div className={styles.hieResultsSection}>
-            <div className={styles.resultsHeader}>
-              <span className={styles.identifierTypeHeader}>
-                {t('newPatientResults', 'New patient(s) found ({{count}})', {
-                  count: getHiePatientCount(filteredHieResults),
-                })}
-              </span>
-            </div>
-            <div>
-              {filteredHieResults!.map((bundle, index) => (
-                <HIEDisplayCard
-                  key={`hie-${index}`}
-                  bundle={bundle}
-                  bundleIndex={index}
+      <Layer className={styles.layer}>
+        <div className={styles.searchResultsContainer}>
+          {hasLocalResults && (
+            <div className={styles.localResultsSection}>
+              <div className={styles.resultsHeader}>
+                <span className={styles.identifierTypeHeader}>
+                  {t('revisitPatientResults', 'Revisit patient(s) ({{count}})', {
+                    count: localSearchResults?.length || 0,
+                  })}
+                </span>
+              </div>
+              <div>
+                <LocalPatientCard
+                  localSearchResults={localSearchResults!}
+                  syncedPatients={syncedPatients}
                   searchedNationalId={searchedNationalId}
                   otpExpiryMinutes={otpExpirationDurationInminutes}
-                  localSearchResults={localSearchResults}
+                  hieSearchResults={searchResults}
                   eligibilityResponse={eligibilityResponse}
                   isEligibilityLoading={isEligibilityLoading}
+                  selectedPatientId={selectedPatient?.id ?? null}
+                  onSelectPatient={handleSelectPatient}
+                  onPatientVerified={handlePatientVerified}
                 />
-              ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {hasHieResults && (
+            <div className={styles.hieResultsSection}>
+              <div className={styles.resultsHeader}>
+                <span className={styles.identifierTypeHeader}>
+                  {t('newPatientResults', 'New patient(s) found ({{count}})', {
+                    count: getHiePatientCount(filteredHieResults),
+                  })}
+                </span>
+              </div>
+              <div>
+                {filteredHieResults!.map((bundle, index) => (
+                  <HIEDisplayCard
+                    key={`hie-${index}`}
+                    bundle={bundle}
+                    bundleIndex={index}
+                    searchedNationalId={searchedNationalId}
+                    otpExpiryMinutes={otpExpirationDurationInminutes}
+                    localSearchResults={localSearchResults}
+                    eligibilityResponse={eligibilityResponse}
+                    isEligibilityLoading={isEligibilityLoading}
+                    selectedPatientId={selectedPatient?.id ?? null}
+                    onSelectPatient={handleSelectPatient}
+                    onPatientVerified={handlePatientVerified}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        {selectedPatient && isPscSite && (
+          <ExtensionSlot
+            name="ewf-pcs-patient-extras-slot"
+            className={styles.pcsSlot}
+            state={{ subject: selectedPatient }}
+          />
         )}
-      </div>
+      </Layer>
     );
   };
 
@@ -237,6 +280,8 @@ const SearchBar: React.FC = () => {
     setSyncedPatients(new Set());
     setSearchedNationalId('');
     setShowDependentsForPatient(new Set());
+    setSelectedPatient(null);
+    setVerifiedPatients(new Set());
 
     try {
       setSearchQuery(identifier.trim());
