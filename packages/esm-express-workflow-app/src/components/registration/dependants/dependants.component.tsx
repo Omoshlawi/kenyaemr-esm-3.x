@@ -9,6 +9,7 @@ import {
   showModal,
   useConfig,
   type Visit,
+  useFeatureFlag,
 } from '@openmrs/esm-framework';
 import { type ExpressWorkflowConfig } from '../../../config-schema';
 import capitalize from 'lodash/capitalize';
@@ -21,6 +22,7 @@ import { otpManager, useOtpSource, cleanupAllOTPs } from '../card/HIE-card/hie-c
 import { launchOtpVerificationModal } from '../../../shared/otp-verification';
 import { sanitizePhoneNumber } from '../../../shared/utils';
 import { VisitFormProps } from '../start-visit-form/visit-form-workspace/visit-form.workspace';
+import LinkDependantAction from '../pcs/linked/link-dependants.component';
 
 type DependentProps = {
   patient: HIEPatient;
@@ -41,7 +43,7 @@ const DependentsComponent: React.FC<DependentProps> = ({
   const [verifiedSpouses, setVerifiedSpouses] = useState<Set<string>>(new Set());
   const [otpRequestedForSpouse, setOtpRequestedForSpouse] = useState<Set<string>>(new Set());
   const [activePhoneNumbers, setActivePhoneNumbers] = useState<Map<string, string>>(new Map());
-
+  const isPcsSite = useFeatureFlag('pcsSite');
   const { otpSource, isLoading: isLoadingOtpSource } = useOtpSource();
 
   useEffect(() => {
@@ -143,7 +145,7 @@ const DependentsComponent: React.FC<DependentProps> = ({
 
       return '254700000000';
     },
-    [localPatientCache, parentPhoneNumber],
+    [localPatientCache, parentPhoneNumber, phoneAttributeTypeUUID],
   );
 
   const handleSpouseOTPRequest = useCallback((dependentId: string) => {
@@ -272,7 +274,7 @@ const DependentsComponent: React.FC<DependentProps> = ({
         }
       }
     },
-    [localPatientCache, verifiedSpouses, t],
+    [localPatientCache, verifiedSpouses, t, parentPhoneNumber, phoneAttributeTypeUUID],
   );
 
   const headers = useMemo(
@@ -417,6 +419,9 @@ const DependentsComponent: React.FC<DependentProps> = ({
                 )}
               </>
             )}
+            {isPcsSite && !isLoading && (
+              <LinkDependantAction dependant={dependent} isLocal={isLocal} localPatient={localPatient} />
+            )}
           </div>
         ),
       };
@@ -429,16 +434,17 @@ const DependentsComponent: React.FC<DependentProps> = ({
     visits,
     verifiedSpouses,
     otpRequestedForSpouse,
-    isLoadingOtpSource,
-    otpSource,
     getDependentPhoneNumber,
     createSpouseOTPHandlers,
+    t,
+    isLoadingOtpSource,
+    otpSource,
+    isPcsSite,
     handleSpouseOTPRequest,
+    otpExpiryMinutes,
     handleSpouseOTPVerificationSuccess,
     handleDependentAction,
     handleQueuePatient,
-    otpExpiryMinutes,
-    t,
   ]);
 
   useEffect(() => {
