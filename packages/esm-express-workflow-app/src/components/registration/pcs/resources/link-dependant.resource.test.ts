@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getSessionLocation, launchWorkspace2, launchWorkspaceGroup2, openmrsFetch } from '@openmrs/esm-framework';
 import { createPatient } from '../../dependants/dependants.resource';
 import { findExistingLocalPatient } from '../../search-bar/search-bar.resource';
-import { linkDependantToParticipant } from './link-dependant.resource';
+import { createAndLinkFromParticipant, linkDependantToParticipant } from './link-dependant.resource';
 import { type PcsParticipant } from '../pcs.types';
 
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
@@ -15,7 +15,11 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
 
 vi.mock('../../dependants/dependants.resource', () => ({ createPatient: vi.fn() }));
 vi.mock('../../search-bar/search-bar.resource', () => ({ findExistingLocalPatient: vi.fn() }));
+vi.mock('../../constant', () => ({ openmrsId: 'openmrs-id-type', openmrsIdSource: 'openmrs-id-source' }));
+
 vi.mock('../../helper', () => ({
+  generateIdentifier: vi.fn(async () => ({ data: { identifier: 'MGH-0001' } })),
+  sanitizeName: (name: string) => name,
   transformToDependentPayload: (dependant: any) => ({
     name: dependant.name,
     gender: dependant.gender,
@@ -72,14 +76,6 @@ const rereadFor = (url: string) => ({
   reread: true,
 });
 
-/** What the module returns from `POST /pbids-participants` — the created participant. */
-const createdParticipant = {
-  ...participant,
-  individualId: 'MO26082701',
-  pbidsEnrolled: true,
-  cardse: false,
-};
-
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetSessionLocationDefault();
@@ -87,8 +83,8 @@ beforeEach(() => {
     if (url.includes('?v=custom')) {
       return Promise.resolve({ data: rereadFor(url) } as any);
     }
-    if (url.endsWith('/pbids-participants') && options?.method === 'POST') {
-      return Promise.resolve({ data: createdParticipant } as any);
+    if (url.endsWith('/patient') && options?.method === 'POST') {
+      return Promise.resolve({ data: { uuid: 'created-uuid', identifiers: [] } } as any);
     }
     return Promise.resolve({ data: { results: [] } } as any);
   });
@@ -143,5 +139,77 @@ describe('linkDependantToParticipant', () => {
 
     await expect(link()).rejects.toThrow('Identifier already in use');
     expect(launchWorkspace2).not.toHaveBeenCalled();
+  });
+});
+
+describe('createAndLinkFromParticipant', () => {
+  const withContacts = {
+    ...participant,
+    contacts: [{ phone: '0712345678', nationalId: '12345678' }],
+  } as PcsParticipant;
+
+  const createAndLink = (subject: PcsParticipant = withContacts) =>
+    createAndLinkFromParticipant({
+      participant: subject,
+      nationalIdUUID: 'national-id-type',
+      phoneAttributeTypeUUID: 'phone-attr-type',
+      studyParticipantIdentifierType: STUDY_ID_TYPE,
+      pbidsEnrollmentAttributeType: PBIDS_ENROLLMENT_TYPE,
+      cardseEnrollmentAttributeType: CARDSE_ENROLLMENT_TYPE,
+    });
+
+  const createBody = () =>
+    (mockOpenmrsFetch.mock.calls.find(([u, o]) => u.endsWith('/patient') && (o as any)?.method === 'POST')![1] as any)
+      .body;
+
+  it('carries the phone and national ID across from the PCS contact', async () => {
+    await createAndLink();
+
+    const body = createBody();
+    // The national ID is what lets `findExistingLocalPatient` match this child later, and what
+    // makes OpenMRS reject a duplicate rather than silently creating a second patient.
+    expect(body.identifiers).toEqual([
+      expect.objectContaining({ identifierType: 'openmrs-id-type', preferred: true }),
+      expect.objectContaining({ identifier: '12345678', identifierType: 'national-id-type', preferred: false }),
+    ]);
+    expect(body.person.attributes).toEqual([{ attributeType: 'phone-attr-type', value: '0712345678' }]);
+  });
+
+  it('creates cleanly for a participant with no contacts', async () => {
+    await createAndLink(participant);
+
+    const body = createBody();
+    // An identifier entry with an empty value would be rejected outright.
+    expect(body.identifiers).toHaveLength(1);
+    expect(body.person.attributes).toEqual([]);
+  });
+
+  it("registers the patient from the participant's own demographics", async () => {
+    await createAndLink();
+
+    const [url, options] = mockOpenmrsFetch.mock.calls.find(
+      ([u, o]) => u.endsWith('/patient') && (o as any)?.method === 'POST',
+    )!;
+    expect(url).toBe('/ws/rest/v1/patient');
+    expect((options as any).body.person).toMatchObject({
+      names: [{ preferred: true, givenName: 'DENNIS', familyName: 'ODONGO' }],
+      gender: 'M',
+    });
+  });
+
+  it("stamps the participant's own id rather than minting a temporary one", async () => {
+    await createAndLink();
+
+    const identifierPost = mockOpenmrsFetch.mock.calls.find(
+      ([url, options]) => url.includes('/identifier') && (options as any)?.method === 'POST',
+    );
+
+    // Writing a temporary id here was the other reading of the request — this is the guard.
+    expect((identifierPost![1] as any).body).toMatchObject({
+      identifier: '901-1-1-3',
+      identifierType: STUDY_ID_TYPE,
+    });
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => url.endsWith('/pbids-participants'))).toBe(false);
+    expect(launchWorkspace2).toHaveBeenCalledOnce();
   });
 });

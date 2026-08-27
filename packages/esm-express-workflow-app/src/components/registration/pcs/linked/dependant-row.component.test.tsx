@@ -58,7 +58,7 @@ describe('DependantRow', () => {
     expect(screen.getByText('Dennis Odongo')).toBeInTheDocument();
     // A linked row offers the undo, not the link.
     expect(screen.getByRole('button', { name: 'Unlink' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Create & link' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Link dependant' })).not.toBeInTheDocument();
   });
 
   it('offers to create a dependant nobody is linked to', () => {
@@ -71,7 +71,7 @@ describe('DependantRow', () => {
 
     render(<DependantRow dependant={dependant} />);
 
-    expect(screen.getByRole('button', { name: 'Create & link' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Link dependant' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Unlink' })).not.toBeInTheDocument();
     expect(screen.queryByText('Linked')).not.toBeInTheDocument();
   });
@@ -88,7 +88,7 @@ describe('DependantRow', () => {
 
     // Flashing the action before the answer arrives invites a misclick on a child who is
     // already registered.
-    expect(screen.queryByRole('button', { name: 'Create & link' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Link dependant' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Unlink' })).not.toBeInTheDocument();
     expect(screen.queryByText('Linked')).not.toBeInTheDocument();
   });

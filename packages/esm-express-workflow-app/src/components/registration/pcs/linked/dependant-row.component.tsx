@@ -98,7 +98,7 @@ const DependantRow: React.FC<DependantRowProps> = ({ dependant, hiePatient, pare
             </Button>
           ) : (
             <Button kind="tertiary" size="sm" renderIcon={LinkIcon} onClick={openLinkModal}>
-              {t('createAndLink', 'Create & link')}
+              {t('linkDependant', 'Link dependant')}
             </Button>
           )}
         </div>
