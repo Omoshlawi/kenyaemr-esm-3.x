@@ -6,6 +6,7 @@ import {
   restBaseUrl,
   type Visit,
 } from '@openmrs/esm-framework';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 import { createPatient } from '../dependants/dependants.resource';
 import { getLocalIdentifierValue } from '../helper';
@@ -126,22 +127,26 @@ async function writeStudyIdentifier(localPatient: any, identifierType: string, v
   });
 }
 
-/** Reads the person's attributes first so an existing one is updated rather than stacked. */
-async function writePersonAttribute(personUuid: string, attributeType: string, value: string) {
+/**
+ * Reads the person's attributes first so an existing one is updated rather than stacked.
+ * Returns whether anything was actually written — the background sync uses that to report
+ * what it corrected.
+ */
+async function writePersonAttribute(personUuid: string, attributeType: string, value: string): Promise<boolean> {
   const response = await openmrsFetch(`${restBaseUrl}/person/${personUuid}/attribute?v=default`);
   const attributes: Array<any> = response?.data?.results ?? [];
   const existing = attributes.find((attribute) => attribute.attributeType?.uuid === attributeType && !attribute.voided);
 
   if (existing) {
     if (existing.value === value) {
-      return;
+      return false;
     }
     await openmrsFetch(`${restBaseUrl}/person/${personUuid}/attribute/${existing.uuid}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: { value },
     });
-    return;
+    return true;
   }
 
   await openmrsFetch(`${restBaseUrl}/person/${personUuid}/attribute`, {
@@ -149,6 +154,7 @@ async function writePersonAttribute(personUuid: string, attributeType: string, v
     headers: { 'Content-Type': 'application/json' },
     body: { attributeType, value },
   });
+  return true;
 }
 
 async function launchCheckInWorkspace(patient: any, patientUuid: string) {
@@ -248,4 +254,122 @@ export async function delinkParticipant({
       await openmrsFetch(`${restBaseUrl}/person/${personUuid}/attribute/${attribute.uuid}`, { method: 'DELETE' });
     }
   }
+}
+
+/** Which of the two enrolment flags a sync actually corrected. */
+export type StudyAttributeFlag = 'pbids' | 'cardse';
+
+interface SyncStudyAttributesOptions {
+  personUuid: string;
+  participant: PcsParticipant;
+  pbidsEnrollmentAttributeType: string;
+  cardseEnrollmentAttributeType: string;
+}
+
+/**
+ * Brings the patient's two enrolment attributes in line with what PCS currently reports.
+ * PCS owns these flags, so its values win over whatever is on the patient.
+ *
+ * Returns the flags that were actually written; an already-in-sync patient costs one read
+ * and no writes, because `writePersonAttribute` short-circuits on an unchanged value.
+ */
+export async function syncStudyAttributes({
+  personUuid,
+  participant,
+  pbidsEnrollmentAttributeType,
+  cardseEnrollmentAttributeType,
+}: SyncStudyAttributesOptions): Promise<Array<StudyAttributeFlag>> {
+  const changed: Array<StudyAttributeFlag> = [];
+
+  if (
+    await writePersonAttribute(personUuid, pbidsEnrollmentAttributeType, toAttributeValue(participant.pbidsEnrolled))
+  ) {
+    changed.push('pbids');
+  }
+  if (await writePersonAttribute(personUuid, cardseEnrollmentAttributeType, toAttributeValue(participant.cardse))) {
+    changed.push('cardse');
+  }
+
+  return changed;
+}
+
+interface UseSyncStudyAttributesOptions {
+  participant: PcsParticipant | null;
+  localPatient: any;
+  pbidsEnrollmentAttributeType: string;
+  cardseEnrollmentAttributeType: string;
+  onSynced?: (changed: Array<StudyAttributeFlag>) => void;
+  onSyncError?: (error: unknown) => void;
+}
+
+/**
+ * Syncs the enrolment attributes in the background whenever a participant is pulled by id, so
+ * the patient record tracks PCS without anyone pressing anything.
+ *
+ * The signature ref is what keeps this to one sync per participant rather than one per render
+ * — without it React 18's StrictMode double-invoke alone would double-write.
+ */
+export function useSyncStudyAttributes({
+  participant,
+  localPatient,
+  pbidsEnrollmentAttributeType,
+  cardseEnrollmentAttributeType,
+  onSynced,
+  onSyncError,
+}: UseSyncStudyAttributesOptions) {
+  const personUuid = localPatient?.uuid;
+  const signature = participant
+    ? `${personUuid}|${participant.individualId}|${participant.pbidsEnrolled}|${participant.cardse}`
+    : null;
+
+  const syncedSignature = useRef<string | null>(null);
+  const [forcedAt, setForcedAt] = useState(0);
+
+  const callbacks = useRef({ onSynced, onSyncError });
+  callbacks.current = { onSynced, onSyncError };
+
+  useEffect(() => {
+    if (!participant || !personUuid || !signature) {
+      return;
+    }
+    if (syncedSignature.current === signature) {
+      return;
+    }
+    syncedSignature.current = signature;
+
+    let cancelled = false;
+    syncStudyAttributes({
+      personUuid,
+      participant,
+      pbidsEnrollmentAttributeType,
+      cardseEnrollmentAttributeType,
+    })
+      .then((changed) => {
+        if (!cancelled && changed.length > 0) {
+          callbacks.current.onSynced?.(changed);
+        }
+      })
+      .catch((error) => {
+        // Let the next pull retry rather than pinning the failed signature.
+        syncedSignature.current = null;
+        if (!cancelled) {
+          callbacks.current.onSyncError?.(error);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [participant, personUuid, signature, pbidsEnrollmentAttributeType, cardseEnrollmentAttributeType, forcedAt]);
+
+  /**
+   * Reconciles even when the PCS values are unchanged — the guard would otherwise suppress a
+   * sync that is needed because the *patient's* attributes drifted.
+   */
+  const syncNow = useCallback(() => {
+    syncedSignature.current = null;
+    setForcedAt(Date.now());
+  }, []);
+
+  return { syncNow };
 }

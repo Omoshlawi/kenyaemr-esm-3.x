@@ -1,10 +1,12 @@
 import React from 'react';
 import { Button, InlineLoading, SkeletonText, Tag } from '@carbon/react';
 import { GenderFemale, GenderMale, Renew, Unlink } from '@carbon/react/icons';
-import { age, formatDate, parseDate, showModal } from '@openmrs/esm-framework';
+import { age, formatDate, parseDate, showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
+import { type ExpressWorkflowConfig } from '../../../config-schema';
 import styles from './pcs.scss';
 import { formatCompoundHeadName, formatMotherName, formatParticipantName, usePcsParticipant } from './pcs.resource';
+import { type StudyAttributeFlag, useSyncStudyAttributes } from './link-participant.resource';
 import { type PcsParticipant, type PcsSearchSubject } from './pcs.types';
 
 interface LinkedParticipantProps {
@@ -29,7 +31,43 @@ const LinkedParticipant: React.FC<LinkedParticipantProps> = ({
   onDelinked,
 }) => {
   const { t } = useTranslation();
+  const { pcsAttributeTypes } = useConfig<ExpressWorkflowConfig>();
   const { participant, isLoading, error, mutate } = usePcsParticipant(studyParticipantId);
+
+  const flagLabels: Record<StudyAttributeFlag, string> = {
+    pbids: t('pbidsEnrollment', 'PBIDS enrollment'),
+    cardse: t('cardseEnrollment', 'CARDSE enrollment'),
+  };
+
+  // PCS owns these two flags, so every pull by id reconciles the patient record with them.
+  const { syncNow } = useSyncStudyAttributes({
+    participant,
+    localPatient,
+    pbidsEnrollmentAttributeType: pcsAttributeTypes.pbidsEnrollmentStatus,
+    cardseEnrollmentAttributeType: pcsAttributeTypes.cardseEnrollmentStatus,
+    onSynced: (changed) =>
+      showSnackbar({
+        title: t('studyAttributesUpdated', 'Study attributes updated'),
+        subtitle: t('studyAttributesUpdatedSubtitle', 'Updated from PCS: {{fields}}', {
+          fields: changed.map((flag) => flagLabels[flag]).join(', '),
+        }),
+        kind: 'success',
+        isLowContrast: true,
+      }),
+    onSyncError: (syncError: any) =>
+      showSnackbar({
+        title: t('studyAttributesSyncFailed', 'Could not sync study attributes'),
+        subtitle: syncError?.responseBody?.error?.message ?? syncError?.message,
+        kind: 'error',
+      }),
+  });
+
+  const refresh = async () => {
+    await mutate();
+    // Bypasses the sync guard: the PCS values may be identical while the patient's own
+    // attributes have drifted, and Refresh should mean "reconcile now".
+    syncNow();
+  };
 
   const openDelinkModal = () => {
     const dispose = showModal('pcs-delink-participant-modal', {
@@ -141,7 +179,7 @@ const LinkedParticipant: React.FC<LinkedParticipantProps> = ({
           })}
         </span>
         <div className={styles.pcsLinkedActions}>
-          <Button kind="ghost" size="sm" renderIcon={Renew} disabled={isLoading} onClick={() => mutate()}>
+          <Button kind="ghost" size="sm" renderIcon={Renew} disabled={isLoading} onClick={refresh}>
             {isLoading ? <InlineLoading description={t('refreshing', 'Refreshing...')} /> : t('refresh', 'Refresh')}
           </Button>
           <Button kind="danger--ghost" size="sm" renderIcon={Unlink} onClick={openDelinkModal}>

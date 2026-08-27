@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getSessionLocation, launchWorkspace2, launchWorkspaceGroup2, openmrsFetch } from '@openmrs/esm-framework';
 import { createPatient } from '../dependants/dependants.resource';
 import { findExistingLocalPatient } from '../search-bar/search-bar.resource';
-import { delinkParticipant, linkParticipantToPatient } from './link-participant.resource';
+import { delinkParticipant, linkParticipantToPatient, syncStudyAttributes } from './link-participant.resource';
 import { type PcsParticipant, type PcsSearchSubject } from './pcs.types';
 
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
@@ -230,5 +230,69 @@ describe('delinkParticipant', () => {
     await delink({ uuid: 'local-uuid', identifiers: [] });
 
     expect(deletes()).toEqual([]);
+  });
+});
+
+describe('syncStudyAttributes', () => {
+  const sync = () =>
+    syncStudyAttributes({
+      personUuid: 'local-uuid',
+      participant,
+      pbidsEnrollmentAttributeType: PBIDS_ENROLLMENT_TYPE,
+      cardseEnrollmentAttributeType: CARDSE_ENROLLMENT_TYPE,
+    });
+
+  const posts = () =>
+    mockOpenmrsFetch.mock.calls
+      .filter(([, options]) => (options as any)?.method === 'POST')
+      .map(([url, options]) => [url, (options as any).body]);
+
+  /** The fixture is pbidsEnrolled: true, cardse: false. */
+  const withAttributes = (attributes: Array<any>) =>
+    mockOpenmrsFetch.mockImplementation((url: string, options?: any) => {
+      if (options?.method === 'POST') {
+        return Promise.resolve({ data: {} } as any);
+      }
+      return Promise.resolve({ data: { results: attributes } } as any);
+    });
+
+  it('writes only the flag that drifted and reports just that one', async () => {
+    withAttributes([
+      { uuid: 'pbids-attr', value: 'true', attributeType: { uuid: PBIDS_ENROLLMENT_TYPE } },
+      { uuid: 'cardse-attr', value: 'true', attributeType: { uuid: CARDSE_ENROLLMENT_TYPE } },
+    ]);
+
+    await expect(sync()).resolves.toEqual(['cardse']);
+    expect(posts()).toEqual([['/ws/rest/v1/person/local-uuid/attribute/cardse-attr', { value: 'false' }]]);
+  });
+
+  it('writes nothing when the patient already matches PCS', async () => {
+    withAttributes([
+      { uuid: 'pbids-attr', value: 'true', attributeType: { uuid: PBIDS_ENROLLMENT_TYPE } },
+      { uuid: 'cardse-attr', value: 'false', attributeType: { uuid: CARDSE_ENROLLMENT_TYPE } },
+    ]);
+
+    await expect(sync()).resolves.toEqual([]);
+    expect(posts()).toEqual([]);
+  });
+
+  it('creates both attributes when the patient has none', async () => {
+    withAttributes([]);
+
+    await expect(sync()).resolves.toEqual(['pbids', 'cardse']);
+    expect(posts()).toEqual([
+      ['/ws/rest/v1/person/local-uuid/attribute', { attributeType: PBIDS_ENROLLMENT_TYPE, value: 'true' }],
+      ['/ws/rest/v1/person/local-uuid/attribute', { attributeType: CARDSE_ENROLLMENT_TYPE, value: 'false' }],
+    ]);
+  });
+
+  it('propagates a write failure so the caller can report it', async () => {
+    mockOpenmrsFetch.mockImplementation((_url: string, options?: any) =>
+      options?.method === 'POST'
+        ? Promise.reject(new Error('Attribute type not found'))
+        : Promise.resolve({ data: { results: [] } } as any),
+    );
+
+    await expect(sync()).rejects.toThrow('Attribute type not found');
   });
 });
