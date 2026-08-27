@@ -1,17 +1,76 @@
-export interface PcsPatient {
+/** How strongly a `name` term matched, in the order the API ranks them. */
+export type PcsMatchType = 'EXACT' | 'CONTAINS' | 'SOUNDEX';
+
+/** Which name field the term hit. A participant's own name wins over their compound head's. */
+export type PcsMatchedOn = 'name' | 'motherName' | 'compoundName';
+
+export interface PcsMother {
   individualId: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+}
+
+export interface PcsCompound {
+  compoundId: string;
+  headIndividualId: string;
+  headFirstName: string;
+  headMiddleName?: string;
+  headLastName: string;
+}
+
+export interface PcsVillage {
+  code: string;
   name: string;
-  gender?: 'male' | 'female' | 'other' | 'unknown';
-  birthDate?: string;
-  village?: string;
-  compoundHead?: string;
+}
+
+export interface PcsContact {
+  phone?: string;
+  email?: string;
   nationalId?: string;
-  phoneNumber?: string;
+  lastUpdated?: string;
+}
+
+export interface PcsParticipant {
+  individualId: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  sex: 'M' | 'F';
+  dateOfBirth?: string;
+  pbidsEnrolled: boolean;
+  cardse: boolean;
+  mother: PcsMother | null;
+  compound: PcsCompound;
+  village: PcsVillage;
+  contacts: Array<PcsContact>;
+  matchedOn: PcsMatchedOn | null;
+  matchType: PcsMatchType | null;
+}
+
+export interface PcsParticipantSearchResponse {
+  totalCount: number;
+  startIndex: number;
+  results: Array<PcsParticipant>;
+}
+
+export interface PcsApiError {
+  timestamp: string;
+  status: number;
+  error: string;
+  message: string;
+  path: string;
+}
+
+export interface PcsParticipantFilters {
+  name: string;
+  village: string;
+  phone: string;
 }
 
 /**
  * Normalized demographics of the patient selected on the left-hand side of the
- * registration screen. This is what the PCS registry is searched with.
+ * registration screen. This is the EMR-side input the filters are derived from.
  */
 export interface PcsSearchSubject {
   /** `fhir.Patient.id` — the local patient uuid, or the HIE resource id. */

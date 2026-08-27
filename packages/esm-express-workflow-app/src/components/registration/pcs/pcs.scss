@@ -29,7 +29,6 @@
 
 .pcsHeader {
   padding-bottom: layout.$spacing-02;
-  border-bottom: 1px solid colors.$gray-20;
 }
 
 .pcsTitle {
@@ -47,6 +46,36 @@
 
 .pcsSearch {
   width: 100%;
+}
+
+.pcsFilters {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  padding-bottom: layout.$spacing-03;
+}
+
+.pcsFilterRow {
+  display: flex;
+  align-items: flex-end;
+  gap: layout.$spacing-02;
+}
+
+.pcsFilterTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+}
+
+.pcsFilterActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: layout.$spacing-02;
+}
+
+.pcsFilterHint {
+  @include type.type-style('label-01');
+  color: colors.$red-60;
 }
 
 .pcsResults {
@@ -69,6 +98,7 @@
   display: flex;
   flex-direction: column;
   gap: layout.$spacing-02;
+  position: relative;
 }
 
 .pcsName {
@@ -97,7 +127,6 @@
   @include type.type-style('label-01');
   color: colors.$gray-70;
   padding-top: layout.$spacing-02;
-  border-top: 1px dashed colors.$gray-20;
 }
 
 .pcsFieldLabel {
@@ -119,7 +148,9 @@
 }
 
 .matchTag {
-  margin: 0;
+  position: absolute;
+  top: layout.$spacing-03;
+  right: layout.$spacing-03;
 }
 
 .pcsLoading {
