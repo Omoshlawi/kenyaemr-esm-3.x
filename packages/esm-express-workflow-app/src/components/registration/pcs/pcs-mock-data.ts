@@ -32,6 +32,15 @@ const MIDDLE_NAMES = ['OMONDI', 'AKINYI', 'WANJIRU', 'MWANGI', 'ATIENO', 'HASSAN
 
 const pick = <T>(values: Array<T>, seed: number): T => values[seed % values.length];
 
+/** Stable pseudo-random index so the same id always yields the same synthesized record. */
+const hashToIndex = (seed: string, modulo: number) => {
+  let hash = 0;
+  for (let index = 0; index < seed.length; index++) {
+    hash = (hash * 31 + seed.charCodeAt(index)) % 100_000;
+  }
+  return hash % modulo;
+};
+
 /**
  * A synthetic cohort large enough that a broad surname query overflows the default 50-row
  * page, which is what makes the "showing N of M" line worth rendering.
@@ -252,6 +261,58 @@ function buildLookalike(term: string): PcsParticipant {
     village,
     contacts: [
       { phone: '0712345678', email: 'contact@example.org', nationalId: '12345678', lastUpdated: '2026-08-20T09:15:00' },
+    ],
+    matchedOn: null,
+    matchType: null,
+  };
+}
+
+/**
+ * Answers a by-id lookup. Ids the cohort doesn't hold are synthesized deterministically —
+ * including the ones `buildLookalike` invents — so a linked patient always resolves during a
+ * demo. `matchedOn`/`matchType` are null: no name was queried, so nothing was scored.
+ */
+export function getMockParticipantById(individualId: string): PcsParticipant {
+  const known = COHORT.find((participant) => participant.individualId === individualId);
+
+  if (known) {
+    return { ...known, matchedOn: null, matchType: null };
+  }
+
+  const seed = hashToIndex(individualId, 1000);
+  const village = VILLAGES[seed % VILLAGES.length];
+  const familyName = pick(FAMILY_NAMES, seed);
+
+  return {
+    individualId,
+    firstName: pick(MALE_NAMES, seed),
+    middleName: pick(MIDDLE_NAMES, seed + 1),
+    lastName: familyName,
+    sex: seed % 2 === 0 ? 'F' : 'M',
+    dateOfBirth: `${1970 + (seed % 45)}-0${(seed % 9) + 1}-1${seed % 9}`,
+    pbidsEnrolled: true,
+    cardse: seed % 3 === 0,
+    mother: {
+      individualId: `${village.code}-0-0-0`,
+      firstName: pick(FEMALE_NAMES, seed + 2),
+      middleName: pick(MIDDLE_NAMES, seed + 3),
+      lastName: familyName,
+    },
+    compound: {
+      compoundId: `${village.code}-${(seed % 9) + 1}`,
+      headIndividualId: `${village.code}-${(seed % 9) + 1}-1-1`,
+      headFirstName: pick(MALE_NAMES, seed + 4),
+      headMiddleName: pick(MIDDLE_NAMES, seed + 5),
+      headLastName: familyName,
+    },
+    village,
+    contacts: [
+      {
+        phone: `07${String(20000000 + seed * 271).slice(0, 8)}`,
+        email: `participant${seed}@example.org`,
+        nationalId: String(30000000 + seed * 419),
+        lastUpdated: '2026-08-20T09:15:00',
+      },
     ],
     matchedOn: null,
     matchType: null,

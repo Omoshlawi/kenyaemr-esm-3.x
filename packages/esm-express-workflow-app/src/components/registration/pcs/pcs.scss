@@ -89,6 +89,49 @@
   color: colors.$gray-70;
 }
 
+.pcsLinkedBanner {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  padding: layout.$spacing-03;
+  background-color: colors.$green-10;
+  border-left: 3px solid colors.$green-50;
+  border-radius: 4px;
+}
+
+.pcsLinkedTitle {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+}
+
+.pcsLinkedSubtitle {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.pcsLinkedActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+  margin-top: layout.$spacing-02;
+}
+
+.pcsContacts {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  padding-top: layout.$spacing-02;
+  border-top: 1px dashed colors.$gray-20;
+}
+
+.pcsLinkError {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  padding: layout.$spacing-04;
+  text-align: center;
+}
+
 .pcsTile {
   background-color: colors.$gray-10;
   border: 1px solid colors.$gray-20;
@@ -151,6 +194,12 @@
   position: absolute;
   top: layout.$spacing-03;
   right: layout.$spacing-03;
+}
+
+/* In-flow tags. Zeroing Carbon's own tag margin leaves the parent row's `gap` as the single
+   source of spacing, so several can sit side by side. */
+.enrollmentTag {
+  margin: 0;
 }
 
 .pcsLoading {

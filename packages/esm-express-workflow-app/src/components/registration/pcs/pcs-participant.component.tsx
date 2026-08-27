@@ -11,6 +11,8 @@ import { registerOrLaunchHIEPatient } from '../search-bar/search-bar.resource';
 interface PCSParticipantTileProps {
   participant: PcsParticipant;
   subject: PcsSearchSubject;
+  /** Lets the pane re-read the patient's study link once one has been written. */
+  onLinked?: () => void;
 }
 
 const GENDER_ICONS = {
@@ -20,7 +22,7 @@ const GENDER_ICONS = {
 
 const SEX_LABELS: Record<PcsParticipant['sex'], string> = { F: 'Female', M: 'Male' };
 
-const PCSParticipantTile: React.FC<PCSParticipantTileProps> = ({ participant, subject }) => {
+const PCSParticipantTile: React.FC<PCSParticipantTileProps> = ({ participant, subject, onLinked }) => {
   const { t } = useTranslation();
 
   const name = formatParticipantName(participant);
@@ -53,6 +55,7 @@ const PCSParticipantTile: React.FC<PCSParticipantTileProps> = ({ participant, su
       closeModal: () => dispose(),
       subject,
       participant,
+      onLinked,
     });
   };
 

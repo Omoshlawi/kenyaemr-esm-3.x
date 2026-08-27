@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Button, DismissibleTag, IconButton, Search, SkeletonText, TextInput } from '@carbon/react';
 import { FilterEdit, Reset, Search as SearchIcon } from '@carbon/react/icons';
-import { ErrorState } from '@openmrs/esm-framework';
+import { ErrorState, useConfig } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import styles from './pcs.scss';
+import { type ExpressWorkflowConfig } from '../../../config-schema';
 import { EmptySvg } from '../empty-svg/empty-svg.component';
+import LinkedParticipant from './linked-participant.component';
+import { usePatientStudyLink } from './link-participant.resource';
 import PCSParticipantTile from './pcs-participant.component';
 import {
   getPcsErrorMessage,
@@ -28,6 +31,13 @@ const PCSSearchResults: React.FC<PCSSearchResultsProps> = ({ subject }) => {
   const [draft, setDraft] = useState<PcsParticipantFilters>(() => toPcsParticipantFilters(subject));
   const [filters, setFilters] = useState<PcsParticipantFilters>(() => toPcsParticipantFilters(subject));
   const [isEditingFilters, setIsEditingFilters] = useState(false);
+  const { pcsIdentifiers } = useConfig<ExpressWorkflowConfig>();
+  const {
+    studyParticipantId,
+    localPatient,
+    isLoading: isCheckingLink,
+    mutate: mutateStudyLink,
+  } = usePatientStudyLink(subject, pcsIdentifiers.studyParticipantID);
 
   const { participants, totalCount, isLoading, error } = usePcsParticipantSearch(filters);
 
@@ -157,11 +167,50 @@ const PCSSearchResults: React.FC<PCSSearchResultsProps> = ({ subject }) => {
             : t('pcsRecordsFound', 'PCS record(s) found ({{count}})', { count: participants.length })}
         </span>
         {participants.map((participant) => (
-          <PCSParticipantTile key={participant.individualId} participant={participant} subject={subject} />
+          <PCSParticipantTile
+            key={participant.individualId}
+            participant={participant}
+            subject={subject}
+            onLinked={() => mutateStudyLink()}
+          />
         ))}
       </div>
     );
   };
+
+  // A patient already carrying a study participant ID gives us a unique key into PCS, so the
+  // pane reports on that participant instead of searching for candidates.
+  const isLinked = Boolean(studyParticipantId);
+
+  if (isCheckingLink) {
+    return (
+      <div className={styles.pcsColumn}>
+        <div className={styles.pcsHeader}>
+          <span className={styles.pcsTitle}>{t('pcsRegistry', 'PCS registry')}</span>
+        </div>
+        <div className={styles.pcsSkeletonTile}>
+          <SkeletonText heading width="60%" />
+          <SkeletonText paragraph lineCount={3} />
+        </div>
+      </div>
+    );
+  }
+
+  if (isLinked) {
+    return (
+      <div className={styles.pcsColumn}>
+        <div className={styles.pcsHeader}>
+          <span className={styles.pcsTitle}>{t('pcsRegistry', 'PCS registry')}</span>
+        </div>
+        <LinkedParticipant
+          subject={subject}
+          studyParticipantId={studyParticipantId!}
+          localPatient={localPatient}
+          onDelinked={() => mutateStudyLink()}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={styles.pcsColumn}>

@@ -106,6 +106,14 @@ export const pcsLinkParticipantModal = getAsyncLifecycle(
   },
 );
 
+export const pcsDelinkParticipantModal = getAsyncLifecycle(
+  () => import('./components/registration/pcs/delink-participant.modal'),
+  {
+    featureName: 'pcs-delink-participant-modal',
+    moduleName,
+  },
+);
+
 export const anaestheticFormWorkspace = getAsyncLifecycle(
   () => import('./components/anaesthetic/forms/anaesthetic-form.component'),
   options,

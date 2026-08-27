@@ -5,11 +5,23 @@ import '@testing-library/jest-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PCSSearchResults from './pcs-search.component';
 import { usePcsParticipantSearch } from './pcs.resource';
+import { usePatientStudyLink } from './link-participant.resource';
 import { type PcsSearchSubject } from './pcs.types';
 
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@openmrs/esm-framework')>()),
   ErrorState: () => null,
+  useConfig: () => ({
+    pcsIdentifiers: { studyParticipantID: 'study-id-type-uuid', studyTemporaryParticipantID: '' },
+    pcsAttributeTypes: { pbidsEnrollmentStatus: 'pbids-uuid', cardseEnrollmentStatus: 'cardse-uuid' },
+  }),
+}));
+
+// The pane checks whether the patient is already linked before deciding what to render.
+vi.mock('./link-participant.resource', () => ({ usePatientStudyLink: vi.fn() }));
+
+vi.mock('./linked-participant.component', () => ({
+  default: ({ studyParticipantId }: any) => <span>{`Linked view for ${studyParticipantId}`}</span>,
 }));
 
 // Interpolates, unlike the bare fallback mock used elsewhere — the tag labels under test
@@ -31,6 +43,7 @@ vi.mock('./pcs.resource', async (importOriginal) => ({
 vi.mock('./pcs-participant.component', () => ({ default: () => null }));
 
 const mockUsePcsParticipantSearch = vi.mocked(usePcsParticipantSearch);
+const mockUsePatientStudyLink = vi.mocked(usePatientStudyLink);
 
 const subject: PcsSearchSubject = {
   id: 'patient-uuid',
@@ -47,6 +60,13 @@ const committedFilters = () => mockUsePcsParticipantSearch.mock.calls.at(-1)?.[0
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockUsePatientStudyLink.mockReturnValue({
+    localPatient: null,
+    studyParticipantId: undefined,
+    isLoading: false,
+    error: undefined,
+    mutate: vi.fn(),
+  } as any);
   mockUsePcsParticipantSearch.mockReturnValue({
     participants: [],
     totalCount: 0,
@@ -129,5 +149,21 @@ describe('PCS filter bar', () => {
     expect(screen.getByText('Add a filter to search the PCS registry')).toBeInTheDocument();
     // The panel opens itself so there are fields to type into.
     expect(screen.getByLabelText('Name')).toBeInTheDocument();
+  });
+
+  it('reports on the linked participant instead of searching when the patient has a study ID', () => {
+    mockUsePatientStudyLink.mockReturnValue({
+      localPatient: { uuid: 'local-uuid' },
+      studyParticipantId: '901-1-1-3',
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    } as any);
+
+    render(<PCSSearchResults subject={subject} />);
+
+    expect(screen.getByText('Linked view for 901-1-1-3')).toBeInTheDocument();
+    // The filter bar is gone entirely — the pane is reporting, not searching.
+    expect(screen.queryByPlaceholderText('Village name')).not.toBeInTheDocument();
   });
 });

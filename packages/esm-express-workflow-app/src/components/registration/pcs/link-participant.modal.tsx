@@ -16,7 +16,7 @@ import { showSnackbar, useConfig } from '@openmrs/esm-framework';
 
 import { type ExpressWorkflowConfig } from '../../../config-schema';
 import { formatParticipantName } from './pcs.resource';
-import { getParticipantCategory, getStudyStatus, linkParticipantToPatient } from './link-participant.resource';
+import { linkParticipantToPatient } from './link-participant.resource';
 import { type PcsParticipant, type PcsSearchSubject } from './pcs.types';
 import styles from './link-participant.scss';
 
@@ -24,18 +24,22 @@ interface LinkParticipantModalProps {
   closeModal: () => void;
   subject: PcsSearchSubject;
   participant: PcsParticipant;
+  onLinked?: () => void;
 }
 
-const LinkParticipantModal: React.FC<LinkParticipantModalProps> = ({ closeModal, subject, participant }) => {
+const LinkParticipantModal: React.FC<LinkParticipantModalProps> = ({ closeModal, subject, participant, onLinked }) => {
   const { t } = useTranslation();
-  const { pbidsIdentifiers, pbidsAttributeTypes } = useConfig<ExpressWorkflowConfig>();
+  const { pcsIdentifiers, pcsAttributeTypes } = useConfig<ExpressWorkflowConfig>();
   const [isLinking, setIsLinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Written as booleans; shown as Yes/No because that is what a person reads.
+  const yesNo = (flag: boolean) => (flag ? t('yes', 'Yes') : t('no', 'No'));
+
   const rows: Array<[string, string]> = [
     [t('studyParticipantId', 'Study participant ID'), participant.individualId],
-    [t('studyStatus', 'Study status'), getStudyStatus(participant)],
-    [t('participantCategory', 'Participant category'), getParticipantCategory(participant)],
+    [t('pbidsEnrollment', 'PBIDS enrollment'), yesNo(participant.pbidsEnrolled)],
+    [t('cardseEnrollment', 'CARDSE enrollment'), yesNo(participant.cardse)],
   ];
 
   const handleLink = async () => {
@@ -45,9 +49,9 @@ const LinkParticipantModal: React.FC<LinkParticipantModalProps> = ({ closeModal,
       await linkParticipantToPatient({
         subject,
         participant,
-        studyParticipantIdentifierType: pbidsIdentifiers.studyParticipantID,
-        studyStatusAttributeType: pbidsAttributeTypes.studyStatus,
-        participantCategoryAttributeType: pbidsAttributeTypes.participantCategory,
+        studyParticipantIdentifierType: pcsIdentifiers.studyParticipantID,
+        pbidsEnrollmentAttributeType: pcsAttributeTypes.pbidsEnrollmentStatus,
+        cardseEnrollmentAttributeType: pcsAttributeTypes.cardseEnrollmentStatus,
         t,
       });
       showSnackbar({
@@ -58,6 +62,7 @@ const LinkParticipantModal: React.FC<LinkParticipantModalProps> = ({ closeModal,
         kind: 'success',
         isLowContrast: true,
       });
+      onLinked?.();
       closeModal();
     } catch (e: any) {
       // Surface the server's own wording — a duplicate study ID or a concept-format

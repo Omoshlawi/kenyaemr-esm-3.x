@@ -1,7 +1,7 @@
 import useSWR from 'swr';
 import { getPatientName, restBaseUrl } from '@openmrs/esm-framework';
 import { getNationalIdFromPatient, getPhoneFromFhirPatient } from '../helper';
-import { searchMockParticipants } from './pcs-mock-data';
+import { getMockParticipantById, searchMockParticipants } from './pcs-mock-data';
 import {
   type PcsApiError,
   type PcsCompound,
@@ -82,6 +82,34 @@ async function fetchParticipants(url: string): Promise<PcsParticipantSearchRespo
  * Searches the PCS registry. The URL is the SWR key, so editing a filter refetches and an
  * unchanged query dedupes.
  */
+/**
+ * TODO(pbids-api): the by-id endpoint is still being built, so this answers from static
+ * data. Once it is live, replace the two lines below with:
+ *
+ *   const { data } = await openmrsFetch<PcsParticipant>(url);
+ *   return data;
+ */
+async function fetchParticipantById(url: string): Promise<PcsParticipant> {
+  await sleep(900);
+  return getMockParticipantById(decodeURIComponent(url.slice(url.lastIndexOf('/') + 1)));
+}
+
+/**
+ * Fetches the one participant a patient is already linked to. A single record comes back in
+ * the same shape as one entry of the search results.
+ */
+export function usePcsParticipant(individualId: string | null) {
+  const url = individualId ? `${restBaseUrl}/pbids-participants/${encodeURIComponent(individualId)}` : null;
+
+  const { data, isLoading, error, mutate } = useSWR(url, fetchParticipantById, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    shouldRetryOnError: false,
+  });
+
+  return { participant: data ?? null, isLoading, error, mutate };
+}
+
 export function usePcsParticipantSearch(filters: PcsParticipantFilters | null, options?: ParticipantSearchOptions) {
   const url = buildParticipantSearchUrl(filters, options);
 

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getSessionLocation, launchWorkspace2, launchWorkspaceGroup2, openmrsFetch } from '@openmrs/esm-framework';
 import { createPatient } from '../dependants/dependants.resource';
 import { findExistingLocalPatient } from '../search-bar/search-bar.resource';
-import { linkParticipantToPatient } from './link-participant.resource';
+import { delinkParticipant, linkParticipantToPatient } from './link-participant.resource';
 import { type PcsParticipant, type PcsSearchSubject } from './pcs.types';
 
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
@@ -22,8 +22,8 @@ const mockCreatePatient = vi.mocked(createPatient);
 const mockFindExistingLocalPatient = vi.mocked(findExistingLocalPatient);
 
 const STUDY_ID_TYPE = 'study-id-type-uuid';
-const STUDY_STATUS_TYPE = 'study-status-type-uuid';
-const CATEGORY_TYPE = 'category-type-uuid';
+const PBIDS_ENROLLMENT_TYPE = 'pbids-enrollment-type-uuid';
+const CARDSE_ENROLLMENT_TYPE = 'cardse-enrollment-type-uuid';
 
 const participant = {
   individualId: '901-1-1-3',
@@ -59,8 +59,8 @@ const link = (subject: PcsSearchSubject) =>
     subject,
     participant,
     studyParticipantIdentifierType: STUDY_ID_TYPE,
-    studyStatusAttributeType: STUDY_STATUS_TYPE,
-    participantCategoryAttributeType: CATEGORY_TYPE,
+    pbidsEnrollmentAttributeType: PBIDS_ENROLLMENT_TYPE,
+    cardseEnrollmentAttributeType: CARDSE_ENROLLMENT_TYPE,
     t: (_key: string, fallback: string) => fallback,
   });
 
@@ -132,13 +132,29 @@ describe('linkParticipantToPatient', () => {
   it('leaves an attribute alone when it already holds the right value', async () => {
     respondWith({
       localPatient: { uuid: 'local-uuid', identifiers: [] },
-      attributes: [{ uuid: 'attribute-uuid', value: 'Enrolled', attributeType: { uuid: STUDY_STATUS_TYPE } }],
+      attributes: [{ uuid: 'attribute-uuid', value: 'true', attributeType: { uuid: PBIDS_ENROLLMENT_TYPE } }],
     });
 
     await link(localSubject);
 
-    // Study status is already 'Enrolled'; only the category attribute is written.
+    // PBIDS enrollment already reads 'true'; only the CARDSE attribute is written.
     expect(writes().filter((url) => url.includes('/attribute'))).toEqual(['/ws/rest/v1/person/local-uuid/attribute']);
+  });
+
+  it('writes both enrolment flags as boolean strings', async () => {
+    respondWith({ localPatient: { uuid: 'local-uuid', identifiers: [] } });
+
+    await link(localSubject);
+
+    const attributePosts = mockOpenmrsFetch.mock.calls
+      .filter(([url, options]) => url.includes('/attribute') && (options as any)?.method === 'POST')
+      .map(([, options]) => (options as any).body);
+
+    // The fixture is pbidsEnrolled: true, cardse: false — `false` is written, not skipped.
+    expect(attributePosts).toEqual([
+      { attributeType: PBIDS_ENROLLMENT_TYPE, value: 'true' },
+      { attributeType: CARDSE_ENROLLMENT_TYPE, value: 'false' },
+    ]);
   });
 
   it('throws without checking in when a write fails', async () => {
@@ -162,3 +178,57 @@ function mockLaunchedAfterWrites() {
     Math.max(...mockOpenmrsFetch.mock.invocationCallOrder)
   );
 }
+
+describe('delinkParticipant', () => {
+  const delink = (localPatient: any) =>
+    delinkParticipant({
+      localPatient,
+      studyParticipantIdentifierType: STUDY_ID_TYPE,
+      pbidsEnrollmentAttributeType: PBIDS_ENROLLMENT_TYPE,
+      cardseEnrollmentAttributeType: CARDSE_ENROLLMENT_TYPE,
+    });
+
+  const deletes = () =>
+    mockOpenmrsFetch.mock.calls.filter(([, options]) => (options as any)?.method === 'DELETE').map(([url]) => url);
+
+  it('voids the identifier and both attributes', async () => {
+    mockOpenmrsFetch.mockResolvedValue({
+      data: {
+        results: [
+          { uuid: 'status-attr', attributeType: { uuid: PBIDS_ENROLLMENT_TYPE } },
+          { uuid: 'category-attr', attributeType: { uuid: CARDSE_ENROLLMENT_TYPE } },
+        ],
+      },
+    } as any);
+
+    await delink({
+      uuid: 'local-uuid',
+      identifiers: [{ uuid: 'identifier-uuid', identifierType: { uuid: STUDY_ID_TYPE } }],
+    });
+
+    expect(deletes()).toEqual([
+      '/ws/rest/v1/patient/local-uuid/identifier/identifier-uuid',
+      '/ws/rest/v1/person/local-uuid/attribute/status-attr',
+      '/ws/rest/v1/person/local-uuid/attribute/category-attr',
+    ]);
+  });
+
+  it('still succeeds when the study data was only partly written', async () => {
+    mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } } as any);
+
+    await expect(delink({ uuid: 'local-uuid', identifiers: [] })).resolves.toBeUndefined();
+    expect(deletes()).toEqual([]);
+  });
+
+  it('leaves an already-voided attribute alone', async () => {
+    mockOpenmrsFetch.mockResolvedValue({
+      data: {
+        results: [{ uuid: 'status-attr', voided: true, attributeType: { uuid: PBIDS_ENROLLMENT_TYPE } }],
+      },
+    } as any);
+
+    await delink({ uuid: 'local-uuid', identifiers: [] });
+
+    expect(deletes()).toEqual([]);
+  });
+});

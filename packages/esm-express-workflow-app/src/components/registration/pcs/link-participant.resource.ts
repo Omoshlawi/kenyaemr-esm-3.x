@@ -6,50 +6,54 @@ import {
   restBaseUrl,
   type Visit,
 } from '@openmrs/esm-framework';
+import useSWR from 'swr';
 import { createPatient } from '../dependants/dependants.resource';
+import { getLocalIdentifierValue } from '../helper';
 import { findExistingLocalPatient } from '../search-bar/search-bar.resource';
 import { type VisitFormProps } from '../start-visit-form/visit-form-workspace/visit-form.workspace';
 import { formatParticipantName } from './pcs.resource';
 import { type PcsParticipant, type PcsSearchSubject } from './pcs.types';
 
-export const STUDY_STATUS_ENROLLED = 'Enrolled';
-export const STUDY_STATUS_NOT_ENROLLED = 'Not enrolled';
-export const PARTICIPANT_CATEGORY_CARDSE = 'CARDSE';
-export const PARTICIPANT_CATEGORY_PBIDS = 'PBIDS';
-
 const PATIENT_REPRESENTATION =
   'custom:(patientId,uuid,identifiers,display,patientIdentifier:(uuid,identifier),person:(gender,age,birthdate,birthdateEstimated,personName,addresses,display,dead,deathDate),attributes:(value,attributeType:(uuid,display)))';
 
-export const getStudyStatus = (participant: PcsParticipant) =>
-  participant.pbidsEnrolled ? STUDY_STATUS_ENROLLED : STUDY_STATUS_NOT_ENROLLED;
-
-export const getParticipantCategory = (participant: PcsParticipant) =>
-  participant.cardse ? PARTICIPANT_CATEGORY_CARDSE : PARTICIPANT_CATEGORY_PBIDS;
+/**
+ * Both attribute types are `java.lang.Boolean` format. OpenMRS stores `person_attribute.value`
+ * as a string column and hydrates them with `Boolean.valueOf(value)`, so "true"/"false"
+ * round-trip exactly — and the unchanged-value check in `writePersonAttribute` stays a plain
+ * string compare.
+ */
+const toAttributeValue = (flag: boolean) => String(Boolean(flag));
 
 interface LinkParticipantOptions {
   subject: PcsSearchSubject;
   participant: PcsParticipant;
   studyParticipantIdentifierType: string;
-  studyStatusAttributeType: string;
-  participantCategoryAttributeType: string;
+  pbidsEnrollmentAttributeType: string;
+  cardseEnrollmentAttributeType: string;
   t: (key: string, fallback: string) => string;
+}
+
+/** Read-only: the local record behind this subject, or null when they are not registered here. */
+export async function findLocalPatientForSubject(subject: PcsSearchSubject) {
+  if (subject.source === 'local') {
+    const { data } = await openmrsFetch(`${restBaseUrl}/patient/${subject.id}?v=${PATIENT_REPRESENTATION}`);
+    return data;
+  }
+
+  return findExistingLocalPatient(subject.patient, false);
 }
 
 /**
  * Resolves the authorized patient to a local OpenMRS record, creating them when the search
  * came from the HIE and they are not registered here yet.
  *
- * Deliberately composed from `findExistingLocalPatient` + `createPatient` rather than
+ * Deliberately composed from `findLocalPatientForSubject` + `createPatient` rather than
  * `registerOrLaunchHIEPatient`: that helper launches the visit workspace inside its create
  * branch, which would fire before the study data is written.
  */
 async function resolveLocalPatient(subject: PcsSearchSubject, t: LinkParticipantOptions['t']) {
-  if (subject.source === 'local') {
-    const { data } = await openmrsFetch(`${restBaseUrl}/patient/${subject.id}?v=${PATIENT_REPRESENTATION}`);
-    return data;
-  }
-
-  const existing = await findExistingLocalPatient(subject.patient, false);
+  const existing = await findLocalPatientForSubject(subject);
   if (existing) {
     return existing;
   }
@@ -64,6 +68,28 @@ async function resolveLocalPatient(subject: PcsSearchSubject, t: LinkParticipant
     },
     t,
   );
+}
+
+/**
+ * Whether this patient already carries a study participant ID. Having one means we hold a
+ * unique key into PCS, so the pane reports on that participant instead of searching.
+ */
+export function usePatientStudyLink(subject: PcsSearchSubject, studyParticipantIdentifierType: string) {
+  const key = `pcs-study-link/${subject.id}/${studyParticipantIdentifierType}`;
+
+  const { data, isLoading, error, mutate } = useSWR(key, () => findLocalPatientForSubject(subject), {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    shouldRetryOnError: false,
+  });
+
+  return {
+    localPatient: data ?? null,
+    studyParticipantId: getLocalIdentifierValue(data, studyParticipantIdentifierType),
+    isLoading,
+    error,
+    mutate,
+  };
 }
 
 /** Updates the study identifier in place when it already exists, rather than duplicating it. */
@@ -154,8 +180,8 @@ export async function linkParticipantToPatient({
   subject,
   participant,
   studyParticipantIdentifierType,
-  studyStatusAttributeType,
-  participantCategoryAttributeType,
+  pbidsEnrollmentAttributeType,
+  cardseEnrollmentAttributeType,
   t,
 }: LinkParticipantOptions) {
   const localPatient = await resolveLocalPatient(subject, t);
@@ -165,10 +191,61 @@ export async function linkParticipantToPatient({
   }
 
   await writeStudyIdentifier(localPatient, studyParticipantIdentifierType, participant.individualId);
-  await writePersonAttribute(localPatient.uuid, studyStatusAttributeType, getStudyStatus(participant));
-  await writePersonAttribute(localPatient.uuid, participantCategoryAttributeType, getParticipantCategory(participant));
+  await writePersonAttribute(
+    localPatient.uuid,
+    pbidsEnrollmentAttributeType,
+    toAttributeValue(participant.pbidsEnrolled),
+  );
+  await writePersonAttribute(localPatient.uuid, cardseEnrollmentAttributeType, toAttributeValue(participant.cardse));
 
   await launchCheckInWorkspace(localPatient, localPatient.uuid);
 
   return localPatient;
+}
+
+interface DelinkParticipantOptions {
+  localPatient: any;
+  studyParticipantIdentifierType: string;
+  pbidsEnrollmentAttributeType: string;
+  cardseEnrollmentAttributeType: string;
+}
+
+/**
+ * Removes the study data from a patient: the participant identifier and both attributes.
+ * OpenMRS voids rather than hard-deletes these, so the history survives.
+ *
+ * Anything already absent is skipped rather than treated as an error — a patient left
+ * half-written by a failed link must still be delinkable.
+ */
+export async function delinkParticipant({
+  localPatient,
+  studyParticipantIdentifierType,
+  pbidsEnrollmentAttributeType,
+  cardseEnrollmentAttributeType,
+}: DelinkParticipantOptions) {
+  const personUuid = localPatient?.uuid;
+
+  if (!personUuid) {
+    throw new Error('Could not resolve a local patient record to delink');
+  }
+
+  const identifier = localPatient?.identifiers?.find(
+    (candidate: any) => candidate.identifierType?.uuid === studyParticipantIdentifierType && !candidate.voided,
+  );
+
+  if (identifier) {
+    await openmrsFetch(`${restBaseUrl}/patient/${personUuid}/identifier/${identifier.uuid}`, { method: 'DELETE' });
+  }
+
+  const response = await openmrsFetch(`${restBaseUrl}/person/${personUuid}/attribute?v=default`);
+  const attributes: Array<any> = response?.data?.results ?? [];
+
+  for (const attributeType of [pbidsEnrollmentAttributeType, cardseEnrollmentAttributeType]) {
+    const attribute = attributes.find(
+      (candidate) => candidate.attributeType?.uuid === attributeType && !candidate.voided,
+    );
+    if (attribute) {
+      await openmrsFetch(`${restBaseUrl}/person/${personUuid}/attribute/${attribute.uuid}`, { method: 'DELETE' });
+    }
+  }
 }
