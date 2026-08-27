@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 import { createPatient } from '../../dependants/dependants.resource';
 import { getLocalIdentifierValue } from '../../helper';
-import { findExistingLocalPatient } from '../../search-bar/search-bar.resource';
+import { findExistingLocalPatient, useLocalPatientByIdentifier } from '../../search-bar/search-bar.resource';
 import { type VisitFormProps } from '../../start-visit-form/visit-form-workspace/visit-form.workspace';
 import { formatParticipantName } from './pcs.resource';
 import { type PcsParticipant, type PcsSearchSubject } from '../pcs.types';
@@ -275,6 +275,25 @@ export function useHiePatientStudyId(hiePatient: any, studyParticipantIdentifier
     studyParticipantId: getLocalIdentifierValue(data, studyParticipantIdentifierType),
     isLoading,
   };
+}
+
+/**
+ * The local patient carrying a participant's `individualId`, or null when nobody does.
+ *
+ * The value search is verified rather than trusted: called without an identifier type,
+ * `searchLocalPatientByIdentifier` falls back to a `q=` search that matches on
+ * `identifier.display.includes(value)`, so it can return a patient who merely contains the
+ * string. Confirming the exact value under one of the study types is what makes a match mean
+ * "linked".
+ */
+export function useLinkedPatientForParticipant(individualId: string | null, identifierTypes: Array<string>) {
+  const { localPatient, isLoading, error } = useLocalPatientByIdentifier(individualId);
+
+  const isLinked = identifierTypes.some(
+    (identifierType) => identifierType && getLocalIdentifierValue(localPatient, identifierType) === individualId,
+  );
+
+  return { linkedPatient: isLinked ? localPatient : null, isLoading, error };
 }
 
 interface DelinkParticipantOptions {

@@ -1,10 +1,10 @@
 import React from 'react';
 import { SkeletonText } from '@carbon/react';
-import { age, ErrorState } from '@openmrs/esm-framework';
+import { ErrorState } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import styles from '../pcs.scss';
-import { formatParticipantName, usePcsDependants } from '../resources/pcs.resource';
-import { GENDER_ICONS, SEX_LABELS } from './participant-details.component';
+import { usePcsDependants } from '../resources/pcs.resource';
+import DependantRow from './dependant-row.component';
 
 interface DependantsListProps {
   /** The linked participant — dependants are those whose mother is this individual. */
@@ -43,27 +43,7 @@ const DependantsList: React.FC<DependantsListProps> = ({ motherIndividualId }) =
   return (
     <div className={styles.pcsResults}>
       {dependants.map((dependant) => (
-        <div className={styles.pcsTile} key={dependant.individualId}>
-          <div className={styles.pcsRow}>
-            <span className={styles.pcsName}>{formatParticipantName(dependant)}</span>
-          </div>
-          <div className={styles.pcsRow}>
-            <span className={styles.genderIcon}>
-              {GENDER_ICONS[dependant.sex]}
-              <span>{SEX_LABELS[dependant.sex]}</span>
-            </span>
-            {dependant.dateOfBirth && (
-              <>
-                <span className={styles.separator}>&middot;</span>
-                <span>{age(dependant.dateOfBirth)}</span>
-              </>
-            )}
-          </div>
-          <div className={styles.pcsRow}>
-            <span className={styles.pcsFieldLabel}>{t('individualId', 'Individual ID')}:</span>
-            <span>{dependant.individualId}</span>
-          </div>
-        </div>
+        <DependantRow key={dependant.individualId} dependant={dependant} />
       ))}
     </div>
   );
