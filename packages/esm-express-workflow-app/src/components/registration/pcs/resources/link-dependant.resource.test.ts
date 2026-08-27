@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getSessionLocation, launchWorkspace2, launchWorkspaceGroup2, openmrsFetch } from '@openmrs/esm-framework';
 import { createPatient } from '../../dependants/dependants.resource';
 import { findExistingLocalPatient } from '../../search-bar/search-bar.resource';
-import { linkDependantToParticipant } from './link-dependant.resource';
+import { assignTemporaryStudyId, linkDependantToParticipant } from './link-dependant.resource';
 import { type PcsParticipant } from '../pcs.types';
 
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
@@ -116,6 +116,48 @@ describe('linkDependantToParticipant', () => {
     );
 
     await expect(link()).rejects.toThrow('Identifier already in use');
+    expect(launchWorkspace2).not.toHaveBeenCalled();
+  });
+});
+
+describe('assignTemporaryStudyId', () => {
+  const assign = () =>
+    assignTemporaryStudyId({
+      dependant,
+      parentPhoneNumber: '0712345678',
+      motherIndividualId: '901-1-1-2',
+      t: (_key: string, fallback: string) => fallback,
+    });
+
+  it('issues a temporary ID for an existing record without writing anything itself', async () => {
+    mockFindExistingLocalPatient.mockResolvedValue({ uuid: 'dependant-uuid', identifiers: [] } as any);
+
+    const { temporaryId } = await assign();
+
+    expect(mockCreatePatient).not.toHaveBeenCalled();
+    expect(temporaryId).toMatch(/^TMP-/);
+    // The endpoint assigns the identifier, and the enrolment flags are unknown with no PCS
+    // record — so the client writes neither.
+    expect(writes()).toEqual([]);
+    expect(launchWorkspace2).toHaveBeenCalledOnce();
+  });
+
+  it('creates the dependant first when they are not registered here', async () => {
+    mockFindExistingLocalPatient.mockResolvedValue(null);
+    mockCreatePatient.mockResolvedValue({ uuid: 'new-uuid', identifiers: [] } as any);
+
+    const { localPatient } = await assign();
+
+    expect(mockCreatePatient).toHaveBeenCalledOnce();
+    expect(localPatient.uuid).toBe('new-uuid');
+    expect(launchWorkspace2).toHaveBeenCalledOnce();
+  });
+
+  it('throws without checking in when the dependant cannot be resolved', async () => {
+    mockFindExistingLocalPatient.mockResolvedValue(null);
+    mockCreatePatient.mockResolvedValue({} as any);
+
+    await expect(assign()).rejects.toThrow();
     expect(launchWorkspace2).not.toHaveBeenCalled();
   });
 });

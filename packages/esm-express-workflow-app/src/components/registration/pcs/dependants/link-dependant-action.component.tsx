@@ -13,8 +13,11 @@ type LinkDependantActionProps = {
   /** The parent's PCS individual ID. Absent when the parent is not linked to PCS. */
   motherIndividualId?: string;
   parentPhoneNumber?: string;
-  /** Fires after a link or an unlink — both want the row's cached lookup dropped. */
-  onLinkChanged?: () => void;
+  /**
+   * Fires after a link or an unlink. A link passes the resolved patient so the row can cache
+   * it directly; an unlink passes nothing, meaning "re-resolve".
+   */
+  onLinkChanged?: (localPatient?: any) => void;
 };
 
 const LinkDependantAction: React.FC<LinkDependantActionProps> = ({
@@ -47,17 +50,13 @@ const LinkDependantAction: React.FC<LinkDependantActionProps> = ({
     });
   };
 
-  const linkedId = paticipantId ?? temporaryId;
-
-  if (linkedId) {
+  // Only a permanent participant ID may be unlinked — it is the one the registrar chose.
+  if (paticipantId) {
     const openDelinkModal = () => {
       const dispose = showModal('pcs-delink-participant-modal', {
         closeModal: () => dispose(),
         localPatient,
-        studyParticipantId: linkedId,
-        // Void the type this row actually holds — the hide check accepts either, so
-        // defaulting to the permanent one would silently void nothing for a temporary ID.
-        identifierTypeUuid: paticipantId ? studyParticipantID : studyTemporaryParticipantID,
+        studyParticipantId: paticipantId,
         onDelinked: onLinkChanged,
       });
     };
@@ -67,6 +66,13 @@ const LinkDependantAction: React.FC<LinkDependantActionProps> = ({
         {t('unlink', 'Unlink')}
       </Button>
     );
+  }
+
+  // A temporary ID was issued and is owned by PCS: the row counts as linked, so it is not
+  // offered for linking again, but removing it here would drop something the registry
+  // generated without PCS being told.
+  if (temporaryId) {
+    return null;
   }
 
   // The modal lists the mother's PCS dependants, so without her study ID there is nothing to

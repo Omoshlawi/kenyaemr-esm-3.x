@@ -297,11 +297,20 @@ const DependentsComponent: React.FC<DependentProps> = ({
     [t],
   );
 
-  /** Drops a cached lookup so the effect below re-resolves that dependant's local record. */
-  const forgetCachedDependant = useCallback((dependentId: string) => {
+  /**
+   * Refreshes a row after its PCS link changed. A link hands back the patient it resolved, so
+   * cache that directly — a freshly created dependant with no identifiers of their own has
+   * nothing for `findExistingLocalPatient` to re-resolve by, and re-searching would leave the
+   * row offering to create them a second time. An unlink passes nothing and re-resolves.
+   */
+  const refreshCachedDependant = useCallback((dependentId: string, localPatient?: any) => {
     setLocalPatientCache((previous) => {
       const next = new Map(previous);
-      next.delete(dependentId);
+      if (localPatient) {
+        next.set(dependentId, localPatient);
+      } else {
+        next.delete(dependentId);
+      }
       return next;
     });
   }, []);
@@ -442,7 +451,7 @@ const DependentsComponent: React.FC<DependentProps> = ({
                 localPatient={localPatient}
                 motherIndividualId={motherIndividualId}
                 parentPhoneNumber={parentPhoneNumber}
-                onLinkChanged={() => forgetCachedDependant(dependent.id)}
+                onLinkChanged={(localPatient?: any) => refreshCachedDependant(dependent.id, localPatient)}
               />
             )}
           </div>
@@ -470,7 +479,7 @@ const DependentsComponent: React.FC<DependentProps> = ({
     handleQueuePatient,
     motherIndividualId,
     parentPhoneNumber,
-    forgetCachedDependant,
+    refreshCachedDependant,
   ]);
 
   useEffect(() => {

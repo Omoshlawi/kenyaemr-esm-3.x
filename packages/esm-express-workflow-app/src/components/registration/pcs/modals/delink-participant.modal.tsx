@@ -10,8 +10,6 @@ interface DelinkParticipantModalProps {
   closeModal: () => void;
   localPatient: any;
   studyParticipantId: string;
-  /** Which identifier type to void. Defaults to the permanent study participant ID. */
-  identifierTypeUuid?: string;
   participantName?: string;
   onDelinked?: () => void;
 }
@@ -20,7 +18,6 @@ const DelinkParticipantModal: React.FC<DelinkParticipantModalProps> = ({
   closeModal,
   localPatient,
   studyParticipantId,
-  identifierTypeUuid,
   participantName,
   onDelinked,
 }) => {
@@ -35,7 +32,7 @@ const DelinkParticipantModal: React.FC<DelinkParticipantModalProps> = ({
     try {
       await delinkParticipant({
         localPatient,
-        studyParticipantIdentifierType: identifierTypeUuid ?? pcsIdentifiers.studyParticipantID,
+        studyParticipantIdentifierType: pcsIdentifiers.studyParticipantID,
         pbidsEnrollmentAttributeType: pcsAttributeTypes.pbidsEnrollmentStatus,
         cardseEnrollmentAttributeType: pcsAttributeTypes.cardseEnrollmentStatus,
       });

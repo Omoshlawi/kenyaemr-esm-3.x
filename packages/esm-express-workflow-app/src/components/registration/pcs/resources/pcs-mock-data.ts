@@ -368,6 +368,14 @@ function buildDependantsFor(motherId: string): Array<PcsParticipant> {
   });
 }
 
+/**
+ * Stands in for the temporary-ID endpoint, which generates and assigns the identifier
+ * server-side. Derived from the patient uuid so a repeat call is stable.
+ */
+export function getMockTemporaryStudyId(patientUuid: string): string {
+  return `TMP-${String(100000 + hashToIndex(patientUuid, 899999))}`;
+}
+
 export function searchMockParticipants(url: string): PcsParticipantSearchResponse {
   const query = new URLSearchParams(url.slice(url.indexOf('?') + 1));
 

@@ -19,7 +19,7 @@ import { age, ErrorState, showSnackbar, useConfig } from '@openmrs/esm-framework
 
 import { type ExpressWorkflowConfig } from '../../../../config-schema';
 import { formatParticipantName, usePcsDependants } from '../resources/pcs.resource';
-import { linkDependantToParticipant } from '../resources/link-dependant.resource';
+import { assignTemporaryStudyId, linkDependantToParticipant } from '../resources/link-dependant.resource';
 import styles from './link-participant.scss';
 
 interface LinkDependantModalProps {
@@ -29,8 +29,11 @@ interface LinkDependantModalProps {
   parentPhoneNumber?: string;
   /** The mother's PCS individual ID — her dependants are what this lists. */
   motherIndividualId: string;
-  onLinked?: () => void;
+  onLinked?: (localPatient?: any) => void;
 }
+
+/** Sentinel for "not in PCS yet" — kept in the same selection model as the candidates. */
+const TEMPORARY_OPTION = '__temporary__';
 
 const LinkDependantModal: React.FC<LinkDependantModalProps> = ({
   closeModal,
@@ -46,20 +49,43 @@ const LinkDependantModal: React.FC<LinkDependantModalProps> = ({
   const [isLinking, setIsLinking] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
 
+  const isTemporary = selectedId === TEMPORARY_OPTION;
   const selected = dependants.find((candidate) => candidate.individualId === selectedId);
   const yesNo = (flag: boolean) => (flag ? t('yes', 'Yes') : t('no', 'No'));
 
   const handleLink = async () => {
-    if (!selected) {
+    if (!selected && !isTemporary) {
       return;
     }
     setLinkError(null);
     setIsLinking(true);
     try {
-      await linkDependantToParticipant({
+      if (isTemporary) {
+        const { localPatient, temporaryId } = await assignTemporaryStudyId({
+          dependant,
+          parentPhoneNumber,
+          motherIndividualId,
+          t,
+        });
+        showSnackbar({
+          title: t('temporaryStudyIdAssigned', 'Temporary study ID assigned'),
+          subtitle: temporaryId
+            ? t('temporaryStudyIdAssignedSubtitle', 'PCS issued {{individualId}} for this dependant.', {
+                individualId: temporaryId,
+              })
+            : undefined,
+          kind: 'success',
+          isLowContrast: true,
+        });
+        onLinked?.(localPatient);
+        closeModal();
+        return;
+      }
+
+      const localPatient = await linkDependantToParticipant({
         dependant,
         parentPhoneNumber,
-        participant: selected,
+        participant: selected!,
         studyParticipantIdentifierType: pcsIdentifiers.studyParticipantID,
         pbidsEnrollmentAttributeType: pcsAttributeTypes.pbidsEnrollmentStatus,
         cardseEnrollmentAttributeType: pcsAttributeTypes.cardseEnrollmentStatus,
@@ -73,7 +99,7 @@ const LinkDependantModal: React.FC<LinkDependantModalProps> = ({
         kind: 'success',
         isLowContrast: true,
       });
-      onLinked?.();
+      onLinked?.(localPatient);
       closeModal();
     } catch (e: any) {
       // A study ID already held by another patient comes back from OpenMRS as a duplicate
@@ -89,36 +115,39 @@ const LinkDependantModal: React.FC<LinkDependantModalProps> = ({
   };
 
   const renderCandidates = () => {
-    if (isLoading) {
-      return <SkeletonText paragraph lineCount={3} />;
-    }
-
-    if (error) {
-      return <ErrorState error={error} headerTitle={t('errorLoadingDependants', 'Error loading dependants')} />;
-    }
-
-    if (dependants.length === 0) {
-      return (
-        <p className={styles.note}>{t('noDependantsSubtitle', 'PCS has no participants recorded with this mother.')}</p>
-      );
-    }
+    const temporaryOption = (
+      <RadioButton value={TEMPORARY_OPTION} labelText={t('notInPcs', 'Not in PCS — issue a temporary study ID')} />
+    );
 
     return (
-      <RadioButtonGroup
-        name="pcsDependant"
-        orientation="vertical"
-        valueSelected={selectedId ?? undefined}
-        onChange={(value) => setSelectedId(String(value))}>
-        {dependants.map((candidate) => (
-          <RadioButton
-            key={candidate.individualId}
-            value={candidate.individualId}
-            labelText={`${formatParticipantName(candidate)} · ${candidate.individualId} · ${candidate.sex}${
-              candidate.dateOfBirth ? ` · ${age(candidate.dateOfBirth)}` : ''
-            }`}
-          />
-        ))}
-      </RadioButtonGroup>
+      <>
+        {isLoading && <SkeletonText paragraph lineCount={3} />}
+        {!isLoading && error && (
+          <ErrorState error={error} headerTitle={t('errorLoadingDependants', 'Error loading dependants')} />
+        )}
+        {!isLoading && !error && dependants.length === 0 && (
+          <p className={styles.note}>
+            {t('noDependantsSubtitle', 'PCS has no participants recorded with this mother.')}
+          </p>
+        )}
+
+        <RadioButtonGroup
+          name="pcsDependant"
+          orientation="vertical"
+          valueSelected={selectedId ?? undefined}
+          onChange={(value) => setSelectedId(String(value))}>
+          {dependants.map((candidate) => (
+            <RadioButton
+              key={candidate.individualId}
+              value={candidate.individualId}
+              labelText={`${formatParticipantName(candidate)} · ${candidate.individualId} · ${candidate.sex}${
+                candidate.dateOfBirth ? ` · ${age(candidate.dateOfBirth)}` : ''
+              }`}
+            />
+          ))}
+          {temporaryOption}
+        </RadioButtonGroup>
+      </>
     );
   };
 
@@ -135,6 +164,12 @@ const LinkDependantModal: React.FC<LinkDependantModalProps> = ({
 
         <p className={styles.willWrite}>{t('mothersDependantsInPcs', "Mother's dependants in PCS")}</p>
         {renderCandidates()}
+
+        {isTemporary && (
+          <p className={styles.note}>
+            {t('temporaryIdWillBeIssued', 'PCS will generate a temporary study ID and assign it to this patient.')}
+          </p>
+        )}
 
         {selected && (
           <>
@@ -175,7 +210,7 @@ const LinkDependantModal: React.FC<LinkDependantModalProps> = ({
         <Button kind="secondary" onClick={closeModal} disabled={isLinking}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button kind="primary" onClick={handleLink} disabled={isLinking || !selected}>
+        <Button kind="primary" onClick={handleLink} disabled={isLinking || (!selected && !isTemporary)}>
           {isLinking ? (
             <InlineLoading description={t('linkingRecords', 'Linking records...')} />
           ) : (

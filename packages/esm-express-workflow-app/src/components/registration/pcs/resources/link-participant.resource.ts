@@ -157,7 +157,8 @@ async function writePersonAttribute(personUuid: string, attributeType: string, v
   return true;
 }
 
-async function launchCheckInWorkspace(patient: any, patientUuid: string) {
+/** Exported so the temporary-ID path can check in without going through the stamping. */
+export async function launchCheckInWorkspace(patient: any, patientUuid: string) {
   await launchWorkspaceGroup2('ewf-patient-chart', {
     patient,
     patientUuid,
