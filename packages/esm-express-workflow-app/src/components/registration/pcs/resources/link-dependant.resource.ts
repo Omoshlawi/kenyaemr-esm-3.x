@@ -2,8 +2,8 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { createPatient } from '../../dependants/dependants.resource';
 import { transformToDependentPayload } from '../../helper';
 import { findExistingLocalPatient } from '../../search-bar/search-bar.resource';
-import { launchCheckInWorkspace, stampAndCheckIn } from './link-participant.resource';
-import { getMockTemporaryStudyId } from './pcs-mock-data';
+import { launchCheckInWorkspace, readLocalPatient, stampAndCheckIn } from './link-participant.resource';
+import { createMockParticipant } from './pcs-mock-data';
 import { type PcsParticipant } from '../pcs.types';
 
 interface LinkDependantOptions {
@@ -79,29 +79,46 @@ const MOCK_LATENCY_MS = 900;
 
 const sleep = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-interface TemporaryStudyIdOptions {
-  motherIndividualId: string;
+interface CreatePcsParticipantOptions {
   patientUuid: string;
+  motherId: string;
 }
 
 /**
- * TODO(pbids-api): the path and payload field names are not settled yet. The endpoint takes
- * the mother's study ID and the patient uuid, generates a temporary study participant ID and
- * assigns it to the patient server-side. Once it exists, replace the two lines below with:
- *
- *   const { data } = await openmrsFetch<{ identifier?: string }>(
- *     `${restBaseUrl}/pbids-participants/temporary-id`,
- *     { method: 'POST', headers: { 'Content-Type': 'application/json' },
- *       body: { motherIndividualId, patientUuid } },
- *   );
- *   return data?.identifier;
+ * The request as the module documents it. Kept real and separately testable so the path and
+ * both field names are pinned now rather than discovered on the day the endpoint is deployed —
+ * the same split the search side uses with `buildParticipantSearchUrl`.
  */
-async function requestTemporaryStudyId({
-  motherIndividualId,
-  patientUuid,
-}: TemporaryStudyIdOptions): Promise<string | undefined> {
+export function buildCreateParticipantRequest({ patientUuid, motherId }: CreatePcsParticipantOptions) {
+  return {
+    url: `${restBaseUrl}/pbids-participants`,
+    options: {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { patientUuid, motherId },
+    },
+  };
+}
+
+/**
+ * TODO(pbids-api): `openmrs-module-pbids` is built but not deployed, so this answers from
+ * static data. Once it is live, replace the two lines below with:
+ *
+ *   const { data } = await openmrsFetch<PcsParticipant>(request.url, request.options);
+ *   return data;
+ *
+ * Documented failures, all of which surface through the modal's notification rather than
+ * indicating a bug here: `409` when the patient already holds a study or temporary identifier
+ * (the UI hides the action for those rows, but two registrars racing would reach it), `400`
+ * for a missing field or an unknown patient or mother, and `503` when the PCS database is
+ * unreachable.
+ */
+async function createPcsParticipant({ patientUuid, motherId }: CreatePcsParticipantOptions): Promise<PcsParticipant> {
+  const request = buildCreateParticipantRequest({ patientUuid, motherId });
+
   await sleep(MOCK_LATENCY_MS);
-  return getMockTemporaryStudyId(`${motherIndividualId}|${patientUuid}`);
+  // Answering from the built body keeps the mock honest about what would have been sent.
+  return createMockParticipant(request.options.body);
 }
 
 interface AssignTemporaryStudyIdOptions {
@@ -112,12 +129,13 @@ interface AssignTemporaryStudyIdOptions {
 }
 
 /**
- * For a dependant PCS does not know yet: resolve them locally, then have the registry issue a
- * temporary study participant ID against their mother's.
+ * For a dependant PCS does not know yet: resolve them locally, then have the registry create a
+ * participant for them against their mother's, carrying a temporary study id.
  *
- * No identifier or attribute is written here — the endpoint assigns the identifier itself, and
- * with no PCS record the two enrolment flags are unknown, so leaving them absent says
- * "unknown" rather than asserting `false`.
+ * Nothing is written here. The module owns both sides of this — it assigns the identifier and
+ * sets the `PBIDS Enrolled` / `CARDSE Enrolled` person attributes to match the PCS row, which
+ * the docs are explicit must stay in step. A client-side write would be the thing that broke
+ * that pairing.
  */
 export async function assignTemporaryStudyId({
   dependant,
@@ -131,9 +149,13 @@ export async function assignTemporaryStudyId({
     throw new Error('Could not resolve a local patient record for this dependant');
   }
 
-  const temporaryId = await requestTemporaryStudyId({ motherIndividualId, patientUuid: localPatient.uuid });
+  const participant = await createPcsParticipant({ patientUuid: localPatient.uuid, motherId: motherIndividualId });
 
-  await launchCheckInWorkspace(localPatient, localPatient.uuid);
+  // The module assigns the identifier server-side, so the record resolved above could never
+  // carry it. Re-read, tolerating failure — the participant was created either way.
+  const updated = (await readLocalPatient(localPatient.uuid).catch(() => null)) ?? localPatient;
 
-  return { localPatient, temporaryId };
+  await launchCheckInWorkspace(updated, updated.uuid);
+
+  return { localPatient: updated, participant };
 }

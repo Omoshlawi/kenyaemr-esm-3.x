@@ -35,11 +35,20 @@ interface LinkParticipantOptions {
   t: (key: string, fallback: string) => string;
 }
 
+/**
+ * Reads a patient by uuid. Used to pick up writes the caller just made — and by uuid rather
+ * than by identifier search, because a patient created moments ago may have nothing
+ * searchable on them yet.
+ */
+export async function readLocalPatient(patientUuid: string) {
+  const { data } = await openmrsFetch(`${restBaseUrl}/patient/${patientUuid}?v=${PATIENT_REPRESENTATION}`);
+  return data;
+}
+
 /** Read-only: the local record behind this subject, or null when they are not registered here. */
 export async function findLocalPatientForSubject(subject: PcsSearchSubject) {
   if (subject.source === 'local') {
-    const { data } = await openmrsFetch(`${restBaseUrl}/patient/${subject.id}?v=${PATIENT_REPRESENTATION}`);
-    return data;
+    return readLocalPatient(subject.id);
   }
 
   return findExistingLocalPatient(subject.patient, false);
@@ -236,9 +245,17 @@ export async function stampAndCheckIn({
     cardseEnrollmentAttributeType,
   });
 
-  await launchCheckInWorkspace(localPatient, localPatient.uuid);
+  // Re-read so the caller gets a record that actually carries what we just wrote. Without
+  // this the dependants row caches a patient whose identifiers predate the link and goes on
+  // offering to link them.
+  //
+  // Tolerating a failed read is deliberate: the writes have already succeeded by this point,
+  // so reporting failure would be a lie. The row stays stale until a refresh instead.
+  const updated = (await readLocalPatient(localPatient.uuid).catch(() => null)) ?? localPatient;
 
-  return localPatient;
+  await launchCheckInWorkspace(updated, updated.uuid);
+
+  return updated;
 }
 
 /**

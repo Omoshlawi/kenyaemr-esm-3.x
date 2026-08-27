@@ -66,12 +66,18 @@ const link = (subject: PcsSearchSubject) =>
 
 /** Routes the mocked fetch by URL so each test only states what it cares about. */
 const respondWith = ({ localPatient, attributes = [] }: { localPatient?: any; attributes?: Array<any> }) => {
+  let customReads = 0;
+
   mockOpenmrsFetch.mockImplementation((url: string) => {
     if (url.includes('/attribute?v=default')) {
       return Promise.resolve({ data: { results: attributes } } as any);
     }
     if (url.includes('?v=custom')) {
-      return Promise.resolve({ data: localPatient } as any);
+      // A local subject is read twice: once to resolve it, once again after the writes. Only
+      // the second is tagged, so a test asserting `reread` genuinely proves the caller got the
+      // refreshed record — returning the first one is what left the row showing "PCS Link".
+      customReads += 1;
+      return Promise.resolve({ data: { ...localPatient, reread: customReads > 1 } } as any);
     }
     return Promise.resolve({ data: {} } as any);
   });
@@ -89,10 +95,12 @@ describe('linkParticipantToPatient', () => {
   it('uses the existing record for a local patient and never creates one', async () => {
     respondWith({ localPatient: { uuid: 'local-uuid', identifiers: [] } });
 
-    await link(localSubject);
+    const result = await link(localSubject);
 
     expect(mockCreatePatient).not.toHaveBeenCalled();
     expect(writes()).toContain('/ws/rest/v1/patient/local-uuid/identifier');
+    // Returning the pre-write object is what made the dependants row keep offering to link.
+    expect(result.reread).toBe(true);
   });
 
   it('creates the patient for an HIE match, then writes the study data, then checks in once', async () => {

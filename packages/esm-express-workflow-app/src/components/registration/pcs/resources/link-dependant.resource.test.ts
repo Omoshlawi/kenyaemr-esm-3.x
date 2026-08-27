@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getSessionLocation, launchWorkspace2, launchWorkspaceGroup2, openmrsFetch } from '@openmrs/esm-framework';
 import { createPatient } from '../../dependants/dependants.resource';
 import { findExistingLocalPatient } from '../../search-bar/search-bar.resource';
-import { assignTemporaryStudyId, linkDependantToParticipant } from './link-dependant.resource';
+import {
+  assignTemporaryStudyId,
+  buildCreateParticipantRequest,
+  linkDependantToParticipant,
+} from './link-dependant.resource';
 import { type PcsParticipant } from '../pcs.types';
 
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
@@ -62,10 +66,25 @@ const link = () =>
 const writes = () =>
   mockOpenmrsFetch.mock.calls.filter(([, options]) => (options as any)?.method === 'POST').map(([url]) => url);
 
+/**
+ * The by-uuid re-read is tagged so tests can tell the refreshed record apart from the one
+ * resolved before the writes — that distinction is the bug this file guards.
+ */
+const rereadFor = (url: string) => ({
+  uuid: url.split('/patient/')[1]?.split('?')[0],
+  identifiers: [],
+  reread: true,
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetSessionLocationDefault();
-  mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } } as any);
+  mockOpenmrsFetch.mockImplementation((url: string) => {
+    if (url.includes('?v=custom')) {
+      return Promise.resolve({ data: rereadFor(url) } as any);
+    }
+    return Promise.resolve({ data: { results: [] } } as any);
+  });
 });
 
 function mockGetSessionLocationDefault() {
@@ -132,12 +151,15 @@ describe('assignTemporaryStudyId', () => {
   it('issues a temporary ID for an existing record without writing anything itself', async () => {
     mockFindExistingLocalPatient.mockResolvedValue({ uuid: 'dependant-uuid', identifiers: [] } as any);
 
-    const { temporaryId } = await assign();
+    const { participant } = await assign();
 
     expect(mockCreatePatient).not.toHaveBeenCalled();
-    expect(temporaryId).toMatch(/^TMP-/);
-    // The endpoint assigns the identifier, and the enrolment flags are unknown with no PCS
-    // record — so the client writes neither.
+    // Ten characters — two initials, yyMMdd, a two-digit sequence — against nine for a
+    // permanent id. The length is what marks a row as temporary.
+    expect(participant.individualId).toHaveLength(10);
+    expect(participant).toMatchObject({ pbidsEnrolled: true, cardse: false });
+    // The module assigns the identifier and sets both person attributes as a pair with the
+    // PCS row, so a client-side write here would break that pairing.
     expect(writes()).toEqual([]);
     expect(launchWorkspace2).toHaveBeenCalledOnce();
   });
@@ -150,7 +172,24 @@ describe('assignTemporaryStudyId', () => {
 
     expect(mockCreatePatient).toHaveBeenCalledOnce();
     expect(localPatient.uuid).toBe('new-uuid');
+    // The module assigns the identifier server-side, so the caller must get a re-read record
+    // rather than the one resolved before the call.
+    expect(localPatient.reread).toBe(true);
     expect(launchWorkspace2).toHaveBeenCalledOnce();
+  });
+
+  it('builds the documented request', () => {
+    // The path and both field names are what silently drifted from the contract before the
+    // docs landed. The transport is still stubbed, so this is the layer where they can be
+    // pinned today.
+    expect(buildCreateParticipantRequest({ patientUuid: 'dependant-uuid', motherId: '901-1-1-2' })).toEqual({
+      url: '/ws/rest/v1/pbids-participants',
+      options: {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: { patientUuid: 'dependant-uuid', motherId: '901-1-1-2' },
+      },
+    });
   });
 
   it('throws without checking in when the dependant cannot be resolved', async () => {

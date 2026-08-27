@@ -369,11 +369,57 @@ function buildDependantsFor(motherId: string): Array<PcsParticipant> {
 }
 
 /**
- * Stands in for the temporary-ID endpoint, which generates and assigns the identifier
- * server-side. Derived from the patient uuid so a repeat call is stable.
+ * Stands in for `POST /pbids-participants`, which creates a participant for an infant with no
+ * PCS record and assigns them a temporary study id.
+ *
+ * The documented temporary id is ten characters — two initials, `yyMMdd`, then a two-digit
+ * sequence — against nine for a permanent `villcode-compound-household-person` id; the
+ * differing length is what marks a row as temporary. The real sequence counts ids issued that
+ * day, which a mock cannot know, so it is derived from the uuid instead to stay stable across
+ * repeat calls. The shape is what the UI cares about.
  */
-export function getMockTemporaryStudyId(patientUuid: string): string {
-  return `TMP-${String(100000 + hashToIndex(patientUuid, 899999))}`;
+export function createMockParticipant({
+  patientUuid,
+  motherId,
+}: {
+  patientUuid: string;
+  motherId: string;
+}): PcsParticipant {
+  const seed = hashToIndex(patientUuid, 1000);
+  const mother = getMockParticipantById(motherId);
+  const firstName = pick(FEMALE_NAMES, seed);
+  const lastName = mother.lastName;
+  const date = new Date();
+  const yyMMdd = [
+    String(date.getFullYear()).slice(-2),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('');
+
+  return {
+    individualId: `${firstName[0]}${lastName[0]}${yyMMdd}${String((seed % 99) + 1).padStart(2, '0')}`,
+    firstName,
+    middleName: pick(MIDDLE_NAMES, seed + 1),
+    lastName,
+    sex: seed % 2 === 0 ? 'F' : 'M',
+    dateOfBirth: undefined,
+    // The module sets PBIDS to YES and CARDSE to NO — CARDSE is a category for the elderly, so
+    // it never applies to an infant.
+    pbidsEnrolled: true,
+    cardse: false,
+    mother: {
+      individualId: mother.individualId,
+      firstName: mother.firstName,
+      middleName: mother.middleName,
+      lastName: mother.lastName,
+    },
+    // Compound and village are copied from the mother's own stored row.
+    compound: mother.compound,
+    village: mother.village,
+    contacts: [],
+    matchedOn: null,
+    matchType: null,
+  };
 }
 
 export function searchMockParticipants(url: string): PcsParticipantSearchResponse {

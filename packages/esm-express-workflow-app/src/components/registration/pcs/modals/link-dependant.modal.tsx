@@ -61,7 +61,7 @@ const LinkDependantModal: React.FC<LinkDependantModalProps> = ({
     setIsLinking(true);
     try {
       if (isTemporary) {
-        const { localPatient, temporaryId } = await assignTemporaryStudyId({
+        const { localPatient, participant } = await assignTemporaryStudyId({
           dependant,
           parentPhoneNumber,
           motherIndividualId,
@@ -69,9 +69,9 @@ const LinkDependantModal: React.FC<LinkDependantModalProps> = ({
         });
         showSnackbar({
           title: t('temporaryStudyIdAssigned', 'Temporary study ID assigned'),
-          subtitle: temporaryId
+          subtitle: participant?.individualId
             ? t('temporaryStudyIdAssignedSubtitle', 'PCS issued {{individualId}} for this dependant.', {
-                individualId: temporaryId,
+                individualId: participant.individualId,
               })
             : undefined,
           kind: 'success',
