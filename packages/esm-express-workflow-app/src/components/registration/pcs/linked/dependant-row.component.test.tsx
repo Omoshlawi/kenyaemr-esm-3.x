@@ -20,6 +20,8 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../resources/link-participant.resource', () => ({ useLinkedPatientForParticipant: vi.fn() }));
 
+vi.mock('../resources/pcs.resource', () => ({ formatParticipantName: () => 'DENNIS OMONDI ODONGO' }));
+
 const mockUseLinkedPatientForParticipant = vi.mocked(useLinkedPatientForParticipant);
 
 const dependant = {
@@ -47,12 +49,15 @@ describe('DependantRow', () => {
       linkedPatient: { uuid: 'p1', person: { personName: { display: 'Dennis Odongo' } } },
       isLoading: false,
       error: undefined,
+      mutate: vi.fn(),
     } as any);
 
     render(<DependantRow dependant={dependant} />);
 
     expect(screen.getByText('Linked')).toBeInTheDocument();
     expect(screen.getByText('Dennis Odongo')).toBeInTheDocument();
+    // A linked row offers the undo, not the link.
+    expect(screen.getByRole('button', { name: 'Unlink' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Create & link' })).not.toBeInTheDocument();
   });
 
@@ -61,11 +66,13 @@ describe('DependantRow', () => {
       linkedPatient: null,
       isLoading: false,
       error: undefined,
+      mutate: vi.fn(),
     } as any);
 
     render(<DependantRow dependant={dependant} />);
 
     expect(screen.getByRole('button', { name: 'Create & link' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Unlink' })).not.toBeInTheDocument();
     expect(screen.queryByText('Linked')).not.toBeInTheDocument();
   });
 
@@ -74,6 +81,7 @@ describe('DependantRow', () => {
       linkedPatient: null,
       isLoading: true,
       error: undefined,
+      mutate: vi.fn(),
     } as any);
 
     render(<DependantRow dependant={dependant} />);
@@ -81,6 +89,7 @@ describe('DependantRow', () => {
     // Flashing the action before the answer arrives invites a misclick on a child who is
     // already registered.
     expect(screen.queryByRole('button', { name: 'Create & link' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Unlink' })).not.toBeInTheDocument();
     expect(screen.queryByText('Linked')).not.toBeInTheDocument();
   });
 });

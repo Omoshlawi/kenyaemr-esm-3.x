@@ -86,6 +86,11 @@ export interface PcsSearchSubject {
    * HIE patient has to be able to create them locally, which needs more than demographics.
    */
   patient: fhir.Patient;
+  /**
+   * The mother's HIE record when one was matched. Its `contact` array is where her dependants
+   * come from; a locally-converted patient has none, hence optional.
+   */
+  hiePatient?: fhir.Patient;
   name: string;
   gender?: string;
   birthDate?: string;

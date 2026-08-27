@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 import { createPatient } from '../../dependants/dependants.resource';
 import { getLocalIdentifierValue } from '../../helper';
-import { findExistingLocalPatient, useLocalPatientByIdentifier } from '../../search-bar/search-bar.resource';
+import { findExistingLocalPatient, searchLocalPatientByIdentifier } from '../../search-bar/search-bar.resource';
 import { type VisitFormProps } from '../../start-visit-form/visit-form-workspace/visit-form.workspace';
 import { formatParticipantName } from './pcs.resource';
 import { type PcsParticipant, type PcsSearchSubject } from '../pcs.types';
@@ -259,25 +259,6 @@ export async function stampAndCheckIn({
 }
 
 /**
- * The study participant ID on the local record behind an HIE patient, or undefined when they
- * are not registered here or not linked. Keyed on the patient so several rows share one read.
- */
-export function useHiePatientStudyId(hiePatient: any, studyParticipantIdentifierType: string) {
-  const key = hiePatient?.id ? `pcs-hie-study-id/${hiePatient.id}/${studyParticipantIdentifierType}` : null;
-
-  const { data, isLoading } = useSWR(key, () => findExistingLocalPatient(hiePatient, false), {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    shouldRetryOnError: false,
-  });
-
-  return {
-    studyParticipantId: getLocalIdentifierValue(data, studyParticipantIdentifierType),
-    isLoading,
-  };
-}
-
-/**
  * The local patient carrying a participant's `individualId`, or null when nobody does.
  *
  * The value search is verified rather than trusted: called without an identifier type,
@@ -285,15 +266,25 @@ export function useHiePatientStudyId(hiePatient: any, studyParticipantIdentifier
  * `identifier.display.includes(value)`, so it can return a patient who merely contains the
  * string. Confirming the exact value under one of the study types is what makes a match mean
  * "linked".
+ *
+ * `mutate` matters here — the row links and unlinks against this, and would otherwise keep
+ * reporting the state it read before the write.
  */
 export function useLinkedPatientForParticipant(individualId: string | null, identifierTypes: Array<string>) {
-  const { localPatient, isLoading, error } = useLocalPatientByIdentifier(individualId);
+  const {
+    data: localPatient,
+    isLoading,
+    error,
+    mutate,
+  } = useSWR(individualId ? `pcs-linked-patient/${individualId}` : null, () =>
+    searchLocalPatientByIdentifier(individualId!),
+  );
 
   const isLinked = identifierTypes.some(
     (identifierType) => identifierType && getLocalIdentifierValue(localPatient, identifierType) === individualId,
   );
 
-  return { linkedPatient: isLinked ? localPatient : null, isLoading, error };
+  return { linkedPatient: isLinked ? localPatient : null, isLoading, error, mutate };
 }
 
 interface DelinkParticipantOptions {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button, Tag } from '@carbon/react';
-import { Link as LinkIcon } from '@carbon/react/icons';
-import { age, useConfig } from '@openmrs/esm-framework';
+import { Link as LinkIcon, Unlink } from '@carbon/react/icons';
+import { age, showModal, useConfig } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import styles from '../pcs.scss';
 import { type ExpressWorkflowConfig } from '../../../../config-schema';
@@ -12,26 +12,45 @@ import { GENDER_ICONS, SEX_LABELS } from './participant-details.component';
 
 interface DependantRowProps {
   dependant: PcsParticipant;
+  /** The mother's HIE record — the modal picks her dependants out of its contacts. */
+  hiePatient?: fhir.Patient;
+  parentPhoneNumber?: string;
 }
 
 const getPatientName = (localPatient: any) =>
   localPatient?.person?.personName?.display || localPatient?.display || localPatient?.person?.display;
 
 /** One of the mother's PCS children, with whether they are already a patient here. */
-const DependantRow: React.FC<DependantRowProps> = ({ dependant }) => {
+const DependantRow: React.FC<DependantRowProps> = ({ dependant, hiePatient, parentPhoneNumber }) => {
   const { t } = useTranslation();
   const { pcsIdentifiers } = useConfig<ExpressWorkflowConfig>();
 
   // Either type counts: a child linked through "Not in PCS" holds the temporary one, and the
   // module makes that id the participant's INDIVIDID, so they come back in this list too.
-  const { linkedPatient, isLoading } = useLinkedPatientForParticipant(dependant.individualId, [
+  const { linkedPatient, isLoading, mutate } = useLinkedPatientForParticipant(dependant.individualId, [
     pcsIdentifiers.studyParticipantID,
     pcsIdentifiers.studyTemporaryParticipantID,
   ]);
 
-  // TODO(pcs): create the patient locally, then stamp this participant's own individualId
-  // through `stampAndCheckIn`. No temporary id is involved — PCS already knows this child.
-  const createAndLink = () => {};
+  const openLinkModal = () => {
+    const dispose = showModal('pcs-link-dependant-modal', {
+      closeModal: () => dispose(),
+      participant: dependant,
+      hiePatient,
+      parentPhoneNumber,
+      onLinked: () => mutate(),
+    });
+  };
+
+  const openUnlinkModal = () => {
+    const dispose = showModal('pcs-delink-participant-modal', {
+      closeModal: () => dispose(),
+      localPatient: linkedPatient,
+      studyParticipantId: dependant.individualId,
+      participantName: formatParticipantName(dependant),
+      onDelinked: () => mutate(),
+    });
+  };
 
   return (
     <div className={styles.pcsTile}>
@@ -69,13 +88,19 @@ const DependantRow: React.FC<DependantRowProps> = ({ dependant }) => {
         </div>
       )}
 
-      {/* Neither is rendered while the lookup is in flight: showing the action first would
-          flash it on every row and invite a misclick on a child who is already registered. */}
-      {!isLoading && !linkedPatient && (
+      {/* Nothing is rendered while the lookup is in flight: showing the link action first
+          would flash it on every row and invite a misclick on a child already registered. */}
+      {!isLoading && (
         <div className={styles.pcsTileActions}>
-          <Button kind="tertiary" size="sm" renderIcon={LinkIcon} onClick={createAndLink}>
-            {t('createAndLink', 'Create & link')}
-          </Button>
+          {linkedPatient ? (
+            <Button kind="danger--ghost" size="sm" renderIcon={Unlink} onClick={openUnlinkModal}>
+              {t('unlink', 'Unlink')}
+            </Button>
+          ) : (
+            <Button kind="tertiary" size="sm" renderIcon={LinkIcon} onClick={openLinkModal}>
+              {t('createAndLink', 'Create & link')}
+            </Button>
+          )}
         </div>
       )}
     </div>

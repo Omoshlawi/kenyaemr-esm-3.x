@@ -9,10 +9,13 @@ import DependantRow from './dependant-row.component';
 interface DependantsListProps {
   /** The linked participant — dependants are those whose mother is this individual. */
   motherIndividualId: string;
+  /** The mother's HIE record, passed down so a row can offer to link one of her contacts. */
+  hiePatient?: fhir.Patient;
+  parentPhoneNumber?: string;
 }
 
 /** The linked client's children in PCS. Display-only. */
-const DependantsList: React.FC<DependantsListProps> = ({ motherIndividualId }) => {
+const DependantsList: React.FC<DependantsListProps> = ({ motherIndividualId, hiePatient, parentPhoneNumber }) => {
   const { t } = useTranslation();
   // SWR dedupes this with the identical call in the parent that supplies the tab count.
   const { dependants, isLoading, error } = usePcsDependants(motherIndividualId);
@@ -43,7 +46,12 @@ const DependantsList: React.FC<DependantsListProps> = ({ motherIndividualId }) =
   return (
     <div className={styles.pcsResults}>
       {dependants.map((dependant) => (
-        <DependantRow key={dependant.individualId} dependant={dependant} />
+        <DependantRow
+          key={dependant.individualId}
+          dependant={dependant}
+          hiePatient={hiePatient}
+          parentPhoneNumber={parentPhoneNumber}
+        />
       ))}
     </div>
   );

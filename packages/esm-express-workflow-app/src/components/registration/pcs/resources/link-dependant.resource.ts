@@ -1,8 +1,7 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { createPatient } from '../../dependants/dependants.resource';
 import { transformToDependentPayload } from '../../helper';
 import { findExistingLocalPatient } from '../../search-bar/search-bar.resource';
-import { launchCheckInWorkspace, readLocalPatient, stampAndCheckIn } from './link-participant.resource';
+import { stampAndCheckIn } from './link-participant.resource';
 import { type PcsParticipant } from '../pcs.types';
 
 interface LinkDependantOptions {
@@ -71,77 +70,4 @@ export async function linkDependantToParticipant({
     pbidsEnrollmentAttributeType,
     cardseEnrollmentAttributeType,
   });
-}
-
-interface CreatePcsParticipantOptions {
-  patientUuid: string;
-  motherId: string;
-}
-
-/**
- * The request as the module documents it. Kept real and separately testable so the path and
- * both field names are pinned now rather than discovered on the day the endpoint is deployed —
- * the same split the search side uses with `buildParticipantSearchUrl`.
- */
-export function buildCreateParticipantRequest({ patientUuid, motherId }: CreatePcsParticipantOptions) {
-  return {
-    url: `${restBaseUrl}/pbids-participants`,
-    options: {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: { patientUuid, motherId },
-    },
-  };
-}
-
-/**
- * Documented failures, all of which surface through the modal's notification rather than
- * indicating a bug here: `409` when the patient already holds a study or temporary identifier
- * (the UI hides the action for those rows, but two registrars racing would reach it), `400`
- * for a missing field or an unknown patient or mother, and `503` when the PCS database is
- * unreachable.
- */
-async function createPcsParticipant({ patientUuid, motherId }: CreatePcsParticipantOptions): Promise<PcsParticipant> {
-  const request = buildCreateParticipantRequest({ patientUuid, motherId });
-  const { data } = await openmrsFetch<PcsParticipant>(request.url, request.options);
-  return data;
-}
-
-interface AssignTemporaryStudyIdOptions {
-  dependant: LinkDependantOptions['dependant'];
-  parentPhoneNumber?: string;
-  motherIndividualId: string;
-  t: LinkDependantOptions['t'];
-}
-
-/**
- * For a dependant PCS does not know yet: resolve them locally, then have the registry create a
- * participant for them against their mother's, carrying a temporary study id.
- *
- * Nothing is written here. The module owns both sides of this — it assigns the identifier and
- * sets the `PBIDS Enrolled` / `CARDSE Enrolled` person attributes to match the PCS row, which
- * the docs are explicit must stay in step. A client-side write would be the thing that broke
- * that pairing.
- */
-export async function assignTemporaryStudyId({
-  dependant,
-  parentPhoneNumber,
-  motherIndividualId,
-  t,
-}: AssignTemporaryStudyIdOptions) {
-  const localPatient = await resolveLocalDependant(dependant, parentPhoneNumber, t);
-
-  if (!localPatient?.uuid) {
-    throw new Error('Could not resolve a local patient record for this dependant');
-  }
-
-  const participant = await createPcsParticipant({ patientUuid: localPatient.uuid, motherId: motherIndividualId });
-
-  // The module assigns the identifier server-side, so the record resolved above could never
-  // carry it. Re-read, tolerating failure — the participant was created either way.
-  const updated = (await readLocalPatient(localPatient.uuid).catch(() => null)) ?? localPatient;
-
-  await launchCheckInWorkspace(updated, updated.uuid);
-
-  return { localPatient: updated, participant };
 }

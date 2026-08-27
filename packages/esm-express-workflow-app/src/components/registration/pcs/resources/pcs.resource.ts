@@ -166,11 +166,13 @@ export function toPcsSearchSubject(
   patient: fhir.Patient,
   source: PcsSearchSubject['source'],
   nationalIdUUID?: string,
+  hiePatient?: fhir.Patient,
 ): PcsSearchSubject {
   return {
     id: patient.id!,
     source,
     patient,
+    hiePatient,
     name: getPatientName(patient),
     gender: patient.gender,
     birthDate: patient.birthDate,

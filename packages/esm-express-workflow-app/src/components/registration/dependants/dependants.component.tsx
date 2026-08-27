@@ -9,7 +9,6 @@ import {
   showModal,
   useConfig,
   type Visit,
-  useFeatureFlag,
 } from '@openmrs/esm-framework';
 import { type ExpressWorkflowConfig } from '../../../config-schema';
 import capitalize from 'lodash/capitalize';
@@ -22,8 +21,6 @@ import { otpManager, useOtpSource, cleanupAllOTPs } from '../card/HIE-card/hie-c
 import { launchOtpVerificationModal } from '../../../shared/otp-verification';
 import { sanitizePhoneNumber } from '../../../shared/utils';
 import { VisitFormProps } from '../start-visit-form/visit-form-workspace/visit-form.workspace';
-import LinkDependantAction from '../pcs/dependants/link-dependant-action.component';
-import { useHiePatientStudyId } from '../pcs/resources/link-participant.resource';
 
 type DependentProps = {
   patient: HIEPatient;
@@ -37,20 +34,14 @@ const DependentsComponent: React.FC<DependentProps> = ({
   otpExpiryMinutes = 5,
 }) => {
   const { t } = useTranslation();
-  const { phoneAttributeTypeUUID, pcsIdentifiers } = useConfig<ExpressWorkflowConfig>();
+  const { phoneAttributeTypeUUID } = useConfig<ExpressWorkflowConfig>();
   const [submittingStates, setSubmittingStates] = useState<Record<string, boolean>>({});
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
   const [localPatientCache, setLocalPatientCache] = useState<Map<string, any>>(new Map());
   const [verifiedSpouses, setVerifiedSpouses] = useState<Set<string>>(new Set());
   const [otpRequestedForSpouse, setOtpRequestedForSpouse] = useState<Set<string>>(new Set());
   const [activePhoneNumbers, setActivePhoneNumbers] = useState<Map<string, string>>(new Map());
-  const isPcsSite = useFeatureFlag('pcsSite');
-  // Resolved once for the whole table rather than per row — it is the mother's PCS id that
-  // the dependant link modal queries by.
-  const { studyParticipantId: motherIndividualId } = useHiePatientStudyId(
-    isPcsSite ? patient : null,
-    pcsIdentifiers.studyParticipantID,
-  );
+
   const { otpSource, isLoading: isLoadingOtpSource } = useOtpSource();
 
   useEffect(() => {
@@ -152,7 +143,7 @@ const DependentsComponent: React.FC<DependentProps> = ({
 
       return '254700000000';
     },
-    [localPatientCache, parentPhoneNumber, phoneAttributeTypeUUID],
+    [localPatientCache, parentPhoneNumber],
   );
 
   const handleSpouseOTPRequest = useCallback((dependentId: string) => {
@@ -281,7 +272,7 @@ const DependentsComponent: React.FC<DependentProps> = ({
         }
       }
     },
-    [localPatientCache, verifiedSpouses, t, parentPhoneNumber, phoneAttributeTypeUUID],
+    [localPatientCache, verifiedSpouses, t],
   );
 
   const headers = useMemo(
@@ -296,24 +287,6 @@ const DependentsComponent: React.FC<DependentProps> = ({
     ],
     [t],
   );
-
-  /**
-   * Refreshes a row after its PCS link changed. A link hands back the patient it resolved, so
-   * cache that directly — a freshly created dependant with no identifiers of their own has
-   * nothing for `findExistingLocalPatient` to re-resolve by, and re-searching would leave the
-   * row offering to create them a second time. An unlink passes nothing and re-resolves.
-   */
-  const refreshCachedDependant = useCallback((dependentId: string, localPatient?: any) => {
-    setLocalPatientCache((previous) => {
-      const next = new Map(previous);
-      if (localPatient) {
-        next.set(dependentId, localPatient);
-      } else {
-        next.delete(dependentId);
-      }
-      return next;
-    });
-  }, []);
 
   const rows = useMemo(() => {
     return dependents.map((dependent, index) => {
@@ -444,16 +417,6 @@ const DependentsComponent: React.FC<DependentProps> = ({
                 )}
               </>
             )}
-            {isPcsSite && !isLoading && (
-              <LinkDependantAction
-                dependant={dependent}
-                isLocal={isLocal}
-                localPatient={localPatient}
-                motherIndividualId={motherIndividualId}
-                parentPhoneNumber={parentPhoneNumber}
-                onLinkChanged={(localPatient?: any) => refreshCachedDependant(dependent.id, localPatient)}
-              />
-            )}
           </div>
         ),
       };
@@ -466,20 +429,16 @@ const DependentsComponent: React.FC<DependentProps> = ({
     visits,
     verifiedSpouses,
     otpRequestedForSpouse,
-    getDependentPhoneNumber,
-    createSpouseOTPHandlers,
-    t,
     isLoadingOtpSource,
     otpSource,
-    isPcsSite,
+    getDependentPhoneNumber,
+    createSpouseOTPHandlers,
     handleSpouseOTPRequest,
-    otpExpiryMinutes,
     handleSpouseOTPVerificationSuccess,
     handleDependentAction,
     handleQueuePatient,
-    motherIndividualId,
-    parentPhoneNumber,
-    refreshCachedDependant,
+    otpExpiryMinutes,
+    t,
   ]);
 
   useEffect(() => {

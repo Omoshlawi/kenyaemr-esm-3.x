@@ -65,12 +65,41 @@ const SearchBar: React.FC = () => {
 
   // A patient may only be looked up in the PCS registry once they have authorized by OTP,
   // so verifying is what both unlocks the card and opens the pane on that patient.
+  /**
+   * The mother's HIE record, which is where her dependants live. A patient verified from an
+   * HIE card already is one; one verified locally is paired to the HIE results by national ID,
+   * the same way the local card pairs them for demographic sync.
+   */
+  const findHiePatient = useCallback(
+    (patient: fhir.Patient, source: PcsSearchSubject['source']): fhir.Patient | undefined => {
+      if (source === 'hie') {
+        return patient;
+      }
+
+      const nationalId = getNationalIdFromPatient(patient, nationalIdUUID);
+      if (!nationalId || !searchResults) {
+        return undefined;
+      }
+
+      for (const bundle of searchResults) {
+        for (const entry of bundle.entry ?? []) {
+          if (getNationalIdFromPatient(entry.resource, nationalIdUUID) === nationalId) {
+            return entry.resource;
+          }
+        }
+      }
+
+      return undefined;
+    },
+    [nationalIdUUID, searchResults],
+  );
+
   const handlePatientVerified = useCallback(
     (patient: fhir.Patient, source: PcsSearchSubject['source']) => {
       setVerifiedPatients((previous) => new Set(previous).add(patient.id!));
-      setSelectedPatient(toPcsSearchSubject(patient, source, nationalIdUUID));
+      setSelectedPatient(toPcsSearchSubject(patient, source, nationalIdUUID, findHiePatient(patient, source)));
     },
-    [nationalIdUUID],
+    [nationalIdUUID, findHiePatient],
   );
 
   // Clicking another verified card moves the pane to that patient. Re-clicking the selected

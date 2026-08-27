@@ -119,7 +119,11 @@ const LinkedParticipant: React.FC<LinkedParticipantProps> = ({
             <ParticipantDetails participant={participant} />
           </TabPanel>
           <TabPanel>
-            <DependantsList motherIndividualId={participant.individualId} />
+            <DependantsList
+              motherIndividualId={participant.individualId}
+              hiePatient={subject.hiePatient}
+              parentPhoneNumber={subject.phoneNumber ?? undefined}
+            />
           </TabPanel>
         </TabPanels>
       </Tabs>

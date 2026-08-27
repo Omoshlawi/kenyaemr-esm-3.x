@@ -2,11 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getSessionLocation, launchWorkspace2, launchWorkspaceGroup2, openmrsFetch } from '@openmrs/esm-framework';
 import { createPatient } from '../../dependants/dependants.resource';
 import { findExistingLocalPatient } from '../../search-bar/search-bar.resource';
-import {
-  assignTemporaryStudyId,
-  buildCreateParticipantRequest,
-  linkDependantToParticipant,
-} from './link-dependant.resource';
+import { linkDependantToParticipant } from './link-dependant.resource';
 import { type PcsParticipant } from '../pcs.types';
 
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
@@ -146,67 +142,6 @@ describe('linkDependantToParticipant', () => {
     );
 
     await expect(link()).rejects.toThrow('Identifier already in use');
-    expect(launchWorkspace2).not.toHaveBeenCalled();
-  });
-});
-
-describe('assignTemporaryStudyId', () => {
-  const assign = () =>
-    assignTemporaryStudyId({
-      dependant,
-      parentPhoneNumber: '0712345678',
-      motherIndividualId: '901-1-1-2',
-      t: (_key: string, fallback: string) => fallback,
-    });
-
-  it('issues a temporary ID for an existing record without writing anything itself', async () => {
-    mockFindExistingLocalPatient.mockResolvedValue({ uuid: 'dependant-uuid', identifiers: [] } as any);
-
-    const { participant: created } = await assign();
-
-    expect(mockCreatePatient).not.toHaveBeenCalled();
-    // The participant comes back from the module, not from anything computed here.
-    expect(created).toEqual(createdParticipant);
-    // The module assigns the identifier and sets both person attributes as a pair with the
-    // PCS row, so a client-side write here would break that pairing. The only POST on this
-    // path is the create call itself.
-    expect(writes()).toEqual(['/ws/rest/v1/pbids-participants']);
-    expect(launchWorkspace2).toHaveBeenCalledOnce();
-  });
-
-  it('creates the dependant first when they are not registered here', async () => {
-    mockFindExistingLocalPatient.mockResolvedValue(null);
-    mockCreatePatient.mockResolvedValue({ uuid: 'new-uuid', identifiers: [] } as any);
-
-    const { localPatient } = await assign();
-
-    expect(mockCreatePatient).toHaveBeenCalledOnce();
-    expect(localPatient.uuid).toBe('new-uuid');
-    // The module assigns the identifier server-side, so the caller must get a re-read record
-    // rather than the one resolved before the call.
-    expect(localPatient.reread).toBe(true);
-    expect(launchWorkspace2).toHaveBeenCalledOnce();
-  });
-
-  it('builds the documented request', () => {
-    // The path and both field names are what silently drifted from the contract before the
-    // docs landed. The transport is still stubbed, so this is the layer where they can be
-    // pinned today.
-    expect(buildCreateParticipantRequest({ patientUuid: 'dependant-uuid', motherId: '901-1-1-2' })).toEqual({
-      url: '/ws/rest/v1/pbids-participants',
-      options: {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: { patientUuid: 'dependant-uuid', motherId: '901-1-1-2' },
-      },
-    });
-  });
-
-  it('throws without checking in when the dependant cannot be resolved', async () => {
-    mockFindExistingLocalPatient.mockResolvedValue(null);
-    mockCreatePatient.mockResolvedValue({} as any);
-
-    await expect(assign()).rejects.toThrow();
     expect(launchWorkspace2).not.toHaveBeenCalled();
   });
 });
