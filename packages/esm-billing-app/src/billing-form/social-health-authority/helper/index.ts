@@ -116,8 +116,14 @@ export const getPatientCRNumber = (patient: fhir.Patient, shaIdentifierTypeUUID:
   if (!patient?.identifier) {
     return null;
   }
-  const shaId = patient.identifier.find((id: fhir.Identifier) => id?.type?.coding?.[0]?.code === shaIdentifierTypeUUID);
-  return shaId?.value ?? null;
+  const byType = patient.identifier.find((id: fhir.Identifier) =>
+    id?.type?.coding?.some((c) => c.code === shaIdentifierTypeUUID),
+  );
+  if (byType?.value) {
+    return byType.value;
+  }
+  const byPrefix = patient.identifier.find((id: fhir.Identifier) => id?.value?.startsWith('CR'));
+  return byPrefix?.value ?? null;
 };
 
 export const extractAuthorizationCode = (claimResponse: any): string | null => {

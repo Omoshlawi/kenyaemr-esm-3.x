@@ -265,7 +265,7 @@ export function parseExternalApiErrors(errString?: string): Array<ExternalApiErr
 
 // ─── Claims utilities ────────────────────────────────────────────────────────
 
-export const CLAIMS_PAGE_SIZE = 10;
+export const CLAIMS_PAGE_SIZE = 50;
 export const billingUrl = `${spaBasePath}/accounting/patient/\${patientUuid}/\${uuid}/claims`;
 
 export function formatKes(amount: number): string {

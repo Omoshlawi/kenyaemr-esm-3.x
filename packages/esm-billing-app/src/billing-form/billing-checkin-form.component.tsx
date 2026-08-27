@@ -225,6 +225,12 @@ const BillingCheckInForm: React.FC<BillingCheckInFormProps> = ({
     }
   }, [isInsuranceSchemeSha, isElectiveVisit]);
 
+  useEffect(() => {
+    if (isInsuranceSchemeSha && patientCRId) {
+      formMethods.setValue('policyNumber', patientCRId);
+    }
+  }, [isInsuranceSchemeSha, patientCRId, formMethods]);
+
   const handleUtilizationStatusChange = useCallback((isExhausted: boolean) => {
     setIsCoverageExhausted(isExhausted);
   }, []);

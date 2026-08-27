@@ -82,12 +82,24 @@ export type ClaimsFacilityOverview = {
   };
 };
 
-export const useClaimsMetrics = (fromDate?: string, toDate?: string, serviceType?: string) => {
+export const useClaimsMetrics = (
+  fromDate?: string,
+  toDate?: string,
+  serviceType?: string,
+  startIndex?: number,
+  limit?: number,
+) => {
   const from = fromDate ?? dayjs().subtract(30, 'day').format('YYYY-MM-DD');
   const to = toDate ?? dayjs().format('YYYY-MM-DD');
   let url = `${restBaseUrl}/virtualclaims/facility-overview?from_date=${from}&to_date=${to}`;
   if (serviceType) {
     url += `&service_type=${encodeURIComponent(serviceType)}`;
+  }
+  if (typeof startIndex === 'number') {
+    url += `&startIndex=${startIndex}`;
+  }
+  if (typeof limit === 'number') {
+    url += `&limit=${limit}`;
   }
 
   const { data, isLoading, error, mutate } = useSWR<{ data: ClaimsFacilityOverview }>(url, openmrsFetch, {

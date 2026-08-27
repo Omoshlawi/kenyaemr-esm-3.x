@@ -14,6 +14,7 @@ import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { BillingConfig } from '../../config-schema';
 import { useSHASubBenefits } from '../../billing-form/social-health-authority/sha-virtual-claim.resource';
+import { getPatientCRNumber } from '../../billing-form/social-health-authority/helper';
 import { type SHAIntervention } from '../../billing-form/social-health-authority/type';
 import styles from './packages-and-interventions-form.scss';
 import PackageInterventions from './interventions-form.component';
@@ -55,25 +56,10 @@ const SHABenefitPackagesAndInterventions: React.FC<Props> = ({
 
   const isInpatient = visitTypeUuid === inPatientVisitTypeUuid;
 
-  const patientCRId = useMemo(() => {
-    if (!patient?.identifier) {
-      return null;
-    }
-    const byType = patient.identifier.find((id: fhir.Identifier) =>
-      id?.type?.coding?.some((c) => c.code === crIdentificationNumberUUID),
-    );
-    if (byType?.value) {
-      return byType.value;
-    }
-    const byPrefix = patient.identifier.find((id: fhir.Identifier) => id?.value?.startsWith('CR'));
-    return byPrefix?.value ?? null;
-  }, [patient, crIdentificationNumberUUID]);
-
-  useEffect(() => {
-    if (patientCRId) {
-      setValue('policyNumber', patientCRId);
-    }
-  }, [patientCRId, setValue]);
+  const patientCRId = useMemo(
+    () => getPatientCRNumber(patient as fhir.Patient, crIdentificationNumberUUID),
+    [patient, crIdentificationNumberUUID],
+  );
 
   useEffect(() => {
     if (isInpatient) {
