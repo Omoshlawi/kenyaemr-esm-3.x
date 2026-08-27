@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 import styles from '../pcs.scss';
 import { type ExpressWorkflowConfig } from '../../../../config-schema';
 import { formatParticipantName } from '../resources/pcs.resource';
-import { useLinkedPatientForParticipant } from '../resources/link-participant.resource';
+import { useLinkedPatientForParticipant, useSyncStudyAttributes } from '../resources/link-participant.resource';
+import { useStudySyncSnackbars } from './use-study-sync-snackbars';
 import { type PcsParticipant } from '../pcs.types';
 import { GENDER_ICONS, SEX_LABELS } from './participant-details.component';
 
@@ -23,7 +24,7 @@ const getPatientName = (localPatient: any) =>
 /** One of the mother's PCS children, with whether they are already a patient here. */
 const DependantRow: React.FC<DependantRowProps> = ({ dependant, hiePatient, parentPhoneNumber }) => {
   const { t } = useTranslation();
-  const { pcsIdentifiers } = useConfig<ExpressWorkflowConfig>();
+  const { pcsIdentifiers, pcsAttributeTypes } = useConfig<ExpressWorkflowConfig>();
 
   // Either type counts: a child linked through "Not in PCS" holds the temporary one, and the
   // module makes that id the participant's INDIVIDID, so they come back in this list too.
@@ -31,6 +32,17 @@ const DependantRow: React.FC<DependantRowProps> = ({ dependant, hiePatient, pare
     pcsIdentifiers.studyParticipantID,
     pcsIdentifiers.studyTemporaryParticipantID,
   ]);
+
+  // Same reconciliation the mother's banner does, so a linked child's flags don't go stale.
+  // Called unconditionally, as hooks must be — the hook no-ops while `linkedPatient` is null,
+  // which is what keeps unlinked rows free.
+  useSyncStudyAttributes({
+    participant: dependant,
+    localPatient: linkedPatient,
+    pbidsEnrollmentAttributeType: pcsAttributeTypes.pbidsEnrollmentStatus,
+    cardseEnrollmentAttributeType: pcsAttributeTypes.cardseEnrollmentStatus,
+    ...useStudySyncSnackbars(formatParticipantName(dependant)),
+  });
 
   const openLinkModal = () => {
     const dispose = showModal('pcs-link-dependant-modal', {

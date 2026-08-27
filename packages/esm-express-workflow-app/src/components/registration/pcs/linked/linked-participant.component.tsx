@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { type ExpressWorkflowConfig } from '../../../../config-schema';
 import styles from '../pcs.scss';
 import { formatParticipantName, usePcsDependants, usePcsParticipant } from '../resources/pcs.resource';
-import { type StudyAttributeFlag, useSyncStudyAttributes } from '../resources/link-participant.resource';
+import { useSyncStudyAttributes } from '../resources/link-participant.resource';
+import { useStudySyncSnackbars } from './use-study-sync-snackbars';
 import { type PcsSearchSubject } from '../pcs.types';
 import DependantsList from './dependants-list.component';
 import ParticipantDetails from './participant-details.component';
@@ -34,32 +35,13 @@ const LinkedParticipant: React.FC<LinkedParticipantProps> = ({
     participant?.individualId ?? null,
   );
 
-  const flagLabels: Record<StudyAttributeFlag, string> = {
-    pbids: t('pbidsEnrollment', 'PBIDS enrollment'),
-    cardse: t('cardseEnrollment', 'CARDSE enrollment'),
-  };
-
   // PCS owns these two flags, so every pull by id reconciles the patient record with them.
   const { syncNow } = useSyncStudyAttributes({
     participant,
     localPatient,
     pbidsEnrollmentAttributeType: pcsAttributeTypes.pbidsEnrollmentStatus,
     cardseEnrollmentAttributeType: pcsAttributeTypes.cardseEnrollmentStatus,
-    onSynced: (changed) =>
-      showSnackbar({
-        title: t('studyAttributesUpdated', 'Study attributes updated'),
-        subtitle: t('studyAttributesUpdatedSubtitle', 'Updated from PCS: {{fields}}', {
-          fields: changed.map((flag) => flagLabels[flag]).join(', '),
-        }),
-        kind: 'success',
-        isLowContrast: true,
-      }),
-    onSyncError: (syncError: any) =>
-      showSnackbar({
-        title: t('studyAttributesSyncFailed', 'Could not sync study attributes'),
-        subtitle: syncError?.responseBody?.error?.message ?? syncError?.message,
-        kind: 'error',
-      }),
+    ...useStudySyncSnackbars(participant ? formatParticipantName(participant) : ''),
   });
 
   const refresh = async () => {

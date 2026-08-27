@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import DependantRow from './dependant-row.component';
-import { useLinkedPatientForParticipant } from '../resources/link-participant.resource';
+import { useLinkedPatientForParticipant, useSyncStudyAttributes } from '../resources/link-participant.resource';
 import { type PcsParticipant } from '../pcs.types';
 
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
@@ -11,6 +11,7 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
   age: () => '14 yrs',
   useConfig: () => ({
     pcsIdentifiers: { studyParticipantID: 'study-id-type', studyTemporaryParticipantID: 'temp-id-type' },
+    pcsAttributeTypes: { pbidsEnrollmentStatus: 'pbids-attr', cardseEnrollmentStatus: 'cardse-attr' },
   }),
 }));
 
@@ -18,11 +19,19 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }),
 }));
 
-vi.mock('../resources/link-participant.resource', () => ({ useLinkedPatientForParticipant: vi.fn() }));
+vi.mock('../resources/link-participant.resource', () => ({
+  useLinkedPatientForParticipant: vi.fn(),
+  useSyncStudyAttributes: vi.fn(),
+}));
+
+vi.mock('./use-study-sync-snackbars', () => ({
+  useStudySyncSnackbars: () => ({ onSynced: vi.fn(), onSyncError: vi.fn() }),
+}));
 
 vi.mock('../resources/pcs.resource', () => ({ formatParticipantName: () => 'DENNIS OMONDI ODONGO' }));
 
 const mockUseLinkedPatientForParticipant = vi.mocked(useLinkedPatientForParticipant);
+const mockUseSyncStudyAttributes = vi.mocked(useSyncStudyAttributes);
 
 const dependant = {
   individualId: '901-1-1-3',
@@ -59,6 +68,36 @@ describe('DependantRow', () => {
     // A linked row offers the undo, not the link.
     expect(screen.getByRole('button', { name: 'Unlink' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Link dependant' })).not.toBeInTheDocument();
+  });
+
+  it("reconciles a linked dependant's enrolment attributes in the background", () => {
+    const linkedPatient = { uuid: 'p1', person: { personName: { display: 'Dennis Odongo' } } };
+    mockUseLinkedPatientForParticipant.mockReturnValue({
+      linkedPatient,
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    } as any);
+
+    render(<DependantRow dependant={dependant} />);
+
+    expect(mockUseSyncStudyAttributes).toHaveBeenCalledWith(
+      expect.objectContaining({ participant: dependant, localPatient: linkedPatient }),
+    );
+  });
+
+  it('leaves an unlinked dependant with nothing to sync', () => {
+    mockUseLinkedPatientForParticipant.mockReturnValue({
+      linkedPatient: null,
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    } as any);
+
+    render(<DependantRow dependant={dependant} />);
+
+    // A null patient is what makes the hook a no-op, so unlinked rows cost no request.
+    expect(mockUseSyncStudyAttributes).toHaveBeenCalledWith(expect.objectContaining({ localPatient: null }));
   });
 
   it('offers to create a dependant nobody is linked to', () => {

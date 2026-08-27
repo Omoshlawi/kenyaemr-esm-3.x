@@ -15,6 +15,7 @@
   "Admitted/OPD": "የተኝተው/የውጪ ሕመምተኛ ጉብኝቶች",
   "age": "Age:",
   "all": "All",
+  "alreadyLinkedTo": "already linked to {{individualId}}",
   "AM": "AM",
   "anaesthetic": "Anaesthetic",
   "anaestheticLoadingDefaults": "Loading encounter context, providers and procedures...",
