@@ -1,6 +1,6 @@
 import useSWR from 'swr';
 import { getPatientName, restBaseUrl } from '@openmrs/esm-framework';
-import { getNationalIdFromPatient, getPhoneFromFhirPatient } from '../helper';
+import { getNationalIdFromPatient, getPhoneFromFhirPatient } from '../../helper';
 import { getMockParticipantById, searchMockParticipants } from './pcs-mock-data';
 import {
   type PcsApiError,
@@ -10,7 +10,7 @@ import {
   type PcsParticipantFilters,
   type PcsParticipantSearchResponse,
   type PcsSearchSubject,
-} from './pcs.types';
+} from '../pcs.types';
 
 /** The API's own defaults, restated so the URL we build is explicit about them. */
 const DEFAULT_LIMIT = 50;
@@ -35,7 +35,9 @@ export function toPcsParticipantFilters(subject: PcsSearchSubject): PcsParticipa
 
 /** The API rejects an unfiltered request with a 400, so hold it rather than provoke one. */
 export function hasAnyFilter(filters: PcsParticipantFilters | null): boolean {
-  return Boolean(filters && (filters.name.trim() || filters.village.trim() || filters.phone.trim()));
+  return Boolean(
+    filters && (filters.name.trim() || filters.village.trim() || filters.phone.trim() || filters.motherId?.trim()),
+  );
 }
 
 /**
@@ -52,8 +54,8 @@ export function buildParticipantSearchUrl(
   }
 
   const params = new URLSearchParams();
-  (['name', 'village', 'phone'] as const).forEach((filter) => {
-    const value = filters![filter].trim();
+  (['name', 'village', 'phone', 'motherId'] as const).forEach((filter) => {
+    const value = filters![filter]?.trim();
     if (value) {
       params.set(filter, value);
     }
@@ -108,6 +110,24 @@ export function usePcsParticipant(individualId: string | null) {
   });
 
   return { participant: data ?? null, isLoading, error, mutate };
+}
+
+/**
+ * The participants whose mother is `motherIndividualId` — a linked client's dependants.
+ * Same endpoint and response shape as the search, just a different filter.
+ */
+export function usePcsDependants(motherIndividualId: string | null) {
+  const url = buildParticipantSearchUrl(
+    motherIndividualId ? { name: '', village: '', phone: '', motherId: motherIndividualId } : null,
+  );
+
+  const { data, isLoading, error } = useSWR(url, fetchParticipants, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    shouldRetryOnError: false,
+  });
+
+  return { dependants: data?.results ?? [], totalCount: data?.totalCount ?? 0, isLoading, error };
 }
 
 export function usePcsParticipantSearch(filters: PcsParticipantFilters | null, options?: ParticipantSearchOptions) {

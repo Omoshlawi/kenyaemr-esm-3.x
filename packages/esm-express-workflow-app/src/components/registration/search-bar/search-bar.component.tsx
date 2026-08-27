@@ -11,7 +11,7 @@ import { EmptySvg } from '../empty-svg/empty-svg.component';
 import HIEDisplayCard from '../card/HIE-card/hie-card.component';
 import { ExpressWorkflowConfig } from '../../../config-schema';
 import LocalPatientCard from '../card/Local-card/local-card.component';
-import { toPcsSearchSubject } from '../pcs/pcs.resource';
+import { toPcsSearchSubject } from '../pcs/resources/pcs.resource';
 import { type PcsSearchSubject } from '../pcs/pcs.types';
 
 const SearchBar: React.FC = () => {

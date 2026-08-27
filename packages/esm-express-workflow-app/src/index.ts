@@ -99,7 +99,7 @@ export const demographicSyncModal = getAsyncLifecycle(
 );
 
 export const pcsLinkParticipantModal = getAsyncLifecycle(
-  () => import('./components/registration/pcs/link-participant.modal'),
+  () => import('./components/registration/pcs/modals/link-participant.modal'),
   {
     featureName: 'pcs-link-participant-modal',
     moduleName,
@@ -107,7 +107,7 @@ export const pcsLinkParticipantModal = getAsyncLifecycle(
 );
 
 export const pcsDelinkParticipantModal = getAsyncLifecycle(
-  () => import('./components/registration/pcs/delink-participant.modal'),
+  () => import('./components/registration/pcs/modals/delink-participant.modal'),
   {
     featureName: 'pcs-delink-participant-modal',
     moduleName,

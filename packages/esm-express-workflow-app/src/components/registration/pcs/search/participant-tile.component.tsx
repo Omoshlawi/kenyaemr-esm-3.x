@@ -3,10 +3,15 @@ import { Button, Tag } from '@carbon/react';
 import { GenderFemale, GenderMale, Link as LinkIcon } from '@carbon/react/icons';
 import { age, formatDate, parseDate, showModal } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
-import styles from './pcs.scss';
-import { formatCompoundHeadName, formatMotherName, formatParticipantName, getPrimaryContact } from './pcs.resource';
-import { type PcsMatchType, type PcsMatchedOn, type PcsParticipant, type PcsSearchSubject } from './pcs.types';
-import { registerOrLaunchHIEPatient } from '../search-bar/search-bar.resource';
+import styles from '../pcs.scss';
+import {
+  formatCompoundHeadName,
+  formatMotherName,
+  formatParticipantName,
+  getPrimaryContact,
+} from '../resources/pcs.resource';
+import { type PcsMatchType, type PcsMatchedOn, type PcsParticipant, type PcsSearchSubject } from '../pcs.types';
+import { registerOrLaunchHIEPatient } from '../../search-bar/search-bar.resource';
 
 interface PCSParticipantTileProps {
   participant: PcsParticipant;

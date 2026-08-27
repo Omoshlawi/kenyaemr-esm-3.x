@@ -8,12 +8,12 @@ import {
 } from '@openmrs/esm-framework';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
-import { createPatient } from '../dependants/dependants.resource';
-import { getLocalIdentifierValue } from '../helper';
-import { findExistingLocalPatient } from '../search-bar/search-bar.resource';
-import { type VisitFormProps } from '../start-visit-form/visit-form-workspace/visit-form.workspace';
+import { createPatient } from '../../dependants/dependants.resource';
+import { getLocalIdentifierValue } from '../../helper';
+import { findExistingLocalPatient } from '../../search-bar/search-bar.resource';
+import { type VisitFormProps } from '../../start-visit-form/visit-form-workspace/visit-form.workspace';
 import { formatParticipantName } from './pcs.resource';
-import { type PcsParticipant, type PcsSearchSubject } from './pcs.types';
+import { type PcsParticipant, type PcsSearchSubject } from '../pcs.types';
 
 const PATIENT_REPRESENTATION =
   'custom:(patientId,uuid,identifiers,display,patientIdentifier:(uuid,identifier),person:(gender,age,birthdate,birthdateEstimated,personName,addresses,display,dead,deathDate),attributes:(value,attributeType:(uuid,display)))';

@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getSessionLocation, launchWorkspace2, launchWorkspaceGroup2, openmrsFetch } from '@openmrs/esm-framework';
-import { createPatient } from '../dependants/dependants.resource';
-import { findExistingLocalPatient } from '../search-bar/search-bar.resource';
+import { createPatient } from '../../dependants/dependants.resource';
+import { findExistingLocalPatient } from '../../search-bar/search-bar.resource';
 import { delinkParticipant, linkParticipantToPatient, syncStudyAttributes } from './link-participant.resource';
-import { type PcsParticipant, type PcsSearchSubject } from './pcs.types';
+import { type PcsParticipant, type PcsSearchSubject } from '../pcs.types';
 
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@openmrs/esm-framework')>()),
@@ -13,8 +13,8 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
   launchWorkspaceGroup2: vi.fn(),
 }));
 
-vi.mock('../dependants/dependants.resource', () => ({ createPatient: vi.fn() }));
-vi.mock('../search-bar/search-bar.resource', () => ({ findExistingLocalPatient: vi.fn() }));
+vi.mock('../../dependants/dependants.resource', () => ({ createPatient: vi.fn() }));
+vi.mock('../../search-bar/search-bar.resource', () => ({ findExistingLocalPatient: vi.fn() }));
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockGetSessionLocation = vi.mocked(getSessionLocation);

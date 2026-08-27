@@ -13,7 +13,7 @@ import {
   type PcsMatchedOn,
   type PcsParticipant,
   type PcsParticipantSearchResponse,
-} from './pcs.types';
+} from '../pcs.types';
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
@@ -323,21 +323,74 @@ export function getMockParticipantById(individualId: string): PcsParticipant {
  * Answers the URL the resource layer built, the way the module documents it. Throws for a
  * request with no filter, mirroring the API's `400`.
  */
+/**
+ * Children for a mother the cohort doesn't hold. The count is derived from the id, so some
+ * participants have two dependants, some one and some none — which is what keeps the empty
+ * state reachable instead of pretending everyone has children.
+ */
+function buildDependantsFor(motherId: string): Array<PcsParticipant> {
+  const count = hashToIndex(motherId, 3);
+  const village = VILLAGES[hashToIndex(motherId, VILLAGES.length)];
+  const familyName = pick(FAMILY_NAMES, hashToIndex(motherId, 1000));
+  const mother = {
+    individualId: motherId,
+    firstName: pick(FEMALE_NAMES, hashToIndex(motherId, 1000)),
+    middleName: pick(MIDDLE_NAMES, hashToIndex(motherId, 997)),
+    lastName: familyName,
+  };
+
+  return Array.from({ length: count }, (_, index) => {
+    const seed = hashToIndex(`${motherId}-${index}`, 1000);
+    const isMale = seed % 2 === 0;
+
+    return {
+      individualId: `${motherId}-c${index + 1}`,
+      firstName: isMale ? pick(MALE_NAMES, seed) : pick(FEMALE_NAMES, seed),
+      middleName: pick(MIDDLE_NAMES, seed + 1),
+      lastName: familyName,
+      sex: isMale ? 'M' : 'F',
+      dateOfBirth: `${2008 + (seed % 15)}-0${(seed % 9) + 1}-1${seed % 9}`,
+      pbidsEnrolled: seed % 4 !== 0,
+      cardse: seed % 3 === 0,
+      mother,
+      compound: {
+        compoundId: `${village.code}-${(seed % 9) + 1}`,
+        headIndividualId: `${village.code}-${(seed % 9) + 1}-1-1`,
+        headFirstName: pick(MALE_NAMES, seed + 2),
+        headMiddleName: pick(MIDDLE_NAMES, seed + 3),
+        headLastName: familyName,
+      },
+      village,
+      contacts: [],
+      matchedOn: null,
+      matchType: null,
+    } as PcsParticipant;
+  });
+}
+
 export function searchMockParticipants(url: string): PcsParticipantSearchResponse {
   const query = new URLSearchParams(url.slice(url.indexOf('?') + 1));
 
   const nameTerm = normalize(query.get('name'));
   const villageTerm = normalize(query.get('village'));
   const phoneTerm = significantDigits(query.get('phone'));
+  const motherId = (query.get('motherId') ?? '').trim();
   const fuzzy = query.get('fuzzy') !== 'false';
   const startIndex = Number(query.get('startIndex') ?? 0) || 0;
   const limit = Math.min(Number(query.get('limit') ?? DEFAULT_LIMIT) || DEFAULT_LIMIT, MAX_LIMIT);
 
-  if (!nameTerm && !villageTerm && !phoneTerm) {
-    throw new Error('At least one of name, village or phone must be supplied');
+  if (!nameTerm && !villageTerm && !phoneTerm && !motherId) {
+    throw new Error('At least one of name, village, phone or motherId must be supplied');
   }
 
-  const pool = nameTerm ? [buildLookalike(nameTerm), ...COHORT] : COHORT;
+  const cohortChildren = motherId ? COHORT.filter((participant) => participant.mother?.individualId === motherId) : [];
+  const pool = motherId
+    ? cohortChildren.length > 0
+      ? cohortChildren
+      : buildDependantsFor(motherId)
+    : nameTerm
+    ? [buildLookalike(nameTerm), ...COHORT]
+    : COHORT;
 
   const matched = pool
     .map((participant) => {
@@ -345,6 +398,9 @@ export function searchMockParticipants(url: string): PcsParticipantSearchRespons
         return null;
       }
       if (phoneTerm && !participant.contacts.some((contact) => significantDigits(contact.phone) === phoneTerm)) {
+        return null;
+      }
+      if (motherId && participant.mother?.individualId !== motherId) {
         return null;
       }
       if (!nameTerm) {

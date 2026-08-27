@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildParticipantSearchUrl, hasAnyFilter } from './pcs.resource';
 import { searchMockParticipants } from './pcs-mock-data';
 
-const url = (filters: Partial<{ name: string; village: string; phone: string }>, opts = {}) =>
+const url = (filters: Partial<{ name: string; village: string; phone: string; motherId: string }>, opts = {}) =>
   buildParticipantSearchUrl({ name: '', village: '', phone: '', ...filters }, opts)!;
 
 /**
@@ -68,6 +68,30 @@ describe('pbids participant search contract', () => {
     const next = searchMockParticipants(url({ name: 'ODONGO' }, { limit: 3, startIndex: 3 }));
     expect(next.startIndex).toBe(3);
     expect(next.results[0].individualId).not.toBe(page.results[0].individualId);
+  });
+
+  it('treats motherId as a filter in its own right', () => {
+    expect(hasAnyFilter({ name: '', village: '', phone: '', motherId: '901-1-1-2' })).toBe(true);
+    expect(url({ motherId: '901-1-1-2' })).toContain('motherId=901-1-1-2');
+    // A motherId-only request must not be rejected as unfiltered.
+    expect(() => searchMockParticipants(url({ motherId: '901-1-1-2' }))).not.toThrow();
+  });
+
+  it("returns only that mother's children, unscored", () => {
+    const res = searchMockParticipants(url({ motherId: '901-1-1-2' }));
+
+    expect(res.results.length).toBeGreaterThan(0);
+    expect(res.results.every((r) => r.mother?.individualId === '901-1-1-2')).toBe(true);
+    // No name was queried, so there is nothing to score.
+    expect(res.results.every((r) => r.matchType === null && r.matchedOn === null)).toBe(true);
+  });
+
+  it('ANDs motherId with the other filters', () => {
+    const all = searchMockParticipants(url({ motherId: '901-1-1-2' }));
+    const narrowed = searchMockParticipants(url({ motherId: '901-1-1-2', village: 'NOWHERE' }));
+
+    expect(all.totalCount).toBeGreaterThan(0);
+    expect(narrowed.totalCount).toBe(0);
   });
 
   it('caps limit at 200', () => {

@@ -66,6 +66,11 @@ export interface PcsParticipantFilters {
   name: string;
   village: string;
   phone: string;
+  /**
+   * Returns the participants whose mother is this individual. Not part of the editable
+   * filter bar — it backs the dependants list on a linked participant.
+   */
+  motherId?: string;
 }
 
 /**

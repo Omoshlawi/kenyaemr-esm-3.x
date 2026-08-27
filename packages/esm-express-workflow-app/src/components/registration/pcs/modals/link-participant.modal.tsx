@@ -14,10 +14,10 @@ import {
 } from '@carbon/react';
 import { showSnackbar, useConfig } from '@openmrs/esm-framework';
 
-import { type ExpressWorkflowConfig } from '../../../config-schema';
-import { formatParticipantName } from './pcs.resource';
-import { linkParticipantToPatient } from './link-participant.resource';
-import { type PcsParticipant, type PcsSearchSubject } from './pcs.types';
+import { type ExpressWorkflowConfig } from '../../../../config-schema';
+import { formatParticipantName } from '../resources/pcs.resource';
+import { linkParticipantToPatient } from '../resources/link-participant.resource';
+import { type PcsParticipant, type PcsSearchSubject } from '../pcs.types';
 import styles from './link-participant.scss';
 
 interface LinkParticipantModalProps {

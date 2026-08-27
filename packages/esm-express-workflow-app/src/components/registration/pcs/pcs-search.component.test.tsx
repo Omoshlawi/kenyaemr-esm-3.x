@@ -4,8 +4,8 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PCSSearchResults from './pcs-search.component';
-import { usePcsParticipantSearch } from './pcs.resource';
-import { usePatientStudyLink } from './link-participant.resource';
+import { usePcsParticipantSearch } from './resources/pcs.resource';
+import { usePatientStudyLink } from './resources/link-participant.resource';
 import { type PcsSearchSubject } from './pcs.types';
 
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
@@ -18,9 +18,9 @@ vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
 }));
 
 // The pane checks whether the patient is already linked before deciding what to render.
-vi.mock('./link-participant.resource', () => ({ usePatientStudyLink: vi.fn() }));
+vi.mock('./resources/link-participant.resource', () => ({ usePatientStudyLink: vi.fn() }));
 
-vi.mock('./linked-participant.component', () => ({
+vi.mock('./linked/linked-participant.component', () => ({
   default: ({ studyParticipantId }: any) => <span>{`Linked view for ${studyParticipantId}`}</span>,
 }));
 
@@ -35,12 +35,12 @@ vi.mock('react-i18next', () => ({
 
 // The boundary that receives the committed filters. Keeping the rest of the module real
 // means `toPcsParticipantFilters` and `hasAnyFilter` still drive the component.
-vi.mock('./pcs.resource', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./pcs.resource')>()),
+vi.mock('./resources/pcs.resource', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./resources/pcs.resource')>()),
   usePcsParticipantSearch: vi.fn(),
 }));
 
-vi.mock('./pcs-participant.component', () => ({ default: () => null }));
+vi.mock('./search/participant-tile.component', () => ({ default: () => null }));
 
 const mockUsePcsParticipantSearch = vi.mocked(usePcsParticipantSearch);
 const mockUsePatientStudyLink = vi.mocked(usePatientStudyLink);

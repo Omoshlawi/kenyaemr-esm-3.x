@@ -6,16 +6,16 @@ import { useTranslation } from 'react-i18next';
 import styles from './pcs.scss';
 import { type ExpressWorkflowConfig } from '../../../config-schema';
 import { EmptySvg } from '../empty-svg/empty-svg.component';
-import LinkedParticipant from './linked-participant.component';
-import { usePatientStudyLink } from './link-participant.resource';
-import PCSParticipantTile from './pcs-participant.component';
+import LinkedParticipant from './linked/linked-participant.component';
+import { usePatientStudyLink } from './resources/link-participant.resource';
+import PCSParticipantTile from './search/participant-tile.component';
 import {
   getPcsErrorMessage,
   hasAnyFilter,
   isPcsUnavailable,
   toPcsParticipantFilters,
   usePcsParticipantSearch,
-} from './pcs.resource';
+} from './resources/pcs.resource';
 import { type PcsParticipantFilters, type PcsSearchSubject } from './pcs.types';
 
 interface PCSSearchResultsProps {

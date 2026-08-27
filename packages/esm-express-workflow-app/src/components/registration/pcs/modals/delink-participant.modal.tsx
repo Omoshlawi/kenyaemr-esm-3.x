@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Button, InlineLoading, InlineNotification, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
 import { showSnackbar, useConfig } from '@openmrs/esm-framework';
 
-import { type ExpressWorkflowConfig } from '../../../config-schema';
-import { delinkParticipant } from './link-participant.resource';
+import { type ExpressWorkflowConfig } from '../../../../config-schema';
+import { delinkParticipant } from '../resources/link-participant.resource';
 
 interface DelinkParticipantModalProps {
   closeModal: () => void;
