@@ -227,6 +227,7 @@
   "haemodialysisContinueMonitoring": "Continue monitoring",
   "haemodialysisDownloadPdf": "Download PDF",
   "haemodialysisDrugAllergyHint": "Review and update drug allergy at every dialysis visit.",
+  "haemodialysisEmergencyTerminatedNotice": "Emergency termination at {{minute}} min.",
   "haemodialysisEmergencyTerminateReason": "Reason for emergency termination",
   "haemodialysisEmergencyTerminateReasonLabel": "Reason",
   "haemodialysisEmergencyTermination": "Emergency termination",
