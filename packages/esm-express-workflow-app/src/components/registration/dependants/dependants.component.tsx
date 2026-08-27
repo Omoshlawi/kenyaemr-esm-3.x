@@ -22,7 +22,8 @@ import { otpManager, useOtpSource, cleanupAllOTPs } from '../card/HIE-card/hie-c
 import { launchOtpVerificationModal } from '../../../shared/otp-verification';
 import { sanitizePhoneNumber } from '../../../shared/utils';
 import { VisitFormProps } from '../start-visit-form/visit-form-workspace/visit-form.workspace';
-import LinkDependantAction from '../pcs/linked/link-dependants.component';
+import LinkDependantAction from '../pcs/dependants/link-dependant-action.component';
+import { useHiePatientStudyId } from '../pcs/resources/link-participant.resource';
 
 type DependentProps = {
   patient: HIEPatient;
@@ -36,7 +37,7 @@ const DependentsComponent: React.FC<DependentProps> = ({
   otpExpiryMinutes = 5,
 }) => {
   const { t } = useTranslation();
-  const { phoneAttributeTypeUUID } = useConfig<ExpressWorkflowConfig>();
+  const { phoneAttributeTypeUUID, pcsIdentifiers } = useConfig<ExpressWorkflowConfig>();
   const [submittingStates, setSubmittingStates] = useState<Record<string, boolean>>({});
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
   const [localPatientCache, setLocalPatientCache] = useState<Map<string, any>>(new Map());
@@ -44,6 +45,12 @@ const DependentsComponent: React.FC<DependentProps> = ({
   const [otpRequestedForSpouse, setOtpRequestedForSpouse] = useState<Set<string>>(new Set());
   const [activePhoneNumbers, setActivePhoneNumbers] = useState<Map<string, string>>(new Map());
   const isPcsSite = useFeatureFlag('pcsSite');
+  // Resolved once for the whole table rather than per row — it is the mother's PCS id that
+  // the dependant link modal queries by.
+  const { studyParticipantId: motherIndividualId } = useHiePatientStudyId(
+    isPcsSite ? patient : null,
+    pcsIdentifiers.studyParticipantID,
+  );
   const { otpSource, isLoading: isLoadingOtpSource } = useOtpSource();
 
   useEffect(() => {
@@ -290,6 +297,15 @@ const DependentsComponent: React.FC<DependentProps> = ({
     [t],
   );
 
+  /** Drops a cached lookup so the effect below re-resolves that dependant's local record. */
+  const forgetCachedDependant = useCallback((dependentId: string) => {
+    setLocalPatientCache((previous) => {
+      const next = new Map(previous);
+      next.delete(dependentId);
+      return next;
+    });
+  }, []);
+
   const rows = useMemo(() => {
     return dependents.map((dependent, index) => {
       const localPatient = localPatientCache.get(dependent.id);
@@ -420,7 +436,14 @@ const DependentsComponent: React.FC<DependentProps> = ({
               </>
             )}
             {isPcsSite && !isLoading && (
-              <LinkDependantAction dependant={dependent} isLocal={isLocal} localPatient={localPatient} />
+              <LinkDependantAction
+                dependant={dependent}
+                isLocal={isLocal}
+                localPatient={localPatient}
+                motherIndividualId={motherIndividualId}
+                parentPhoneNumber={parentPhoneNumber}
+                onLinked={() => forgetCachedDependant(dependent.id)}
+              />
             )}
           </div>
         ),
@@ -445,6 +468,9 @@ const DependentsComponent: React.FC<DependentProps> = ({
     handleSpouseOTPVerificationSuccess,
     handleDependentAction,
     handleQueuePatient,
+    motherIndividualId,
+    parentPhoneNumber,
+    forgetCachedDependant,
   ]);
 
   useEffect(() => {

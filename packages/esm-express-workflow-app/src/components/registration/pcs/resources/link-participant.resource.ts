@@ -192,21 +192,71 @@ export async function linkParticipantToPatient({
 }: LinkParticipantOptions) {
   const localPatient = await resolveLocalPatient(subject, t);
 
+  return stampAndCheckIn({
+    localPatient,
+    participant,
+    studyParticipantIdentifierType,
+    pbidsEnrollmentAttributeType,
+    cardseEnrollmentAttributeType,
+  });
+}
+
+interface StampAndCheckInOptions {
+  localPatient: any;
+  participant: PcsParticipant;
+  studyParticipantIdentifierType: string;
+  pbidsEnrollmentAttributeType: string;
+  cardseEnrollmentAttributeType: string;
+}
+
+/**
+ * Stamps the study data onto an already-resolved patient and checks them in. Shared by the
+ * main link flow and the dependant one, which differ only in how they resolve the patient.
+ *
+ * The workspace launches last and exactly once, so a failed write leaves the caller able to
+ * report it rather than dropping the user into a visit form for a half-written record.
+ */
+export async function stampAndCheckIn({
+  localPatient,
+  participant,
+  studyParticipantIdentifierType,
+  pbidsEnrollmentAttributeType,
+  cardseEnrollmentAttributeType,
+}: StampAndCheckInOptions) {
   if (!localPatient?.uuid) {
     throw new Error(`Could not resolve a local patient record for ${formatParticipantName(participant)}`);
   }
 
   await writeStudyIdentifier(localPatient, studyParticipantIdentifierType, participant.individualId);
-  await writePersonAttribute(
-    localPatient.uuid,
+  await syncStudyAttributes({
+    personUuid: localPatient.uuid,
+    participant,
     pbidsEnrollmentAttributeType,
-    toAttributeValue(participant.pbidsEnrolled),
-  );
-  await writePersonAttribute(localPatient.uuid, cardseEnrollmentAttributeType, toAttributeValue(participant.cardse));
+    cardseEnrollmentAttributeType,
+  });
 
   await launchCheckInWorkspace(localPatient, localPatient.uuid);
 
   return localPatient;
+}
+
+/**
+ * The study participant ID on the local record behind an HIE patient, or undefined when they
+ * are not registered here or not linked. Keyed on the patient so several rows share one read.
+ */
+export function useHiePatientStudyId(hiePatient: any, studyParticipantIdentifierType: string) {
+  const key = hiePatient?.id ? `pcs-hie-study-id/${hiePatient.id}/${studyParticipantIdentifierType}` : null;
+
+  const { data, isLoading } = useSWR(key, () => findExistingLocalPatient(hiePatient, false), {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    shouldRetryOnError: false,
+  });
+
+  return {
+    studyParticipantId: getLocalIdentifierValue(data, studyParticipantIdentifierType),
+    isLoading,
+  };
 }
 
 interface DelinkParticipantOptions {

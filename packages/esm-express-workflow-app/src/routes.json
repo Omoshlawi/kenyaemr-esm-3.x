@@ -618,6 +618,10 @@
     {
       "name": "pcs-delink-participant-modal",
       "component": "pcsDelinkParticipantModal"
+    },
+    {
+      "name": "pcs-link-dependant-modal",
+      "component": "pcsLinkDependantModal"
     }
   ]
 }
