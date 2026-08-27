@@ -98,6 +98,14 @@ export const demographicSyncModal = getAsyncLifecycle(
   },
 );
 
+export const pcsLinkParticipantModal = getAsyncLifecycle(
+  () => import('./components/registration/pcs/link-participant.modal'),
+  {
+    featureName: 'pcs-link-participant-modal',
+    moduleName,
+  },
+);
+
 export const anaestheticFormWorkspace = getAsyncLifecycle(
   () => import('./components/anaesthetic/forms/anaesthetic-form.component'),
   options,

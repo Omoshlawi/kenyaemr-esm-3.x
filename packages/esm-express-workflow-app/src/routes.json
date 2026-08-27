@@ -531,8 +531,7 @@
         "slot": "ewf-radiology-and-imaging-results-slot",
         "basePath": "radiology-and-imaging"
       }
-    }
-    ,
+    },
     {
       "name": "ewf-clinical-encounter-haemodialysis-tab",
       "component": "haemodialysisPanel",
@@ -611,6 +610,10 @@
     {
       "name": "demographic-sync-modal",
       "component": "demographicSyncModal"
+    },
+    {
+      "name": "pcs-link-participant-modal",
+      "component": "pcsLinkParticipantModal"
     }
   ]
 }

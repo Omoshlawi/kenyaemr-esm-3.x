@@ -484,6 +484,22 @@ export const configSchema = {
       },
     },
   },
+  pbidsIdentifiers: {
+    _type: Type.Object,
+    _description: 'PBIDS Study identifies',
+    _default: {
+      studyParticipantID: 'ed325b17-e6ce-44a3-982a-414fed878e73',
+      studyTemporaryParticipantID: '497f9d61-c16c-41b0-a926-8fdbe11771a7',
+    },
+  },
+  pbidsAttributeTypes: {
+    _type: Type.Object,
+    _description: 'PBIDS Study person attribute types',
+    _default: {
+      studyStatus: '5131931b-9ceb-4a77-af4c-96d9d20a1d26',
+      participantCategory: '3f3a8e88-e3e6-47ea-835f-67bc2e7a8c7b',
+    },
+  },
 };
 
 export type ExpressWorkflowConfig = {
@@ -568,6 +584,11 @@ export type ExpressWorkflowConfig = {
   birthCertificateUUID: string;
   icd11DataSourceUuid: string;
   haemodialysis: HaemodialysisConfig;
+  pbidsIdentifiers: {
+    studyParticipantID: string;
+    studyTemporaryParticipantID: string;
+  };
+  pbidsAttributeTypes: { studyStatus: string; participantCategory: string };
 };
 export interface ConfigObject {
   requireMaritalStatusOnAgeGreaterThanOrEqualTo: number;

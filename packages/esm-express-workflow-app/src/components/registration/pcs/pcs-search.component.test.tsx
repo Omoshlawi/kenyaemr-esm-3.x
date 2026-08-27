@@ -35,6 +35,7 @@ const mockUsePcsParticipantSearch = vi.mocked(usePcsParticipantSearch);
 const subject: PcsSearchSubject = {
   id: 'patient-uuid',
   source: 'local',
+  patient: { resourceType: 'Patient', id: 'patient-uuid' },
   name: 'Mary Akinyi Odongo',
   gender: 'female',
   birthDate: '1991-04-12',

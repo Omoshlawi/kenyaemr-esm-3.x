@@ -76,6 +76,11 @@ export interface PcsSearchSubject {
   /** `fhir.Patient.id` — the local patient uuid, or the HIE resource id. */
   id: string;
   source: 'local' | 'hie';
+  /**
+   * The record the flattened fields below were derived from. Kept whole because linking an
+   * HIE patient has to be able to create them locally, which needs more than demographics.
+   */
+  patient: fhir.Patient;
   name: string;
   gender?: string;
   birthDate?: string;

@@ -1,11 +1,12 @@
 import React from 'react';
 import { Button, Tag } from '@carbon/react';
 import { GenderFemale, GenderMale, Link as LinkIcon } from '@carbon/react/icons';
-import { age, formatDate, parseDate } from '@openmrs/esm-framework';
+import { age, formatDate, parseDate, showModal } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import styles from './pcs.scss';
 import { formatCompoundHeadName, formatMotherName, formatParticipantName, getPrimaryContact } from './pcs.resource';
 import { type PcsMatchType, type PcsMatchedOn, type PcsParticipant, type PcsSearchSubject } from './pcs.types';
+import { registerOrLaunchHIEPatient } from '../search-bar/search-bar.resource';
 
 interface PCSParticipantTileProps {
   participant: PcsParticipant;
@@ -45,6 +46,15 @@ const PCSParticipantTile: React.FC<PCSParticipantTileProps> = ({ participant, su
   };
 
   const matchTagType = participant.matchType === 'EXACT' ? 'green' : 'teal';
+
+  // Linking creates the patient if needed and writes to their record, so it confirms first.
+  const openLinkModal = () => {
+    const dispose = showModal('pcs-link-participant-modal', {
+      closeModal: () => dispose(),
+      subject,
+      participant,
+    });
+  };
 
   return (
     <div className={styles.pcsTile}>
@@ -105,7 +115,7 @@ const PCSParticipantTile: React.FC<PCSParticipantTileProps> = ({ participant, su
       </div>
 
       <div className={styles.pcsTileActions}>
-        <Button kind="ghost" size="sm" renderIcon={LinkIcon} onClick={() => {}}>
+        <Button kind="ghost" size="sm" renderIcon={LinkIcon} onClick={openLinkModal}>
           {t('linkRecords', 'Link records')}
         </Button>
       </div>

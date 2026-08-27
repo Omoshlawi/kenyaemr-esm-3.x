@@ -139,6 +139,7 @@ export function toPcsSearchSubject(
   return {
     id: patient.id!,
     source,
+    patient,
     name: getPatientName(patient),
     gender: patient.gender,
     birthDate: patient.birthDate,
