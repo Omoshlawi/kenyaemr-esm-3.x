@@ -19,7 +19,11 @@ import { showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { type ExpressWorkflowConfig } from '../../../../config-schema';
 import { getDependentsFromContacts } from '../../dependants/dependants.resource';
 import { formatParticipantName, getPrimaryContact } from '../resources/pcs.resource';
-import { createAndLinkFromParticipant, linkDependantToParticipant } from '../resources/link-dependant.resource';
+import {
+  createAndLinkFromParticipant,
+  linkDependantToParticipant,
+  useHieDependantLinkState,
+} from '../resources/link-dependant.resource';
 import { type PcsParticipant } from '../pcs.types';
 import styles from './link-participant.scss';
 
@@ -56,6 +60,13 @@ const LinkDependantModal: React.FC<LinkDependantModalProps> = ({
   const selected = candidates.find((candidate) => candidate.id === selectedId);
   const yesNo = (flag: boolean) => (flag ? t('yes', 'Yes') : t('no', 'No'));
   const primaryContact = getPrimaryContact(participant);
+
+  // A candidate already linked to some participant must not be offered: linking them again
+  // would re-point that child from one participant to another.
+  const { linkedById, isChecking } = useHieDependantLinkState(candidates, [
+    pcsIdentifiers.studyParticipantID,
+    pcsIdentifiers.studyTemporaryParticipantID,
+  ]);
 
   const handleLink = async () => {
     if (!selected && !isFromPcsDetails) {
@@ -134,15 +145,26 @@ const LinkDependantModal: React.FC<LinkDependantModalProps> = ({
           orientation="vertical"
           valueSelected={selectedId ?? undefined}
           onChange={(value) => setSelectedId(String(value))}>
-          {candidates.map((candidate) => (
-            <RadioButton
-              key={candidate.id}
-              value={candidate.id}
-              labelText={`${candidate.name} · ${candidate.relationship} · ${candidate.gender}${
-                candidate.birthDate && candidate.birthDate !== 'Unknown' ? ` · ${candidate.birthDate}` : ''
-              }`}
-            />
-          ))}
+          {candidates.map((candidate) => {
+            const linkedTo = linkedById[candidate.id];
+
+            return (
+              <RadioButton
+                key={candidate.id}
+                value={candidate.id}
+                // Disabled while the check runs too, so nothing can be picked in the window
+                // before its state is known.
+                disabled={isChecking || Boolean(linkedTo)}
+                labelText={`${candidate.name} · ${candidate.relationship} · ${candidate.gender}${
+                  candidate.birthDate && candidate.birthDate !== 'Unknown' ? ` · ${candidate.birthDate}` : ''
+                }${
+                  linkedTo
+                    ? ` — ${t('alreadyLinkedTo', 'already linked to {{individualId}}', { individualId: linkedTo })}`
+                    : ''
+                }`}
+              />
+            );
+          })}
           <RadioButton
             value={PCS_DETAILS_OPTION}
             labelText={t('notInHie', 'Not in the HIE — create from PCS details')}

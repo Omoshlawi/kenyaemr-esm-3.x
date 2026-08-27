@@ -123,7 +123,7 @@ describe('linkParticipantToPatient', () => {
     expect(launchWorkspace2).toHaveBeenCalledOnce();
   });
 
-  it('updates an existing study identifier in place rather than duplicating it', async () => {
+  it('refuses to re-point a patient already linked to another participant', async () => {
     respondWith({
       localPatient: {
         uuid: 'local-uuid',
@@ -131,10 +131,26 @@ describe('linkParticipantToPatient', () => {
       },
     });
 
+    // This used to overwrite the identifier in place, silently moving the child from one
+    // participant to another and destroying the previous link.
+    await expect(link(localSubject)).rejects.toThrow('already linked to PCS participant 901-9-9-9');
+    expect(writes()).toEqual([]);
+    expect(launchWorkspace2).not.toHaveBeenCalled();
+  });
+
+  it('is a no-op when the patient already holds this same participant', async () => {
+    respondWith({
+      localPatient: {
+        uuid: 'local-uuid',
+        identifiers: [{ uuid: 'identifier-uuid', identifier: '901-1-1-3', identifierType: { uuid: STUDY_ID_TYPE } }],
+      },
+    });
+
     await link(localSubject);
 
-    expect(writes()).toContain('/ws/rest/v1/patient/local-uuid/identifier/identifier-uuid');
-    expect(writes()).not.toContain('/ws/rest/v1/patient/local-uuid/identifier');
+    // Re-linking to the same participant stays idempotent — no identifier write at all.
+    expect(writes().filter((url) => url.includes('/identifier'))).toEqual([]);
+    expect(launchWorkspace2).toHaveBeenCalledOnce();
   });
 
   it('leaves an attribute alone when it already holds the right value', async () => {

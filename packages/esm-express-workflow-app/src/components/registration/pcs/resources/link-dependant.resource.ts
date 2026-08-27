@@ -1,8 +1,9 @@
 import { getSessionLocation, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { createPatient } from '../../dependants/dependants.resource';
 import { openmrsId, openmrsIdSource } from '../../constant';
-import { generateIdentifier, sanitizeName, transformToDependentPayload } from '../../helper';
+import { generateIdentifier, getLocalIdentifierValue, sanitizeName, transformToDependentPayload } from '../../helper';
 import { findExistingLocalPatient } from '../../search-bar/search-bar.resource';
+import useSWR from 'swr';
 import { getPrimaryContact } from './pcs.resource';
 import { stampAndCheckIn } from './link-participant.resource';
 import { type PcsParticipant } from '../pcs.types';
@@ -73,6 +74,38 @@ export async function linkDependantToParticipant({
     pbidsEnrollmentAttributeType,
     cardseEnrollmentAttributeType,
   });
+}
+
+/**
+ * Which of the mother's HIE dependants are already linked to a PCS participant, keyed by
+ * candidate id, with the study ID each one holds.
+ *
+ * One SWR key over all candidates rather than a hook per row: Carbon's `RadioButtonGroup`
+ * clones its children expecting `RadioButton` elements, so a per-row wrapper component would
+ * break its `valueSelected` / `onChange` wiring.
+ */
+export function useHieDependantLinkState(candidates: Array<any>, identifierTypes: Array<string>) {
+  const key = candidates.length
+    ? `pcs-hie-dependant-link-state/${candidates.map((candidate) => candidate.id).join(',')}`
+    : null;
+
+  const { data, isLoading } = useSWR(key, async () => {
+    const resolved = await Promise.all(
+      candidates.map(async (candidate) => {
+        const localPatient = await findExistingLocalPatient(candidate.contactData, true).catch(() => null);
+        const studyId = identifierTypes
+          .filter(Boolean)
+          .map((identifierType) => getLocalIdentifierValue(localPatient, identifierType))
+          .find(Boolean);
+
+        return [candidate.id, studyId] as const;
+      }),
+    );
+
+    return Object.fromEntries(resolved) as Record<string, string | undefined>;
+  });
+
+  return { linkedById: data ?? {}, isChecking: isLoading };
 }
 
 interface CreateAndLinkOptions {

@@ -2,7 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getSessionLocation, launchWorkspace2, launchWorkspaceGroup2, openmrsFetch } from '@openmrs/esm-framework';
 import { createPatient } from '../../dependants/dependants.resource';
 import { findExistingLocalPatient } from '../../search-bar/search-bar.resource';
-import { createAndLinkFromParticipant, linkDependantToParticipant } from './link-dependant.resource';
+import {
+  createAndLinkFromParticipant,
+  linkDependantToParticipant,
+  useHieDependantLinkState,
+} from './link-dependant.resource';
+import React from 'react';
+import { renderHook, waitFor } from '@testing-library/react';
+import { SWRConfig } from 'swr';
 import { type PcsParticipant } from '../pcs.types';
 
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
@@ -19,6 +26,8 @@ vi.mock('../../constant', () => ({ openmrsId: 'openmrs-id-type', openmrsIdSource
 
 vi.mock('../../helper', () => ({
   generateIdentifier: vi.fn(async () => ({ data: { identifier: 'MGH-0001' } })),
+  getLocalIdentifierValue: (localPatient: any, typeUuid: string) =>
+    localPatient?.identifiers?.find((id: any) => id.identifierType?.uuid === typeUuid)?.identifier,
   sanitizeName: (name: string) => name,
   transformToDependentPayload: (dependant: any) => ({
     name: dependant.name,
@@ -211,5 +220,32 @@ describe('createAndLinkFromParticipant', () => {
     });
     expect(mockOpenmrsFetch.mock.calls.some(([url]) => url.endsWith('/pbids-participants'))).toBe(false);
     expect(launchWorkspace2).toHaveBeenCalledOnce();
+  });
+});
+
+describe('useHieDependantLinkState', () => {
+  const candidates = [
+    { id: 'CR-linked', contactData: { id: 'CR-linked' } },
+    { id: 'CR-free', contactData: { id: 'CR-free' } },
+  ];
+
+  it('marks the candidates whose local patient already holds a study ID', async () => {
+    mockFindExistingLocalPatient.mockImplementation(async (contactData: any) =>
+      contactData.id === 'CR-linked'
+        ? { uuid: 'p1', identifiers: [{ identifier: '901-1-1-3', identifierType: { uuid: STUDY_ID_TYPE } }] }
+        : null,
+    );
+
+    // Fresh SWR cache per render, so nothing leaks between cases.
+    const { result } = renderHook(() => useHieDependantLinkState(candidates, [STUDY_ID_TYPE, 'temp-id-type']), {
+      wrapper: ({ children }) => React.createElement(SWRConfig, { value: { provider: () => new Map() } }, children),
+    });
+
+    // Waiting on the data itself rather than on isChecking, which is briefly false before
+    // SWR has begun.
+    await waitFor(() => expect(result.current.linkedById['CR-linked']).toBe('901-1-1-3'));
+
+    // The marked one is what the modal disables; the unmarked one stays selectable.
+    expect(result.current.linkedById).toEqual({ 'CR-linked': '901-1-1-3', 'CR-free': undefined });
   });
 });

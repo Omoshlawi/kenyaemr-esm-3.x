@@ -109,12 +109,11 @@ async function writeStudyIdentifier(localPatient: any, identifierType: string, v
   );
 
   if (existing) {
+    // Overwriting here would silently re-point the patient from one participant to another and
+    // destroy the previous link. Callers check before they get this far; this makes the case
+    // unreachable for the ones that don't, and for two registrars racing.
     if (existing.identifier !== value) {
-      await openmrsFetch(`${restBaseUrl}/patient/${localPatient.uuid}/identifier/${existing.uuid}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: { identifier: value },
-      });
+      throw new Error(`This patient is already linked to PCS participant ${existing.identifier}`);
     }
     return;
   }
