@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Button } from '@carbon/react';
-import { Link as LinkIcon } from '@carbon/react/icons';
+import { Link as LinkIcon, Unlink } from '@carbon/react/icons';
 import { showModal, useConfig, type Patient } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { type ExpressWorkflowConfig } from '../../../../config-schema';
@@ -13,7 +13,8 @@ type LinkDependantActionProps = {
   /** The parent's PCS individual ID. Absent when the parent is not linked to PCS. */
   motherIndividualId?: string;
   parentPhoneNumber?: string;
-  onLinked?: () => void;
+  /** Fires after a link or an unlink — both want the row's cached lookup dropped. */
+  onLinkChanged?: () => void;
 };
 
 const LinkDependantAction: React.FC<LinkDependantActionProps> = ({
@@ -22,7 +23,7 @@ const LinkDependantAction: React.FC<LinkDependantActionProps> = ({
   localPatient,
   motherIndividualId,
   parentPhoneNumber,
-  onLinked,
+  onLinkChanged,
 }) => {
   const { t } = useTranslation();
   const {
@@ -42,12 +43,30 @@ const LinkDependantAction: React.FC<LinkDependantActionProps> = ({
       dependant,
       parentPhoneNumber,
       motherIndividualId,
-      onLinked,
+      onLinked: onLinkChanged,
     });
   };
 
-  if (paticipantId || temporaryId) {
-    return null;
+  const linkedId = paticipantId ?? temporaryId;
+
+  if (linkedId) {
+    const openDelinkModal = () => {
+      const dispose = showModal('pcs-delink-participant-modal', {
+        closeModal: () => dispose(),
+        localPatient,
+        studyParticipantId: linkedId,
+        // Void the type this row actually holds — the hide check accepts either, so
+        // defaulting to the permanent one would silently void nothing for a temporary ID.
+        identifierTypeUuid: paticipantId ? studyParticipantID : studyTemporaryParticipantID,
+        onDelinked: onLinkChanged,
+      });
+    };
+
+    return (
+      <Button size="sm" kind="danger--ghost" renderIcon={Unlink} onClick={openDelinkModal}>
+        {t('unlink', 'Unlink')}
+      </Button>
+    );
   }
 
   // The modal lists the mother's PCS dependants, so without her study ID there is nothing to

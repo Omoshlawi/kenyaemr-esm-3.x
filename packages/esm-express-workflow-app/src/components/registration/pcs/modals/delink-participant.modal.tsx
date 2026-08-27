@@ -10,6 +10,8 @@ interface DelinkParticipantModalProps {
   closeModal: () => void;
   localPatient: any;
   studyParticipantId: string;
+  /** Which identifier type to void. Defaults to the permanent study participant ID. */
+  identifierTypeUuid?: string;
   participantName?: string;
   onDelinked?: () => void;
 }
@@ -18,6 +20,7 @@ const DelinkParticipantModal: React.FC<DelinkParticipantModalProps> = ({
   closeModal,
   localPatient,
   studyParticipantId,
+  identifierTypeUuid,
   participantName,
   onDelinked,
 }) => {
@@ -32,13 +35,13 @@ const DelinkParticipantModal: React.FC<DelinkParticipantModalProps> = ({
     try {
       await delinkParticipant({
         localPatient,
-        studyParticipantIdentifierType: pcsIdentifiers.studyParticipantID,
+        studyParticipantIdentifierType: identifierTypeUuid ?? pcsIdentifiers.studyParticipantID,
         pbidsEnrollmentAttributeType: pcsAttributeTypes.pbidsEnrollmentStatus,
         cardseEnrollmentAttributeType: pcsAttributeTypes.cardseEnrollmentStatus,
       });
       showSnackbar({
-        title: t('participantDelinked', 'Records unlinked'),
-        subtitle: t('participantDelinkedSubtitle', 'The study participant ID and study attributes were removed.'),
+        title: t('participantUnlinked', 'Records unlinked'),
+        subtitle: t('participantUnlinkedSubtitle', 'The study participant ID and study attributes were removed.'),
         kind: 'success',
         isLowContrast: true,
       });
@@ -48,7 +51,7 @@ const DelinkParticipantModal: React.FC<DelinkParticipantModalProps> = ({
       setError(
         e?.responseBody?.error?.message ??
           e?.message ??
-          t('participantDelinkFailedSubtitle', 'The patient record could not be updated.'),
+          t('participantUnlinkFailedSubtitle', 'The patient record could not be updated.'),
       );
     } finally {
       setIsDelinking(false);
@@ -57,16 +60,16 @@ const DelinkParticipantModal: React.FC<DelinkParticipantModalProps> = ({
 
   return (
     <>
-      <ModalHeader closeModal={closeModal} title={t('delinkFromPcs', 'Unlink from PCS')} />
+      <ModalHeader closeModal={closeModal} title={t('unlinkFromPcs', 'Unlink from PCS')} />
       <ModalBody>
         <p>
-          {t('delinkConfirmation', 'Remove the link between this patient and PCS participant {{individualId}}?', {
+          {t('unlinkConfirmation', 'Remove the link between this patient and PCS participant {{individualId}}?', {
             individualId: participantName ? `${studyParticipantId} (${participantName})` : studyParticipantId,
           })}
         </p>
         <p>
           {t(
-            'delinkWhatIsRemoved',
+            'unlinkWhatIsRemoved',
             'The study participant ID and both enrollment status attributes will be removed from the patient record.',
           )}
         </p>
@@ -76,7 +79,7 @@ const DelinkParticipantModal: React.FC<DelinkParticipantModalProps> = ({
             kind="error"
             lowContrast
             hideCloseButton
-            title={t('participantDelinkFailed', 'Could not unlink records')}
+            title={t('participantUnlinkFailed', 'Could not unlink records')}
             subtitle={error}
           />
         )}
@@ -86,7 +89,7 @@ const DelinkParticipantModal: React.FC<DelinkParticipantModalProps> = ({
           {t('cancel', 'Cancel')}
         </Button>
         <Button kind="danger" onClick={handleDelink} disabled={isDelinking}>
-          {isDelinking ? <InlineLoading description={t('unlinking', 'Unlinking...')} /> : t('delink', 'Delink')}
+          {isDelinking ? <InlineLoading description={t('unlinking', 'Unlinking...')} /> : t('unlink', 'Unlink')}
         </Button>
       </ModalFooter>
     </>

@@ -442,7 +442,7 @@ const DependentsComponent: React.FC<DependentProps> = ({
                 localPatient={localPatient}
                 motherIndividualId={motherIndividualId}
                 parentPhoneNumber={parentPhoneNumber}
-                onLinked={() => forgetCachedDependant(dependent.id)}
+                onLinkChanged={() => forgetCachedDependant(dependent.id)}
               />
             )}
           </div>

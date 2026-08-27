@@ -141,7 +141,7 @@ const LinkedParticipant: React.FC<LinkedParticipantProps> = ({
             {isLoading ? <InlineLoading description={t('refreshing', 'Refreshing...')} /> : t('refresh', 'Refresh')}
           </Button>
           <Button kind="danger--ghost" size="sm" renderIcon={Unlink} onClick={openDelinkModal}>
-            {t('delink', 'Delink')}
+            {t('unlink', 'Unlink')}
           </Button>
         </div>
       </div>
