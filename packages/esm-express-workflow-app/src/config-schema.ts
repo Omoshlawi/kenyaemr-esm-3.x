@@ -488,16 +488,16 @@ export const configSchema = {
     _type: Type.Object,
     _description: 'PBIDS Study identifies',
     _default: {
-      studyParticipantID: 'ed325b17-e6ce-44a3-982a-414fed878e73',
-      studyTemporaryParticipantID: '497f9d61-c16c-41b0-a926-8fdbe11771a7',
+      studyParticipantID: 'e65e699e-6b56-4be4-8d8b-14ead2de408d',
+      studyTemporaryParticipantID: 'ad7d9813-1bc7-4e7e-b730-20a55f50b8e0',
     },
   },
   pcsAttributeTypes: {
     _type: Type.Object,
     _description: 'PCS study person attribute types. Both are java.lang.Boolean format.',
     _default: {
-      pbidsEnrollmentStatus: '5131931b-9ceb-4a77-af4c-96d9d20a1d26',
-      cardseEnrollmentStatus: '3f3a8e88-e3e6-47ea-835f-67bc2e7a8c7b',
+      pbidsEnrollmentStatus: '4fbf219b-8965-418a-b6d7-53229eeeb18f',
+      cardseEnrollmentStatus: 'a49c97f9-a571-47da-88ee-ed2c8558f8f4',
     },
   },
 };

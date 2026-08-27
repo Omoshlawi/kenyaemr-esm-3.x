@@ -1,7 +1,6 @@
 import useSWR from 'swr';
-import { getPatientName, restBaseUrl } from '@openmrs/esm-framework';
+import { getPatientName, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { getNationalIdFromPatient, getPhoneFromFhirPatient } from '../../helper';
-import { getMockParticipantById, searchMockParticipants } from './pcs-mock-data';
 import {
   type PcsApiError,
   type PcsCompound,
@@ -15,8 +14,6 @@ import {
 /** The API's own defaults, restated so the URL we build is explicit about them. */
 const DEFAULT_LIMIT = 50;
 const DEFAULT_START_INDEX = 0;
-
-const sleep = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 interface ParticipantSearchOptions {
   limit?: number;
@@ -67,33 +64,15 @@ export function buildParticipantSearchUrl(
   return `${restBaseUrl}/pbids-participants?${params}`;
 }
 
-/**
- * Replace the two lines below with the real call and delete
- * `pcs-mock-data.ts`:
- *
- *   const { data } = await openmrsFetch<PcsParticipantSearchResponse>(url);
- *   return data;
- *
- */
 async function fetchParticipants(url: string): Promise<PcsParticipantSearchResponse> {
-  await sleep(900);
-  return searchMockParticipants(url);
+  const { data } = await openmrsFetch<PcsParticipantSearchResponse>(url);
+  return data;
 }
 
-/**
- * Searches the PCS registry. The URL is the SWR key, so editing a filter refetches and an
- * unchanged query dedupes.
- */
-/**
- * TODO(pbids-api): the by-id endpoint is still being built, so this answers from static
- * data. Once it is live, replace the two lines below with:
- *
- *   const { data } = await openmrsFetch<PcsParticipant>(url);
- *   return data;
- */
+/** An id PCS does not know returns 404 with an `ApiError` body, which SWR surfaces as an error. */
 async function fetchParticipantById(url: string): Promise<PcsParticipant> {
-  await sleep(900);
-  return getMockParticipantById(decodeURIComponent(url.slice(url.lastIndexOf('/') + 1)));
+  const { data } = await openmrsFetch<PcsParticipant>(url);
+  return data;
 }
 
 /**
@@ -130,6 +109,10 @@ export function usePcsDependants(motherIndividualId: string | null) {
   return { dependants: data?.results ?? [], totalCount: data?.totalCount ?? 0, isLoading, error };
 }
 
+/**
+ * Searches the PCS registry. The URL is the SWR key, so editing a filter refetches and an
+ * unchanged query dedupes.
+ */
 export function usePcsParticipantSearch(filters: PcsParticipantFilters | null, options?: ParticipantSearchOptions) {
   const url = buildParticipantSearchUrl(filters, options);
 

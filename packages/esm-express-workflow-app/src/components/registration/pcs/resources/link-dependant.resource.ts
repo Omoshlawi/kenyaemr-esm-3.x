@@ -3,7 +3,6 @@ import { createPatient } from '../../dependants/dependants.resource';
 import { transformToDependentPayload } from '../../helper';
 import { findExistingLocalPatient } from '../../search-bar/search-bar.resource';
 import { launchCheckInWorkspace, readLocalPatient, stampAndCheckIn } from './link-participant.resource';
-import { createMockParticipant } from './pcs-mock-data';
 import { type PcsParticipant } from '../pcs.types';
 
 interface LinkDependantOptions {
@@ -74,11 +73,6 @@ export async function linkDependantToParticipant({
   });
 }
 
-/** Artificial latency, matching the other stubbed PCS calls. */
-const MOCK_LATENCY_MS = 900;
-
-const sleep = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
-
 interface CreatePcsParticipantOptions {
   patientUuid: string;
   motherId: string;
@@ -101,12 +95,6 @@ export function buildCreateParticipantRequest({ patientUuid, motherId }: CreateP
 }
 
 /**
- * TODO(pbids-api): `openmrs-module-pbids` is built but not deployed, so this answers from
- * static data. Once it is live, replace the two lines below with:
- *
- *   const { data } = await openmrsFetch<PcsParticipant>(request.url, request.options);
- *   return data;
- *
  * Documented failures, all of which surface through the modal's notification rather than
  * indicating a bug here: `409` when the patient already holds a study or temporary identifier
  * (the UI hides the action for those rows, but two registrars racing would reach it), `400`
@@ -115,10 +103,8 @@ export function buildCreateParticipantRequest({ patientUuid, motherId }: CreateP
  */
 async function createPcsParticipant({ patientUuid, motherId }: CreatePcsParticipantOptions): Promise<PcsParticipant> {
   const request = buildCreateParticipantRequest({ patientUuid, motherId });
-
-  await sleep(MOCK_LATENCY_MS);
-  // Answering from the built body keeps the mock honest about what would have been sent.
-  return createMockParticipant(request.options.body);
+  const { data } = await openmrsFetch<PcsParticipant>(request.url, request.options);
+  return data;
 }
 
 interface AssignTemporaryStudyIdOptions {

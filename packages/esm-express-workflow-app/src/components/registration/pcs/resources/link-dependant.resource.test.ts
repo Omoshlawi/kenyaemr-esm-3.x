@@ -76,12 +76,23 @@ const rereadFor = (url: string) => ({
   reread: true,
 });
 
+/** What the module returns from `POST /pbids-participants` — the created participant. */
+const createdParticipant = {
+  ...participant,
+  individualId: 'MO26082701',
+  pbidsEnrolled: true,
+  cardse: false,
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetSessionLocationDefault();
-  mockOpenmrsFetch.mockImplementation((url: string) => {
+  mockOpenmrsFetch.mockImplementation((url: string, options?: any) => {
     if (url.includes('?v=custom')) {
       return Promise.resolve({ data: rereadFor(url) } as any);
+    }
+    if (url.endsWith('/pbids-participants') && options?.method === 'POST') {
+      return Promise.resolve({ data: createdParticipant } as any);
     }
     return Promise.resolve({ data: { results: [] } } as any);
   });
@@ -151,16 +162,15 @@ describe('assignTemporaryStudyId', () => {
   it('issues a temporary ID for an existing record without writing anything itself', async () => {
     mockFindExistingLocalPatient.mockResolvedValue({ uuid: 'dependant-uuid', identifiers: [] } as any);
 
-    const { participant } = await assign();
+    const { participant: created } = await assign();
 
     expect(mockCreatePatient).not.toHaveBeenCalled();
-    // Ten characters — two initials, yyMMdd, a two-digit sequence — against nine for a
-    // permanent id. The length is what marks a row as temporary.
-    expect(participant.individualId).toHaveLength(10);
-    expect(participant).toMatchObject({ pbidsEnrolled: true, cardse: false });
+    // The participant comes back from the module, not from anything computed here.
+    expect(created).toEqual(createdParticipant);
     // The module assigns the identifier and sets both person attributes as a pair with the
-    // PCS row, so a client-side write here would break that pairing.
-    expect(writes()).toEqual([]);
+    // PCS row, so a client-side write here would break that pairing. The only POST on this
+    // path is the create call itself.
+    expect(writes()).toEqual(['/ws/rest/v1/pbids-participants']);
     expect(launchWorkspace2).toHaveBeenCalledOnce();
   });
 
