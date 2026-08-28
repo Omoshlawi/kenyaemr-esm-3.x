@@ -1,0 +1,29 @@
+@use '@carbon/layout';
+@use '@carbon/colors';
+
+.workspaceForm {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  justify-content: space-between;
+}
+
+.workspaceContent {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-05;
+}
+
+.notification {
+  margin-top: layout.$spacing-05;
+  max-width: 100%;
+}
+
+.workspaceButtonSet {
+  margin-top: auto;
+
+  button {
+    min-width: 50%;
+  }
+}

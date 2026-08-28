@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": "^2.24.0"
+  },
+  "extensions": [
+    {
+      "name": "pcs-search-results",
+      "component": "pcsSearchResults",
+      "slot": "ewf-registration-patient-extras-slot",
+      "featureFlag": "pcsSite",
+      "online": true,
+      "offline": false
+    }
+  ],
+  "modals": [
+    {
+      "name": "pcs-link-participant-modal",
+      "component": "pcsLinkParticipantModal"
+    },
+    {
+      "name": "pcs-delink-participant-modal",
+      "component": "pcsDelinkParticipantModal"
+    },
+    {
+      "name": "pcs-link-dependant-modal",
+      "component": "pcsLinkDependantModal"
+    }
+  ],
+  "workspaces2": [
+    {
+      "name": "pcs-add-dependant-workspace-form",
+      "component": "pcsAddDependantWorkspace",
+      "window": "pcs-dependant"
+    },
+    {
+      "name": "pcs-link-hie-dependant-workspace-form",
+      "component": "pcsLinkHieDependantWorkspace",
+      "window": "pcs-dependant"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "pcs-dependant",
+      "group": "pcs-registration",
+      "width": "narrow"
+    }
+  ],
+  "workspaceGroups2": [
+    {
+      "name": "pcs-registration"
+    }
+  ]
+}

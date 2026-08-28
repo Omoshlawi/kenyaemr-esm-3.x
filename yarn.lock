@@ -2465,6 +2465,22 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@kenyaemr/esm-pcs-app@workspace:packages/esm-pcs-app":
+  version: 0.0.0-use.local
+  resolution: "@kenyaemr/esm-pcs-app@workspace:packages/esm-pcs-app"
+  dependencies:
+    "@hookform/resolvers": "npm:^3.9.1"
+    react-hook-form: "npm:^7.54.0"
+    zod: "npm:^3.24.1"
+  peerDependencies:
+    "@carbon/react": 1.x
+    "@openmrs/esm-framework": 9.x
+    react: ^18.1.0
+    react-i18next: 11.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
 "@kenyaemr/esm-pharmacy-app@workspace:packages/esm-pharmacy-app":
   version: 0.0.0-use.local
   resolution: "@kenyaemr/esm-pharmacy-app@workspace:packages/esm-pharmacy-app"

@@ -1,0 +1,48 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@carbon/colors';
+
+.comparison {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-05;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  min-width: 0;
+}
+
+.sideLabel {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.sideValue {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+}
+
+.willWrite {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-03;
+}
+
+.value {
+  font-weight: 600;
+}
+
+.note {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+  margin-top: layout.$spacing-04;
+}
+
+.notification {
+  margin-top: layout.$spacing-04;
+  max-width: 100%;
+}

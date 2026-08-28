@@ -1,0 +1,268 @@
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { getLocalIdentifierValue } from './identifiers';
+import { createDependantPatient, createPatientFromDemographics } from './patient-create.resource';
+import { findExistingLocalPatient } from './patient-search.resource';
+import useSWR from 'swr';
+import { getPrimaryContact } from './pcs.resource';
+import { launchCheckInWorkspace, readLocalPatient, stampAndCheckIn } from './link-participant.resource';
+import {
+  type IdentifierTypeUuids,
+  type PcsDependantDemographics,
+  type PcsHieDependant,
+  type PcsParticipant,
+} from '../types';
+
+interface LinkDependantOptions {
+  /** A row from `getDependentsFromContacts` — an HIE contact, not necessarily a patient here yet. */
+  dependant: any;
+  parentPhoneNumber?: string;
+  participant: PcsParticipant;
+  studyParticipantIdentifierType: string;
+  pbidsEnrollmentAttributeType: string;
+  cardseEnrollmentAttributeType: string;
+  /** The identifier types a created patient's HIE identifiers are written against. */
+  uuids: IdentifierTypeUuids;
+}
+
+/**
+ * Resolves a dependant to a local record, creating them when they are not registered here.
+ *
+ * `isDependent: true` matters — it makes `extractPatientIdentifiers` skip `household-number`,
+ * which belongs to the parent, so a miss here doesn't silently match the parent's own record.
+ *
+ * Deliberately calls `createPatient` rather than `createDependentPatient`: the latter launches
+ * the visit workspace inside itself, which would fire before the study data is written.
+ */
+async function resolveLocalDependant(
+  dependant: PcsHieDependant,
+  parentPhoneNumber: string | undefined,
+  uuids: IdentifierTypeUuids,
+) {
+  const existing = await findExistingLocalPatient(dependant.contactData, true);
+  if (existing) {
+    return existing;
+  }
+
+  return createDependantPatient(dependant, parentPhoneNumber ? { ...uuids } : uuids, parentPhoneNumber);
+}
+
+/**
+ * Links a dependant in the HIE dependants table to a participant from their mother's PCS
+ * record: create if needed, stamp the study identifier and both enrolment attributes, check in.
+ */
+export async function linkDependantToParticipant({
+  dependant,
+  parentPhoneNumber,
+  participant,
+  studyParticipantIdentifierType,
+  pbidsEnrollmentAttributeType,
+  cardseEnrollmentAttributeType,
+  uuids,
+}: LinkDependantOptions) {
+  const localPatient = await resolveLocalDependant(dependant, parentPhoneNumber, uuids);
+
+  return stampAndCheckIn({
+    localPatient,
+    participant,
+    studyParticipantIdentifierType,
+    pbidsEnrollmentAttributeType,
+    cardseEnrollmentAttributeType,
+  });
+}
+
+/**
+ * Which of the mother's HIE dependants are already linked to a PCS participant, keyed by
+ * candidate id, with the study ID each one holds.
+ *
+ * One SWR key over all candidates rather than a hook per row: Carbon's `RadioButtonGroup`
+ * clones its children expecting `RadioButton` elements, so a per-row wrapper component would
+ * break its `valueSelected` / `onChange` wiring.
+ */
+export function useHieDependantLinkState(candidates: Array<any>, identifierTypes: Array<string>) {
+  const key = candidates.length
+    ? `pcs-hie-dependant-link-state/${candidates.map((candidate) => candidate.id).join(',')}`
+    : null;
+
+  const { data, isLoading } = useSWR(key, async () => {
+    const resolved = await Promise.all(
+      candidates.map(async (candidate) => {
+        const localPatient = await findExistingLocalPatient(candidate.contactData, true).catch(() => null);
+        const studyId = identifierTypes
+          .filter(Boolean)
+          .map((identifierType) => getLocalIdentifierValue(localPatient, identifierType))
+          .find(Boolean);
+
+        return [candidate.id, studyId] as const;
+      }),
+    );
+
+    return Object.fromEntries(resolved) as Record<string, string | undefined>;
+  });
+
+  return { linkedById: data ?? {}, isChecking: isLoading };
+}
+
+interface CreateAndLinkOptions {
+  participant: PcsParticipant;
+  nationalIdUUID: string;
+  phoneAttributeTypeUUID: string;
+  studyParticipantIdentifierType: string;
+  pbidsEnrollmentAttributeType: string;
+  cardseEnrollmentAttributeType: string;
+}
+
+/** A PCS participant mapped onto the same create. */
+function createPatientFromParticipant(
+  participant: PcsParticipant,
+  nationalIdUUID: string,
+  phoneAttributeTypeUUID: string,
+) {
+  const contact = getPrimaryContact(participant);
+
+  return createPatientFromDemographics(
+    {
+      firstName: participant.firstName,
+      middleName: participant.middleName,
+      lastName: participant.lastName,
+      sex: participant.sex,
+      dateOfBirth: participant.dateOfBirth,
+      nationalId: contact?.nationalId,
+      phone: contact?.phone,
+    },
+    nationalIdUUID,
+    phoneAttributeTypeUUID,
+  );
+}
+
+/**
+ * For a PCS dependant the HIE has no record of: build the patient from PCS's own demographics,
+ * then stamp **this participant's** identifier — they already hold a permanent one, so nothing
+ * temporary is minted and PCS keeps a single record for the child.
+ */
+export async function createAndLinkFromParticipant({
+  participant,
+  nationalIdUUID,
+  phoneAttributeTypeUUID,
+  studyParticipantIdentifierType,
+  pbidsEnrollmentAttributeType,
+  cardseEnrollmentAttributeType,
+}: CreateAndLinkOptions) {
+  const localPatient = await createPatientFromParticipant(participant, nationalIdUUID, phoneAttributeTypeUUID);
+
+  return stampAndCheckIn({
+    localPatient,
+    participant,
+    studyParticipantIdentifierType,
+    pbidsEnrollmentAttributeType,
+    cardseEnrollmentAttributeType,
+  });
+}
+
+interface CreatePcsParticipantOptions {
+  patientUuid: string;
+  motherId: string;
+}
+
+/**
+ * The request as the module documents it. Kept real and separately testable so the path and
+ * both field names are pinned rather than discovered at integration time — the same split the
+ * search side uses with `buildParticipantSearchUrl`.
+ */
+export function buildCreateParticipantRequest({ patientUuid, motherId }: CreatePcsParticipantOptions) {
+  return {
+    url: `${restBaseUrl}/pbids-participants`,
+    options: {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { patientUuid, motherId },
+    },
+  };
+}
+
+/**
+ * Documented failures, all of which surface through the form's notification rather than
+ * indicating a bug here: `409` when the patient already holds a study or temporary identifier,
+ * `400` for a missing field or an unknown patient or mother, and `503` when the PCS database is
+ * unreachable.
+ */
+async function createPcsParticipant({ patientUuid, motherId }: CreatePcsParticipantOptions): Promise<PcsParticipant> {
+  const request = buildCreateParticipantRequest({ patientUuid, motherId });
+  const { data } = await openmrsFetch<PcsParticipant>(request.url, request.options);
+  return data;
+}
+
+interface CreateDependantWithTemporaryIdOptions {
+  demographics: PcsDependantDemographics;
+  motherIndividualId: string;
+  nationalIdUUID: string;
+  phoneAttributeTypeUUID: string;
+}
+
+/**
+ * The tail both temporary-ID flows share: have the module create a participant against the
+ * mother's and mint the study id, then start the visit.
+ *
+ * Nothing is written client-side. The module owns both sides — it assigns the identifier and
+ * sets the `PBIDS Enrolled` / `CARDSE Enrolled` attributes to match the PCS row, which the docs
+ * are explicit must stay in step. The re-read is how we see what it wrote; the record we hold
+ * could not carry it.
+ */
+async function mintTemporaryIdAndCheckIn(localPatient: any, motherIndividualId: string) {
+  if (!localPatient?.uuid) {
+    throw new Error('The patient record could not be created');
+  }
+
+  const participant = await createPcsParticipant({ patientUuid: localPatient.uuid, motherId: motherIndividualId });
+
+  const updated = (await readLocalPatient(localPatient.uuid).catch(() => null)) ?? localPatient;
+
+  await launchCheckInWorkspace(updated, updated.uuid);
+
+  return { localPatient: updated, participant };
+}
+
+/**
+ * For an infant in neither PCS nor the HIE: register them here from typed demographics, then
+ * mint a temporary study id against their mother's participant.
+ */
+export async function createDependantWithTemporaryId({
+  demographics,
+  motherIndividualId,
+  nationalIdUUID,
+  phoneAttributeTypeUUID,
+}: CreateDependantWithTemporaryIdOptions) {
+  const localPatient = await createPatientFromDemographics(demographics, nationalIdUUID, phoneAttributeTypeUUID);
+
+  return mintTemporaryIdAndCheckIn(localPatient, motherIndividualId);
+}
+
+interface LinkHieDependantOptions {
+  /** A row from `getDependentsFromContacts` — an HIE contact, not necessarily a patient here yet. */
+  dependant: any;
+  parentPhoneNumber?: string;
+  motherIndividualId: string;
+  /** The identifier types a created patient's HIE identifiers are written against. */
+  uuids: IdentifierTypeUuids;
+}
+
+/**
+ * For a child the HIE lists under her mother but PCS has no row for: reuse her local record when
+ * she is already registered here, create it from the HIE contact when she isn't, then mint a
+ * temporary study id.
+ *
+ * Differs from `createDependantWithTemporaryId` only at the head — resolve-or-create from an HIE
+ * contact, rather than create from typed demographics.
+ *
+ * A child linked elsewhere between the list rendering and this call comes back as the documented
+ * `409`; that race belongs to the server, not to a second client-side check.
+ */
+export async function linkHieDependantWithTemporaryId({
+  dependant,
+  parentPhoneNumber,
+  motherIndividualId,
+  uuids,
+}: LinkHieDependantOptions) {
+  const localPatient = await resolveLocalDependant(dependant, parentPhoneNumber, uuids);
+
+  return mintTemporaryIdAndCheckIn(localPatient, motherIndividualId);
+}

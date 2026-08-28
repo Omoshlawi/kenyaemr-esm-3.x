@@ -1,0 +1,49 @@
+{
+  "name": "@kenyaemr/esm-pcs-app",
+  "version": "5.4.4",
+  "description": "PCS/PBIDS study registry app for KenyaEMR",
+  "keywords": [
+    "openmrs"
+  ],
+  "homepage": "https://github.com/palladiumkenya/kenyaemr-esm-core#readme",
+  "bugs": {
+    "url": "https://github.com/palladiumkenya/kenyaemr-esm-core/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/palladiumkenya/kenyaemr-esm-core#readme"
+  },
+  "license": "MPL-2.0",
+  "main": "src/index.ts",
+  "source": true,
+  "browser": "dist/kenyaemr-esm-pcs-app.js",
+  "scripts": {
+    "analyze": "rspack build --mode=production --analyze",
+    "build": "rspack --mode=production",
+    "coverage": "yarn --cwd ../.. vitest run packages/esm-pcs-app/src --coverage",
+    "debug": "npm run serve",
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' --config ../../tools/i18next-parser.config.js",
+    "lint": "eslint src --ext ts,tsx",
+    "serve": "rspack serve --mode=development",
+    "start": "openmrs develop",
+    "typescript": "tsc"
+  },
+  "browserslist": [
+    "extends browserslist-config-openmrs"
+  ],
+  "dependencies": {
+    "@hookform/resolvers": "^3.9.1",
+    "react-hook-form": "^7.54.0",
+    "zod": "^3.24.1"
+  },
+  "peerDependencies": {
+    "@carbon/react": "1.x",
+    "@openmrs/esm-framework": "9.x",
+    "react": "^18.1.0",
+    "react-i18next": "11.x",
+    "swr": "2.x"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
