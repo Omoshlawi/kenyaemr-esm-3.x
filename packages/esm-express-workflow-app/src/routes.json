@@ -566,6 +566,11 @@
       "name": "interoperative-drug-given-workspace-form",
       "component": "interoperativeDrugGivenFormWorkspace",
       "window": "ewf-anaesthetic-record"
+    },
+    {
+      "name": "pcs-add-dependant-workspace-form",
+      "component": "pcsAddDependantWorkspace",
+      "window": "ewf-pcs-add-dependant"
     }
   ],
   "workspaceWindows2": [
@@ -578,12 +583,20 @@
       "name": "ewf-anaesthetic-record",
       "group": "ewf-patient-chart",
       "width": "wider"
+    },
+    {
+      "name": "ewf-pcs-add-dependant",
+      "group": "ewf-pcs-registration",
+      "width": "narrow"
     }
   ],
   "workspaceGroups2": [
     {
       "name": "ewf-patient-chart",
       "scopePattern": "/patient/([^/]+)/chart"
+    },
+    {
+      "name": "ewf-pcs-registration"
     }
   ],
   "modals": [

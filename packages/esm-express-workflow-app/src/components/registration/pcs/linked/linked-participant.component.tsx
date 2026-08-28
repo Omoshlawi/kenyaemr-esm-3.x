@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button, InlineLoading, SkeletonText, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
-import { Renew, Unlink } from '@carbon/react/icons';
-import { showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { ArrowRight, Renew, Unlink } from '@carbon/react/icons';
+import { launchWorkspace2, showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { type ExpressWorkflowConfig } from '../../../../config-schema';
 import styles from '../pcs.scss';
@@ -31,9 +31,11 @@ const LinkedParticipant: React.FC<LinkedParticipantProps> = ({
   const { participant, isLoading, error, mutate } = usePcsParticipant(studyParticipantId);
   // Same key as the list inside the panel, so SWR issues one request and the tab can show a
   // real count without anyone opening it.
-  const { totalCount: dependantCount, isLoading: isLoadingDependants } = usePcsDependants(
-    participant?.individualId ?? null,
-  );
+  const {
+    totalCount: dependantCount,
+    isLoading: isLoadingDependants,
+    mutate: mutateDependants,
+  } = usePcsDependants(participant?.individualId ?? null);
 
   // PCS owns these two flags, so every pull by id reconciles the patient record with them.
   const { syncNow } = useSyncStudyAttributes({
@@ -49,6 +51,15 @@ const LinkedParticipant: React.FC<LinkedParticipantProps> = ({
     // Bypasses the sync guard: the PCS values may be identical while the patient's own
     // attributes have drifted, and Refresh should mean "reconcile now".
     syncNow();
+  };
+
+  const openAddDependant = () => {
+    launchWorkspace2('pcs-add-dependant-workspace-form', {
+      motherIndividualId: participant!.individualId,
+      // The new child is a participant with this mother, so the same key that feeds the tab
+      // count and the list picks them up.
+      onCreated: () => mutateDependants(),
+    });
   };
 
   const openDelinkModal = () => {
@@ -128,6 +139,26 @@ const LinkedParticipant: React.FC<LinkedParticipantProps> = ({
           </Button>
           <Button kind="danger--ghost" size="sm" renderIcon={Unlink} onClick={openDelinkModal}>
             {t('unlink', 'Unlink')}
+          </Button>
+        </div>
+
+        {/* The Dependants tab lists PCS rows, so by construction it cannot reach a child PCS has
+            never heard of. These two questions are exactly those cases, named by the situation at
+            the desk rather than by what the flow does. */}
+        <div className={styles.pcsLinkedQuestions}>
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={ArrowRight}
+            // Needs the mother's individualId, which only arrives with the participant.
+            disabled={!participant}
+            onClick={openAddDependant}>
+            {t('dependantNotInHieAndPcs', 'Dependant not in HIE and PCS?')}
+          </Button>
+          {/* Deferred: the child is in the HIE but PCS has no row for them. Left as a bare no-op
+              so wiring up the real flow is a one-line swap. */}
+          <Button kind="ghost" size="sm" renderIcon={ArrowRight} onClick={() => {}}>
+            {t('dependantInHieNotPcs', 'Dependant in HIE and not PCS?')}
           </Button>
         </div>
       </div>

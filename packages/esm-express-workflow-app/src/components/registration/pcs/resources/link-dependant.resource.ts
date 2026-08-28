@@ -5,7 +5,7 @@ import { generateIdentifier, getLocalIdentifierValue, sanitizeName, transformToD
 import { findExistingLocalPatient } from '../../search-bar/search-bar.resource';
 import useSWR from 'swr';
 import { getPrimaryContact } from './pcs.resource';
-import { stampAndCheckIn } from './link-participant.resource';
+import { launchCheckInWorkspace, readLocalPatient, stampAndCheckIn } from './link-participant.resource';
 import { type PcsParticipant } from '../pcs.types';
 
 interface LinkDependantOptions {
@@ -124,17 +124,30 @@ interface CreateAndLinkOptions {
  * pushes a CR-number identifier we don't have, and its `dependent` branch expects an HIE contact
  * with extensions. Posting directly here also keeps the shared `dependants/` module untouched.
  */
-async function createPatientFromParticipant(
-  participant: PcsParticipant,
+export interface PcsDependantDemographics {
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  sex: 'M' | 'F';
+  /** ISO date, `yyyy-MM-dd`. */
+  dateOfBirth?: string;
+  nationalId?: string;
+  phone?: string;
+}
+
+/**
+ * Registers a patient from plain demographics.
+ *
+ * `createPatient` in `dependants.resource.ts` can't serve this: its `hie-patient` branch always
+ * pushes a CR-number identifier we don't have, and its `dependent` branch expects an HIE contact
+ * with extensions. Posting directly here also keeps the shared `dependants/` module untouched.
+ */
+async function createPatientFromDemographics(
+  demographics: PcsDependantDemographics,
   nationalIdUUID: string,
   phoneAttributeTypeUUID: string,
 ) {
   const [generated, location] = await Promise.all([generateIdentifier(openmrsIdSource), getSessionLocation()]);
-
-  // Carrying the national ID forward is what lets `findExistingLocalPatient` match this child
-  // later — and makes OpenMRS reject the create if they are already registered, rather than
-  // silently producing a duplicate.
-  const contact = getPrimaryContact(participant);
 
   const identifiers = [
     {
@@ -145,17 +158,20 @@ async function createPatientFromParticipant(
     },
   ];
 
-  if (contact?.nationalId) {
+  // Carrying the national ID forward is what lets `findExistingLocalPatient` match this child
+  // later — and makes OpenMRS reject the create if they are already registered, rather than
+  // silently producing a duplicate.
+  if (demographics.nationalId) {
     identifiers.push({
-      identifier: contact.nationalId,
+      identifier: demographics.nationalId,
       identifierType: nationalIdUUID,
       location: location?.uuid,
       preferred: false,
     });
   }
 
-  // Written as PCS reports it, matching `createPatient`, which stores the HIE value unmodified.
-  const attributes = contact?.phone ? [{ attributeType: phoneAttributeTypeUUID, value: contact.phone }] : [];
+  // Written as given, matching `createPatient`, which stores the HIE value unmodified.
+  const attributes = demographics.phone ? [{ attributeType: phoneAttributeTypeUUID, value: demographics.phone }] : [];
 
   const { data } = await openmrsFetch<{ uuid: string }>(`${restBaseUrl}/patient`, {
     method: 'POST',
@@ -165,14 +181,14 @@ async function createPatientFromParticipant(
         names: [
           {
             preferred: true,
-            givenName: sanitizeName(participant.firstName) || 'Unknown',
-            middleName: sanitizeName(participant.middleName ?? '') || '',
-            familyName: sanitizeName(participant.lastName) || 'Unknown',
+            givenName: sanitizeName(demographics.firstName) || 'Unknown',
+            middleName: sanitizeName(demographics.middleName ?? '') || '',
+            familyName: sanitizeName(demographics.lastName) || 'Unknown',
           },
         ],
-        gender: participant.sex,
-        birthdate: participant.dateOfBirth ?? null,
-        birthdateEstimated: !participant.dateOfBirth,
+        gender: demographics.sex,
+        birthdate: demographics.dateOfBirth ?? null,
+        birthdateEstimated: !demographics.dateOfBirth,
         addresses: [{ address1: '', cityVillage: '', country: '', postalCode: '', stateProvince: '' }],
         attributes,
       },
@@ -181,6 +197,29 @@ async function createPatientFromParticipant(
   });
 
   return data;
+}
+
+/** A PCS participant mapped onto the same create. */
+function createPatientFromParticipant(
+  participant: PcsParticipant,
+  nationalIdUUID: string,
+  phoneAttributeTypeUUID: string,
+) {
+  const contact = getPrimaryContact(participant);
+
+  return createPatientFromDemographics(
+    {
+      firstName: participant.firstName,
+      middleName: participant.middleName,
+      lastName: participant.lastName,
+      sex: participant.sex,
+      dateOfBirth: participant.dateOfBirth,
+      nationalId: contact?.nationalId,
+      phone: contact?.phone,
+    },
+    nationalIdUUID,
+    phoneAttributeTypeUUID,
+  );
 }
 
 /**
@@ -205,4 +244,74 @@ export async function createAndLinkFromParticipant({
     pbidsEnrollmentAttributeType,
     cardseEnrollmentAttributeType,
   });
+}
+
+interface CreatePcsParticipantOptions {
+  patientUuid: string;
+  motherId: string;
+}
+
+/**
+ * The request as the module documents it. Kept real and separately testable so the path and
+ * both field names are pinned rather than discovered at integration time — the same split the
+ * search side uses with `buildParticipantSearchUrl`.
+ */
+export function buildCreateParticipantRequest({ patientUuid, motherId }: CreatePcsParticipantOptions) {
+  return {
+    url: `${restBaseUrl}/pbids-participants`,
+    options: {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { patientUuid, motherId },
+    },
+  };
+}
+
+/**
+ * Documented failures, all of which surface through the form's notification rather than
+ * indicating a bug here: `409` when the patient already holds a study or temporary identifier,
+ * `400` for a missing field or an unknown patient or mother, and `503` when the PCS database is
+ * unreachable.
+ */
+async function createPcsParticipant({ patientUuid, motherId }: CreatePcsParticipantOptions): Promise<PcsParticipant> {
+  const request = buildCreateParticipantRequest({ patientUuid, motherId });
+  const { data } = await openmrsFetch<PcsParticipant>(request.url, request.options);
+  return data;
+}
+
+interface CreateDependantWithTemporaryIdOptions {
+  demographics: PcsDependantDemographics;
+  motherIndividualId: string;
+  nationalIdUUID: string;
+  phoneAttributeTypeUUID: string;
+}
+
+/**
+ * For an infant in neither PCS nor the HIE: register them here, then have the module create a
+ * participant against their mother's and mint a temporary study id.
+ *
+ * Nothing is written client-side. The module owns both sides — it assigns the identifier and
+ * sets the `PBIDS Enrolled` / `CARDSE Enrolled` attributes to match the PCS row, which the docs
+ * are explicit must stay in step. The re-read is how we see what it wrote; the record we just
+ * created could not carry it.
+ */
+export async function createDependantWithTemporaryId({
+  demographics,
+  motherIndividualId,
+  nationalIdUUID,
+  phoneAttributeTypeUUID,
+}: CreateDependantWithTemporaryIdOptions) {
+  const localPatient = await createPatientFromDemographics(demographics, nationalIdUUID, phoneAttributeTypeUUID);
+
+  if (!localPatient?.uuid) {
+    throw new Error('The patient record could not be created');
+  }
+
+  const participant = await createPcsParticipant({ patientUuid: localPatient.uuid, motherId: motherIndividualId });
+
+  const updated = (await readLocalPatient(localPatient.uuid).catch(() => null)) ?? localPatient;
+
+  await launchCheckInWorkspace(updated, updated.uuid);
+
+  return { localPatient: updated, participant };
 }

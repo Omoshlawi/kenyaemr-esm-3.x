@@ -100,13 +100,13 @@ export function usePcsDependants(motherIndividualId: string | null) {
     motherIndividualId ? { name: '', village: '', phone: '', motherId: motherIndividualId } : null,
   );
 
-  const { data, isLoading, error } = useSWR(url, fetchParticipants, {
+  const { data, isLoading, error, mutate } = useSWR(url, fetchParticipants, {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     shouldRetryOnError: false,
   });
 
-  return { dependants: data?.results ?? [], totalCount: data?.totalCount ?? 0, isLoading, error };
+  return { dependants: data?.results ?? [], totalCount: data?.totalCount ?? 0, isLoading, error, mutate };
 }
 
 /**

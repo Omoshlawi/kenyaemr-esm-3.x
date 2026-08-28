@@ -4,6 +4,7 @@ import { createPatient } from '../../dependants/dependants.resource';
 import { findExistingLocalPatient } from '../../search-bar/search-bar.resource';
 import {
   createAndLinkFromParticipant,
+  createDependantWithTemporaryId,
   linkDependantToParticipant,
   useHieDependantLinkState,
 } from './link-dependant.resource';
@@ -220,6 +221,94 @@ describe('createAndLinkFromParticipant', () => {
     });
     expect(mockOpenmrsFetch.mock.calls.some(([url]) => url.endsWith('/pbids-participants'))).toBe(false);
     expect(launchWorkspace2).toHaveBeenCalledOnce();
+  });
+});
+
+describe('createDependantWithTemporaryId', () => {
+  const demographics = {
+    firstName: 'BABY',
+    middleName: 'A',
+    lastName: 'ODONGO',
+    sex: 'F',
+    dateOfBirth: '2026-08-01',
+  };
+
+  const addDependant = () =>
+    createDependantWithTemporaryId({
+      demographics,
+      motherIndividualId: '901-1-1-2',
+      nationalIdUUID: 'national-id-type',
+      phoneAttributeTypeUUID: 'phone-attr-type',
+    });
+
+  beforeEach(() => {
+    mockOpenmrsFetch.mockImplementation((url: string, options?: any) => {
+      if (url.includes('?v=custom')) {
+        return Promise.resolve({ data: rereadFor(url) } as any);
+      }
+      if (url.endsWith('/patient') && options?.method === 'POST') {
+        return Promise.resolve({ data: { uuid: 'infant-uuid', identifiers: [] } } as any);
+      }
+      if (url.endsWith('/pbids-participants') && options?.method === 'POST') {
+        return Promise.resolve({ data: { ...participant, individualId: 'TMP-901-1-1-9' } } as any);
+      }
+      return Promise.resolve({ data: { results: [] } } as any);
+    });
+  });
+
+  it('registers the patient from the form values', async () => {
+    await addDependant();
+
+    const [, options] = mockOpenmrsFetch.mock.calls.find(
+      ([u, o]) => u.endsWith('/patient') && (o as any)?.method === 'POST',
+    )!;
+    expect((options as any).body.person).toMatchObject({
+      names: [{ preferred: true, givenName: 'BABY', middleName: 'A', familyName: 'ODONGO' }],
+      gender: 'F',
+      birthdate: '2026-08-01',
+    });
+  });
+
+  it("posts the new patient against the mother's individual ID", async () => {
+    await addDependant();
+
+    const [url, options] = mockOpenmrsFetch.mock.calls.find(
+      ([u, o]) => u.endsWith('/pbids-participants') && (o as any)?.method === 'POST',
+    )!;
+    expect(url).toBe('/ws/rest/v1/pbids-participants');
+    // Both field names are the module's, and neither is guessable from this side.
+    expect((options as any).body).toEqual({ patientUuid: 'infant-uuid', motherId: '901-1-1-2' });
+  });
+
+  it('writes no identifier or attribute of its own', async () => {
+    await addDependant();
+
+    // The module sets the temporary ID and both enrolment attributes as one unit with the PCS
+    // row. A client write here is exactly what would break that pairing.
+    expect(writes()).toEqual(['/ws/rest/v1/patient', '/ws/rest/v1/pbids-participants']);
+  });
+
+  it('checks in once, with the record as the server left it', async () => {
+    const { localPatient } = await addDependant();
+
+    // The patient we created cannot carry what the module wrote; only the re-read can.
+    expect(localPatient).toMatchObject({ uuid: 'infant-uuid', reread: true });
+    expect(launchWorkspace2).toHaveBeenCalledOnce();
+  });
+
+  it('does not check in when the participant cannot be created', async () => {
+    mockOpenmrsFetch.mockImplementation((url: string, options?: any) => {
+      if (url.endsWith('/patient') && options?.method === 'POST') {
+        return Promise.resolve({ data: { uuid: 'infant-uuid', identifiers: [] } } as any);
+      }
+      if (url.endsWith('/pbids-participants') && options?.method === 'POST') {
+        return Promise.reject(new Error('Patient already has a study participant identifier'));
+      }
+      return Promise.resolve({ data: { results: [] } } as any);
+    });
+
+    await expect(addDependant()).rejects.toThrow('Patient already has a study participant identifier');
+    expect(launchWorkspace2).not.toHaveBeenCalled();
   });
 });
 
