@@ -479,3 +479,29 @@ export type WhitelistStatusPoll = {
     reviewed_on: string | null;
   }>;
 };
+
+/**
+ * A patient chosen from the search results, flattened into the shape an extension rendering in
+ * `ewf-registration-patient-extras-slot` needs. Either side of the results — a local record or an
+ * HIE one — normalizes to this.
+ */
+export interface RegistrationSearchSubject {
+  /** `fhir.Patient.id` — the local patient uuid, or the HIE resource id. */
+  id: string;
+  source: 'local' | 'hie';
+  /**
+   * The record the flattened fields below were derived from. Kept whole because a consumer acting
+   * on an HIE patient has to be able to create them locally, which needs more than demographics.
+   */
+  patient: fhir.Patient;
+  /**
+   * The patient's HIE record when one was matched. Its `contact` array is where dependants come
+   * from; a locally-converted patient has none, hence optional.
+   */
+  hiePatient?: fhir.Patient;
+  name: string;
+  gender?: string;
+  birthDate?: string;
+  nationalId?: string | null;
+  phoneNumber?: string | null;
+}

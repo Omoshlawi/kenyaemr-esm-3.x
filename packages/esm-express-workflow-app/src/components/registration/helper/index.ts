@@ -1,4 +1,4 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { getPatientName, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import {
   type HIEBundleResponse,
   type EligibilityResponse,
@@ -7,6 +7,7 @@ import {
   InputDependent,
   DependentPayload,
   HIEPatient,
+  type RegistrationSearchSubject,
 } from '../type';
 import { isWithinInterval, parseISO, format, differenceInYears } from 'date-fns';
 
@@ -924,3 +925,21 @@ export const getEligibilityTags = (patient: fhir.Patient, eligibilityData?: Elig
 export const sanitizeName = (name: string): string => {
   return name?.trim().replace(/[^\w\s'\-\.]/g, '') || '';
 };
+
+/** Normalizes either side of the search results (local or HIE) into a search subject. */
+export const toSearchSubject = (
+  patient: fhir.Patient,
+  source: RegistrationSearchSubject['source'],
+  nationalIdUUID?: string,
+  hiePatient?: fhir.Patient,
+): RegistrationSearchSubject => ({
+  id: patient.id!,
+  source,
+  patient,
+  hiePatient,
+  name: getPatientName(patient),
+  gender: patient.gender,
+  birthDate: patient.birthDate,
+  nationalId: getNationalIdFromPatient(patient, nationalIdUUID),
+  phoneNumber: getPhoneFromFhirPatient(patient) ?? null,
+});
