@@ -1,0 +1,55 @@
+@use '@carbon/layout';
+@use '@carbon/colors';
+@use '@carbon/type';
+
+.workspaceForm {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.workspaceContent {
+  padding: layout.$spacing-05;
+}
+
+.prompt {
+  @include type.type-style('body-compact-01');
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-05;
+}
+
+.checking {
+  margin-top: layout.$spacing-03;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  padding: layout.$spacing-05;
+  text-align: center;
+}
+
+.emptyTitle {
+  @include type.type-style('heading-compact-01');
+  color: colors.$gray-100;
+}
+
+.emptySubtitle {
+  @include type.type-style('label-01');
+  color: colors.$gray-70;
+}
+
+.notification {
+  margin-top: layout.$spacing-05;
+  max-width: 100%;
+}
+
+.workspaceButtonSet {
+  margin-top: auto;
+  border-top: 1px solid colors.$gray-20;
+
+  button {
+    max-width: 50%;
+  }
+}

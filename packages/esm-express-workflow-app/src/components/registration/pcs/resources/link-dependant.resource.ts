@@ -287,22 +287,15 @@ interface CreateDependantWithTemporaryIdOptions {
 }
 
 /**
- * For an infant in neither PCS nor the HIE: register them here, then have the module create a
- * participant against their mother's and mint a temporary study id.
+ * The tail both temporary-ID flows share: have the module create a participant against the
+ * mother's and mint the study id, then start the visit.
  *
  * Nothing is written client-side. The module owns both sides — it assigns the identifier and
  * sets the `PBIDS Enrolled` / `CARDSE Enrolled` attributes to match the PCS row, which the docs
- * are explicit must stay in step. The re-read is how we see what it wrote; the record we just
- * created could not carry it.
+ * are explicit must stay in step. The re-read is how we see what it wrote; the record we hold
+ * could not carry it.
  */
-export async function createDependantWithTemporaryId({
-  demographics,
-  motherIndividualId,
-  nationalIdUUID,
-  phoneAttributeTypeUUID,
-}: CreateDependantWithTemporaryIdOptions) {
-  const localPatient = await createPatientFromDemographics(demographics, nationalIdUUID, phoneAttributeTypeUUID);
-
+async function mintTemporaryIdAndCheckIn(localPatient: any, motherIndividualId: string) {
   if (!localPatient?.uuid) {
     throw new Error('The patient record could not be created');
   }
@@ -314,4 +307,49 @@ export async function createDependantWithTemporaryId({
   await launchCheckInWorkspace(updated, updated.uuid);
 
   return { localPatient: updated, participant };
+}
+
+/**
+ * For an infant in neither PCS nor the HIE: register them here from typed demographics, then
+ * mint a temporary study id against their mother's participant.
+ */
+export async function createDependantWithTemporaryId({
+  demographics,
+  motherIndividualId,
+  nationalIdUUID,
+  phoneAttributeTypeUUID,
+}: CreateDependantWithTemporaryIdOptions) {
+  const localPatient = await createPatientFromDemographics(demographics, nationalIdUUID, phoneAttributeTypeUUID);
+
+  return mintTemporaryIdAndCheckIn(localPatient, motherIndividualId);
+}
+
+interface LinkHieDependantOptions {
+  /** A row from `getDependentsFromContacts` — an HIE contact, not necessarily a patient here yet. */
+  dependant: any;
+  parentPhoneNumber?: string;
+  motherIndividualId: string;
+  t: (key: string, fallback: string) => string;
+}
+
+/**
+ * For a child the HIE lists under her mother but PCS has no row for: reuse her local record when
+ * she is already registered here, create it from the HIE contact when she isn't, then mint a
+ * temporary study id.
+ *
+ * Differs from `createDependantWithTemporaryId` only at the head — resolve-or-create from an HIE
+ * contact, rather than create from typed demographics.
+ *
+ * A child linked elsewhere between the list rendering and this call comes back as the documented
+ * `409`; that race belongs to the server, not to a second client-side check.
+ */
+export async function linkHieDependantWithTemporaryId({
+  dependant,
+  parentPhoneNumber,
+  motherIndividualId,
+  t,
+}: LinkHieDependantOptions) {
+  const localPatient = await resolveLocalDependant(dependant, parentPhoneNumber, t);
+
+  return mintTemporaryIdAndCheckIn(localPatient, motherIndividualId);
 }

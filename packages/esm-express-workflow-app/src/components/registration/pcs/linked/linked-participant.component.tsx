@@ -62,6 +62,17 @@ const LinkedParticipant: React.FC<LinkedParticipantProps> = ({
     });
   };
 
+  const openLinkHieDependant = () => {
+    launchWorkspace2('pcs-link-hie-dependant-workspace-form', {
+      motherIndividualId: participant!.individualId,
+      hiePatient: subject.hiePatient,
+      parentPhoneNumber: subject.phoneNumber ?? undefined,
+      // The child becomes a participant with this mother, so the key behind the tab count and
+      // the list picks her up.
+      onLinked: () => mutateDependants(),
+    });
+  };
+
   const openDelinkModal = () => {
     const dispose = showModal('pcs-delink-participant-modal', {
       closeModal: () => dispose(),
@@ -155,9 +166,13 @@ const LinkedParticipant: React.FC<LinkedParticipantProps> = ({
             onClick={openAddDependant}>
             {t('dependantNotInHieAndPcs', 'Dependant not in HIE and PCS?')}
           </Button>
-          {/* Deferred: the child is in the HIE but PCS has no row for them. Left as a bare no-op
-              so wiring up the real flow is a one-line swap. */}
-          <Button kind="ghost" size="sm" renderIcon={ArrowRight} onClick={() => {}}>
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={ArrowRight}
+            // Same guard as above — the handler reads participant.individualId.
+            disabled={!participant}
+            onClick={openLinkHieDependant}>
             {t('dependantInHieNotPcs', 'Dependant in HIE and not PCS?')}
           </Button>
         </div>

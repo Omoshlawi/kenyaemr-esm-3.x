@@ -1,20 +1,15 @@
-import React, { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Controller, useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   Button,
   ButtonSet,
   Column,
   Form,
-  Grid,
   InlineNotification,
   RadioButton,
   RadioButtonGroup,
   Row,
   TextInput,
 } from '@carbon/react';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   OpenmrsDatePicker,
   ResponsiveWrapper,
@@ -23,6 +18,10 @@ import {
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import { z } from 'zod';
 
 import { type ExpressWorkflowConfig } from '../../../../config-schema';
 import { createDependantWithTemporaryId } from '../resources/link-dependant.resource';
@@ -64,6 +63,7 @@ const AddDependantWorkspace: React.FC<Workspace2DefinitionProps<AddDependantWork
   workspaceProps,
 }) => {
   const { t } = useTranslation();
+
   const { nationalIdUUID, phoneAttributeTypeUUID } = useConfig<ExpressWorkflowConfig>();
   const { motherIndividualId, onCreated } = workspaceProps ?? {};
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -73,8 +73,7 @@ const AddDependantWorkspace: React.FC<Workspace2DefinitionProps<AddDependantWork
   const {
     control,
     handleSubmit,
-    reset,
-    formState: { isDirty, isSubmitting },
+    formState: { isSubmitting },
   } = useForm<AddDependantFormData>({
     resolver: zodResolver(schema),
     defaultValues: { givenName: '', middleName: '', familyName: '' },
@@ -111,8 +110,8 @@ const AddDependantWorkspace: React.FC<Workspace2DefinitionProps<AddDependantWork
       });
 
       onCreated?.();
-      reset();
-      closeWorkspace({ discardUnsavedChanges: true });
+
+      closeWorkspace();
     } catch (e: any) {
       setSubmitError(
         e?.responseBody?.error?.message ?? e?.message ?? t('dependantAddFailed', 'The dependant could not be added.'),
@@ -125,7 +124,7 @@ const AddDependantWorkspace: React.FC<Workspace2DefinitionProps<AddDependantWork
   }
 
   return (
-    <Workspace2 title={t('addDependant', 'Add dependant')} hasUnsavedChanges={isDirty}>
+    <Workspace2 title={t('addDependant', 'Add dependant')} hasUnsavedChanges={false}>
       <Form onSubmit={handleSubmit(onSubmit)} className={styles.workspaceForm}>
         <Row className={styles.workspaceContent}>
           <Column>
@@ -235,7 +234,7 @@ const AddDependantWorkspace: React.FC<Workspace2DefinitionProps<AddDependantWork
         </Row>
 
         <ButtonSet className={styles.workspaceButtonSet}>
-          <Button kind="secondary" onClick={() => closeWorkspace({ discardUnsavedChanges: true })}>
+          <Button kind="secondary" onClick={() => closeWorkspace()}>
             {t('cancel', 'Cancel')}
           </Button>
           <Button kind="primary" type="submit" disabled={isSubmitting}>

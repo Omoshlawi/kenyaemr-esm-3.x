@@ -44,7 +44,7 @@ const mockUsePcsDependants = vi.mocked(usePcsDependants);
 
 const participant = { individualId: '901-1-1-2', firstName: 'JANE', lastName: 'ODONGO' } as PcsParticipant;
 
-const subject = { name: 'Jane Odongo', phoneNumber: '0712345678' } as any;
+const subject = { name: 'Jane Odongo', phoneNumber: '0712345678', hiePatient: { id: 'hie-1' } } as any;
 
 const renderBanner = () =>
   render(
@@ -108,11 +108,27 @@ describe('LinkedParticipant dependant questions', () => {
     expect(screen.getByRole('button', { name: /Dependant not in HIE and PCS\?/ })).toBeDisabled();
   });
 
-  it('renders the in-HIE-only question as deliberately inert', async () => {
+  it("launches the HIE-dependant workspace with the mother's record and ID", async () => {
     renderBanner();
 
-    // Deferred rather than forgotten: it is present and clickable, and launches nothing.
     await userEvent.click(screen.getByRole('button', { name: /Dependant in HIE and not PCS\?/ }));
-    expect(launchWorkspace2).not.toHaveBeenCalled();
+
+    // hiePatient is the candidate list's only source — without it the workspace shows empty.
+    expect(launchWorkspace2).toHaveBeenCalledWith(
+      'pcs-link-hie-dependant-workspace-form',
+      expect.objectContaining({
+        motherIndividualId: '901-1-1-2',
+        hiePatient: subject.hiePatient,
+        parentPhoneNumber: '0712345678',
+      }),
+    );
+  });
+
+  it('holds the HIE question closed until the participant has loaded', () => {
+    mockUsePcsParticipant.mockReturnValue({ participant: null, isLoading: true, error: null, mutate: vi.fn() } as any);
+
+    renderBanner();
+
+    expect(screen.getByRole('button', { name: /Dependant in HIE and not PCS\?/ })).toBeDisabled();
   });
 });

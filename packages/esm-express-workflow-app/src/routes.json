@@ -570,7 +570,12 @@
     {
       "name": "pcs-add-dependant-workspace-form",
       "component": "pcsAddDependantWorkspace",
-      "window": "ewf-pcs-add-dependant"
+      "window": "ewf-pcs-dependant"
+    },
+    {
+      "name": "pcs-link-hie-dependant-workspace-form",
+      "component": "pcsLinkHieDependantWorkspace",
+      "window": "ewf-pcs-dependant"
     }
   ],
   "workspaceWindows2": [
@@ -585,7 +590,7 @@
       "width": "wider"
     },
     {
-      "name": "ewf-pcs-add-dependant",
+      "name": "ewf-pcs-dependant",
       "group": "ewf-pcs-registration",
       "width": "narrow"
     }

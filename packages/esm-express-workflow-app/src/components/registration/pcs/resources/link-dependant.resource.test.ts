@@ -6,6 +6,7 @@ import {
   createAndLinkFromParticipant,
   createDependantWithTemporaryId,
   linkDependantToParticipant,
+  linkHieDependantWithTemporaryId,
   useHieDependantLinkState,
 } from './link-dependant.resource';
 import React from 'react';
@@ -308,6 +309,99 @@ describe('createDependantWithTemporaryId', () => {
     });
 
     await expect(addDependant()).rejects.toThrow('Patient already has a study participant identifier');
+    expect(launchWorkspace2).not.toHaveBeenCalled();
+  });
+});
+
+describe('linkHieDependantWithTemporaryId', () => {
+  const addFromHie = () =>
+    linkHieDependantWithTemporaryId({
+      dependant,
+      parentPhoneNumber: '0712345678',
+      motherIndividualId: '901-1-1-2',
+      t: (_key: string, fallback: string) => fallback,
+    });
+
+  beforeEach(() => {
+    mockOpenmrsFetch.mockImplementation((url: string, options?: any) => {
+      if (url.includes('?v=custom')) {
+        return Promise.resolve({ data: rereadFor(url) } as any);
+      }
+      if (url.endsWith('/pbids-participants') && options?.method === 'POST') {
+        return Promise.resolve({ data: { ...participant, individualId: 'TMP-901-1-1-9' } } as any);
+      }
+      return Promise.resolve({ data: { results: [] } } as any);
+    });
+  });
+
+  it('reuses the local record when the child is already registered here', async () => {
+    mockFindExistingLocalPatient.mockResolvedValue({ uuid: 'existing-uuid', identifiers: [] } as any);
+
+    await addFromHie();
+
+    // Creating here would duplicate a patient the HIE contact already resolves to.
+    expect(mockCreatePatient).not.toHaveBeenCalled();
+    // isDependent must be true, or household-number would match the mother's own record.
+    expect(mockFindExistingLocalPatient).toHaveBeenCalledWith(dependant.contactData, true);
+    expect(
+      mockOpenmrsFetch.mock.calls.find(
+        ([u, o]) => u.endsWith('/pbids-participants') && (o as any)?.method === 'POST',
+      )![1],
+    ).toMatchObject({ body: { patientUuid: 'existing-uuid' } });
+  });
+
+  it('creates the child from the HIE contact when she is not registered here', async () => {
+    mockFindExistingLocalPatient.mockResolvedValue(null);
+    mockCreatePatient.mockResolvedValue({ uuid: 'new-uuid', identifiers: [] } as any);
+
+    await addFromHie();
+
+    expect(mockCreatePatient).toHaveBeenCalledOnce();
+    expect(mockCreatePatient.mock.calls[0][0]).toMatchObject({ type: 'dependent', parentPhoneNumber: '0712345678' });
+  });
+
+  it("posts the resolved patient against the mother's individual ID", async () => {
+    mockFindExistingLocalPatient.mockResolvedValue({ uuid: 'existing-uuid', identifiers: [] } as any);
+
+    await addFromHie();
+
+    const [url, options] = mockOpenmrsFetch.mock.calls.find(
+      ([u, o]) => u.endsWith('/pbids-participants') && (o as any)?.method === 'POST',
+    )!;
+    expect(url).toBe('/ws/rest/v1/pbids-participants');
+    // Both field names are the module's, and neither is guessable from this side.
+    expect((options as any).body).toEqual({ patientUuid: 'existing-uuid', motherId: '901-1-1-2' });
+  });
+
+  it('writes no identifier or attribute of its own', async () => {
+    mockFindExistingLocalPatient.mockResolvedValue({ uuid: 'existing-uuid', identifiers: [] } as any);
+
+    await addFromHie();
+
+    // The module sets the temporary ID and both enrolment attributes as one unit with the PCS
+    // row. A client write here is exactly what would break that pairing.
+    expect(writes()).toEqual(['/ws/rest/v1/pbids-participants']);
+  });
+
+  it('starts the visit once, with the record as the server left it', async () => {
+    mockFindExistingLocalPatient.mockResolvedValue({ uuid: 'existing-uuid', identifiers: [] } as any);
+
+    const { localPatient } = await addFromHie();
+
+    // The record we resolved cannot carry what the module wrote; only the re-read can.
+    expect(localPatient).toMatchObject({ uuid: 'existing-uuid', reread: true });
+    expect(launchWorkspace2).toHaveBeenCalledOnce();
+  });
+
+  it('does not start a visit when the participant cannot be created', async () => {
+    mockFindExistingLocalPatient.mockResolvedValue({ uuid: 'existing-uuid', identifiers: [] } as any);
+    mockOpenmrsFetch.mockImplementation((url: string, options?: any) =>
+      url.endsWith('/pbids-participants') && options?.method === 'POST'
+        ? Promise.reject(new Error('Patient already has a study participant identifier'))
+        : Promise.resolve({ data: { results: [] } } as any),
+    );
+
+    await expect(addFromHie()).rejects.toThrow('Patient already has a study participant identifier');
     expect(launchWorkspace2).not.toHaveBeenCalled();
   });
 });

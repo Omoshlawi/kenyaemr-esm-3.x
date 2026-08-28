@@ -130,6 +130,14 @@ export const pcsAddDependantWorkspace = getAsyncLifecycle(
   },
 );
 
+export const pcsLinkHieDependantWorkspace = getAsyncLifecycle(
+  () => import('./components/registration/pcs/link-hie-dependant/link-hie-dependant.workspace'),
+  {
+    featureName: 'pcs-link-hie-dependant-workspace',
+    moduleName,
+  },
+);
+
 export const anaestheticFormWorkspace = getAsyncLifecycle(
   () => import('./components/anaesthetic/forms/anaesthetic-form.component'),
   options,

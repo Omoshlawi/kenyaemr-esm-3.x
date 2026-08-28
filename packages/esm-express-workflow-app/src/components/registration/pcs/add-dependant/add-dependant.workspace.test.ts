@@ -3,18 +3,20 @@ import { buildAddDependantSchema } from './add-dependant.workspace';
 
 const schema = buildAddDependantSchema((_key: string, fallback: string) => fallback);
 
-const valid = {
-  givenName: 'Baby',
-  middleName: '',
-  familyName: 'Odongo',
-  dateOfBirth: new Date(),
-  sex: 'F' as const,
-};
-
 const monthsAgo = (months: number) => {
   const date = new Date();
   date.setMonth(date.getMonth() - months);
   return date;
+};
+
+// Comfortably inside the window rather than on its edge: the schema freezes its `max` bound at
+// build time, so a fixture built from `new Date()` a moment later reads as a future date.
+const valid = {
+  givenName: 'Baby',
+  middleName: '',
+  familyName: 'Odongo',
+  dateOfBirth: monthsAgo(1),
+  sex: 'F' as const,
 };
 
 const errorFor = (field: string, input: Record<string, unknown>) => {
@@ -33,6 +35,15 @@ describe('add dependant schema', () => {
     expect(errorFor('dateOfBirth', { ...valid, dateOfBirth: monthsAgo(13) })).toBe(
       'This form is for infants — age cannot exceed one year',
     );
+  });
+
+  it('accepts a baby born today', () => {
+    // Local midnight is what OpenmrsDatePicker yields, and a newborn registered on the day of
+    // birth is the likeliest real input to this form.
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    expect(schema.safeParse({ ...valid, dateOfBirth: today }).success).toBe(true);
   });
 
   it('rejects a date of birth in the future', () => {
