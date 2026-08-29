@@ -1,16 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styles from './search.scss';
-import { navigate, showToast, useConfig } from '@openmrs/esm-framework';
+import { ExtensionSlot, navigate, showToast, useAssignedExtensions, useConfig } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { Search as SearchIcon, Add, CloseLarge } from '@carbon/react/icons';
-import { Button, Column, ComboBox, InlineLoading, Search, Tile } from '@carbon/react';
-import { type HIEBundleResponse, type IdentifierTypeItem, type LocalResponse } from '../type';
-import { getNationalIdFromPatient, convertLocalPatientToFHIR } from '../helper';
+import { Button, Column, ComboBox, InlineLoading, Layer, Search, Tile } from '@carbon/react';
+import {
+  type HIEBundleResponse,
+  type IdentifierTypeItem,
+  type LocalResponse,
+  type RegistrationSearchSubject,
+} from '../type';
+
+import { getNationalIdFromPatient, convertLocalPatientToFHIR, toSearchSubject } from '../helper';
 import { searchPatientFromHIE, usePatient, useSHAEligibility } from './search-bar.resource';
 import { EmptySvg } from '../empty-svg/empty-svg.component';
 import HIEDisplayCard from '../card/HIE-card/hie-card.component';
 import { ExpressWorkflowConfig } from '../../../config-schema';
 import LocalPatientCard from '../card/Local-card/local-card.component';
+/**
+ * Where another app renders against the patient selected here. Exported so consumers target one
+ * spelling of the name rather than a copy of the string.
+ */
+export const REGISTRATION_PATIENT_EXTRAS_SLOT = 'ewf-registration-patient-extras-slot';
 
 const SearchBar: React.FC = () => {
   const { t } = useTranslation();
@@ -38,7 +49,14 @@ const SearchBar: React.FC = () => {
   const [searchedNationalId, setSearchedNationalId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [syncedPatients, setSyncedPatients] = useState<Set<string>>(new Set());
-
+  const [selectedPatient, setSelectedPatient] = useState<RegistrationSearchSubject | null>(null);
+  const [verifiedPatients, setVerifiedPatients] = useState<Set<string>>(new Set());
+  // With nothing registered against the slot, selection has no consumer — so the cards are left
+  // exactly as they were before this screen became extensible, rather than offering a highlight
+  // that leads nowhere. Assignment already accounts for the extension's own feature flag, and is
+  // re-derived when that flag is toggled, so this follows it without knowing the flag's name.
+  const patientExtras = useAssignedExtensions(REGISTRATION_PATIENT_EXTRAS_SLOT);
+  const hasPatientExtras = patientExtras.length > 0;
   const [selectedIdentifierItem, setSelectedIdentifierItem] = useState<IdentifierTypeItem | null>(
     defaultIdentifierType || null,
   );
@@ -58,6 +76,55 @@ const SearchBar: React.FC = () => {
       setLocalSearchResults(null);
     }
   }, [localPatientData, searchQuery, isLocalSearching]);
+
+  /**
+   * The patient's HIE record, which carries more than the local one — their `contact` array, for
+   * instance. A patient verified from an HIE card already is one; one verified locally is paired
+   * to the HIE results by national ID, the same way the local card pairs them for demographic sync.
+   */
+  const findHiePatient = useCallback(
+    (patient: fhir.Patient, source: RegistrationSearchSubject['source']): fhir.Patient | undefined => {
+      if (source === 'hie') {
+        return patient;
+      }
+
+      const nationalId = getNationalIdFromPatient(patient, nationalIdUUID);
+      if (!nationalId || !searchResults) {
+        return undefined;
+      }
+
+      for (const bundle of searchResults) {
+        for (const entry of bundle.entry ?? []) {
+          if (getNationalIdFromPatient(entry.resource, nationalIdUUID) === nationalId) {
+            return entry.resource;
+          }
+        }
+      }
+
+      return undefined;
+    },
+    [nationalIdUUID, searchResults],
+  );
+
+  const handlePatientVerified = useCallback(
+    (patient: fhir.Patient, source: RegistrationSearchSubject['source']) => {
+      setVerifiedPatients((previous) => new Set(previous).add(patient.id!));
+      setSelectedPatient(toSearchSubject(patient, source, nationalIdUUID, findHiePatient(patient, source)));
+    },
+    [nationalIdUUID, findHiePatient],
+  );
+
+  // Clicking another verified card moves the slot to that patient. Re-clicking the selected
+  // card is a no-op — deselecting would empty the slot again, which reads as a bug.
+  const handleSelectPatient = useCallback(
+    (patient: fhir.Patient, source: RegistrationSearchSubject['source']) => {
+      if (!verifiedPatients.has(patient.id!)) {
+        return;
+      }
+      setSelectedPatient(toSearchSubject(patient, source, nationalIdUUID));
+    },
+    [nationalIdUUID, verifiedPatients],
+  );
 
   const handleIdentifierTypeChange = (selectedItem: IdentifierTypeItem | null): void => {
     if (selectedItem) {
@@ -137,6 +204,8 @@ const SearchBar: React.FC = () => {
     setSearchedNationalId('');
     setShowDependentsForPatient(new Set());
     setSearchQuery('');
+    setSelectedPatient(null);
+    setVerifiedPatients(new Set());
     setSelectedIdentifierItem(defaultIdentifierType || null);
     setIdentifierType(defaultIdentifierType?.key || '');
   };
@@ -167,56 +236,71 @@ const SearchBar: React.FC = () => {
     }
 
     return (
-      <div className={styles.searchResultsContainer}>
-        {hasLocalResults && (
-          <div className={styles.localResultsSection}>
-            <div className={styles.resultsHeader}>
-              <span className={styles.identifierTypeHeader}>
-                {t('revisitPatientResults', 'Revisit patient(s) ({{count}})', {
-                  count: localSearchResults?.length || 0,
-                })}
-              </span>
-            </div>
-            <div>
-              <LocalPatientCard
-                localSearchResults={localSearchResults!}
-                syncedPatients={syncedPatients}
-                searchedNationalId={searchedNationalId}
-                otpExpiryMinutes={otpExpirationDurationInminutes}
-                hieSearchResults={searchResults}
-                eligibilityResponse={eligibilityResponse}
-                isEligibilityLoading={isEligibilityLoading}
-              />
-            </div>
-          </div>
-        )}
-
-        {hasHieResults && (
-          <div className={styles.hieResultsSection}>
-            <div className={styles.resultsHeader}>
-              <span className={styles.identifierTypeHeader}>
-                {t('newPatientResults', 'New patient(s) found ({{count}})', {
-                  count: getHiePatientCount(filteredHieResults),
-                })}
-              </span>
-            </div>
-            <div>
-              {filteredHieResults!.map((bundle, index) => (
-                <HIEDisplayCard
-                  key={`hie-${index}`}
-                  bundle={bundle}
-                  bundleIndex={index}
+      <Layer className={styles.layer}>
+        <div className={styles.searchResultsContainer}>
+          {hasLocalResults && (
+            <div className={styles.localResultsSection}>
+              <div className={styles.resultsHeader}>
+                <span className={styles.identifierTypeHeader}>
+                  {t('revisitPatientResults', 'Revisit patient(s) ({{count}})', {
+                    count: localSearchResults?.length || 0,
+                  })}
+                </span>
+              </div>
+              <div>
+                <LocalPatientCard
+                  localSearchResults={localSearchResults!}
+                  syncedPatients={syncedPatients}
                   searchedNationalId={searchedNationalId}
                   otpExpiryMinutes={otpExpirationDurationInminutes}
-                  localSearchResults={localSearchResults}
+                  hieSearchResults={searchResults}
                   eligibilityResponse={eligibilityResponse}
                   isEligibilityLoading={isEligibilityLoading}
+                  selectedPatientId={selectedPatient?.id ?? null}
+                  onSelectPatient={hasPatientExtras ? handleSelectPatient : undefined}
+                  onPatientVerified={handlePatientVerified}
                 />
-              ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {hasHieResults && (
+            <div className={styles.hieResultsSection}>
+              <div className={styles.resultsHeader}>
+                <span className={styles.identifierTypeHeader}>
+                  {t('newPatientResults', 'New patient(s) found ({{count}})', {
+                    count: getHiePatientCount(filteredHieResults),
+                  })}
+                </span>
+              </div>
+              <div>
+                {filteredHieResults!.map((bundle, index) => (
+                  <HIEDisplayCard
+                    key={`hie-${index}`}
+                    bundle={bundle}
+                    bundleIndex={index}
+                    searchedNationalId={searchedNationalId}
+                    otpExpiryMinutes={otpExpirationDurationInminutes}
+                    localSearchResults={localSearchResults}
+                    eligibilityResponse={eligibilityResponse}
+                    isEligibilityLoading={isEligibilityLoading}
+                    selectedPatientId={selectedPatient?.id ?? null}
+                    onSelectPatient={hasPatientExtras ? handleSelectPatient : undefined}
+                    onPatientVerified={handlePatientVerified}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        {selectedPatient && hasPatientExtras && (
+          <ExtensionSlot
+            name={REGISTRATION_PATIENT_EXTRAS_SLOT}
+            className={styles.extrasSlot}
+            state={{ subject: selectedPatient }}
+          />
         )}
-      </div>
+      </Layer>
     );
   };
 
@@ -237,6 +321,8 @@ const SearchBar: React.FC = () => {
     setSyncedPatients(new Set());
     setSearchedNationalId('');
     setShowDependentsForPatient(new Set());
+    setSelectedPatient(null);
+    setVerifiedPatients(new Set());
 
     try {
       setSearchQuery(identifier.trim());

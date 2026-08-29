@@ -36,6 +36,9 @@ interface LocalPatientCardProps {
   hieSearchResults?: Array<HIEBundleResponse> | null;
   eligibilityResponse?: EligibilityResponse;
   isEligibilityLoading?: boolean;
+  selectedPatientId?: string | null;
+  onSelectPatient?: (patient: fhir.Patient, source: 'local') => void;
+  onPatientVerified?: (patient: fhir.Patient, source: 'local') => void;
 }
 
 const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
@@ -46,6 +49,9 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
   hieSearchResults = null,
   eligibilityResponse,
   isEligibilityLoading = false,
+  selectedPatientId = null,
+  onSelectPatient,
+  onPatientVerified,
 }) => {
   const { t } = useTranslation();
   const { enableDemographicSync, nationalIdUUID } = useConfig<ExpressWorkflowConfig>();
@@ -160,19 +166,24 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
     setOtpRequestedFor((prev) => new Set(prev).add(patientUuid));
   }, []);
 
-  const handleOTPVerificationSuccess = useCallback((patientId: string) => {
-    setVerifiedPatients((prev) => new Set(prev).add(patientId));
-    setOtpRequestedFor((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(patientId);
-      return newSet;
-    });
-    setActivePhoneNumbers((prev) => {
-      const newMap = new Map(prev);
-      newMap.delete(patientId);
-      return newMap;
-    });
-  }, []);
+  const handleOTPVerificationSuccess = useCallback(
+    (patientId: string, patient: fhir.Patient) => {
+      setVerifiedPatients((prev) => new Set(prev).add(patientId));
+      setOtpRequestedFor((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(patientId);
+        return newSet;
+      });
+      setActivePhoneNumbers((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(patientId);
+        return newMap;
+      });
+      // Authorization is what makes this patient selectable, and publishes them to the slot.
+      onPatientVerified?.(patient, 'local');
+    },
+    [onPatientVerified],
+  );
 
   const createDynamicOTPHandlers = useCallback(
     (patientUuid: string, patientName: string, phoneNumber: string) => {
@@ -268,6 +279,8 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
           : false;
 
         const patientPhoneNumber = getPatientPhoneNumber(localPatient, hiePatientData);
+        const isSelectable = Boolean(onSelectPatient) && isVerified;
+        const isSelected = isSelectable && selectedPatientId === patientUuid;
         const { onRequestOtp, onVerify, cleanup } = createDynamicOTPHandlers(
           patientUuid,
           patientName,
@@ -280,8 +293,38 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
               className={classNames(styles.container, styles.localPatient, {
                 [styles.verifiedPatient]: isVerified,
                 [styles.activeVisitPatient]: hasActiveVisit,
+                [styles.selectableCard]: isSelectable,
+                [styles.selectedCard]: isSelected,
               })}
-              role="banner">
+              role={isSelectable ? 'button' : 'banner'}
+              tabIndex={isSelectable ? 0 : undefined}
+              aria-pressed={isSelectable ? isSelected : undefined}
+              onClick={
+                isSelectable
+                  ? (event) => {
+                      // Selection must not fire when an action button inside the card is pressed.
+                      if ((event.target as HTMLElement).closest('button')) {
+                        return;
+                      }
+                      onSelectPatient!(fhirPatient, 'local');
+                    }
+                  : undefined
+              }
+              onKeyDown={
+                isSelectable
+                  ? (event) => {
+                      // Only the card itself toggles selection — let keystrokes on the
+                      // action buttons inside it activate those buttons instead.
+                      if (event.target !== event.currentTarget) {
+                        return;
+                      }
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onSelectPatient!(fhirPatient, 'local');
+                      }
+                    }
+                  : undefined
+              }>
               <div className={styles.patientInfo}>
                 <div className={styles.patientAvatar} role="img">
                   <PatientPhoto patientUuid={patientUuid} patientName={patientName} />
@@ -322,7 +365,7 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
                           expiryMinutes: otpExpiryMinutes,
                           onRequestOtp,
                           onVerify,
-                          onVerificationSuccess: () => handleOTPVerificationSuccess(patientUuid),
+                          onVerificationSuccess: () => handleOTPVerificationSuccess(patientUuid, fhirPatient),
                           onCleanup: cleanup,
                         });
                       }}>
@@ -342,7 +385,7 @@ const LocalPatientCard: React.FC<LocalPatientCardProps> = ({
                           expiryMinutes: otpExpiryMinutes,
                           onRequestOtp,
                           onVerify,
-                          onVerificationSuccess: () => handleOTPVerificationSuccess(patientUuid),
+                          onVerificationSuccess: () => handleOTPVerificationSuccess(patientUuid, fhirPatient),
                           onCleanup: cleanup,
                         });
                       }}>
