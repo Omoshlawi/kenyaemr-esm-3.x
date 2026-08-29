@@ -43,3 +43,27 @@
 .noDependents {
   padding-bottom: 1rem;
 }
+
+.selectableCard {
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background-color 120ms ease-in-out, border-color 120ms ease-in-out;
+
+  &:hover {
+    background-color: colors.$gray-10;
+  }
+
+  &:focus-visible {
+    outline: 2px solid colors.$blue-60;
+    outline-offset: -2px;
+  }
+}
+
+.selectedCard {
+  border-left-color: colors.$blue-60;
+  background-color: colors.$blue-10;
+
+  &:hover {
+    background-color: colors.$blue-10;
+  }
+}
